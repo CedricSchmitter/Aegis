@@ -1,23 +1,29 @@
 # Aegis
 
-Private Haushaltszentrale für Dokumente, Aufgaben, Termine und einen späteren persönlichen KI-Assistenten.
+A private household workspace for documents, tasks, calendars, and a future personal AI assistant.
 
-## Baseline
+## Start here
 
-- [Roadmap](ROADMAP.md): Produktplan, Architektur, Datenhoheit und überprüfbare Entwicklungsphasen.
-- [VM-Zugang und Einrichtungsstand](docs/VM-ACCESS.md): verifizierte Entwicklungsumgebung auf Proxmox.
-- [VM-Bootstrap](ops/bootstrap-vm.sh): reproduzierbare Installation der Entwicklungswerkzeuge in der dedizierten VM.
+- [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md): DDD, hexagonal architecture, localization, and engineering decisions.
+- [Roadmap](ROADMAP.md): product scope, data ownership, and phased acceptance criteria.
+- [VM access and setup](docs/VM-ACCESS.md): verified Proxmox development environment.
+- [VM bootstrap](ops/bootstrap-vm.sh): reproducible tooling installation inside the dedicated VM.
 
-## Technische Richtung
+AGENTS.md and CLAUDE.md reference AGENT.md to avoid competing instruction sets.
 
-Java 21 und Spring Boot als modularer Backend-Kern, PostgreSQL und React/TypeScript als Weboberfläche. Paperless übernimmt das Dokumentenarchiv. Kalender und KI-Anbieter werden über Adapter angebunden. Die Roadmap beschreibt die einzelnen Entscheidungen und Erweiterungskriterien.
+## Technical direction
 
-## Aktueller Stand
+Java 21 and Spring Boot form a modular backend with DDD and hexagonal boundaries, enforced through Maven modules. PostgreSQL stores application data. React/TypeScript provides the web UI. Paperless owns document originals. Calendar, mail, and AI providers connect through adapters.
 
-Planung und VM-Grundausstattung sind vorhanden. Fachanwendung, Datenbankdienste, externes Backup und Wiederherstellungstest sind noch nicht umgesetzt.
+All repository-maintained code and technical documentation are in English. Product-owned user-facing text supports German and English. User content and source documents retain their original language.
 
-Die Quelltexte werden lokal in diesem Repository gepflegt. Die Aegis-VM dient als Entwicklungs- und Testumgebung. Private Schlüssel, Tokens, produktive Dokumente und Dienstedaten gehören nicht in Git.
+## Current state
 
-## Nächster Meilenstein
+Planning, private GitHub access, and VM development tooling are available. The application, database services, external backup, and restore test are not implemented yet.
 
-Spring-Grundgerüst mit PostgreSQL, Datenbankmigrationen und überprüfbarem Betrieb gemäß Phase 1 der Roadmap. Mailanbieter, Kalenderkonten und externes Backupziel sind noch festzulegen.
+Source is maintained in this repository; the Aegis VM is the development/test environment. Private keys, tokens, household documents, and service data must not be committed.
+
+## Next milestone
+
+Create the Spring application foundation with PostgreSQL, migrations, architecture checks, and verifiable operation under roadmap phase 1. Mail provider, calendar accounts, and the external backup destination remain to be established.

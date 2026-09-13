@@ -1,66 +1,68 @@
-# Aegis – Roadmap zur gemeinsamen Haushaltszentrale
+# Aegis household workspace roadmap
 
-Stand: 13. September 2026 · Status: Architektur- und Produktplan, noch nicht implementiert
+Updated: 2026-09-13. Status: product and architecture plan; application implementation has not started. VM tooling and GitHub baseline are available; see [VM access](docs/VM-ACCESS.md).
 
-## 1. Ziel und verbindlicher Rahmen
+Repository rules live in [AGENT.md](AGENT.md). The owner's DDD/hexagonal architecture, Maven multimodule, maintainability, and English/localization requirements are detailed in [FOUNDATIONS.md](docs/architecture/FOUNDATIONS.md) and apply to every phase.
 
-Aegis soll einem Ehepaar helfen, Unterlagen abzulegen, verlässliche Antworten zu finden und anstehende Dinge gemeinsam zu erledigen. Langfristig kann daraus ein persönlicher Assistent mit Sprache, Eigeninitiative, Spiegelanzeige und Hausanbindung entstehen.
+## 1. Goal and constraints
 
-Der Erfolg wird zuerst am Alltag gemessen: Beide können das System ohne technische Hilfe nutzen. Die Anzahl der Automatisierungen ist kein Erfolgskriterium.
+Aegis helps a couple capture records, find reliable answers, and coordinate everyday responsibilities. It can grow into a personal assistant with voice, proactive suggestions, a mirror display, and home integration.
 
-Bereits bekannt:
+Success means both people use it without technical assistance. The number of automated workflows is not a success metric.
 
-- Zwei Nutzer, Android-Geräte und Samsung Kalender.
-- Ein separates bestehendes E-Mail-Konto für Verträge und Haus.
-- Ein vorhandener Proxmox-Server.
-- Java/Spring ist der vertraute Backend-Stack und wird verwendet.
-- Cloud-KI ist grundsätzlich akzeptiert; Anbieter und lokale Ausführung sollen austauschbar bleiben.
-- Dokumente und wesentliche Daten müssen in offenen Formaten zugänglich sein.
-- Handy, PC, später MCP-Clients und Smart Mirror sollen denselben Datenbestand nutzen.
+Known requirements:
 
-Noch offen sind Mailanbieter, die Konten hinter Samsung Kalender, Serverausstattung, Backupziel, Fernzugriff und Benachrichtigungsweg. Diese Punkte blockieren die Roadmap nicht; sie werden vor der jeweiligen Integration entschieden.
+- Two users with Android phones and Samsung Calendar.
+- An existing dedicated email account for contracts and household matters.
+- Proxmox with a dedicated Aegis VM now provisioned.
+- Java/Spring, DDD and hexagonal architecture, enforced through Maven modules.
+- English repository content; German and English product-owned user-facing text.
+- Small, focused classes and meaningful test coverage; larger coordinating facades are acceptable when cohesive.
+- Cloud AI is acceptable; providers and eventual local inference remain replaceable.
+- Documents and essential data remain accessible in open formats.
+- Phone, PC, later MCP clients and a smart mirror use the same data.
 
-## 2. Ergebnis der unabhängigen Reviews
+Still to establish: mail provider, accounts behind Samsung Calendar, host capacity, backup destination, access beyond the current LAN, and notification delivery. Resolve each before its integration without blocking unrelated work.
 
-Drei Subagents haben Alltagstauglichkeit, Java-Architektur und Daten/Betrieb geprüft und kritische Punkte miteinander abgestimmt. Die folgende Roadmap ist die zusammengeführte Entscheidung, keine ungefilterte Sammlung von Vorschlägen.
+## 2. Independent review conclusions
 
-| Ausgangsidee | Entscheidung nach Review | Begründung |
+Three reviewers examined daily usability, Java architecture, and data/operations, then discussed overlapping concerns. This roadmap records the consolidated decisions and subsequent owner requirements.
+
+| Earlier idea | Consolidated decision | Reason |
 |---|---|---|
-| Nextcloud gehört direkt zum Start | Erst heutige Kalenderkonten prüfen; vorhandenen Kalender über Adapter anbinden | Verhindert unnötige Migration, doppelte Termine und zusätzliche Pflege |
-| App, Worker und MCP als getrennte Dienste | Ein modularer Spring-Prozess zum Start | Weniger Betrieb; fachliche Trennung ermöglicht spätere Aufteilung |
-| Eigene PostgreSQL-Jobengine schreiben | Kleine persistente Scheduler-Bibliothek verwenden | Locks, Wiederaufnahme und Heartbeats nicht selbst neu entwickeln |
-| Jede neue Datei startet eine große Agent-Session | Erst sicher speichern und verarbeiten; KI-Auftrag anschließend bedarfsgerecht | Eingang bleibt auch ohne KI funktionsfähig |
-| MD-Datei als Hauptgedächtnis | Markdown für Vorlieben; strukturierte Fakten und Zustände in PostgreSQL | Quellen, Gültigkeit, Benutzerrechte und Konflikte bleiben beherrschbar |
-| CSV bedeutet vollständige Unabhängigkeit | Lesbarkeit, Migration und Weiterbetrieb getrennt zusagen | Eine CSV ist keine gleichwertige Aufgaben-App |
-| Intelligente Tagesplanung zuerst | Zuerst regelbasierte Heute-Ansicht und klare Zuständigkeiten | Eine KI darf Fälligkeiten nicht erfinden oder verschwinden lassen |
-| Alle Integrationen auf einmal | Ein vollständiger kleiner Ablauf, danach zwei Wochen Pilot | Nutzung durch beide entscheidet über Ausbau |
+| Install Nextcloud immediately | Identify and integrate the existing calendar first | Avoid unnecessary migration, duplicates, and maintenance |
+| Separate API, worker, and MCP services | Start with one modular Spring process | Lower operational burden; split later on evidence |
+| Build a custom scheduler | Use a small persistent scheduling library | Avoid writing lease, heartbeat, and recovery machinery |
+| Start a large agent session for every file | Store durably, process, then invoke AI as needed | Capture remains available during AI failure |
+| Markdown as primary memory | Markdown preferences, structured facts in PostgreSQL | Preserve provenance, validity, permissions, and conflicts |
+| CSV provides full independence | Distinguish readability, migration, and continued operation | A CSV is not a replacement task application |
+| Intelligent daily planning first | Deterministic Today view and clear ownership | AI must not invent or hide deadlines |
+| Build everything together | Complete a small workflow and run a two-week pilot | Expansion depends on use by both people |
 
-Bewusst akzeptierter Kompromiss: Eigene Aufgabenverwaltung mit offenen Exporten. Bei App-Ausfall sind Aufgaben lesbar und migrierbar, aber nicht komfortabel gemeinsam weiterbearbeitbar. Falls unabhängige aktive Aufgabenbearbeitung zur harten Anforderung wird, muss vor Phase 3 ein etabliertes Aufgabensystem als führende Quelle gewählt werden.
+Accepted design tradeoff: Aegis owns simple tasks and provides open exports. During an Aegis outage, tasks remain readable and migratable but lack full collaborative editing. If independent active task management becomes mandatory, choose an established task system as the source of truth before phase 3.
 
-## 3. Zielarchitektur
+## 3. Target architecture
 
 ```mermaid
 flowchart TB
-    Phone["Android und PC: Web-App"] --> API
-    Mail["Bestehendes Haus-Mailkonto"] --> Inbox
-    OtherAI["Andere KI mit MCP-Unterstützung"] --> MCP
-    Mirror["Später: Spiegelansicht"] --> API
-
-    subgraph VM["Proxmox: Linux-VM"]
-        subgraph Spring["Aegis: modularer Spring-Boot-Monolith"]
-            API["REST und Chat-Streaming"]
-            MCP["MCP-Adapter"]
-            Core["Anwendungsfälle und Berechtigungen"]
-            Inbox["Import und Eingang"]
-            Jobs["Persistente Aufträge und Zeitpläne"]
-            AI["Austauschbare KI-Adapter"]
-            Export["Export und Portabilität"]
+    Phone["Android and PC: web app"] --> API
+    Mail["Existing household mailbox"] --> Inbox
+    OtherAI["External AI with MCP support"] --> MCP
+    Mirror["Later: mirror view"] --> API
+    subgraph VM["Proxmox: Linux VM"]
+        subgraph Spring["Aegis modular Spring Boot application"]
+            API["REST and response streaming"]
+            MCP["MCP adapter"]
+            Core["Application use cases and authorization"]
+            Inbox["Capture and import"]
+            Jobs["Persistent jobs and schedules"]
+            AI["Replaceable AI adapters"]
+            Export["Export and portability"]
         end
         PG[("PostgreSQL")]
-        Files["Dauerhafte Dateien"]
-        Paperless["Paperless mit eigener Infrastruktur"]
+        Files["Persistent files"]
+        Paperless["Paperless and required services"]
     end
-
     API --> Core
     MCP --> Core
     Inbox --> Files
@@ -70,409 +72,409 @@ flowchart TB
     Jobs --> Core
     Core --> Paperless
     Core --> AI
-    Core --> Calendar["Bestehender Kalender oder später Nextcloud"]
-    AI --> Model["Cloud-Modell oder lokaler Modellserver"]
+    Core --> Calendar["Existing calendar or optional Nextcloud"]
+    AI --> Model["Cloud model or local inference"]
     Core --> Export
     Paperless --> Export
-    Export --> Copy["Lesbare Kopie außerhalb der VM"]
-    PG --> Consistent["Koordinierte Datenbanksicherungen, Dateien und Konfiguration"]
+    Export --> Copy["Readable copy outside the VM"]
+    PG --> Consistent["Coordinated database dumps, files, and configuration"]
     Files --> Consistent
     Paperless --> Consistent
-    Consistent --> Backup["Versioniertes Backup außerhalb der VM"]
-    Core -. später .-> HA["Home Assistant in eigener VM"]
+    Consistent --> Backup["Versioned backup outside the VM"]
+    Core -. later .-> HA["Existing Home Assistant in its own VM"]
 ```
 
-### Stackentscheidung
+This is an operational view. Compile-time dependencies follow FOUNDATIONS.md: infrastructure adapters depend inward on application/domain contracts.
 
-| Bereich | Entscheidung |
+### Technology choices
+
+| Area | Direction |
 |---|---|
-| Backend | Java LTS und kompatible stabile Spring-Boot-Version; exakte Versionen in Phase 0 festlegen |
-| API | Spring MVC, REST; SSE für sichtbaren Chatfortschritt |
-| Sicherheit | Spring Security, zwei Benutzer, serverseitige Rechteprüfung |
-| Persistenz | PostgreSQL, Spring Data JPA, Flyway |
-| Jobs | db-scheduler in PostgreSQL; fachliche Operationen separat gespeichert |
-| KI | Spring AI hinter eigenen schmalen Interfaces |
-| MCP | Spring AI MCP Server, Streamable HTTP; anfangs nur lesende Werkzeuge |
-| Oberfläche | React, TypeScript, Vite, Tailwind, shadcn/ui; installierbare PWA |
-| API-Vertrag | OpenAPI und generierter TypeScript-Client; keine handgepflegten doppelten DTOs |
-| Dokumente | Paperless-ngx über seine API; eigene benötigte Redis-/Konverter-Dienste |
-| Kalender | CalendarPort; konkrete Integration erst nach Kontenprüfung |
-| Betrieb | Debian-VM, Docker Compose, feste Versionen, Caddy für HTTPS |
-| Sicherung | Restic für konsistente Backup-Artefakte und Dateien; getrennte lesbare Exporte |
-| Verifikation | JUnit, Spring-Integrationstests mit PostgreSQL/Testcontainers, wenige Playwright-Abläufe und echte Android-Tests |
+| Backend | Java 21 and compatible stable Spring Boot; pin dependencies during scaffolding |
+| Architecture | DDD, hexagonal boundaries, Maven multimodule modular monolith |
+| API | Spring MVC and REST; SSE for visible chat progress |
+| Security | Spring Security, two users, application-level authorization |
+| Persistence | PostgreSQL, Spring Data JPA in adapters, separate domain models, Flyway |
+| Jobs | db-scheduler in PostgreSQL plus business operation records |
+| AI | Spring AI behind narrow application-owned interfaces |
+| MCP | Spring AI MCP Server, Streamable HTTP; read-only tools first |
+| Frontend | React, TypeScript, Vite, Tailwind, shadcn/ui; installable PWA |
+| Localization | German/English catalogs; stable English machine contracts |
+| API contract | OpenAPI and generated TypeScript client |
+| Documents | Paperless API and required Redis/conversion services |
+| Calendar | CalendarPort; select integration after account discovery |
+| Operations | Debian VM, Docker Compose, pinned versions, Caddy when HTTPS is introduced |
+| Recovery | Restic for consistent recovery artifacts; separate readable exports |
+| Verification | Plain-Java domain tests, architecture checks, PostgreSQL/Testcontainers, selected Playwright flows and real Android checks |
 
-Spring Modulith kann Modulgrenzen prüfen; ein zweites persistentes Ereignissystem wird nicht ohne konkreten Bedarf zusätzlich eingeführt. Kafka, Kubernetes, eine separate Vektordatenbank und Microservices gehören nicht zum Startumfang.
+Spring Modulith may help verify boundaries; do not add a second persistent event mechanism without need. Kafka, Kubernetes, a separate vector database, and microservices are outside initial scope.
 
-### Fachliche Module
+### Business capabilities
 
 ```text
-identity       Benutzer, Haushaltsmitgliedschaft, Zugriffsrechte
-inbox          Uploads, Mailkonten, Empfangsbestätigungen, Importstatus
-documents      Paperless-Adapter, Dokumentreferenzen, Suche
-contracts      Vertragsidentitäten, Fakten, Quellen, zeitliche Änderungen
-planning       Aufgaben, bestätigte Fristen, Heute-Ansicht, Kalenderadapter
-assistant      Gespräche, Modelladapter, Agent-Läufe, Werkzeugausführung
-automation     Ereignisse, Zeitpläne, Operationsstatus, Ausführungslimits
-portability    Exporte, Prüfsummen, Import, Wiederherstellungsunterstützung
-integrations   Benachrichtigungen, später Haussteuerung und weitere Dienste
+identity       Users, household membership, authorization
+inbox          Uploads, mail accounts, receipt and import state
+documents      Paperless references, search and source access
+contracts      Contract identity, facts, provenance and validity
+planning       Tasks, deadlines, Today view, calendar port
+assistant      Conversations, provider adapters, runs and proposals
+notifications  Delivery attempts, preferences, deduplication
+operations     Processing state, scheduling and execution limits
+portability    Exports, checksums, imports and recovery support
 ```
 
-REST, MCP, Hintergrundaufträge und interne Agenten verwenden dieselben Anwendungsfälle. Ein REST-Aufruf wird nicht intern durch MCP umgeleitet. MCP ist ein zusätzlicher Zugang, keine zusätzliche Geschäftslogik.
+REST, MCP, jobs, and agents invoke the same use cases. MCP does not duplicate business rules. Refine context boundaries around real use cases rather than generating empty modules for every candidate capability.
 
-## 4. Datenhoheit und Portabilität
+## 4. Data ownership and portability
 
-| Datenart | Führendes System | Offenes Format / unabhängiger Zugriff |
+| Data | Source of truth | Independent access or format |
 |---|---|---|
-| Originaldokument und Archivfassung | Paperless-Dateiablage | Originalformat, PDF/A soweit erzeugt, Paperless-Export |
-| Original-E-Mail | Anbieterpostfach und lokale unveränderte Kopie | EML; Anhangsbeziehungen in Manifest |
-| Dokumenttitel, Klassifikation | Paperless | Exportmetadaten; Aegis hält Referenz und nötigen Such-/Verarbeitungsstand |
-| Vertrag, bestätigter Beitrag, relevante Frist | Aegis-PostgreSQL | JSON mit Schema-Version, zusätzlich CSV/Markdown |
-| Aufgaben, Verantwortlichkeit, Erledigung | Aegis-PostgreSQL | JSON für Migration; CSV/Markdown zum Lesen |
-| Termine | Gewählter Kalenderanbieter | ICS; Aegis hält externe ID und Synchronisationsstand |
-| Haushaltsvorlieben | Versionierte Markdown-Dateien | Markdown, ohne Zugangsdaten |
-| Ausführbare Planungsregeln | Aegis-PostgreSQL | JSON; Beschreibung kann in Markdown vorliegen |
-| Chat und ausgeführte Aktionen | Aegis-PostgreSQL | Markdown/JSON; relevante Entscheidungen werden explizit als Fakten übernommen |
-| Suchindex, Embeddings, Zusammenfassungen | Abgeleitet, wiederaufbaubar | Nicht die einzige Kopie einer Information |
+| Original and archive rendition | Paperless files | Original format, PDF/A where generated, Paperless export |
+| Original email | Provider mailbox and unchanged local copy | EML with attachment relationships in a manifest |
+| Document title/classification | Paperless | Export metadata; Aegis keeps references and processing state |
+| Contract facts and confirmed deadlines | Aegis PostgreSQL | Versioned JSON plus CSV/Markdown |
+| Tasks, ownership and completion | Aegis PostgreSQL | JSON for migration, CSV/Markdown for reading |
+| Calendar events | Selected provider | ICS; Aegis retains external identity and sync state |
+| Household preferences | Versioned Markdown | Markdown without secrets |
+| Executable planning rules | Aegis PostgreSQL | JSON, with optional documented descriptions |
+| Chat and action history | Aegis PostgreSQL | Markdown/JSON; important decisions become explicit facts |
+| Indexes, embeddings, summaries | Rebuildable derived data | Never the only copy of a fact |
 
-### Mindestmodell
+### Minimum model
 
-- DocumentRef: interne ID, Paperless-ID, Dateiprüfsumme, Herkunft, Berechtigung, Importstatus.
-- SourceRef: Dokument-/Mail-ID, Seite oder Textstelle, optional Auszug. Wenn die Seite nicht zuverlässig verfügbar ist, wird keine Seitenzahl erfunden.
-- Contract und Fact: Feld, Wert, Einheit, gültig-ab/bis soweit bekannt, Quelle, Prüfstatus, vorheriger Stand.
-- Task: Titel, zuständige Person oder unzugeordnet, Status, echte Fälligkeit, separat geplanter Bearbeitungstag, Quelle, Versionsnummer.
-- CalendarLink: Anbieter, Kalender-ID, Ereignis-ID, Version/ETag soweit unterstützt, letzter erfolgreicher Abgleich.
-- Operation: Typ, Idempotenzschlüssel, Referenzen, Status, Versuche, Fehlerkategorie, Erstell-/Abschlusszeit, Ausführungsbudget.
-- Delivery: Benachrichtigung, Empfänger, zugrunde liegende Aufgaben-/Terminversion, Versandversuche und letzter bestätigter Zustellstand. „Gespeichert“, „versendet“, „zugestellt“ und „gelesen“ werden nur soweit tatsächlich nachweisbar unterschieden.
-- Proposal: vorgeschlagene Änderung, betroffene Version, Quelle, Prüfstatus und Freigabeentscheidung.
-- ExportManifest: Schema-Version, Erstellzeit, enthaltene IDs, relative Dateipfade, Prüfsummen, Vollständigkeitsstatus.
+- DocumentRef: stable internal ID, Paperless ID, checksum, origin, permissions, import state.
+- SourceRef: document/mail ID, reliable page or text location, optional excerpt. Never invent a page reference.
+- Contract/Fact: field, value, unit/currency, known validity, source, review state, prior version, observation and confirmation metadata.
+- Task: title, one owner or explicitly unassigned, status, actual due date, separate planned work date, source, version.
+- CalendarLink: provider, calendar/event IDs, version/ETag where supported, last successful sync.
+- Operation: type, idempotency key, references, state, attempts, failure category, timestamps and budget.
+- Delivery: recipient, task/event version, attempts and confirmed delivery state. Distinguish stored, sent, delivered and read only when supported by evidence.
+- Proposal: specific proposed change, target version, source, review and approval state.
+- ExportManifest: schema version, creation time, IDs, relative paths, checksums and completeness.
 
-Fakten unterscheiden „extrahiert“, „bestätigt“, „verworfen“ und „ersetzt“. Bestätigte Werte werden durch eine spätere KI-Auswertung nicht still überschrieben. Ein Vertragsnachtrag kann einen neuen zeitlichen Stand erzeugen.
+Facts distinguish extracted, confirmed, rejected, and superseded states. New AI processing must not silently overwrite confirmed values. Amendments can introduce a new validity period.
 
-Externe Paperless-IDs können sich bei Migration ändern. Ein Wiederimport ordnet Dokumente anhand stabiler Aegis-IDs und Prüfsummen neu zu, statt alte Paperless-IDs ungeprüft zu übernehmen. Fehlende Originale werden ausdrücklich gemeldet; Quellenbeziehungen dürfen nicht unbemerkt ins Leere zeigen.
+External Paperless IDs may change during migration. Reimport matches stable Aegis IDs/checksums, reports missing originals, and restores relationships instead of blindly reusing external IDs.
 
-### Drei verschiedene Zusagen
+### Three distinct promises
 
-1. **Lesbar:** PDF, EML, Markdown und CSV lassen sich ohne Aegis öffnen.
-2. **Migrierbar:** Versionierte JSON-/ICS-Exporte erhalten Beziehungen und können getestet in eine frische Installation oder geeignete Fremdsoftware übernommen werden. Nicht jede Fremdsoftware unterstützt alle Zusatzfelder.
-3. **Weiter betreibbar:** Paperless und Kalender bleiben direkt bedienbar, solange diese Dienste laufen. Eigene Aufgaben und Chat benötigen Aegis für ihre volle Funktion.
+1. **Readable:** PDF, EML, Markdown and CSV open without Aegis.
+2. **Migratable:** Versioned JSON/ICS preserve relationships and are tested against a fresh installation or suitable external software. Foreign applications may not support every field.
+3. **Operational:** Paperless and calendar remain directly usable while running. Full task management and chat require Aegis.
 
-Exporte sind zunächst einseitige Ausgaben. Manuelles Bearbeiten einer exportierten CSV ändert nicht die Arbeitsdaten. Eine spätere Importfunktion läuft ausdrücklich mit Vorschau und Konfliktprüfung.
+Exports initially flow one way. Editing a CSV does not update working data. Later import provides an explicit preview and conflict checks.
 
-### Vorgesehene Ablage in der VM
+### Proposed VM storage
 
 ```text
 /srv/aegis/
-  deploy/                   Compose-Dateien und Betriebskonfiguration
+  deploy/                   Compose and operational configuration
+  source/                   Application working copy
   data/
-    postgres/               Dauerhafte Datenbankdaten, nicht manuell bearbeiten
-    paperless/              Originale, Archivdateien und Paperless-Daten
-    ingress/                Sicher angenommene, noch nicht archivierte Uploads
-    emails/                 Unveränderte EML-Dateien
-    knowledge/              Haushaltswissen als Markdown
+    postgres/               Database files; never edit manually
+    paperless/              Originals, archive renditions and service data
+    ingress/                Accepted uploads awaiting archival
+    emails/                 Unchanged EML files
+    knowledge/              Household Markdown knowledge
   exports/
-    generations/            Vollständige, atomar veröffentlichte Exportstände
-    latest/                 Letzter erfolgreich erzeugter Stand
-  backup-staging/           Konsistente Dumps und Manifeste für Sicherungen
+    generations/            Complete, atomically published generations
+    latest/                 Last successful generation
+  backup-staging/           Consistent dumps and manifests
 ```
 
-Dateinamen der lesbaren Exporte enthalten Datum, Titel und ID. Relative Quellenlinks funktionieren innerhalb des Exports. Nicht bestätigte KI-Vorschläge werden als solche gekennzeichnet. Ein Export ist vollständig oder sichtbar fehlgeschlagen; ein halb geschriebener Stand ersetzt keinen guten Stand.
+Readable filenames contain date, title and ID. Relative source links work within exports. Proposals retain their unconfirmed status. An incomplete export never replaces a known-good generation.
 
-## 5. Zuverlässige Abläufe
+## 5. Reliable workflows
 
 ### Upload
 
-1. Datei entgegennehmen und dauerhaft in ingress speichern.
-2. Prüfsumme und Empfangsdatensatz erfassen; erst danach „sicher gespeichert“ bestätigen.
-3. Verarbeitung dauerhaft einplanen. Dateisystem und Datenbank sind keine gemeinsame Transaktion: ein Abgleich findet liegengebliebene Dateien bzw. unvollständige Datensätze.
-4. An Paperless übergeben und tatsächlichen Importabschluss prüfen.
-5. Referenz speichern und anschließend Extraktion einplanen.
-6. „Verarbeitet“ erst bei erfolgreichem Ergebnis anzeigen. Staging-Kopie erst nach verifizierter Archivierung und definierter Aufbewahrungsregel entfernen.
+1. Receive and durably store the file in ingress.
+2. Record checksum and receipt; only then acknowledge successful storage.
+3. Schedule processing durably. Filesystem and database do not share a transaction: reconcile orphan files and incomplete records.
+4. Submit to Paperless and verify actual completion.
+5. Store the reference, then schedule extraction when enabled.
+6. Mark processing complete only after success. Remove staging copies after verified archival and the retention rule.
 
-Zustände für Nutzer: „Wird hochgeladen“, „Sicher gespeichert“, „Wird verarbeitet“, „Bereit“, „Bitte prüfen“, „Fehler – erneuter Versuch“. Offline oder bei Abbruch darf keine falsche Speicherbestätigung erscheinen.
+Localized states cover uploading, saved, processing, ready, needs review, and failed/retrying. Interrupted/offline uploads never show false success. Do not promise offline writes until conflict and retry behavior are tested.
 
-### E-Mail
+### Email
 
-Zielentscheidung: Ein Aegis-Importadapter besitzt die Pipeline für das Hauskonto. Er sichert EML, behandelt Anhänge und Nachrichtentext und übergibt relevante Dokumente an Paperless. Die native Paperless-Mailabholung wird für dieses Konto nicht parallel aktiviert. Dieser Mehraufwand ist durch die gewünschte Verarbeitung ganzer Mails einschließlich Aufgaben ohne PDF begründet.
+One Aegis adapter owns the mailbox pipeline, saves EML, handles attachments/body text, and submits documents to Paperless. Do not enable Paperless's mail consumer for the same account simultaneously. Text-only mail and complete provenance justify this integration.
 
-- Einmalige Verbindung über anbietergeeignetes OAuth oder IMAP/App-Passwort. Anbieterspezifische Registrierung und erneute Anmeldung können nötig sein.
-- Zugangsdaten bleiben serverseitig geschützt und gelangen weder in Prompts noch in lesbare Exporte.
-- Erst einen kleinen Zeitraum importieren; Altbestand danach begrenzt nacharbeiten.
-- Historischer Import ist ein eigener Modus „Archiv aufbauen“: keine ungeprüften aktuellen Aufgaben aus alten Fristen und keine Benachrichtigungsflut. Relevante Vorschläge werden gebündelt zur Prüfung angeboten.
-- Abrufzustand mit Konto, Ordner, UIDVALIDITY/UID soweit IMAP und zusätzlicher Inhaltsprüfung speichern. Message-ID allein reicht nicht als zuverlässige Dublettenerkennung.
-- Fortschritt erst nach dauerhafter Sicherung speichern. Wiederholungen müssen sicher sein.
-- Originalmail behalten; keine automatische Löschung beim Anbieter. Ein verarbeiteter Brief ist nicht automatisch eine erledigte Aufgabe.
-- Derselbe Anhang kann zu mehreren Mails gehören: Dokument einmal archivieren, mehrere Herkunftsbezüge erhalten. Ähnlicher Inhalt mit anderer Dateiprüfsumme wird als mögliche Dublette angezeigt und nicht blind verworfen. Signaturgrafiken werden nicht zu Aufgaben.
-- Textmails, mehrere Anhänge, Weiterleitungen, verschlüsselte PDFs, ungültige Anhänge, abgelaufene Tokens und verschobene Nachrichten sichtbar behandeln.
-- Portal-Links erzeugen bei fehlender Integration eine konkrete Aufgabe; die dahinterliegende Rechnung gilt noch nicht als archiviert.
+- Connect through provider-appropriate OAuth or IMAP/app passwords. Registration or reauthentication may be necessary.
+- Keep credentials server-side, outside prompts and readable exports.
+- Start with a small historical window, then new mail.
+- Use a separate archive-building mode for history: no flood of current tasks from obsolete deadlines; group suggestions for review.
+- Track account, folder, UIDVALIDITY/UID for IMAP and content checks. Message-ID alone is insufficient.
+- Advance progress only after durable capture; retries are safe.
+- Preserve provider messages. Processed mail does not mean completed work.
+- Archive a repeated attachment once while preserving all origins. Different checksums with similar content generate duplicate hints rather than automatic deletion. Signature images do not create tasks.
+- Handle text-only mail, multiple attachments, forwards, encrypted PDFs, invalid files, expired tokens and moved messages visibly.
+- Portal links create retrieval tasks if no connector exists; linked invoices are not yet archived.
 
-### Hintergrundaufträge
+### Jobs and external actions
 
-db-scheduler übernimmt persistente Zeitplanung und Ausführungskoordination. Die fachliche Operation-Tabelle hält sichtbaren Status, Idempotenz und Audit. Der Spike in Phase 1 muss die atomare Verbindung zwischen fachlicher Änderung und Jobanlage nachweisen. Falls keine gemeinsame Transaktion nutzbar ist, wird ein kleines transaktionales Outbox-Muster verwendet.
+db-scheduler coordinates durable schedules; operation records own business state, idempotency and audit. Phase 1 proves atomic business-state/job creation. Use a small outbox only if a shared transaction is unavailable.
 
-Jobpayloads enthalten stabile IDs und eine Schema-Version statt serialisierter vollständiger Java-Objektgraphen. Alte Aufträge müssen nach einem Anwendungsupdate lesbar bleiben oder ausdrücklich migriert werden.
+Payloads carry stable IDs/schema versions, not serialized Java object graphs. Old jobs remain readable across updates or are explicitly migrated.
 
-Es gilt mindestens einmalige Ausführung, keine pauschale Exactly-once-Zusage. Externe Änderungen erhalten stabile Aktionskennungen. Nach einem Timeout wird zuerst der externe Zustand abgeglichen, bevor erneut geschrieben wird. Wiederholungen verwenden begrenztes Backoff; dauerhaft fehlerhafte Arbeit bleibt sichtbar und kann manuell neu gestartet werden.
+Assume at-least-once execution. External writes use stable action identity. After timeouts, reconcile before retrying. Use bounded backoff and visible persistent failures. Do not hold database transactions open across external model calls or user approvals.
 
-### Tagesplanung und Benachrichtigungen
+### Daily planning and notifications
 
-- Ein deterministischer Kern liest bestätigte Termine, überfällige Aufgaben, Fälligkeiten und Vorlaufregeln.
-- Zeitzone Europe/Berlin explizit; reine Daten, Ganztagstermine und Zeitpunkte getrennt modellieren.
-- Sommerzeitwechsel, Wiederholungen, Terminänderungen und abgesagte Termine berücksichtigen.
-- Eine KI darf formulieren, priorisieren vorschlagen und Zusammenhänge erklären; sie ist nicht die maßgebliche Fälligkeitsberechnung.
-- „Heute nicht“ verschiebt den Bearbeitungsvorschlag, nicht die echte Frist.
-- Unzugeordnete Aufgaben sind sichtbar. Eine Aufgabe hat zunächst genau eine zuständige Person oder ist ausdrücklich unzugeordnet.
-- Tagesübersicht zu vereinbarter Uhrzeit; tagsüber nur relevante neue oder geänderte Hinweise. Gleiche Hinweise werden nicht bei jedem Lauf erneut gesendet.
-- Verpasste Tagesläufe werden nach einem Neustart sinnvoll einmal nachgeholt. Veraltete Erinnerungen werden anhand der aktuellen Aufgaben-/Terminversion verworfen; kein Nachversand einer Reihe überholter Morgenübersichten.
-- Bereits bestätigte Kalendererinnerungen sind der anfängliche verlässliche Handyweg. PWA-Push wird erst nach Tests mit Samsung-Energiesparverhalten versprochen.
-- Diese Kalendererinnerungen betreffen bei nur lesender Integration bestehende Termine. Neue Aufgaben und der Tagesüberblick benötigen einen eigenen getesteten Zustellweg. Bis dieser verfügbar ist, ist die Heute-Ansicht ausdrücklich zum Öffnen in der App vorgesehen und kein zugesagter Push-Dienst.
-- Veraltete Kalenderdaten werden mit letztem Synchronisationszeitpunkt angezeigt; keine Aussage „heute nichts“ bei gescheitertem Abruf.
-- Versand und Zustellung haben einen eigenen Status. Eine gespeicherte Aufgabe beweist nicht, dass eine Erinnerung auf dem Handy angekommen ist. Der Pilot prüft auch absichtlich fehlgeschlagene Zustellung.
+- A deterministic core combines confirmed appointments, overdue tasks, deadlines and lead times.
+- Use Europe/Berlin explicitly; distinguish dates, all-day events, instants and recurring local schedules.
+- Account for daylight saving, recurrence, rescheduling and cancellation.
+- AI may phrase summaries and propose priorities; it does not guess authoritative deadlines.
+- Postponing work does not move the real deadline.
+- One responsible person or explicitly unassigned; shared visibility is not shared responsibility.
+- One agreed daily overview plus relevant changes; deduplicate repeated notifications.
+- Catch up once after downtime. Discard stale reminders against current versions rather than sending obsolete summaries in bulk.
+- Existing calendar reminders cover existing events during read-only integration. New task reminders need a separately tested channel. Until available, Today is an on-demand view, not a promised push service.
+- Test actual Samsung power-saving and notification behavior.
+- Show stale data and last successful sync. Failed fetches must not appear as an empty day.
+- Sending/delivery have independent states; a saved task does not prove delivery. Test deliberate delivery failures.
 
-### Chat und KI
+### Chat, AI and authorization
 
-- Einfache Extraktion als begrenzter Modellaufruf mit validiertem Ergebnis; mehrstufige Recherche als begrenzter Agent-Lauf.
-- Eigene Interfaces für Extraktion und Recherche halten Fachlogik unabhängig von Spring-AI- oder Herstellerobjekten.
-- Ein optionaler Claude-Agent-SDK-Dienst ist erst bei belegtem Mehrwert vorgesehen.
-- Text, Werkzeugstatus, Quellen und Ergebnis werden gestreamt; kein Anspruch auf Offenlegung interner Modellgedanken.
-- Operation und sichtbare Ergebnisse bleiben bei Verbindungsabbruch erhalten. Wiederverbindung lädt den aktuellen Stand, statt die Aktion blind neu auszuführen.
-- Anbieterwechsel bewahrt Daten und Aufträge. Werkzeugtreue und Antwortqualität müssen separat getestet werden.
-- Dokumentinhalte gelten als Daten; darin enthaltene Anweisungen dürfen keine Rechte erweitern.
-- Zugriffsschutz wird vor Suche und erneut vor Dokument-/Werkzeugzugriff geprüft, einschließlich Cache und Export.
-- Direkter Paperless-Zugang muss dieselben gemeinsamen/persönlichen Grenzen abbilden. Persönliche Dokumente dürfen nicht durch allgemeine Paperless-Konten, breite Service-Tokens oder gemeinsame Exportordner sichtbar werden. Administrativer Zugriff des Serverbetreibers ist gesondert von normalen Benutzerrechten zu betrachten.
+- Bounded structured extraction for simple cases; bounded multistep runs for research.
+- Application-owned extraction/research interfaces keep vendor types out of business code.
+- Add a Claude Agent SDK service only for a demonstrated need.
+- Stream answers, deliberate progress, sources and results, not hidden model reasoning.
+- Persist visible run state; reconnecting retrieves it instead of repeating writes. Exact token replay is unnecessary.
+- Provider switching preserves data/jobs; evaluate quality and tool behavior separately.
+- Treat document/email instructions as data, never as permission grants.
+- Check access before search and again before reads/actions, including caches/exports.
+- Direct Paperless access preserves personal/shared boundaries through individual permissions or a shared-only scope. Broad tokens/common exports must not expose private records. Administrative access is distinct from normal user rights.
 
-## 6. Roadmap mit überprüfbaren Freigabepunkten
+## 6. Delivery phases and acceptance gates
 
-Die Phasen sind abhängigkeitsbasiert. Sie sind keine feste Termin- oder Aufwandszusage. Jede Phase endet mit einer demonstrierbaren Funktion; Erweiterungen beginnen erst nach bestandenem Freigabepunkt. Für Kalender- und Mailanbieter bleibt bewusst ein technischer Spike vorgesehen.
+Phases are dependency-driven, not fixed delivery-date promises. Each ends in a demonstrated capability. Provider-specific spikes are explicit work rather than assumed one-click integration.
 
-### Phase 0 – Bestand und Entscheidungen
+### Phase 0 — Inventory and decisions
 
-**Ziel:** Vermeiden, dass die Lösung an euren tatsächlichen Geräten und Gewohnheiten vorbeigeht.
+**Outcome:** Match real devices, accounts and habits.
 
-Arbeitspakete:
+Work:
 
-- Mailanbieter, Anmeldung und Umfang des Hauspostfachs feststellen.
-- Auf beiden Handys Kalenderkonten und gemeinsam verwendete Kalender feststellen; lokale Gerätekalender identifizieren.
-- Proxmox-Ressourcen, dauerhaften Speicher, zweites Backupziel und Fernzugriff prüfen.
-- Mit beiden Nutzern zehn typische Alltagssituationen auswählen.
-- Einen kleinen repräsentativen Satz von etwa 20–30 Unterlagen zusammenstellen: Scan, Rechnung, Vertrag, Nachtrag, reine Textmail, Portalhinweis und schwieriger Scan.
-- Gemeinsame versus persönliche Bereiche und anfängliche Benachrichtigungsregeln festlegen.
-- Kompatible stabile Java-/Spring-/Spring-AI-Versionen und Lizenz-/Authentifizierungsbedingungen der konkret gewählten Dienste prüfen und festschreiben.
+- Identify mail authentication, mailbox volume, calendar accounts/sharing and local-only calendars.
+- Verify host resources, storage, backup target and access requirements.
+- Select ten scenarios with both users and 20–30 representative records: scan, invoice, contract, amendment, text email, portal notice and difficult scan.
+- Agree shared/private areas, notifications and initial locale preference.
+- Pin compatible stable dependencies and check provider authentication/license requirements before integration.
+- Record the accepted Maven/DDD/hexagonal foundation and decisions about jobs, ownership and recovery.
 
-**Ergebnis:** Kurze Entscheidungsnotizen, Referenzunterlagen und zehn priorisierte Szenarien.
+**Acceptance:** Both users recognize their workflows; mail/calendar have concrete routes. No unrequested calendar migration. Approved requirements and implementation recommendations are distinguished.
 
-**Abnahme:** Beide erkennen ihren Alltag in den Szenarien wieder. Mail- und Kalenderintegration haben einen konkreten technischen Weg. Kein Nextcloud-Zwang ohne begründete Entscheidung.
+### Phase 1 — Operations, data foundation and recovery
 
-### Phase 1 – Betrieb, Datenfundament und Wiederherstellung
+**Outcome:** Durable data and a tested recovery path before reliance.
 
-**Ziel:** Daten sind dauerhaft gespeichert und eine Wiederherstellung ist vor echtem Vertrauen erprobt.
+Work:
 
-Arbeitspakete:
+- Create Maven modules, React foundation, PostgreSQL and Flyway.
+- Enforce domain/application/adapter boundaries with architecture tests; keep JPA out of domain models.
+- Configure two accounts with Spring Security; open registration is unnecessary.
+- Configure Compose, intended network access, persistent volumes and Paperless.
+- Test interrupted jobs, retries, atomic publication and visible failures.
+- Establish backup/export state and separately accessible recovery instructions.
+- Add health checks, capacity visibility and useful logs without content/tokens.
+- Add CI with runnable builds; normal checks need neither private VM connectivity nor live AI credentials.
 
-- Spring-Projekt, React-Grundgerüst, PostgreSQL und Flyway einrichten.
-- Modulgrenzen, Spring Security und zwei Benutzer anlegen; offene Selbstregistrierung ist nicht erforderlich.
-- Compose, HTTPS/Fernzugriff, persistente Volumes und Paperless installieren.
-- Job-Spike: Neustart während Verarbeitung, erneute Zustellung, transaktionale Jobanlage und Fehlerstatus prüfen.
-- Backup- und Exportbasis mit Statusanzeige aufbauen; Zugang zur Wiederherstellung separat dokumentieren.
-- Healthchecks, Speicherüberwachung und kurze strukturierte Fehlerprotokolle einrichten. Dokumentinhalte und Tokens nicht in Standardlogs schreiben.
+**Acceptance:** Container recreation preserves data. Both users log in. Unauthorized access fails, including direct Paperless personal-document access or an explicitly shared-only access arrangement. A job survives interruption. A fresh environment restores a backup and opens an original. Architecture checks detect forbidden dependencies.
 
-**Abnahme:** Container neu erstellen erhält Daten. Beide Benutzer können sich anmelden. Rechteverletzung wird serverseitig abgewehrt. Ein persönliches Dokument bleibt auch beim direkten Paperless-Zugriff für den anderen normalen Benutzer verborgen; alternativ wird direkter Zugriff zunächst auf gemeinsamen Bestand beschränkt. Ein Testauftrag überlebt Prozessabbruch. Eine frische Testinstallation lässt sich aus Sicherung herstellen und öffnet ein geprüftes Original.
+### Phase 2 — Capture and retrieval without AI
 
-### Phase 2 – Ablegen und Wiederfinden ohne KI-Abhängigkeit
+**Outcome:** Both people upload and find documents easily.
 
-**Ziel:** Beide können Dokumente einfach ablegen und wiederfinden.
+Work:
 
-Arbeitspakete:
+- Phone file/scan upload and desktop drag-and-drop with clear status and safe retry.
+- Paperless preview and full-text/metadata search.
+- One inbox without mandatory sorting; exceptions receive attention.
+- Readable export, manifest, checksums, relative links and external copy.
+- Real-device Android sharing spike; keep reliable upload as fallback. Native wrapper only on demonstrated need.
+- Both locale catalogs from the first product screen.
 
-- Mobiler Datei-Upload, Scan-PDF-Upload und Drag-and-drop am PC.
-- Deutlicher Empfangs- und Verarbeitungsstatus, Wiederholungen ohne doppelte Dokumente.
-- Paperless-Anbindung, Dokumentvorschau und Volltext-/Metadatensuche.
-- Minimaler Eingang ohne Pflichtsortierung; nur problematische Eingänge brauchen Aufmerksamkeit.
-- Lesbarer Dokumentexport mit Manifest, Prüfsummen und relativen Links; Kopie außerhalb der VM.
-- Android-Teilen-Integration als Geräte-Spike. Bei unzuverlässigem Verhalten bleibt ein gut erreichbarer Uploadweg; native Hülle nur bei belegtem Bedarf.
+**Acceptance:** Both users independently upload scan/PDF samples. Interrupted uploads never report false success. Retries do not duplicate documents. Exported samples open elsewhere with Aegis/Paperless stopped. Core screens work in German and English.
 
-**Abnahme:** Beide laden selbstständig einen Scan und eine vorhandene PDF hoch. Ein absichtlich unterbrochener Upload erzeugt keine falsche Erfolgsmeldung. Wiederholung erzeugt kein doppeltes Dokument. Eine Stichprobe aus dem Export lässt sich bei gestopptem Aegis und Paperless auf einem anderen Gerät öffnen.
+### Phase 3 — Tasks and shared Today view
 
-### Phase 3 – Aufgaben und gemeinsame Heute-Ansicht
+**Outcome:** Help complete responsibilities before intelligent narration.
 
-**Ziel:** Das System hilft beim Erledigen, bevor es intelligent formuliert.
+Work:
 
-Arbeitspakete:
+- Create, assign, complete and reschedule tasks, preserving separate deadlines and sources.
+- Read the chosen calendar through CalendarPort.
+- Combine appointments, tasks, unassigned work and review items.
+- Define preferences/deduplication and test an actual delivery channel. Until then, Today is on-demand.
+- Export tasks to versioned JSON plus CSV/Markdown; test import into a fresh installation.
 
-- Aufgaben anlegen, zuweisen, erledigen und auf einen anderen Bearbeitungstag legen.
-- Quelle am Dokument verknüpfen; tatsächliche Frist separat speichern.
-- CalendarPort für den in Phase 0 gewählten Anbieter zunächst lesend anbinden.
-- Heute-Ansicht mit Terminen, offenen Aufgaben, unzugeordneten Aufgaben und ungeklärten Eingängen.
-- Benachrichtigungspräferenzen, täglicher Überblick und Regeln gegen doppelte Hinweise. Einen konkreten Zustellweg am echten Handy testen; bis dahin bleibt der Überblick eine abrufbare App-Ansicht. Fehlende Zustellung ist sichtbar und blockiert das Versprechen automatischer Aufgaben-Erinnerungen.
-- Aufgabenexport als JSON, CSV und Markdown; Testimport des JSON in eine leere Testinstallation.
+**Acceptance:** Changes appear on both devices without silent conflict loss. Rescheduling preserves deadlines. Failed calendar access is visible. Tasks, owners and source links survive reimport even when Paperless IDs change. Automatic reminders require successful tests on both phones.
 
-**Abnahme:** Eine Erledigung ist auf dem anderen Gerät sichtbar. Gleichzeitige Änderungen überschreiben sich nicht still. „Heute nicht“ ändert keine Frist. Fehlgeschlagener Kalenderabruf wird angezeigt. Aufgaben inklusive Quelle, Zuständigkeit und Status überstehen Export/Import. Der Quellenlink öffnet nach Wiederimport das richtige Dokument auch bei geänderter Paperless-ID. Automatische Aufgaben-Erinnerungen gelten erst nach erfolgreichem Zustelltest auf beiden Handys als fertig.
+### Phase 4 — Household mailbox and AI proposals
 
-### Phase 4 – Hauspostfach und KI-Vorschläge
+**Outcome:** New documents and text mail produce explainable review items.
 
-**Ziel:** Neue Unterlagen und Textmails erzeugen nachvollziehbaren Handlungsbedarf.
+Work:
 
-Arbeitspakete:
+- One provider, bounded test history, EML preservation and origin tracking.
+- One cloud model through the extraction port.
+- Extract counterparties, amounts, possible deadlines and action candidates with sources.
+- Let users confirm, correct or reject proposals.
+- Confirmed calendar writes with external IDs/retry protection.
+- Cost, time and attempt limits per operation.
 
-- Einen Mailanbieter anbinden, zuerst Testzeitraum, dann neue Nachrichten.
-- EML-Sicherung, Anhänge, Textinhalt und Importfortschritt implementieren.
-- Ein Cloud-Modell hinter dem Extraktionsinterface integrieren.
-- Dokumentart, Vertragspartner, Beträge, Termin-/Fristkandidaten und Handlungsbedarf mit Quellen extrahieren.
-- Vorschläge in verständlicher Form bestätigen, korrigieren oder verwerfen.
-- Bestätigte Kalenderänderungen über CalendarPort mit externer ID und Wiederholschutz ausführen.
-- Kosten-/Zeit-/Versuchsgrenzen je Operation setzen.
+**Acceptance:** Repeated polling does not duplicate tasks. Text-only mail works. Portal links do not masquerade as invoices. Token/PDF failures are visible. AI outage does not block capture. Unconfirmed deadlines remain unconfirmed. Historical import does not flood notifications.
 
-**Abnahme:** Doppelte Abrufe erzeugen keine doppelten Aufgaben. Eine Textmail ohne PDF wird berücksichtigt. Ein Portalhinweis wird nicht als archivierte Rechnung dargestellt. Ungültiger Token und verschlüsselte PDF sind sichtbar. KI-Ausfall blockiert die Ablage nicht. Keine unbestätigte wichtige Frist wird als gesicherte Tatsache dargestellt.
+### Phase 5 — Two-week household pilot
 
-### Phase 5 – Zwei Wochen Alltagspilot
+**Outcome:** Demonstrate reduced work for both people.
 
-**Ziel:** Beweisen, dass beide das System nutzen können und es gemeinsame Arbeit reduziert.
+Use new material and key existing records, not complete historical migration. Add no major features during the pilot.
 
-Umfang: Neue Post und die wichtigsten bestehenden Unterlagen, keine vollständige Altbestandsmigration. In dieser Phase keine neuen Großfunktionen hinzufügen.
-
-Vorläufige, gemeinsam zu überprüfende Messziele:
-
-| Messung | Pilotziel |
+| Measurement | Provisional target |
 |---|---|
-| Vorhandene Datei ablegen | In mindestens 8 von 10 Versuchen innerhalb von 30 Sekunden bis bestätigter Speicherung; Netzzeit getrennt betrachten |
-| Bekanntes Dokument finden | In mindestens 8 von 10 Aufgaben innerhalb einer Minute |
-| Nutzung durch beide | Jeder erledigt die Kernabläufe selbst, ohne Serverwissen oder Hilfe des Entwicklers |
-| Verlorene bestätigte Uploads | Null in den geprüften Fällen |
-| Doppelte Aufgaben/Termine durch Wiederholung | Null in den geprüften Fällen |
-| Falsche Behauptung „erledigt/gespeichert“ | Null in den geprüften Fällen |
-| Gemeinsame Eingangspflege | Zielwert höchstens etwa zehn Minuten pro Woche; Menge dokumentieren |
-| Benachrichtigungen | Jeder Hinweis führt zu einer sinnvollen Handlung oder wird als unnötig erfasst |
+| Store an existing file | At least 8/10 within 30 seconds to confirmed storage; distinguish network time |
+| Find a known document | At least 8/10 within one minute |
+| Independent use | Both complete core flows without developer help |
+| Lost acknowledged uploads | Zero in checked cases |
+| Duplicate tasks/events from retries | Zero in checked cases |
+| False saved/completed claims | Zero in checked cases |
+| Inbox maintenance | Aim for approximately ten minutes weekly; record actual volume |
+| Notifications | Useful or explicitly recorded as unnecessary; delivery is not assumed |
 
-Die Stichproben sind ein Freigabekriterium, kein statistischer Nachweis absoluter Zuverlässigkeit. Probleme werden in „verwirrend“, „zu viele Schritte“, „fehlende Information“ und „technischer Fehler“ eingeordnet.
+These samples are acceptance targets, not statistical guarantees. Record confusing behavior, excess steps, missing information and technical failures. Ask both users what helps and what frustrates them.
 
-**Abnahme:** Beide möchten das System weiter benutzen. Offene Zuverlässigkeits- und Bedienprobleme sind behoben. Wenn der Pilot scheitert, wird der Eingang vereinfacht, bevor Chat, Sprache oder Spiegel hinzukommen.
+**Acceptance:** Both want to continue. Fix reliability/usability issues before expansion. If the pilot fails, simplify capture and coordination before adding chat, voice or mirror features.
 
-### Phase 6 – Quellenbasierter Assistent und MCP
+### Phase 6 — Source-based assistant and MCP
 
-**Ziel:** Natürliche Fragen liefern belegte Antworten auf denselben Datenbestand.
+**Outcome:** Natural-language questions return grounded answers.
 
-Arbeitspakete:
+Work:
 
-- Chat mit Streaming, Quellenlinks und Wiederaufnahme nach Verbindungsabbruch.
-- Werkzeuge für Dokumentensuche, Dokumentlesen, Vertragsstand und anstehende Aufgaben.
-- MCP zunächst mit lesenden Werkzeugen und expliziter Authentifizierung bereitstellen.
-- Kleine feste Sammlung realer Fragen samt erwarteten Quellen anlegen.
-- Widersprüche und fehlende Unterlagen sichtbar machen; Nachträge und aktuelle Rechnungen berücksichtigen.
-- Zweiten Modelladapter am selben Fragensatz testen. Lokale Ausführung ist optional und hardwareabhängig.
+- Streaming chat with source links and reconnectable runs.
+- Tools for search, source access, contract state and upcoming work.
+- Authenticated MCP, read-only first.
+- Fixed real questions with expected sources, including contradictions and amendments.
+- Evaluate a second adapter; local inference remains optional and hardware-dependent.
 
-**Abnahme:** Antworten verweisen auf vorhandene Quellen. Fehlende Informationen führen zu einer transparenten Lücke. Rechte gelten auch über MCP. Ein Anbieterwechsel verändert keine Arbeitsdaten. „Früherer Vertrag vs. neue Rechnung“ wird in den Referenzfällen korrekt unterschieden.
+**Acceptance:** Answers link actual sources and reveal gaps. MCP respects permissions. Provider changes require no data migration. Reference cases distinguish original terms and newer invoices.
 
-### Phase 7 – Eigeninitiative und begrenzte Aktionen
+### Phase 7 — Proactive assistance and bounded actions
 
-**Ziel:** Der Assistent erkennt Veränderungen und bereitet sinnvolle nächste Schritte vor.
+**Outcome:** Detect changes and prepare useful steps.
 
-Arbeitspakete:
+Work:
 
-- Preisänderungen, nahende bestätigte Fristen und erforderliche Vorbereitungen erkennen.
-- Freigegebene wiederkehrende Abläufe und Planungsregeln konfigurieren.
-- Vorschau von Änderungen, dauerhafte Freigaben für klar begrenzte Aktionen und Auditprotokoll.
-- MCP-Schreibwerkzeuge nur mit derselben serverseitigen Rechte-/Freigabeschicht ergänzen.
-- Eine Freigabe bindet sich an die konkret geprüfte Aktion und Datenversion; geänderte Daten machen sie ungültig.
+- Price changes, approaching confirmed deadlines and preparation suggestions.
+- Explicitly allowed recurring workflows.
+- Previews, scoped authorization and action history.
+- MCP writes through the same authorization layer.
+- Bind approval to action/data version and invalidate stale approvals.
 
-**Abnahme:** Keine extern versandte Nachricht, Ausgabe oder Vertragsaktion ohne passende Autorisierung. Wiederholte Ausführung erzeugt keine doppelte externe Änderung. Veraltete Vorschläge werden neu geprüft. Benachrichtigungen werden zusammengefasst und priorisiert.
+**Acceptance:** External messages, spending and contract actions have appropriate authorization. Retries do not duplicate writes. Stale proposals are rechecked. Notifications are grouped and prioritized.
 
-### Phase 8 – Spiegel und Sprache
+### Phase 8 — Mirror and voice
 
-**Ziel:** Den vorhandenen Assistenten an weiteren Orten bequem erreichen.
+**Outcome:** Access the same assistant in additional places.
 
-Arbeitspakete:
+Work:
 
-- Lesender Spiegelmodus derselben Web-App; letzte Aktualisierung und Offlinezustand sichtbar.
-- Gerätekennung mit begrenzten Rechten; nur freigegebene Haushaltsinformationen anzeigen.
-- Sprache zunächst über Sprechtaste am Handy oder Spiegel; austauschbare STT-/TTS-Adapter.
-- Persönliche oder folgenreiche Aktionen über angemeldetes Handy bestätigen.
-- Wakeword und Raum-Mikrofone erst nach Sprachpilot, wenn tatsächlicher Nutzen erkennbar ist.
+- Read-only mirror route with last-update/offline state and limited device identity.
+- Push-to-talk first with replaceable speech recognition/synthesis.
+- Personal/sensitive confirmations on authenticated phones.
+- Wake words and room microphones only after a successful voice pilot.
 
-**Abnahme:** Spiegel funktioniert ohne dauernden KI-Aufruf. Falsch verstandene Sprache lässt sich korrigieren. Ein Raumgerät erhält keine pauschalen persönlichen Rechte. Ausfall der Sprachfunktion beeinflusst Upload und Planung nicht.
+**Acceptance:** No continuous AI calls for display. Speech errors can be corrected. Room devices do not inherit personal access. Voice failure does not affect capture/planning.
 
-### Phase 9 – Hausanbindung und weitergehender Jarvis
+### Phase 9 — Home integration and broader assistance
 
-**Ziel:** Kontext aus Haus und Planung verbinden, ohne die Basisfunktionen abhängig zu machen.
+**Outcome:** Connect home context without making basics dependent on AI.
 
-Arbeitspakete:
+Work:
 
-- Home Assistant in eigener VM betreiben und zunächst nur ausgewählte Zustände lesen.
-- Eine kleine Liste freigegebener Aktionen definieren, beispielsweise Lichtszene oder Abwesenheitsmodus.
-- Ereignisse entprellen, doppelte Hinweise vermeiden und Fähigkeiten je Gerät begrenzen.
-- Sicherheitsrelevante Aktionen individuell behandeln; Sprachidentifikation allein genügt dafür nicht.
+- Integrate the existing separate Home Assistant only under a specific integration request; do not recreate it for this roadmap.
+- Read selected states, then permit a small explicit action set.
+- Debounce events and restrict capabilities per device.
+- Handle security-sensitive actions individually; voice identity alone is insufficient.
 
-**Abnahme:** Hausautomation bleibt ohne KI funktionsfähig. Ausfall oder Neustart von Home Assistant beeinträchtigt das Dokumentenarchiv nicht. Jede KI-Aktion ist nachvollziehbar und auf freigegebene Fähigkeiten begrenzt.
+**Acceptance:** Home automation works without AI. Its outages do not impair documents. Actions are traceable and limited to allowed capabilities.
 
-## 7. Betrieb, Ausfälle und Wiederherstellung
+## 7. Operations and recovery
 
-### Minimaler Startbetrieb
+### Minimal runtime
 
-Eine Linux-VM mit einem Aegis-Prozess, PostgreSQL, Paperless und dessen benötigten Diensten sowie Caddy. Separate Datenbanken und Benutzer pro Anwendung; kompatible gemeinsame PostgreSQL-Instanz ist möglich. Ein Startwert von ungefähr 4 vCPU und 8–12 GB RAM ohne lokales Sprachmodell ist eine Planungshypothese und wird gemessen, keine Hardwaregarantie.
+One Linux VM runs Aegis, PostgreSQL, Paperless and required services, plus HTTPS termination when introduced. Separate databases/users per service; a compatible shared PostgreSQL instance is possible. Start with the provisioned 4 vCPU/8 GiB and measure. Guest free memory does not establish host spare capacity.
 
-Nextcloud kommt nur dazu, wenn Kalenderentscheidung oder weitere tatsächliche Anforderungen es rechtfertigen. Beim späteren lokalen Modell sind Speicher, RAM/VRAM, Modellgröße und Antwortzeit separat zu messen.
+Nextcloud remains optional. Local inference needs separate RAM/VRAM, storage, model-size and latency assessment. Experimental model operations must not destabilize core services.
 
-### Sicherungsziele
+### Recovery objectives
 
-- Vorläufiges Backupziel: höchstens 24 Stunden Datenverlust beim vollständigen Serververlust (RPO), anhand täglicher Sicherung. Häufigere Sicherung kann nötig sein, wenn euch das nicht genügt.
-- Wiederherstellungsziel: innerhalb eines Tages nach verfügbarer Ersatzhardware bzw. wiederhergestelltem Speicher; im Restore-Test messen, nicht voraussetzen.
-- Export zeitnah nach Änderungen, mindestens täglich mit sichtbarem letzten Erfolgszeitpunkt. Nur tatsächlich extern kopierte Stände schützen bei Serverausfall.
-- Zweites lokales Gerät und verschlüsseltes Offsite-Backup. Aufbewahrung mit mehreren Generationen; eine Löschung darf nicht sofort alle Sicherungsstände entfernen.
-- Laufende PostgreSQL-Datenverzeichnisse nicht einfach als konsistentes Backup kopieren. Datenbankgerechte Sicherung, Paperless-Export und passend koordinierte Datei-/Konfigurationssicherung verwenden.
-- Wiederherstellungsanleitung, Schlüsselzugang und Notfallzugriff dürfen nicht ausschließlich in Aegis liegen.
+- Proposed RPO: at most 24 hours loss after total server failure, backed by daily successful external backups. Increase frequency if unacceptable.
+- Proposed recovery target: within one day after replacement hardware/storage is available; measure in a restore exercise.
+- Refresh exports after changes where feasible and at least daily; display last success. Only external copies survive complete server loss.
+- Second local device plus encrypted offsite backup with retained generations. Deletion must not immediately remove every recovery copy.
+- Do not treat copying live PostgreSQL files as a consistent backup. Coordinate supported dumps, Paperless exports, files and configuration.
+- Recovery instructions and key access cannot exist only inside Aegis.
 
-### Sichtbarer Betriebszustand
+### Visibility and maintenance
 
-Eine kleine Statusseite zeigt letzten Mailabruf, letzten Kalenderabgleich, fehlgeschlagene Aufträge, letzten Export, letztes externes Backup und freien Speicher. Hinweise gehen nur bei relevantem Fehler an den zuständigen Betreiber. Ein stiller Ausfall ist kein akzeptierter Normalzustand.
+Show last successful mail/calendar access, failed operations, latest export/external backup and disk capacity. Notify relevant failures rather than every successful poll.
 
-Geplante Pflege: kurze regelmäßige Sichtprüfung, gebündelte Updates mit Backup und Prüfung der Kernabläufe, Restore-Test nach größeren Daten-/Backupänderungen sowie regelmäßig im Betrieb. Exakte Intervalle in Phase 1 festlegen.
+Agree maintenance intervals in phase 1: regular inspection, grouped updates with backup and core checks, periodic restore tests and additional tests after significant backup/data changes. Proxmox snapshots supplement but do not replace external recovery copies.
 
-## 8. Wann zusätzliche Infrastruktur gerechtfertigt ist
+## 8. Evidence required for additional infrastructure
 
-| Erweiterung | Konkreter Auslöser |
+| Addition | Trigger |
 |---|---|
-| Separater Worker-Prozess | Hintergrundarbeit beeinträchtigt messbar UI/Antwortzeit oder braucht unabhängige Ressourcenlimits |
-| Separater Claude-Agent-Dienst | Ein benötigter Arbeitsablauf ist mit diesem SDK wesentlich besser umsetzbar und im Pilot nachgewiesen |
-| pgvector | Reale Suchfragen scheitern trotz guter Volltextsuche und Metadaten |
-| Eigener Modellserver | Datenschutzpräferenz, Offlinebedarf oder gemessene Kosten rechtfertigen Hardware und Pflege |
-| Native Android-Hülle | Teilen/Upload/PWA-Benachrichtigungen bleiben auf euren Geräten nachweislich unzureichend |
-| Nextcloud | Bestehender Kalender erfüllt gemeinsame Nutzung/Integration nicht oder Selbsthosting wird bewusst gewählt |
-| Mehrere VMs/Dienste | Eigenständiger Hardwarebedarf oder klarer Ausfallbereich, beispielsweise Home Assistant oder GPU-Modell |
+| Separate worker | Measurable API interference or independent restart/resource needs |
+| Claude Agent SDK service | Demonstrated material benefit for a concrete workflow |
+| pgvector | Real queries fail despite adequate full-text search/metadata |
+| Local inference | Offline/privacy preference or measured economics justify maintenance |
+| Native Android wrapper | Sharing/upload/notifications remain inadequate on real devices |
+| Nextcloud | Existing integration is unsuitable or self-hosting deliberately chosen |
+| Extra VM/service | Distinct hardware or failure-isolation needs |
 
-## 9. Wichtigste Risiken und Gegenmaßnahmen
+## 9. Main risks and checks
 
-| Risiko | Gegenmaßnahme und Prüfung |
+| Risk | Mitigation |
 |---|---|
-| Nur der Entwickler nutzt das System | Beide bedienen Kernabläufe im Pilot ohne Hilfe |
-| Eingang verlangt zu viel Pflege | Keine Pflichtsortierung, Ausnahmen bündeln, tatsächliche Pflegezeit messen |
-| KI erfindet Fristen oder Vertragsstände | Quelle, Prüfstatus, zeitliche Fakten und bestätigte Änderungen |
-| Doppelte externe Aktionen | Idempotenz, externe IDs und Zustandsabgleich nach unklarem Timeout |
-| App-Ausfall wird mit Datenverlust verwechselt | Lesbarer Export plus separate Wiederherstellung; Fähigkeiten ehrlich ausweisen |
-| Spiegel oder MCP umgehen Berechtigungen | Gemeinsame serverseitige Anwendungsfälle und gerätespezifische Rechte |
-| Synchronisation verteilt Fehler | Führendes System je Datenart, Versionsprüfung, keine unkontrollierte bidirektionale Kopie |
-| Wachsende Kosten durch Agent-Schleifen | Zeit-, Aufruf- und Kostenbudgets; sichtbare Abbrüche, kein stiller Anbieter-Fallback |
-| Vollständige Mailablage erzeugt zu viel Lärm | Import und Aufgabenbildung trennen; große Anhänge/Altbestand begrenzen |
-| Funktionsausbau überholt Stabilität | Phasenfreigaben und eigener zweiwöchiger Alltagspilot |
+| Only the developer uses it | Both test independently |
+| Inbox creates administration | No mandatory sorting; measure maintenance |
+| AI invents facts | Provenance, review state, temporal versions |
+| Duplicate actions | Idempotency, external IDs, reconciliation |
+| Outage confused with loss | Separate readability, migration and recovery |
+| MCP/mirror bypass permissions | Shared authorization and scoped identity |
+| Sync spreads mistakes | One owner per data type, versions/conflicts |
+| Agent loops cost too much | Budgets, visible stops, no silent fallback |
+| Mail archive creates task noise | Separate capture from action detection |
+| Features outpace reliability | Gates and two-week pilot |
+| Architecture becomes ceremony | Real use cases, enforced boundaries, no empty modules |
+| Localization becomes late rework | Two catalogs from the first screen; English machine contracts |
 
-## 10. Nächste konkrete Arbeit
+## 10. Next concrete work
 
-1. Phase-0-Fragen beantworten: Mailanbieter, Kalenderkonten, Serverressourcen, Backupziel.
-2. Zehn Alltagsszenarien und repräsentative Unterlagen auswählen.
-3. Technische Entscheidungen in kurzen ADRs festhalten: Kalenderquelle, Datenhoheit, Jobs, Mailimport und Wiederherstellung.
-4. Phase 1 umsetzen und den ersten Restore-Test abschließen.
-5. Den Ablauf „PDF am Handy ablegen → sicher gespeichert → wiederfinden → außerhalb der App öffnen“ demonstrieren.
+1. Identify mail/calendar accounts, host capacity and backup destination.
+2. Select ten real scenarios and representative records.
+3. Record ADRs for build boundaries, calendar ownership, jobs, mail capture and recovery.
+4. Implement phase 1 and pass its recovery/architecture checks.
+5. Demonstrate phone PDF upload, confirmed storage, retrieval and opening an export without the app.
 
-Die Implementierung beginnt mit Phase 0; der vorliegende Stand dokumentiert den Plan und behauptet keine bereits eingerichteten Dienste.
+Planned services are not implemented services. Verified tooling is recorded in VM-ACCESS.md.
 
-## 11. Technische Primärquellen
+## 11. Primary technical references
 
-Die Quellen belegen verfügbare Bausteine. Die konkrete Kombination, Betriebsziele und Reihenfolge sind Architekturentscheidungen für Aegis.
+These sources establish building blocks. Their combination, targets and delivery order are Aegis decisions.
 
-- [Spring AI – API und Integrationen](https://docs.spring.io/spring-ai/reference/api/index.html)
-- [Spring AI – Tool Calling](https://docs.spring.io/spring-ai/reference/api/tools.html)
-- [Spring AI – MCP](https://docs.spring.io/spring-ai/reference/api/mcp/mcp-overview.html)
-- [db-scheduler – Projekt und Dokumentation](https://github.com/kagkarlsson/db-scheduler)
-- [Spring Modulith – persistente Ereignisse](https://docs.spring.io/spring-modulith/reference/events.html)
-- [Paperless – Administration, Export und Import](https://docs.paperless-ngx.com/administration/)
-- [Paperless – Nutzung und E-Mail-Verarbeitung](https://docs.paperless-ngx.com/usage/)
-- [Paperless – REST API](https://docs.paperless-ngx.com/api/)
-- [DAVx5 – Android-Kalendersynchronisation](https://manual.davx5.com/introduction.html)
-- [Home Assistant – WebSocket API](https://developers.home-assistant.io/docs/api/websocket/)
+- [Spring AI API](https://docs.spring.io/spring-ai/reference/api/index.html)
+- [Spring AI tool calling](https://docs.spring.io/spring-ai/reference/api/tools.html)
+- [Spring AI MCP](https://docs.spring.io/spring-ai/reference/api/mcp/mcp-overview.html)
+- [db-scheduler](https://github.com/kagkarlsson/db-scheduler)
+- [Spring Modulith events](https://docs.spring.io/spring-modulith/reference/events.html)
+- [Paperless administration and export/import](https://docs.paperless-ngx.com/administration/)
+- [Paperless usage and email](https://docs.paperless-ngx.com/usage/)
+- [Paperless API](https://docs.paperless-ngx.com/api/)
+- [DAVx5 Android synchronization](https://manual.davx5.com/introduction.html)
+- [Home Assistant WebSocket API](https://developers.home-assistant.io/docs/api/websocket/)

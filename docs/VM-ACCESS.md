@@ -1,73 +1,73 @@
-# Aegis-VM: Zugang und Entwicklungsgrundlage
+# Aegis VM access and development foundation
 
-## Zielsystem
+## Target
 
-- Proxmox-VM: 102, `aegis-dev`
-- Reservierte IPv4-Adresse: `192.168.2.159`
-- Benutzer: `aegis-agent`, Administratorrechte über `sudo -n`
-- Betriebssystem: Debian 13
-- Ausstattung: 4 vCPU, 8 GiB RAM, 100 GiB virtuelle Platte
-- Projektverzeichnis auf der VM: `/srv/aegis`
+- Proxmox VM: 102, aegis-dev
+- Reserved IPv4 address: 192.168.2.159
+- User: aegis-agent, administrative access through sudo -n
+- Operating system: Debian 13
+- Resources: 4 vCPU, 8 GiB RAM, 100 GiB virtual disk
+- Remote project directory: /srv/aegis
 
-Der SSH-Zugang gilt für diese VM. Für Proxmox selbst sowie Home Assistant und Mealie wurde kein Zugang eingerichtet und keine Konfiguration geändert.
+SSH access is scoped to this VM. No access or configuration changes were made to the Proxmox host, Home Assistant, or Mealie.
 
-## Verbindung von diesem Windows-PC
+## Connect from this Windows PC
 
 ```powershell
 ssh -i C:\Users\cedri\.ssh\aegis_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=C:\Users\cedri\.ssh\aegis_known_hosts aegis-agent@192.168.2.159
 ```
 
-Für automatische Befehle zusätzlich `-o BatchMode=yes` verwenden.
+Add `-o BatchMode=yes` for automated commands.
 
-Der private Schlüssel liegt ausschließlich im persönlichen `.ssh`-Verzeichnis außerhalb des Repositorys. Die Passphrase wurde nach ausdrücklicher Bestätigung entfernt. Schlüsseldateien nicht in das Repository oder lesbare Haushalts-Exporte aufnehmen.
+The private key remains in the personal .ssh directory outside the repository. Its passphrase was removed with explicit owner approval. Do not include private key files in Git or readable household exports.
 
-Verifizierter Server-Fingerabdruck, über VM-Konsole abgeglichen:
+Verified server fingerprint, checked against the VM console:
 
 ```text
 ED25519 SHA256:K9ggmxG5kX94EhiY/psFbP9CCWxQwx3F2xy6jNCs0mQ
 ```
 
-Fingerprint des öffentlichen Projektschlüssels:
+Project public-key fingerprint:
 
 ```text
 ED25519 SHA256:b4XOrh7SJnllBiyXs/mRSfhzJORKl3p2tcflPokp7mo
 ```
 
-Bei geändertem Hostschlüssel zuerst Ursache und Fingerabdruck in der VM-Konsole prüfen. Die strikte Hostprüfung nicht deaktivieren.
+If the host key changes, investigate and verify it through the VM console. Do not disable strict host verification.
 
-## Entwicklungsgrundlage
+## Development tooling
 
-Die Basis verwendet Debian-Pakete für Docker/Compose, OpenJDK 21, Maven, Git, Restic und rsync. Docker wird vorerst mit `sudo` ausgeführt. Es ist kein ungeschützter Docker-TCP-Zugang vorgesehen.
+The baseline uses Debian packages for Docker/Compose, OpenJDK 21, Maven, Git, Restic, and rsync. Docker currently runs through sudo. No unauthenticated Docker TCP access is configured.
 
 ```text
 /srv/aegis/
-  source/           Arbeitskopie des Projekts
-  deploy/           Deployment-Konfiguration
-  data/             Dauerhafte Dienstedaten, Rechte dienstweise vergeben
-  exports/          Lesbare Ausgaben
-  backup-staging/   Vorbereitete konsistente Sicherungsartefakte
+  source/           Project working copy
+  deploy/           Deployment configuration
+  data/             Persistent service data; assign permissions per service
+  exports/          Readable outputs
+  backup-staging/   Consistent artifacts prepared for backup
 ```
 
-Installation reproduzieren: [bootstrap-vm.sh](../ops/bootstrap-vm.sh), ausschließlich innerhalb der vorgesehenen Aegis-VM ausführen.
+Reproduce installation with [bootstrap-vm.sh](../ops/bootstrap-vm.sh), only inside the intended Aegis VM.
 
-## Noch nicht eingerichtet
+## Not configured yet
 
-- Fachanwendung, Datenbankcontainer und Paperless
-- Mail- und Kalenderanbindung
-- Externes Backupziel und getestete Wiederherstellung
-- Öffentlicher Webzugang und produktive Haushaltsdaten
+- Application, database containers, and Paperless
+- Mail and calendar integration
+- External backup destination and tested recovery
+- Public web access and production household data
 
-Restic allein ist noch kein Backup. Vor Nutzung als verlässliche Ablage muss ein separates Sicherungsziel angebunden und ein Wiederherstellungstest abgeschlossen werden.
+Restic alone is not a backup. Before relying on this system for household records, connect a separate backup destination and complete a restore test.
 
-## Verifizierter Einrichtungsstand
+## Verified setup state
 
-- Schlüsselanmeldung mit strikter Hostprüfung erfolgreich; `sudo -n whoami` ergibt `root`.
-- OpenJDK 21.0.12.1, Maven 3.9.9, Docker Engine 26.1.5 (Debian-Paket), Compose 2.26.1 und Restic 0.18.0 geprüft.
-- Docker-Testcontainer `hello-world` erfolgreich heruntergeladen und ausgeführt; Testcontainer automatisch entfernt.
-- SSH, QEMU Guest Agent, Docker und systemd-timesyncd aktiv.
-- Zeitzone Europe/Berlin und `NTPSynchronized=yes` bestätigt.
-- Nach Installation rund 87 GiB frei auf `/`.
-- Bootstrapskript auf der VM mit `sh -n` geprüft und unter `/srv/aegis/deploy/bootstrap-vm.sh` abgelegt.
-- Keine Aegis-Webdienste oder Datenbankports veröffentlicht.
+- Key authentication with strict host checking succeeded; sudo -n whoami returns root.
+- OpenJDK 21.0.12.1, Maven 3.9.9, Docker Engine 26.1.5 (Debian package), Compose 2.26.1, and Restic 0.18.0 were checked.
+- The Docker hello-world test image was downloaded and run successfully; the container was removed automatically.
+- SSH, QEMU Guest Agent, Docker, and systemd-timesyncd are active.
+- Time zone is Europe/Berlin; NTPSynchronized=yes was confirmed.
+- Approximately 87 GiB remained free on / after installation.
+- The bootstrap script passed sh -n on the VM and is available at /srv/aegis/deploy/bootstrap-vm.sh.
+- No Aegis web services or database ports have been published.
 
-Dies schließt den Infrastrukturteil der Einrichtung ab, aber nicht Phase 1 der Roadmap: insbesondere Backup/Restore und Anwendungsgrundgerüst stehen noch aus.
+This completes the development-tooling portion, not roadmap phase 1. Application scaffolding, backup, and recovery remain outstanding.
