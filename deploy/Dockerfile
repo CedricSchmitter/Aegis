@@ -15,7 +15,7 @@ COPY backend/.mvn .mvn
 COPY backend/mvnw backend/pom.xml ./
 COPY backend/ ./
 COPY --from=frontend /build/frontend/dist /build/frontend/dist
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q -Pfrontend -Dfrontend.dist=/build/frontend/dist \
+RUN --mount=type=cache,target=/root/.m2 chmod +x mvnw && ./mvnw -B -q -Pfrontend -Dfrontend.dist=/build/frontend/dist \
     -Daegis.build.commit=${AEGIS_COMMIT} -DskipTests -DskipITs package \
     && cp bootstrap/target/aegis-bootstrap-*.jar /build/aegis.jar
 
