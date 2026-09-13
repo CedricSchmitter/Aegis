@@ -16,6 +16,8 @@ fi
 mkdir -p "$DEPLOY_DIR/postgres-init"
 cp "$RELEASE_DIR/deploy/compose.yaml" "$DEPLOY_DIR/compose.yaml"
 cp "$RELEASE_DIR/deploy/Caddyfile" "$DEPLOY_DIR/Caddyfile"
+cp "$RELEASE_DIR/deploy/Caddyfile.https" "$DEPLOY_DIR/Caddyfile.https"
+cp "$RELEASE_DIR/deploy/compose.https.yaml" "$DEPLOY_DIR/compose.https.yaml"
 cp "$RELEASE_DIR/deploy/postgres-init/01-paperless-database.sh" "$DEPLOY_DIR/postgres-init/01-paperless-database.sh"
 chmod 0755 "$DEPLOY_DIR/postgres-init/01-paperless-database.sh"
 
@@ -25,11 +27,18 @@ if grep -q '^AEGIS_COMMIT=' "$DEPLOY_DIR/.env"; then
 else
     echo "AEGIS_COMMIT=$COMMIT" >> "$DEPLOY_DIR/.env"
 fi
-echo "$COMMIT" > "$DEPLOY_DIR/DEPLOYED_COMMIT"
 
 cd "$DEPLOY_DIR"
 export DOCKER_BUILDKIT=1
 sudo -n -E docker build -f "$RELEASE_DIR/deploy/Dockerfile" --build-arg "AEGIS_COMMIT=$COMMIT" \
     -t "aegis-app:$COMMIT" "$RELEASE_DIR"
-sudo -n docker compose --env-file "$DEPLOY_DIR/.env" -f "$DEPLOY_DIR/compose.yaml" up -d --remove-orphans
+if grep -q '^AEGIS_HTTPS=true$' "$DEPLOY_DIR/.env"; then
+    set -- -f "$DEPLOY_DIR/compose.yaml" -f "$DEPLOY_DIR/compose.https.yaml"
+else
+    set -- -f "$DEPLOY_DIR/compose.yaml"
+fi
+sudo -n docker compose --env-file "$DEPLOY_DIR/.env" "$@" up -d --wait --wait-timeout 240
+sudo -n docker compose --env-file "$DEPLOY_DIR/.env" "$@" exec -T aegis \
+    wget -q -O - http://localhost:8080/api/system/version | grep -F "$COMMIT" >/dev/null
+echo "$COMMIT" > "$DEPLOY_DIR/DEPLOYED_COMMIT"
 sudo -n docker compose --env-file "$DEPLOY_DIR/.env" -f "$DEPLOY_DIR/compose.yaml" ps

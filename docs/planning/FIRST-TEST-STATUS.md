@@ -4,7 +4,13 @@ Updated: 2026-09-13 (milestone verified; PR #14 merged fast-forward into `main`,
 `main` head reported by `/api/system/version`). Durable handoff for the autonomous
 implementation of milestone "First runnable test" (#1). Never record passwords, tokens or private keys here.
 
-## Current state
+## Independent follow-up
+
+The next session independently checked the repository, live APIs and GitHub. See
+[INDEPENDENT-REVIEW.md](INDEPENDENT-REVIEW.md) for findings, corrections and current verification.
+The evidence below is the inherited implementation report, not a claim that the reviewer repeated every check.
+
+## Reported first-test state
 
 - Branch `feature/backend-foundation`, pull request #14 against `main`. Latest commits fix deployment details
   found on the VM (archive line endings, container gid, Paperless multipart upload, runner ordering).

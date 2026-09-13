@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
  * localizes. Stack traces never reach clients; unexpected failures carry a correlation id that is also logged.
  */
 @RestControllerAdvice
+@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
 public class ProblemDetailsAdvice {
     private static final Logger log = LoggerFactory.getLogger(ProblemDetailsAdvice.class);
 
@@ -79,6 +80,14 @@ public class ProblemDetailsAdvice {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     ProblemDetail tooLarge(MaxUploadSizeExceededException e) {
         return problem(HttpStatus.PAYLOAD_TOO_LARGE, "document.tooLarge", "Upload exceeds the size limit");
+    }
+
+    @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.multipart.support.MissingServletRequestPartException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class})
+    ProblemDetail malformedRequest(Exception e) {
+        return problem(HttpStatus.BAD_REQUEST, "validation.failed", "Request validation failed");
     }
 
     @ExceptionHandler(Exception.class)

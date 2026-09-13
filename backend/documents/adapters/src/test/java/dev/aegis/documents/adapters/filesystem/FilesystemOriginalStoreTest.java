@@ -53,6 +53,7 @@ class FilesystemOriginalStoreTest {
         assertThatThrownBy(() -> store.store(id, failing)).isInstanceOf(IOException.class);
 
         assertThat(store.exists(id.value() + ".pdf")).isFalse();
+        assertThat(Files.exists(dir.resolve(id.value() + ".pdf.part"))).isFalse();
         assertThat(store.listStagingPaths()).isEmpty();
     }
 

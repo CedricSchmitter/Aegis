@@ -14,7 +14,11 @@ public record TaskId(UUID value) {
     }
 
     public static TaskId of(String value) {
-        return new TaskId(UUID.fromString(value));
+        try {
+            return new TaskId(UUID.fromString(value));
+        } catch (IllegalArgumentException | NullPointerException invalid) {
+            throw new dev.aegis.shared.InvalidInputException("validation.failed", "Invalid TaskId value");
+        }
     }
 
     @Override

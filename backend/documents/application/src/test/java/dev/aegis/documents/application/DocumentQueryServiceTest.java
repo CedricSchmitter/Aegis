@@ -104,6 +104,26 @@ class DocumentQueryServiceTest {
     }
 
     @Test
+    void corruptedArchiveFallsBackAndCleanupKeepsTheOnlyValidOriginal() throws Exception {
+        byte[] bytes = "%PDF-original".getBytes(StandardCharsets.US_ASCII);
+        Document document = stored("Original", anna, NOW.minusSeconds(900000), bytes);
+        document.markArchived(5, NOW.minusSeconds(800000));
+        archive.originals.put(5, "%PDF-corrupted".getBytes(StandardCharsets.US_ASCII));
+        assertThat(service.original(new Actor(ben), document.id()).bytes()).isEqualTo(bytes);
+        var settings = new ArchivalSettings(3, java.time.Duration.ofMinutes(1), java.time.Duration.ofDays(7), 1024);
+        var reconciliation = new ReconciliationService(repository, store, archive,
+                new TestDoubles.RecordingScheduler(), settings, Clock.fixed(NOW, ZoneOffset.UTC));
+        assertThat(reconciliation.reconcile().stagingRemoved()).isZero();
+        assertThat(store.exists(document.stagingPath())).isTrue();
+        archive.originals.put(5, bytes);
+        assertThat(reconciliation.reconcile().stagingRemoved()).isEqualTo(1);
+        assertThat(store.exists(document.stagingPath())).isFalse();
+        archive.originals.put(5, "%PDF-corrupted".getBytes(StandardCharsets.US_ASCII));
+        assertThatThrownBy(() -> service.original(new Actor(ben), document.id()))
+                .isInstanceOf(OriginalUnavailableException.class);
+    }
+
+    @Test
     void statusReportsArchiveProbeAndCounts() throws Exception {
         Document document = stored("A", anna, NOW, "%PDF-a".getBytes(StandardCharsets.US_ASCII));
         document.markArchived(1, NOW.minusSeconds(60));

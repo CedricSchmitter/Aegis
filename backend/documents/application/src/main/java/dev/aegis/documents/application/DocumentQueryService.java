@@ -144,6 +144,9 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         if (document.state() == ProcessingState.ARCHIVED) {
             try {
                 OriginalContent archived = archive.fetchOriginal(document.paperlessDocumentId().orElseThrow());
+                if (!document.checksum().matches(archived.bytes())) {
+                    throw new ArchiveUnavailableException("Archive original checksum mismatch");
+                }
                 return new OriginalContent(document.originalFilename(), document.contentType(), archived.bytes(),
                         OriginalContent.SOURCE_ARCHIVE);
             } catch (ArchiveUnavailableException unavailable) {
@@ -156,8 +159,12 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
             throw new OriginalUnavailableException("no copy of the original is available right now");
         }
         try {
+            byte[] bytes = store.read(document.stagingPath());
+            if (!document.checksum().matches(bytes)) {
+                throw new OriginalUnavailableException("Staging original checksum mismatch");
+            }
             return new OriginalContent(document.originalFilename(), document.contentType(),
-                    store.read(document.stagingPath()), OriginalContent.SOURCE_STAGING);
+                    bytes, OriginalContent.SOURCE_STAGING);
         } catch (IOException e) {
             throw new OriginalUnavailableException("staging copy could not be read: " + e.getMessage());
         }

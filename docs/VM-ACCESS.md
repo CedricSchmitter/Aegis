@@ -50,16 +50,22 @@ The baseline uses Debian packages for Docker/Compose, OpenJDK 21, Maven, Git, Re
 
 Reproduce installation with [bootstrap-vm.sh](../ops/bootstrap-vm.sh), only inside the intended Aegis VM.
 
+## Current application state
+
+The original tooling-only notes below are historical. The first application stack is now deployed on this VM:
+Caddy publishes LAN port 80; Aegis, PostgreSQL, Paperless and Valkey run privately. The independent review
+verified 81 GiB free on the VM and no attached external 1 TB disk. See
+[independent review](planning/INDEPENDENT-REVIEW.md) for release and CI evidence.
+
 ## Not configured yet
 
-- Application, database containers, and Paperless
 - Mail and calendar integration
 - External backup destination and tested recovery
 - Public web access and production household data
 
 Restic alone is not a backup. Before relying on this system for household records, connect a separate backup destination and complete a restore test.
 
-## Verified setup state
+## Historical tooling setup evidence (before application deployment)
 
 - Key authentication with strict host checking succeeded; sudo -n whoami returns root.
 - OpenJDK 21.0.12.1, Maven 3.9.9, Docker Engine 26.1.5 (Debian package), Compose 2.26.1, and Restic 0.18.0 were checked.
@@ -70,4 +76,5 @@ Restic alone is not a backup. Before relying on this system for household record
 - The bootstrap script passed sh -n on the VM and is available at /srv/aegis/deploy/bootstrap-vm.sh.
 - No Aegis web services or database ports have been published.
 
-This completes the development-tooling portion, not roadmap phase 1. Application scaffolding, backup, and recovery remain outstanding.
+These observations describe the initial tooling setup only. Application deployment and a local export restore
+drill have since been completed; external backup and recovery from that destination remain outstanding.

@@ -44,6 +44,7 @@ public class TaskCommandService implements TaskCommands, ImportTask {
     @Override
     public TaskSummary create(Actor actor, CreateTaskCommand command) {
         access.requireMember(actor);
+        requireOwner(command.ownerId());
         TaskSource source = null;
         if (command.sourceDocumentId() != null) {
             DocumentId documentId = command.sourceDocumentId();
@@ -70,6 +71,7 @@ public class TaskCommandService implements TaskCommands, ImportTask {
     @Override
     public TaskSummary assign(Actor actor, TaskId id, MemberId ownerId, long expectedVersion) {
         access.requireMember(actor);
+        requireOwner(ownerId);
         Task task = loadVersion(id, expectedVersion);
         boolean changed = !Objects.equals(task.owner().orElse(null), ownerId);
         task.assign(ownerId, clock.instant());
@@ -143,6 +145,17 @@ public class TaskCommandService implements TaskCommands, ImportTask {
     private void notifyAssignment(Task task, Actor actor) {
         task.owner().filter(owner -> !owner.equals(actor.memberId()))
                 .ifPresent(owner -> events.taskAssigned(task.id(), task.title(), owner, actor.memberId()));
+    }
+
+    private void requireOwner(MemberId ownerId) {
+        if (ownerId == null) {
+            return;
+        }
+        try {
+            access.requireMember(new Actor(ownerId));
+        } catch (dev.aegis.shared.NotAuthorizedException invalidOwner) {
+            throw new InvalidInputException("validation.failed", "Task owner must be an active household member");
+        }
     }
 
     /** Re-reads the aggregate so the returned version is the persisted one, not the pre-save value. */

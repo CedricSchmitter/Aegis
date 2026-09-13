@@ -94,6 +94,42 @@ class DocumentCaptureServiceTest {
     }
 
     @Test
+    void repeatedRestorePreservesThePendingOriginal() throws Exception {
+        var first = service.upload(new Actor(anna), command("a.pdf", PDF)).document();
+        String path = repository.findById(first.id()).orElseThrow().stagingPath();
+        var result = service.importDocument(new Actor(anna), importCommand(first.id(), PDF));
+        assertThat(result.outcome()).isEqualTo(dev.aegis.documents.application.api.ImportDocument.ImportOutcome.ALREADY_PRESENT);
+        assertThat(store.read(path)).isEqualTo(PDF);
+        assertThat(store.listStagingPaths()).containsExactly(path);
+        assertThat(scheduler.scheduled).hasSize(1);
+    }
+
+    @Test
+    void restoreCannotReplaceAnExistingIdWithDifferentBytes() throws Exception {
+        var first = service.upload(new Actor(anna), command("a.pdf", PDF)).document();
+        byte[] changed = "%PDF-different".getBytes(StandardCharsets.US_ASCII);
+        assertThatThrownBy(() -> service.importDocument(new Actor(anna), importCommand(first.id(), changed)))
+                .isInstanceOf(InvalidInputException.class).hasFieldOrPropertyWithValue("code", "document.importConflict");
+        assertThat(store.read(repository.findById(first.id()).orElseThrow().stagingPath())).isEqualTo(PDF);
+        assertThat(repository.findById(first.id()).orElseThrow().checksum()).isEqualTo(InMemoryOriginalStore.sha256(PDF));
+    }
+
+    @Test
+    void restoreRejectsChecksumCollisionUnderAnotherStableId() {
+        service.upload(new Actor(anna), command("a.pdf", PDF));
+        assertThatThrownBy(() -> service.importDocument(new Actor(anna), importCommand(dev.aegis.shared.DocumentId.random(), PDF)))
+                .isInstanceOf(InvalidInputException.class).hasFieldOrPropertyWithValue("code", "document.importConflict");
+        assertThat(repository.findAll()).hasSize(1);
+    }
+
+    private dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand importCommand(
+            dev.aegis.shared.DocumentId id, byte[] bytes) {
+        return new dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand(id, "a", "a.pdf",
+                "application/pdf", anna, null, List.of(), InMemoryOriginalStore.sha256(bytes).sha256Hex(),
+                new ByteArrayInputStream(bytes));
+    }
+
+    @Test
     void unknownActorCannotUpload() {
         assertThatThrownBy(() -> service.upload(new Actor(MemberId.random()), command("a.pdf", PDF)))
                 .isInstanceOf(NotAuthorizedException.class);

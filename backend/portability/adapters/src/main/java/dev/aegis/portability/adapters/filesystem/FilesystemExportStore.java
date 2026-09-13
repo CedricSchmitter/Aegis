@@ -46,8 +46,7 @@ public class FilesystemExportStore implements ExportStore {
         if (Files.exists(target)) {
             throw new IOException("export generation " + generation + " already exists");
         }
-        deleteRecursively(staging);
-        Files.createDirectories(staging);
+        Files.createDirectory(staging);
         return new ExportStaging() {
             @Override
             public void write(String relativePath, byte[] content) throws IOException {
@@ -62,7 +61,7 @@ public class FilesystemExportStore implements ExportStore {
             @Override
             public String publish() throws IOException {
                 Files.move(staging, target, StandardCopyOption.ATOMIC_MOVE);
-                Path latestTemp = root.resolve(LATEST + ".tmp");
+                Path latestTemp = Files.createTempFile(root, LATEST + "-", ".tmp");
                 Files.writeString(latestTemp, generation, StandardCharsets.UTF_8);
                 Files.move(latestTemp, root.resolve(LATEST), StandardCopyOption.ATOMIC_MOVE,
                         StandardCopyOption.REPLACE_EXISTING);

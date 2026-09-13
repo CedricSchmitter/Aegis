@@ -14,7 +14,11 @@ public record NoticeId(UUID value) {
     }
 
     public static NoticeId of(String value) {
-        return new NoticeId(UUID.fromString(value));
+        try {
+            return new NoticeId(UUID.fromString(value));
+        } catch (IllegalArgumentException | NullPointerException invalid) {
+            throw new dev.aegis.shared.InvalidInputException("validation.failed", "Invalid NoticeId value");
+        }
     }
 
     @Override

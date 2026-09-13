@@ -1,0 +1,10 @@
+# Opt-in only after client DNS and certificate trust have been verified.
+services:
+  caddy:
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile.https:/etc/caddy/Caddyfile:ro
+  aegis:
+    environment:
+      AEGIS_COOKIE_SECURE: "true"

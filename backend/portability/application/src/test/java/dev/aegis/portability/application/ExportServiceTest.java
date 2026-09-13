@@ -126,6 +126,7 @@ class ExportServiceTest {
         }, Clock.fixed(NOW, ZoneOffset.UTC), "test");
 
         ExportSummary summary = service.export(new Actor(anna));
+        assertThat(service.export(new Actor(anna)).generation()).isNotEqualTo(summary.generation());
 
         String originalPath = ExportFormat.ORIGINALS_DIR + "2026-09-13_mietvertrag-mueller_"
                 + contract.toString().substring(0, 8) + ".pdf";

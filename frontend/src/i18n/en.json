@@ -12,6 +12,7 @@
     "no": "No",
     "unknownMember": "Unknown member",
     "previewNotice": "LAN preview over HTTP: no encrypted connection and no push notifications. For the first synthetic-data test only.",
+    "pilotNotice": "Household pilot over HTTPS. External backup and push notifications are not yet configured. Continue using synthetic test data.",
     "version": "Version {{commit}}",
     "skipToContent": "Skip to content"
   },

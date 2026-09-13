@@ -74,7 +74,7 @@ public class ExportService implements CreateExport, ExportQueries {
     public ExportSummary export(Actor actor) {
         access.requireMember(actor);
         Instant now = clock.instant();
-        String generation = GENERATION_FORMAT.format(now.atZone(ZoneId.of("UTC")));
+        String generation = GENERATION_FORMAT.format(now.atZone(ZoneId.of("UTC"))) + "-" + java.util.UUID.randomUUID();
         try {
             ExportStaging staging = store.beginGeneration(generation);
             try {

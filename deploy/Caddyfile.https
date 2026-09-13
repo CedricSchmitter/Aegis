@@ -1,0 +1,24 @@
+# Prepared LAN HTTPS mode. Install the public root certificate on each client before switching.
+{
+    admin off
+    skip_install_trust
+}
+
+https://aegis, https://192.168.2.159 {
+    tls internal
+    encode zstd gzip
+    request_body {
+        max_size 60MB
+    }
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+        X-Frame-Options SAMEORIGIN
+        -Server
+    }
+    reverse_proxy aegis:8080
+}
+
+http://aegis, http://192.168.2.159 {
+    redir https://aegis{uri} permanent
+}

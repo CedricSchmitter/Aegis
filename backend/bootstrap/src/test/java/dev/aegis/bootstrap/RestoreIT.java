@@ -108,5 +108,11 @@ class RestoreIT extends PostgresIT {
         assertThat(again.documentsImported()).isZero();
         assertThat(again.tasksImported()).isZero();
         assertThat(again.documentsAlreadyPresent()).isEqualTo(export.documentCount());
+        archive.available = false;
+        try {
+            assertThat(documentQueries.original(ben, documentId).bytes()).isEqualTo(pdf);
+        } finally {
+            archive.available = true;
+        }
     }
 }

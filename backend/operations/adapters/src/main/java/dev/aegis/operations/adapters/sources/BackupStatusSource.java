@@ -46,6 +46,12 @@ public class BackupStatusSource implements IntegrationStatusSource {
             boolean verified = state.path("destinationVerified").asBoolean(false);
             String lastSuccess = state.path("lastSuccessAt").asText(null);
             String repository = state.path("repository").asText(null);
+            if (state.path("error").asText(null) != null || (lastSuccess != null
+                    && Instant.parse(lastSuccess).isBefore(clock.instant().minus(java.time.Duration.ofHours(26))))) {
+                return new IntegrationStatus("externalBackup", IntegrationStatus.DEGRADED,
+                        "backup failed, is running, or is older than 26 hours",
+                        lastSuccess == null ? null : Instant.parse(lastSuccess), clock.instant());
+            }
             if (!verified || lastSuccess == null) {
                 return IntegrationStatus.notConfigured("externalBackup",
                         "backup destination not verified or no successful run recorded");

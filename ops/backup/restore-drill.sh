@@ -29,14 +29,18 @@ chmod 0700 "$DRILL_DIR/secrets"
 cp -r "$SOURCE" "$DRILL_DIR/import/$GENERATION"
 cp "$RELEASE_DIR/deploy/postgres-init/01-paperless-database.sh" "$DRILL_DIR/postgres-init/"
 chmod 0755 "$DRILL_DIR/postgres-init/01-paperless-database.sh"
-# Same usernames as the export so member mapping succeeds; different random passwords.
+# Provision the actual exported usernames so onboarding does not break the drill.
 random() { head -c "$1" /dev/urandom | base64 | tr -d '\n=' | tr '+/' '-_'; }
-cat > "$DRILL_DIR/secrets/initial-members.json" <<EOF
-{"members": [
-  {"username": "anna", "displayName": "Anna", "initialPassword": "$(random 15)", "locale": "DE"},
-  {"username": "ben", "displayName": "Ben", "initialPassword": "$(random 15)", "locale": "DE"}
-]}
+python3 - "$SOURCE/data/members.json" "$DRILL_DIR/secrets/initial-members.json" <<'EOF'
+import json, secrets, sys
+members = json.load(open(sys.argv[1]))['members']
+assert members, 'Export has no members'
+with open(sys.argv[2], 'w') as out:
+    json.dump({'members': [{'username': m['username'], 'displayName': m['displayName'],
+                          'initialPassword': secrets.token_urlsafe(24), 'locale': m['locale']}
+                         for m in members]}, out)
 EOF
+IMPORT_ACTOR="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['members'][0]['username'])" "$SOURCE/data/members.json")"
 sudo -n chgrp 10001 "$DRILL_DIR/secrets/initial-members.json" "$DRILL_DIR/secrets"
 chmod 0640 "$DRILL_DIR/secrets/initial-members.json"
 chmod 0750 "$DRILL_DIR/secrets"
@@ -69,7 +73,7 @@ services:
       - "127.0.0.1:$PORT:8080"
     environment:
       AEGIS_IMPORT_PATH: /srv/aegis/import/$GENERATION
-      AEGIS_IMPORT_ACTOR: anna
+      AEGIS_IMPORT_ACTOR: $IMPORT_ACTOR
     volumes:
       - $DRILL_DIR/import:/srv/aegis/import:ro
       - $DRILL_DIR/secrets/initial-members.json:/run/secrets/initial-members.json:ro

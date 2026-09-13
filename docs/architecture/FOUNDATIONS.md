@@ -1,6 +1,6 @@
 # Architecture foundations
 
-Status: owner-approved foundations plus explicitly marked implementation defaults and open product decisions. No application code has been scaffolded yet.
+Status: owner-approved foundations, implemented by the first runnable test, plus explicitly marked future defaults and open product decisions. See the execution status and independent review for verified implementation evidence.
 
 ## Accepted requirements
 

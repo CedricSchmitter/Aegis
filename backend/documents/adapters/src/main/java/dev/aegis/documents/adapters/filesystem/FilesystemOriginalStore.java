@@ -52,6 +52,9 @@ public class FilesystemOriginalStore implements OriginalStore {
             headLength = in.readNBytes(head, 0, head.length);
             out.write(head, 0, headLength);
             size = headLength + in.transferTo(out);
+        } catch (IOException | RuntimeException failure) {
+            Files.deleteIfExists(temp);
+            throw failure;
         }
         try (FileChannel channel = FileChannel.open(temp, StandardOpenOption.WRITE)) {
             channel.force(true);

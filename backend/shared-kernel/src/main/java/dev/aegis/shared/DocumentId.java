@@ -14,7 +14,11 @@ public record DocumentId(UUID value) {
     }
 
     public static DocumentId of(String value) {
-        return new DocumentId(UUID.fromString(value));
+        try {
+            return new DocumentId(UUID.fromString(value));
+        } catch (IllegalArgumentException | NullPointerException invalid) {
+            throw new dev.aegis.shared.InvalidInputException("validation.failed", "Invalid DocumentId value");
+        }
     }
 
     @Override

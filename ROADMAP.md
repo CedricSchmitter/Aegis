@@ -1,6 +1,6 @@
 # Aegis household workspace roadmap
 
-Updated: 2026-09-13. Status: product and architecture plan; application implementation has not started. VM tooling and GitHub baseline are available; see [VM access](docs/VM-ACCESS.md).
+Updated: 2026-09-13. Status: the first runnable synthetic-data test is implemented and deployed. This roadmap still contains future phases; see [execution status](docs/planning/FIRST-TEST-STATUS.md) and [independent review](docs/planning/INDEPENDENT-REVIEW.md) for verified delivery and remaining gates.
 
 Repository rules live in [AGENT.md](AGENT.md). The owner's DDD/hexagonal architecture, Maven multimodule, maintainability, and English/localization requirements are detailed in [FOUNDATIONS.md](docs/architecture/FOUNDATIONS.md) and apply to every phase.
 

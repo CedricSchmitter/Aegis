@@ -88,8 +88,8 @@ public class ReconciliationService {
         for (Document document : documents.findArchivedWithStagingBefore(cutoff)) {
             int paperlessId = document.paperlessDocumentId().orElseThrow();
             try {
-                if (!archive.exists(paperlessId)) {
-                    notes.add("kept staging copy of " + document.id() + ": archive no longer lists " + paperlessId);
+                if (!document.checksum().matches(archive.fetchOriginal(paperlessId).bytes())) {
+                    notes.add("kept staging copy of " + document.id() + ": archive checksum mismatch");
                     continue;
                 }
             } catch (ArchiveUnavailableException unavailable) {

@@ -47,7 +47,7 @@ export function LoginPage() {
         <LanguageSwitch />
       </div>
       <p className="alert-warn mb-4" role="note">
-        {t("app.previewNotice")}
+        {t(window.location.protocol === "https:" ? "app.pilotNotice" : "app.previewNotice")}
       </p>
       <form className="card flex flex-col gap-4" onSubmit={onSubmit} aria-labelledby="login-title">
         <h2 id="login-title" className="text-xl font-semibold">

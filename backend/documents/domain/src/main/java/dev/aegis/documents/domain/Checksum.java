@@ -17,6 +17,15 @@ public record Checksum(String sha256Hex) {
         return new Checksum(raw == null ? null : raw.trim().toLowerCase(Locale.ROOT));
     }
 
+    public boolean matches(byte[] bytes) {
+        try {
+            return sha256Hex.equals(java.util.HexFormat.of().formatHex(
+                    java.security.MessageDigest.getInstance("SHA-256").digest(bytes)));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
+    }
+
     @Override
     public String toString() {
         return sha256Hex;

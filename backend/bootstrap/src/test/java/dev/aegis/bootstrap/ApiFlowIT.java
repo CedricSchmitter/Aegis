@@ -236,6 +236,23 @@ class ApiFlowIT extends PostgresIT {
     }
 
     @Test
+    @Order(9)
+    void malformedRequestsAreClientErrorsAndLogoutEndsAccess() {
+        ApiClient anna = loggedIn(ANNA);
+        for (ApiClient.Response response : List.of(
+                anna.postJson("/api/tasks", "{"),
+                anna.postJson("/api/tasks", "{\"title\":\"unknown owner\",\"ownerId\":\""
+                        + java.util.UUID.randomUUID() + "\"}"),
+                anna.postJson("/api/tasks", "{\"title\":\"invalid date\",\"dueDate\":\"tomorrow\"}"),
+                anna.get("/api/documents/not-a-uuid"))) {
+            assertThat(response.status()).as(response.body()).isEqualTo(400);
+            assertThat(anna.json(response).path("code").asText()).isEqualTo("validation.failed");
+        }
+        assertThat(anna.postJson("/api/auth/logout", "{}").status()).isEqualTo(204);
+        assertThat(anna.get("/api/documents").status()).isEqualTo(401);
+    }
+
+    @Test
     @Order(8)
     void archiveOutageDegradesHonestlyAndRetriesLater() throws Exception {
         ApiClient anna = loggedIn(ANNA);

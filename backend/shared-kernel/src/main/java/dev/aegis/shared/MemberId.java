@@ -14,7 +14,11 @@ public record MemberId(UUID value) {
     }
 
     public static MemberId of(String value) {
-        return new MemberId(UUID.fromString(value));
+        try {
+            return new MemberId(UUID.fromString(value));
+        } catch (IllegalArgumentException | NullPointerException invalid) {
+            throw new dev.aegis.shared.InvalidInputException("validation.failed", "Invalid MemberId value");
+        }
     }
 
     @Override

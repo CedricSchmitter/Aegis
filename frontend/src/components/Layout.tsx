@@ -90,7 +90,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
       <div className="mx-auto w-full max-w-5xl px-4 pt-3">
         <p className="alert-warn" role="note">
-          {t("app.previewNotice")}
+          {t(window.location.protocol === "https:" ? "app.pilotNotice" : "app.previewNotice")}
         </p>
       </div>
       <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-4 pb-24 md:pb-8">

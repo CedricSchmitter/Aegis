@@ -12,6 +12,7 @@
     "no": "Nein",
     "unknownMember": "Unbekanntes Mitglied",
     "previewNotice": "LAN-Vorschau über HTTP: keine verschlüsselte Verbindung, keine Push-Benachrichtigungen. Nur für den ersten Test mit synthetischen Daten.",
+    "pilotNotice": "Haushaltstest über HTTPS. Externes Backup und Push-Benachrichtigungen sind noch nicht eingerichtet. Bitte weiterhin synthetische Testdaten verwenden.",
     "version": "Version {{commit}}",
     "skipToContent": "Zum Inhalt springen"
   },

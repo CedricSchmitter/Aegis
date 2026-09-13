@@ -23,3 +23,6 @@ test-results/
 /exports/
 /backup-staging/
 backend/data/
+review-*.log
+review-source.tar.gz
+__pycache__/

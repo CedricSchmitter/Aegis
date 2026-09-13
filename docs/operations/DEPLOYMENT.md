@@ -27,9 +27,10 @@ The first test is served at `http://192.168.2.159/` without TLS. Consequences, s
 - No installable PWA, no Web Push, no secure-context claims.
 - Suitable for synthetic data on the home LAN only; not for real household documents.
 
-HTTPS follow-up (needs an owner decision): either a hostname with a trusted certificate (public DNS plus
-DNS-01 or a reverse proxy with a real certificate) or a private CA installed on both phones and the PC. Once
-available, set `AEGIS_COOKIE_SECURE=true`, switch the Caddyfile to the hostname and remove the preview banner.
+HTTPS follow-up: the owner selected `aegis`. A local-CA Caddyfile and Compose override are prepared; client
+DNS and certificate trust remain to be established. See [HOUSEHOLD-PILOT.md](HOUSEHOLD-PILOT.md). Deployment
+honors `AEGIS_HTTPS=true` from `.env`, enables the override with Secure cookies, and displays an HTTPS-specific
+pilot banner. The external-backup gate remains in force even after HTTPS works.
 
 ## First-time setup
 
@@ -53,7 +54,8 @@ sh ops/deploy/deploy.sh <commit-ish>
 The script ships `git archive` of the commit to `/srv/aegis/source/releases/aegis-<sha>`, links
 `/srv/aegis/source/current`, then runs `ops/deploy/remote-deploy.sh` on the VM: copy compose files into
 `/srv/aegis/deploy`, pin `AEGIS_COMMIT=<sha>` in `.env`, build `aegis-app:<sha>` and `docker compose up -d`.
-The running commit is visible at `/api/system/version` and in the UI footer.
+The script updates `DEPLOYED_COMMIT` only after readiness and running-version checks pass. The running
+commit is visible at `/api/system/version` and in the UI footer.
 
 Rollback to a previously built commit: `sh /srv/aegis/source/current/ops/deploy/rollback.sh <sha>` on the VM
 (application container only; database migrations are additive and are not undone).

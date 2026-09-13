@@ -17,6 +17,14 @@ public class DocumentRegistrar implements RegisterReceivedDocument {
 
     @Override
     public RegistrationResult register(RegistrationCommand command) {
+        Optional<Document> sameId = documents.findById(command.id());
+        if (sameId.isPresent()) {
+            if (!sameId.get().checksum().equals(command.checksum())) {
+                throw new dev.aegis.shared.InvalidInputException("document.importConflict",
+                        "Document id already belongs to different content");
+            }
+            return new RegistrationResult(sameId.get(), true);
+        }
         Optional<Document> existing = documents.findByChecksum(command.checksum());
         if (existing.isPresent()) {
             return new RegistrationResult(existing.get(), true);

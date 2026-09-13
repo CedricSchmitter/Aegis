@@ -8,6 +8,12 @@ Aegis is a shared household workspace for documents, tasks, calendars, and a fut
 
 The household members are **Lisa and Cedric**. The initial application accounts `anna` and `ben` are test identities, not their real names. Do not assume a mapping or rename/delete accounts without preserving IDs, ownership, sessions and existing data through an explicit migration or onboarding flow.
 
+On 2026-09-13 the owner approved the explicit mapping `anna -> lisa / Lisa`, `ben -> cedric / Cedric`.
+The tracked operator onboarding flow preserves existing identities and credentials. The preferred local
+hostname is `aegis`; DNS and device certificate trust still need verification. The owner deferred external
+disk attachment until it becomes necessary; continue synthetic tests without it, but require external
+backup and recovery evidence before relying on real household documents.
+
 Priority order: reliable data capture and recovery, useful daily workflows, maintainable architecture, then additional automation. AI must remain optional for storage, search, task management, and deterministic deadline calculation.
 
 The initial household information space is shared by both members. Person/house/contract associations are metadata, not visibility restrictions; both can ask about each other's records and joint documents. Keep individual logins for responsibility, preferences, and audit. Do not implement private document silos in the MVP. Scope access by household and device capabilities; never expose credentials as shared household knowledge.

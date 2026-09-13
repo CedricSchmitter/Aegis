@@ -64,7 +64,9 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
     @Override
     public ImportResult importDocument(Actor actor, ImportDocumentCommand command) {
         access.requireMember(actor);
-        StoredOriginal stored = storeValidated(command.id(), command.content());
+        // Each attempt owns its staging file, even when restoring an existing stable document id.
+        // Duplicate cleanup must never delete or overwrite the original referenced by an existing record.
+        StoredOriginal stored = storeValidated(DocumentId.random(), command.content());
         Checksum expected = Checksum.of(command.expectedChecksumSha256());
         if (!stored.checksum().equals(expected)) {
             deleteQuietly(stored.stagingPath());
@@ -78,6 +80,10 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
                 stored.stagingPath()));
         if (registration.duplicate()) {
             deleteQuietly(stored.stagingPath());
+            if (!registration.document().id().equals(command.id())) {
+                throw new InvalidInputException("document.importConflict",
+                        "Imported checksum already belongs to another document id");
+            }
             return new ImportResult(registration.document().id(), ImportOutcome.ALREADY_PRESENT);
         }
         return new ImportResult(registration.document().id(), ImportOutcome.IMPORTED);
