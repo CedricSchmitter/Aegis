@@ -8,6 +8,10 @@ Aegis is a shared household workspace for documents, tasks, calendars, and a fut
 
 Priority order: reliable data capture and recovery, useful daily workflows, maintainable architecture, then additional automation. AI must remain optional for storage, search, task management, and deterministic deadline calculation.
 
+The initial household information space is shared by both members. Person/house/contract associations are metadata, not visibility restrictions; both can ask about each other's records and joint documents. Keep individual logins for responsibility, preferences, and audit. Do not implement private document silos in the MVP. Scope access by household and device capabilities; never expose credentials as shared household knowledge.
+
+Start with in-app notifications and evaluate Android Web Push over HTTPS. Telegram is an optional future delivery adapter, not the initial primary interface. Prepare calendar read/write ports, but defer calendar writes until the basic workflow has been validated. A currently available external 1 TB disk is the proposed first local backup target; inspect it before any setup and never assume it is empty or authorized for formatting. An offsite copy remains a future resilience improvement.
+
 Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). Read [architecture foundations](docs/architecture/FOUNDATIONS.md) before backend or API work, and [VM access](docs/VM-ACCESS.md) before remote operations. Distinguish accepted decisions, proposed defaults, and implemented capabilities.
 
 ## Language and localization

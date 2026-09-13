@@ -21,8 +21,12 @@ Known requirements:
 - Cloud AI is acceptable; providers and eventual local inference remain replaceable.
 - Documents and essential data remain accessible in open formats.
 - Phone, PC, later MCP clients and a smart mirror use the same data.
+- One shared household information space: person and house associations are metadata, not private silos. Separate logins retain responsibility, preferences and audit.
+- In-app notifications first, Android Web Push to be tested; Telegram remains an optional adapter.
+- Calendar read/write capabilities are prepared, but writes are deferred until the basic workflow proves useful.
+- An external 1 TB disk is available as the candidate first local backup target; its contents, free space and connection are not yet verified.
 
-Still to establish: mail provider, accounts behind Samsung Calendar, host capacity, backup destination, access beyond the current LAN, and notification delivery. Resolve each before its integration without blocking unrelated work.
+Still to establish: mail provider, accounts behind Samsung Calendar, host capacity, safe disk connection/free space, HTTPS and access beyond the LAN, and actual Web Push reliability. Resolve each before its integration without blocking unrelated work.
 
 ## 2. Independent review conclusions
 
@@ -245,7 +249,7 @@ Assume at-least-once execution. External writes use stable action identity. Afte
 - Provider switching preserves data/jobs; evaluate quality and tool behavior separately.
 - Treat document/email instructions as data, never as permission grants.
 - Check access before search and again before reads/actions, including caches/exports.
-- Direct Paperless access preserves personal/shared boundaries through individual permissions or a shared-only scope. Broad tokens/common exports must not expose private records. Administrative access is distinct from normal user rights.
+- Both household members receive the same shared document collection through Aegis and direct Paperless access. Enforce household membership and device scopes; person metadata must not hide information from the other member. Administrative credentials remain outside searchable household data.
 
 ## 6. Delivery phases and acceptance gates
 
@@ -260,7 +264,7 @@ Work:
 - Identify mail authentication, mailbox volume, calendar accounts/sharing and local-only calendars.
 - Verify host resources, storage, backup target and access requirements.
 - Select ten scenarios with both users and 20–30 representative records: scan, invoice, contract, amendment, text email, portal notice and difficult scan.
-- Agree shared/private areas, notifications and initial locale preference.
+- Confirm person/house associations within the shared collection, notification preferences and initial locale preference.
 - Pin compatible stable dependencies and check provider authentication/license requirements before integration.
 - Record the accepted Maven/DDD/hexagonal foundation and decisions about jobs, ownership and recovery.
 
@@ -281,7 +285,7 @@ Work:
 - Add health checks, capacity visibility and useful logs without content/tokens.
 - Add CI with runnable builds; normal checks need neither private VM connectivity nor live AI credentials.
 
-**Acceptance:** Container recreation preserves data. Both users log in. Unauthorized access fails, including direct Paperless personal-document access or an explicitly shared-only access arrangement. A job survives interruption. A fresh environment restores a backup and opens an original. Architecture checks detect forbidden dependencies.
+**Acceptance:** Container recreation preserves data. Both users log in and can read each other's and joint documents. Unauthenticated or improperly scoped device access fails. A job survives interruption. A fresh environment restores a backup and opens an original. Architecture checks detect forbidden dependencies.
 
 ### Phase 2 — Capture and retrieval without AI
 
@@ -307,7 +311,7 @@ Work:
 - Create, assign, complete and reschedule tasks, preserving separate deadlines and sources.
 - Read the chosen calendar through CalendarPort.
 - Combine appointments, tasks, unassigned work and review items.
-- Define preferences/deduplication and test an actual delivery channel. Until then, Today is on-demand.
+- Implement the in-app notification inbox, preferences and deduplication. Test Android Web Push over HTTPS on both phones. Until it works, Today remains on-demand; Telegram is optional later.
 - Export tasks to versioned JSON plus CSV/Markdown; test import into a fresh installation.
 
 **Acceptance:** Changes appear on both devices without silent conflict loss. Rescheduling preserves deadlines. Failed calendar access is visible. Tasks, owners and source links survive reimport even when Paperless IDs change. Automatic reminders require successful tests on both phones.
@@ -322,7 +326,7 @@ Work:
 - One cloud model through the extraction port.
 - Extract counterparties, amounts, possible deadlines and action candidates with sources.
 - Let users confirm, correct or reject proposals.
-- Confirmed calendar writes with external IDs/retry protection.
+- Define future calendar write contracts and capability boundaries; live writes are deferred until after the pilot.
 - Cost, time and attempt limits per operation.
 
 **Acceptance:** Repeated polling does not duplicate tasks. Text-only mail works. Portal links do not masquerade as invoices. Token/PDF failures are visible. AI outage does not block capture. Unconfirmed deadlines remain unconfirmed. Historical import does not flood notifications.
@@ -372,6 +376,7 @@ Work:
 - Explicitly allowed recurring workflows.
 - Previews, scoped authorization and action history.
 - MCP writes through the same authorization layer.
+- Add calendar writes only after the core pilot and provider-specific approval, external-ID, conflict and retry behavior have been verified.
 - Bind approval to action/data version and invalidate stale approvals.
 
 **Acceptance:** External messages, spending and contract actions have appropriate authorization. Retries do not duplicate writes. Stale proposals are rechecked. Notifications are grouped and prioritized.
@@ -415,7 +420,8 @@ Nextcloud remains optional. Local inference needs separate RAM/VRAM, storage, mo
 - Proposed RPO: at most 24 hours loss after total server failure, backed by daily successful external backups. Increase frequency if unacceptable.
 - Proposed recovery target: within one day after replacement hardware/storage is available; measure in a restore exercise.
 - Refresh exports after changes where feasible and at least daily; display last success. Only external copies survive complete server loss.
-- Second local device plus encrypted offsite backup with retained generations. Deletion must not immediately remove every recovery copy.
+- First stage: the available external 1 TB disk, after checking contents, free space, health and safe attachment. Keep retained generations; deletion must not immediately remove every recovery copy. A separate encrypted offsite copy is a later resilience improvement, not something already available.
+- If the disk is absent, fail the backup visibly rather than writing into an unmounted local directory. Never claim a fresh backup while disconnected. Test recovery from the actual external destination.
 - Do not treat copying live PostgreSQL files as a consistent backup. Coordinate supported dumps, Paperless exports, files and configuration.
 - Recovery instructions and key access cannot exist only inside Aegis.
 

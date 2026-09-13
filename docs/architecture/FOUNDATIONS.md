@@ -116,13 +116,23 @@ Do not equate an implementation default with a specific owner preference. These 
 - Add minimal health, readiness and operation visibility. Preserve useful diagnostics without logging household document content or tokens.
 - Use coverage reports to find gaps, especially branches and failure behavior. Domain invariants, permissions, retry behavior and data restoration matter more than trivial accessor coverage.
 
-## Product decisions to resolve before their implementation
+## Household sharing and initial delivery decisions
 
-1. Is private per-person storage required in the first release, or is the first document collection entirely shared?
-2. Which phone channel should deliver new task reminders and daily summaries?
-3. Where should the external encrypted backup live, and is a 24-hour recovery point acceptable?
+The owner wants one shared information space. Both authenticated members can read household documents, facts and tasks, including records associated with the other person. A record may concern one person, both people, a house, or several subjects. Subject associations are searchable metadata, never inferred access restrictions. Keep uploader, subject and task owner as distinct concepts. Individual accounts remain useful for preferences, responsibilities, audit, and action approval.
 
-These do not block creating the backend modules. Keep them visible rather than guessing account access or notification preferences.
+Do not add private document areas to the first release. Continue enforcing household membership and limited mirror/MCP identities. Authentication secrets and provider tokens are technical credentials, not searchable shared knowledge. The direct Paperless path must expose the same shared collection to both members.
+
+Start with a durable in-app notification inbox. Add Android Web Push after HTTPS and actual-device tests. Model delivery through a port so a Telegram adapter can be added later without duplicating tasks or business rules. Telegram is not selected or required now. A notification opens the corresponding record in Aegis; delivery and task completion remain separate.
+
+Prepare calendar capabilities behind ports, including future writes, without implementing or granting unrestricted calendar mutations yet. Calendar reading can support the pilot; creation, rescheduling and deletion are deferred until the basic workflow proves useful and provider behavior is tested.
+
+## Initial backup target and remaining checks
+
+An external 1 TB disk is available and is a reasonable candidate for the first local backup of the currently 100 GiB VM. Actual suitability depends on free space, health, existing contents, filesystem, backup scope and retention. Do not equate nominal capacity with guaranteed retention.
+
+Proposed first stage: consistent application backups with Restic to the external disk, with visible completion time and a tested restore. Offsite backup is a later improvement; one nearby disk does not protect against losing both devices together. If disconnected, automatic backups cannot run, and Aegis must show the stale backup state.
+
+Before configuring the disk, establish where it will be connected, what it already contains, and how it is safely exposed to the VM. Do not format, repartition, or change Proxmox storage based solely on its availability. Keep encryption/recovery credentials accessible outside the failed system. A 24-hour recovery point remains a proposal until the actual schedule and availability are agreed.
 
 ## Shared agent entry points
 
