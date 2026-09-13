@@ -17,7 +17,7 @@ cd "$REPO_ROOT"
 COMMIT="$(git rev-parse --verify "$COMMIT_ISH^{commit}")"
 SHORT="$(git rev-parse --short "$COMMIT")"
 ARCHIVE="$(mktemp -t aegis-src-XXXXXX).tar.gz"
-git archive --format=tar.gz --prefix="aegis-$COMMIT/" -o "$ARCHIVE" "$COMMIT"
+git -c core.autocrlf=false archive --format=tar.gz --prefix="aegis-$COMMIT/" -o "$ARCHIVE" "$COMMIT"
 
 echo "Deploying $COMMIT to $TARGET"
 $SSH "$TARGET" "mkdir -p /srv/aegis/source/releases"
