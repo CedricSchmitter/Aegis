@@ -44,6 +44,15 @@ class PaperlessClientTest {
         Files.write(file, "%PDF-x".getBytes());
         server.expect(requestTo("http://paperless.test/api/documents/post_document/")).andExpect(method(HttpMethod.POST))
                 .andExpect(header("Accept", PaperlessClient.ACCEPT_V10))
+                .andExpect(request -> {
+                    String contentType = request.getHeaders().getContentType().toString();
+                    String body = ((org.springframework.mock.http.client.MockClientHttpRequest) request)
+                            .getBodyAsString();
+                    assertThat(contentType).startsWith("multipart/form-data").contains("boundary=");
+                    assertThat(body).contains("name=\"document\"; filename=\"x.pdf\"")
+                            .contains("Content-Type: application/pdf").contains("%PDF-x")
+                            .contains("name=\"title\"").contains("Title");
+                })
                 .andRespond(withSuccess("\"7d3d1b8a-1111-2222-3333-444455556666\"", MediaType.APPLICATION_JSON));
 
         var outcome = client.submit(file, "Title", "x.pdf");

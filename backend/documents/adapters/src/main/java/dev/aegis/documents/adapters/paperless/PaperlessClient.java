@@ -4,19 +4,22 @@ import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.ports.ArchiveRejectedException;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
 import dev.aegis.documents.application.ports.PaperlessArchive;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -30,6 +33,7 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class PaperlessClient implements PaperlessArchive {
     static final String ACCEPT_V10 = "application/json; version=10";
+    private static final String CRLF = "\r\n";
     private static final Logger log = LoggerFactory.getLogger(PaperlessClient.class);
 
     private final RestClient client;
@@ -42,17 +46,17 @@ public class PaperlessClient implements PaperlessArchive {
 
     @Override
     public SubmissionOutcome submit(Path file, String title, String originalFilename) {
-        MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
-        parts.add("document", new FileSystemResource(file) {
-            @Override
-            public String getFilename() {
-                return originalFilename;
-            }
-        });
-        parts.add("title", title);
+        byte[] body;
+        String boundary = "----aegis" + UUID.randomUUID();
         try {
-            String raw = client.post().uri("/api/documents/post_document/").contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(parts).retrieve().body(String.class);
+            body = multipart(boundary, title, originalFilename, Files.readAllBytes(file));
+        } catch (IOException e) {
+            throw new UncheckedIOException("could not read staging file " + file, e);
+        }
+        try {
+            String raw = client.post().uri("/api/documents/post_document/")
+                    .contentType(MediaType.parseMediaType("multipart/form-data; boundary=" + boundary))
+                    .body(body).retrieve().body(String.class);
             String taskId = raw == null ? "" : raw.trim().replace("\"", "");
             if (taskId.isEmpty()) {
                 return new Rejected("paperless.noTaskId", "Paperless returned no consumption task id");
@@ -178,6 +182,28 @@ public class PaperlessClient implements PaperlessArchive {
         }
         log.warn("Paperless rejected a request with {}", status);
         return new ArchiveRejectedException("paperless.rejected", "Paperless answered " + status);
+    }
+
+    /**
+     * Builds the multipart body explicitly (a text part {@code title} and a file part {@code document}) so the
+     * request does not depend on the client's converter configuration and always carries a Content-Length.
+     */
+    static byte[] multipart(String boundary, String title, String originalFilename, byte[] content) {
+        String safeName = originalFilename.replace('"', '_').replace('\r', ' ').replace('\n', ' ');
+        ByteArrayOutputStream out = new ByteArrayOutputStream(content.length + 512);
+        try {
+            out.write(("--" + boundary + CRLF + "Content-Disposition: form-data; name=\"title\"" + CRLF
+                    + "Content-Type: text/plain; charset=UTF-8" + CRLF + CRLF + title + CRLF)
+                    .getBytes(StandardCharsets.UTF_8));
+            out.write(("--" + boundary + CRLF + "Content-Disposition: form-data; name=\"document\"; filename=\""
+                    + safeName + "\"" + CRLF + "Content-Type: application/pdf" + CRLF + CRLF)
+                    .getBytes(StandardCharsets.UTF_8));
+            out.write(content);
+            out.write((CRLF + "--" + boundary + "--" + CRLF).getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return out.toByteArray();
     }
 
     /** Short, content-free excerpt of an error body for diagnostics (validation messages, never documents). */
