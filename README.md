@@ -7,6 +7,8 @@ A private household workspace for documents, tasks, calendars, and a future pers
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
 - [Architecture foundations](docs/architecture/FOUNDATIONS.md): DDD, hexagonal architecture, localization, and engineering decisions.
 - [Roadmap](ROADMAP.md): product scope, data ownership, and phased acceptance criteria.
+- [First runnable test](docs/planning/FIRST-RUNNABLE-TEST.md): GitHub issue map and the concrete deployment finish line.
+- [Fable 5.1 implementation prompt](docs/planning/FABLE-5.1-FIRST-TEST-PROMPT.md): autonomous implementation handoff.
 - [VM access and setup](docs/VM-ACCESS.md): verified Proxmox development environment.
 - [VM bootstrap](ops/bootstrap-vm.sh): reproducible tooling installation inside the dedicated VM.
 

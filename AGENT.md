@@ -12,6 +12,8 @@ The initial household information space is shared by both members. Person/house/
 
 Start with in-app notifications and evaluate Android Web Push over HTTPS. Telegram is an optional future delivery adapter, not the initial primary interface. Prepare calendar read/write ports, but defer calendar writes until the basic workflow has been validated. A currently available external 1 TB disk is the proposed first local backup target; inspect it before any setup and never assume it is empty or authorized for formatting. An offsite copy remains a future resilience improvement.
 
+The owner confirmed that the external disk contains existing data and can eventually remain attached. Prepare its integration only until its contents and attachment are explicitly handled. For the first runnable synthetic-data test, follow docs/planning/FIRST-RUNNABLE-TEST.md: a local isolated restore drill is required, but actual external backup, live provider integrations and mobile push are deferred. Do not confuse this limited test with production readiness.
+
 Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). Read [architecture foundations](docs/architecture/FOUNDATIONS.md) before backend or API work, and [VM access](docs/VM-ACCESS.md) before remote operations. Distinguish accepted decisions, proposed defaults, and implemented capabilities.
 
 ## Language and localization
@@ -65,6 +67,7 @@ Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). R
 - Keep changes focused and reviewable. Use English commit messages that explain the resulting change. Preserve published history unless rewriting it is explicitly authorized.
 - For feature implementation, prefer short-lived branches and reviewable pull requests. The initial shared baseline may be updated directly when requested. Keep deployment tied to an identified commit and avoid untracked remote-only fixes.
 - Follow the user's current authorization for commits, pushes, deployment, and communication. These instructions do not introduce additional approval gates for already authorized routine work.
+- For the first runnable test, the owner explicitly authorizes Git fetch/pull, branches, commits, pushes, PR creation/merging, conflict resolution and issue updates without further Git approval, plus Aegis installation/deployment within the dedicated VM. Tool permission boundaries and preservation of unrelated data still apply.
 - Record decisions and implementation status in the repository, not only in private agent memory. Update relevant docs when behavior changes. Do not claim planned tests or services already exist.
 - Routine handoff: identify the branch/commit, files changed, verification performed, remaining gaps, and the next concrete step.
 
