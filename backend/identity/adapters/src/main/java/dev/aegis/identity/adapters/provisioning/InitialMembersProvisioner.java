@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -20,6 +21,7 @@ import tools.jackson.databind.ObjectMapper;
  * container image; only usernames and outcomes are logged, never passwords.
  */
 @Component
+@Order(10)
 public class InitialMembersProvisioner implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(InitialMembersProvisioner.class);
 

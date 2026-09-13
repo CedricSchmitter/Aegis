@@ -96,7 +96,11 @@ for i in $(seq 1 60); do
     if curl -fs "http://127.0.0.1:$PORT/actuator/health/readiness" >/dev/null 2>&1; then break; fi
     sleep 5
 done
-curl -fs "http://127.0.0.1:$PORT/actuator/health/readiness" >/dev/null || { $COMPOSE logs aegis | tail -50; exit 1; }
+curl -fs "http://127.0.0.1:$PORT/actuator/health/readiness" >/dev/null || {
+    echo "drill: isolated application did not become ready; last errors:" >&2
+    $COMPOSE logs aegis 2>&1 | grep -E "ERROR|Caused by|Exception" | grep -vE "^\s+at " | tail -20 >&2
+    exit 1
+}
 
 echo "drill: verifying restored records"
 sh "$RELEASE_DIR/ops/backup/verify-drill.sh" "http://127.0.0.1:$PORT" "$DRILL_DIR/secrets/initial-members.json" "$SOURCE"
