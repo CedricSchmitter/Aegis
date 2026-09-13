@@ -1,0 +1,23 @@
+# LAN-only HTTP preview for the first runnable test. No TLS is terminated here, so no secure-context features
+# (installable PWA, Web Push) are claimed. HTTPS follow-up: see docs/operations/DEPLOYMENT.md.
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	encode zstd gzip
+	request_body {
+		max_size 60MB
+	}
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options SAMEORIGIN
+		-Server
+	}
+	reverse_proxy aegis:8080 {
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
+}

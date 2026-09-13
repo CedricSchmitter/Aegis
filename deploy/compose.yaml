@@ -1,0 +1,152 @@
+# Aegis first runnable test stack. Run from /srv/aegis/deploy on the Aegis VM with the generated .env next to it.
+# Only the reverse proxy publishes a port (LAN HTTP preview). PostgreSQL, Valkey and Paperless stay on the
+# internal network; Paperless is reached by Aegis over that network only.
+name: aegis
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${AEGIS_DATA_DIR}/caddy/data:/data
+      - ${AEGIS_DATA_DIR}/caddy/config:/config
+    depends_on:
+      aegis:
+        condition: service_healthy
+    networks: [edge, internal]
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  aegis:
+    image: aegis-app:${AEGIS_COMMIT:-dev}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        AEGIS_COMMIT: ${AEGIS_COMMIT:-dev}
+    restart: unless-stopped
+    environment:
+      AEGIS_DB_URL: jdbc:postgresql://postgres:5432/aegis
+      AEGIS_DB_USERNAME: aegis
+      AEGIS_DB_PASSWORD: ${AEGIS_DB_PASSWORD}
+      AEGIS_PAPERLESS_URL: http://paperless:8000
+      AEGIS_PAPERLESS_USERNAME: ${PAPERLESS_ADMIN_USER}
+      AEGIS_PAPERLESS_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+      AEGIS_INGRESS_DIR: /srv/aegis/ingress
+      AEGIS_EXPORTS_DIR: /srv/aegis/exports
+      AEGIS_MEMBERS_FILE: /run/secrets/initial-members.json
+      AEGIS_BACKUP_STATE_FILE: /srv/aegis/backup-state/state.json
+      AEGIS_COOKIE_SECURE: "false"
+      TZ: Europe/Berlin
+    volumes:
+      - ${AEGIS_DATA_DIR}/ingress:/srv/aegis/ingress
+      - ${AEGIS_EXPORTS_DIR}:/srv/aegis/exports
+      - ${AEGIS_DATA_DIR}/backup-state:/srv/aegis/backup-state:ro
+      - ./secrets/initial-members.json:/run/secrets/initial-members.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      paperless:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+    networks: [internal]
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+
+  postgres:
+    image: postgres:17.11
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aegis
+      POSTGRES_PASSWORD: ${AEGIS_DB_PASSWORD}
+      POSTGRES_DB: aegis
+      PAPERLESS_DB_PASSWORD: ${PAPERLESS_DB_PASSWORD}
+    volumes:
+      - ${AEGIS_DATA_DIR}/postgres:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis -d aegis"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  broker:
+    image: valkey/valkey:9-alpine
+    restart: unless-stopped
+    volumes:
+      - ${AEGIS_DATA_DIR}/valkey:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBHOST: postgres
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${PAPERLESS_DB_PASSWORD}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+      PAPERLESS_TIME_ZONE: Europe/Berlin
+      PAPERLESS_OCR_LANGUAGE: deu+eng
+      PAPERLESS_CONSUMER_DELETE_DUPLICATES: "true"
+      PAPERLESS_TASK_WORKERS: "1"
+      PAPERLESS_THREADS_PER_WORKER: "2"
+      PAPERLESS_WEBSERVER_WORKERS: "1"
+      PAPERLESS_URL: http://paperless:8000
+      PAPERLESS_ALLOWED_HOSTS: paperless,localhost
+    volumes:
+      - ${AEGIS_DATA_DIR}/paperless/data:/usr/src/paperless/data
+      - ${AEGIS_DATA_DIR}/paperless/media:/usr/src/paperless/media
+      - ${AEGIS_DATA_DIR}/paperless/export:/usr/src/paperless/export
+      - ${AEGIS_DATA_DIR}/paperless/consume:/usr/src/paperless/consume
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "-S", "-L", "--max-time", "2", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks: [internal]
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+
+networks:
+  edge:
+  internal:
+    internal: false

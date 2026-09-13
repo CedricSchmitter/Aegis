@@ -6,15 +6,20 @@
 *.key
 *_ed25519
 *_rsa
+deploy/secrets/
 
 # Build output and local development state
 target/
 node_modules/
 dist/
 .idea/
+.vscode/
 .DS_Store
+playwright-report/
+test-results/
 
 # Operational data must stay outside source control
 /data/
 /exports/
 /backup-staging/
+backend/data/

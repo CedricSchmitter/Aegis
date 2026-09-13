@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>dev.aegis</groupId>
+  <artifactId>aegis-backend</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Aegis backend</name>
+  <description>Modular household workspace backend: DDD and hexagonal Maven modules</description>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- Verified stable versions (September 2026); keep pinned and update deliberately. -->
+    <spring-boot.version>4.1.1</spring-boot.version>
+    <db-scheduler.version>16.12.0</db-scheduler.version>
+    <springdoc.version>3.1.1</springdoc.version>
+    <archunit.version>1.5.0</archunit.version>
+
+    <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
+    <maven-failsafe-plugin.version>3.5.4</maven-failsafe-plugin.version>
+    <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
+    <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+    <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+    <jacoco.version>0.8.14</jacoco.version>
+
+    <!-- Integration tests (PostgreSQL via Testcontainers) run in the verify phase; -DskipITs=true skips them. -->
+    <skipITs>false</skipITs>
+  </properties>
+
+  <modules>
+    <module>shared-kernel</module>
+    <module>identity/domain</module>
+    <module>identity/application</module>
+    <module>identity/adapters</module>
+    <module>documents/domain</module>
+    <module>documents/application</module>
+    <module>documents/adapters</module>
+    <module>planning/domain</module>
+    <module>planning/application</module>
+    <module>planning/adapters</module>
+    <module>notifications/domain</module>
+    <module>notifications/application</module>
+    <module>notifications/adapters</module>
+    <module>operations/application</module>
+    <module>operations/adapters</module>
+    <module>portability/application</module>
+    <module>portability/adapters</module>
+    <module>bootstrap</module>
+    <module>architecture-tests</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.github.kagkarlsson</groupId>
+        <artifactId>db-scheduler</artifactId>
+        <version>${db-scheduler.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.kagkarlsson</groupId>
+        <artifactId>db-scheduler-spring-boot-4-starter</artifactId>
+        <version>${db-scheduler.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+        <version>${springdoc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit</artifactId>
+        <version>${archunit.version}</version>
+      </dependency>
+
+      <!-- Internal modules -->
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-shared-kernel</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-identity-domain</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-identity-application</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-identity-adapters</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-documents-domain</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-documents-application</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-documents-adapters</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-planning-domain</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-planning-application</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-planning-adapters</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-notifications-domain</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-notifications-application</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-notifications-adapters</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-operations-application</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-operations-adapters</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-portability-application</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-portability-adapters</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-bootstrap</artifactId><version>${project.version}</version></dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- Every module gets JUnit 5 and AssertJ for fast plain-Java tests. -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${maven-compiler-plugin.version}</version>
+          <configuration>
+            <release>21</release>
+            <parameters>true</parameters>
+            <compilerArgs>
+              <arg>-Xlint:all,-processing,-serial</arg>
+            </compilerArgs>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${maven-surefire-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${maven-failsafe-plugin.version}</version>
+          <configuration>
+            <skipITs>${skipITs}</skipITs>
+            <!-- Run against compiled classes, not the repackaged Spring Boot jar. -->
+            <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${maven-resources-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${maven-jar-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring-boot.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${jacoco.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <!-- Runs *IT classes (PostgreSQL/Testcontainers) in the verify phase of every module that has them. -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven-enforcer-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>enforce-toolchain</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion><version>[21,22)</version></requireJavaVersion>
+                <requireMavenVersion><version>[3.9,)</version></requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals><goal>prepare-agent</goal></goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals><goal>report</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

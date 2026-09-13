@@ -1,0 +1,96 @@
+spring:
+  application:
+    name: aegis
+  config:
+    import: optional:classpath:application-build.properties
+  datasource:
+    url: ${AEGIS_DB_URL:jdbc:postgresql://localhost:5432/aegis}
+    username: ${AEGIS_DB_USERNAME:aegis}
+    password: ${AEGIS_DB_PASSWORD:aegis}
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    locations:
+      - classpath:db/migration/platform
+      - classpath:db/migration/identity
+      - classpath:db/migration/documents
+      - classpath:db/migration/planning
+      - classpath:db/migration/notifications
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 52MB
+  session:
+    timeout: 30d
+    jdbc:
+      initialize-schema: never
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        name: AEGIS_SESSION
+        http-only: true
+        same-site: lax
+        secure: ${AEGIS_COOKIE_SECURE:false}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+db-scheduler:
+  threads: 4
+  polling-interval: 2s
+  immediate-execution-enabled: true
+  delay-startup-until-context-ready: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+springdoc:
+  api-docs:
+    path: /api/openapi.json
+
+aegis:
+  household:
+    zone: Europe/Berlin
+  ingress:
+    dir: ${AEGIS_INGRESS_DIR:./data/ingress}
+  exports:
+    dir: ${AEGIS_EXPORTS_DIR:./data/exports}
+  members:
+    file: ${AEGIS_MEMBERS_FILE:}
+  paperless:
+    base-url: ${AEGIS_PAPERLESS_URL:http://localhost:8000}
+    username: ${AEGIS_PAPERLESS_USERNAME:}
+    password: ${AEGIS_PAPERLESS_PASSWORD:}
+    connect-timeout: 5s
+    read-timeout: 120s
+  archival:
+    max-attempts: 8
+    poll-timeout: 20m
+    staging-retention: 7d
+    max-upload-bytes: 52428800
+  backup:
+    state-file: ${AEGIS_BACKUP_STATE_FILE:}
+  import:
+    path: ${AEGIS_IMPORT_PATH:}
+    actor-username: ${AEGIS_IMPORT_ACTOR:}
