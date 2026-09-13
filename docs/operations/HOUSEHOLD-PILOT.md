@@ -14,6 +14,11 @@ is trusted on the device. Credentials remain only in the VM's restricted seed fi
 
 ## Trusted HTTPS (prepared, not yet switched)
 
+The persistent CA was generated and a loopback-only proxy successfully served the live version API with
+certificate verification on 2026-09-13. Public root SHA-256 fingerprint (verified through trusted SSH):
+`6B:26:73:D6:B7:F2:89:14:68:E8:1C:56:FB:42:EB:7D:82:75:C5:85:66:86:E6:A8:C7:5E:5C:76:4D:10:AD:5D`.
+The certificate is available on the VM at the path below; no private key was copied to client devices.
+
 `deploy/Caddyfile.https` serves `https://aegis` and an IP fallback using Caddy's local CA.
 `deploy/compose.https.yaml` enables port 443 and Secure session cookies. Deployment honors
 `AEGIS_HTTPS=true` in the private VM `.env`, so later releases retain the selected mode.
