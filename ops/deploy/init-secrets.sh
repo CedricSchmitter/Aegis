@@ -51,6 +51,10 @@ else
 EOF
     echo "Wrote $MEMBERS_FILE (initial household logins; read it over SSH, never paste it into issues)"
 fi
+# The application container runs as uid/gid 10001 and must read the members file; aegis-agent keeps ownership.
+sudo -n chgrp 10001 "$MEMBERS_FILE" && chmod 0640 "$MEMBERS_FILE"
+chmod 0750 "$DEPLOY_DIR/secrets"
+sudo -n chgrp 10001 "$DEPLOY_DIR/secrets"
 
 # Persistent directories. The application container runs as uid 10001; Paperless and PostgreSQL manage their own.
 sudo -n install -d -m 0750 -o 10001 -g 10001 "$DATA_DIR/ingress" "$DATA_DIR/backup-state"

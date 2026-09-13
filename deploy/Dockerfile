@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=/root/.m2 chmod +x mvnw && ./mvnw -B -q -Pfrontend
     && cp bootstrap/target/aegis-bootstrap-*.jar /build/aegis.jar
 
 FROM eclipse-temurin:21-jre-alpine AS runtime
-RUN addgroup -S aegis && adduser -S -G aegis -u 10001 aegis \
+RUN addgroup -S -g 10001 aegis && adduser -S -G aegis -u 10001 aegis \
     && mkdir -p /srv/aegis/ingress /srv/aegis/exports && chown -R aegis:aegis /srv/aegis
 USER aegis
 WORKDIR /srv/aegis

@@ -37,6 +37,9 @@ cat > "$DRILL_DIR/secrets/initial-members.json" <<EOF
   {"username": "ben", "displayName": "Ben", "initialPassword": "$(random 15)", "locale": "DE"}
 ]}
 EOF
+sudo -n chgrp 10001 "$DRILL_DIR/secrets/initial-members.json" "$DRILL_DIR/secrets"
+chmod 0640 "$DRILL_DIR/secrets/initial-members.json"
+chmod 0750 "$DRILL_DIR/secrets"
 umask 077
 cat > "$DRILL_DIR/.env" <<EOF
 AEGIS_COMMIT=$COMMIT
