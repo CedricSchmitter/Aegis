@@ -7,22 +7,35 @@ import { expect, test, type Page } from "@playwright/test";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.resolve(here, "../../fixtures/synthetic-contract.pdf");
 const FIXTURE_SHA256 = readFileSync(path.resolve(here, "../../fixtures/synthetic-contract.pdf.sha256"), "utf8").split(/\s+/)[0];
+// Each run uploads unique bytes (fixture plus a trailing PDF comment) so duplicate detection of earlier runs does
+// not short-circuit the flow; the checksum of exactly these bytes must come back unchanged.
+const runId = Date.now().toString(36);
+const RUN_PDF = Buffer.concat([readFileSync(FIXTURE), Buffer.from(`\n%% e2e run ${runId}\n`, "latin1")]);
+const RUN_SHA256 = createHash("sha256").update(RUN_PDF).digest("hex");
 
 const userA = { username: process.env.AEGIS_USER_A ?? "anna", password: process.env.AEGIS_PASSWORD_A ?? "" };
 const userB = { username: process.env.AEGIS_USER_B ?? "ben", password: process.env.AEGIS_PASSWORD_B ?? "" };
-const runId = Date.now().toString(36);
 
 async function login(page: Page, user: { username: string; password: string }) {
   await page.goto("/login");
   await page.getByLabel(/Benutzername|Username/).fill(user.username);
   await page.getByLabel(/Passwort|Password/).fill(user.password);
   await page.getByRole("button", { name: /^(Anmelden|Sign in)$/ }).click();
+  await expect(page).not.toHaveURL(/\/login$/);
+  await page.goto("/today");
   await expect(page).toHaveURL(/\/today$/);
 }
 
 async function logout(page: Page) {
   await page.getByRole("button", { name: /Abmelden|Log out/ }).click();
   await expect(page).toHaveURL(/\/login$/);
+}
+
+async function ensureGerman(page: Page) {
+  if ((await page.getByTestId("language-switch").textContent())?.trim() === "DE") {
+    await page.getByTestId("language-switch").click();
+    await expect(page.getByTestId("language-switch")).toHaveText("EN");
+  }
 }
 
 test.describe("first runnable test", () => {
@@ -34,6 +47,7 @@ test.describe("first runnable test", () => {
     const version = await request.get("/api/system/version");
     expect(version.ok()).toBeTruthy();
     expect((await version.json()).commit).toBeTruthy();
+    expect(FIXTURE_SHA256).toHaveLength(64);
   });
 
   test("wrong password shows a localized error and keeps the login page", async ({ page }) => {
@@ -68,35 +82,32 @@ test.describe("first runnable test", () => {
   test("upload, archival, original, linked task, shared visibility, notices and restart-safe records", async ({ page, browser }) => {
     test.setTimeout(600_000);
     await login(page, userA);
-    // Force German for deterministic labels.
-    if ((await page.getByTestId("language-switch").textContent())?.trim() === "DE") {
-      await page.getByTestId("language-switch").click();
-    }
+    await ensureGerman(page);
 
     // Upload a synthetic PDF and wait for real archival.
     await page.getByRole("link", { name: "Dokumente" }).first().click();
     await page.getByTestId("upload-input").setInputFiles({
       name: `Stromvertrag e2e ${runId}.pdf`,
       mimeType: "application/pdf",
-      buffer: readFileSync(FIXTURE),
+      buffer: RUN_PDF,
     });
     await page.getByTestId("upload-submit").click();
-    await expect(page.getByRole("status")).toContainText(/dauerhaft gespeichert|bereits vorhanden/);
+    await expect(page.getByRole("status")).toContainText("dauerhaft gespeichert");
     const card = page.locator("[data-testid=document-card]", { hasText: `Stromvertrag e2e ${runId}` }).first();
     await expect(card).toBeVisible();
     await card.getByRole("link").first().click();
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 300_000 });
     const documentUrl = page.url();
     const documentId = documentUrl.split("/").pop()!;
-    await expect(page.getByTestId("checksum")).toContainText(FIXTURE_SHA256);
+    await expect(page.getByTestId("checksum")).toContainText(RUN_SHA256);
 
     // Original bytes are unchanged (checked through the authenticated API of this browser session).
     const original = await page.request.get(`/api/documents/${documentId}/original`);
     expect(original.ok()).toBeTruthy();
     expect(original.headers()["x-aegis-original-source"]).toBe("ARCHIVE");
-    expect(createHash("sha256").update(await original.body()).digest("hex")).toBe(FIXTURE_SHA256);
+    expect(createHash("sha256").update(await original.body()).digest("hex")).toBe(RUN_SHA256);
 
-    // Search by content (OCR/full text) and by title.
+    // Search by content (full text of the archive) and by title.
     await page.getByRole("link", { name: "Dokumente" }).first().click();
     await page.getByTestId("search-input").fill("Kuendigungsfrist");
     await page.getByRole("button", { name: "Suchen" }).click();
@@ -122,13 +133,11 @@ test.describe("first runnable test", () => {
     await expect(taskItem).toContainText("15.11.2026");
     await logout(page);
 
-    // The other member sees the document, the notice and completes the task from Today.
+    // The other member sees the document, the notice and completes the task.
     const contextB = await browser.newContext({ locale: "de-DE" });
     const pageB = await contextB.newPage();
     await login(pageB, userB);
-    if ((await pageB.getByTestId("language-switch").textContent())?.trim() === "DE") {
-      await pageB.getByTestId("language-switch").click();
-    }
+    await ensureGerman(pageB);
     await pageB.getByRole("link", { name: "Hinweise" }).first().click();
     const notice = pageB.locator("[data-testid=notice]", { hasText: `Kündigen ${runId}` });
     await expect(notice).toBeVisible();
@@ -163,7 +172,7 @@ test.describe("first runnable test", () => {
     const archived = documents.items.filter((d) => d.title.startsWith("Stromvertrag e2e") && d.processing.state === "ARCHIVED");
     expect(archived.length).toBeGreaterThanOrEqual(1);
     const tasks = (await (await page.request.get("/api/tasks?includeDone=true")).json()) as { title: string; status: string }[];
-    expect(tasks.some((t) => t.title.startsWith("K�ndigen") && t.status === "DONE")).toBeTruthy();
+    expect(tasks.some((t) => t.title.startsWith("Kündigen") && t.status === "DONE")).toBeTruthy();
     await page.getByRole("link", { name: /Dokumente|Documents/ }).first().click();
     await expect(page.locator("[data-testid=document-card]").first()).toBeVisible();
     await logout(page);

@@ -78,8 +78,9 @@ export function Layout({ children }: { children: ReactNode }) {
               type="button"
               className="btn-ghost"
               onClick={async () => {
-                await logout();
+                // Leave the protected route first so the login page does not remember it as the return target.
                 navigate("/login");
+                await logout();
               }}
             >
               {t("nav.logout")}

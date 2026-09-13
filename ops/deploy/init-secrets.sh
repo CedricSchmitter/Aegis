@@ -56,7 +56,10 @@ sudo -n chgrp 10001 "$MEMBERS_FILE" && chmod 0640 "$MEMBERS_FILE"
 chmod 0750 "$DEPLOY_DIR/secrets"
 sudo -n chgrp 10001 "$DEPLOY_DIR/secrets"
 
-# Persistent directories. The application container runs as uid 10001; Paperless and PostgreSQL manage their own.
+# Persistent directories. The application container runs as uid/gid 10001; a host group with that gid lets
+# aegis-agent read exports and ingress (for the restore drill and inspection) without sudo after re-login.
+getent group aegis-app >/dev/null || sudo -n groupadd -g 10001 aegis-app
+id -nG aegis-agent | grep -qw aegis-app || sudo -n usermod -aG aegis-app aegis-agent
 sudo -n install -d -m 0750 -o 10001 -g 10001 "$DATA_DIR/ingress" "$DATA_DIR/backup-state"
 sudo -n install -d -m 0750 -o 10001 -g 10001 "$EXPORTS_DIR"
 sudo -n install -d -m 0750 "$DATA_DIR/postgres" "$DATA_DIR/valkey" "$DATA_DIR/caddy/data" "$DATA_DIR/caddy/config" \
