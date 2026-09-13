@@ -6,6 +6,8 @@ This is the canonical repository instruction file for human contributors, Codex,
 
 Aegis is a shared household workspace for documents, tasks, calendars, and a future personal assistant. Optimize for two people using their own Android phones without technical assistance.
 
+The household members are **Lisa and Cedric**. The initial application accounts `anna` and `ben` are test identities, not their real names. Do not assume a mapping or rename/delete accounts without preserving IDs, ownership, sessions and existing data through an explicit migration or onboarding flow.
+
 Priority order: reliable data capture and recovery, useful daily workflows, maintainable architecture, then additional automation. AI must remain optional for storage, search, task management, and deterministic deadline calculation.
 
 The initial household information space is shared by both members. Person/house/contract associations are metadata, not visibility restrictions; both can ask about each other's records and joint documents. Keep individual logins for responsibility, preferences, and audit. Do not implement private document silos in the MVP. Scope access by household and device capabilities; never expose credentials as shared household knowledge.
