@@ -84,7 +84,7 @@ export function NoticesPage() {
             const unread = !notice.readAt;
             return (
               <li key={notice.id} className={`card flex flex-col gap-1 ${unread ? "border-sky-400 dark:border-sky-600" : ""}`} data-testid="notice" data-unread={unread}>
-                <p className={unread ? "font-semibold" : ""}>{t(`notices.kind.${notice.kind}`, { ...(notice.params ?? {}), defaultValue: notice.kind })}</p>
+                <p className={unread ? "font-semibold" : ""}>{String(t(`notices.kind.${notice.kind}`, { ...(notice.params ?? {}), defaultValue: notice.kind }))}</p>
                 <p className="text-xs text-stone-500">
                   {formatDateTime(notice.createdAt, i18n.language)}
                   {notice.readAt && <> · {t("notices.readAt", { date: formatDateTime(notice.readAt, i18n.language) })}</>}

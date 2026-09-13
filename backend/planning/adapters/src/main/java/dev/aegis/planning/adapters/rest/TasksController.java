@@ -9,6 +9,7 @@ import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.TaskId;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -38,27 +39,28 @@ public class TasksController {
         this.queries = queries;
     }
 
-    public record CreateTaskRequest(@NotBlank String title, String note, String ownerId, LocalDate dueDate,
-            LocalDate plannedDate, String sourceDocumentId) {
+    public record CreateTaskRequest(@NotBlank String title, @Schema(nullable = true) String note,
+            @Schema(nullable = true) String ownerId, @Schema(nullable = true) LocalDate dueDate,
+            @Schema(nullable = true) LocalDate plannedDate, @Schema(nullable = true) String sourceDocumentId) {
     }
 
-    public record EditTaskRequest(@NotBlank String title, String note, long expectedVersion) {
+    public record EditTaskRequest(@NotBlank String title, @Schema(nullable = true) String note, long expectedVersion) {
     }
 
-    public record AssignRequest(String ownerId, long expectedVersion) {
+    public record AssignRequest(@Schema(nullable = true) String ownerId, long expectedVersion) {
     }
 
-    public record PlanWorkRequest(LocalDate plannedDate, long expectedVersion) {
+    public record PlanWorkRequest(@Schema(nullable = true) LocalDate plannedDate, long expectedVersion) {
     }
 
-    public record DueDateRequest(LocalDate dueDate, long expectedVersion) {
+    public record DueDateRequest(@Schema(nullable = true) LocalDate dueDate, long expectedVersion) {
     }
 
     public record VersionRequest(long expectedVersion) {
     }
 
-    public record CalendarStatusDto(boolean connected, String provider, boolean readSupported,
-            boolean writeSupported) {
+    public record CalendarStatusDto(boolean connected, @Schema(nullable = true) String provider,
+            boolean readSupported, boolean writeSupported) {
     }
 
     public record TodayResponse(LocalDate date, List<TaskDto> overdue, List<TaskDto> dueToday,

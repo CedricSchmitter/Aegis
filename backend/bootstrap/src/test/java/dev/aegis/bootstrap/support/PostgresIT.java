@@ -10,8 +10,6 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
@@ -19,7 +17,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * provisioned members and temporary ingress/export directories. Paperless is replaced by an in-process fake.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 @Import(TestArchiveConfiguration.class)
 public abstract class PostgresIT {
     public static final String ANNA = "anna";
@@ -27,9 +24,16 @@ public abstract class PostgresIT {
     public static final String PASSWORD = "synthetic-test-password";
     public static final Path FIXTURE = Path.of("..", "..", "fixtures", "synthetic-contract.pdf");
 
-    @Container
+    /**
+     * Started once per JVM (not per test class) because the Spring test context is cached across the IT classes
+     * and must keep talking to the same database. Testcontainers' Ryuk removes the container at JVM exit.
+     */
     @ServiceConnection
     static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17.11");
+
+    static {
+        postgres.start();
+    }
 
     protected static final Path DATA = createDataDir();
 

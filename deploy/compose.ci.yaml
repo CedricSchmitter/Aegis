@@ -1,0 +1,11 @@
+# CI override for the browser smoke test: same images and wiring as the VM, but the application image comes from
+# the local build, data lives in a runner-local directory and Paperless runs with minimal workers.
+services:
+  aegis:
+    image: aegis-app:ci
+    build:
+      args:
+        AEGIS_COMMIT: ci
+  paperless:
+    environment:
+      PAPERLESS_OCR_MODE: skip_noarchive

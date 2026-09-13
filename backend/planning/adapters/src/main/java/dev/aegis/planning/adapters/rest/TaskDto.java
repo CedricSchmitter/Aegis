@@ -1,15 +1,17 @@
 package dev.aegis.planning.adapters.rest;
 
 import dev.aegis.planning.application.api.TaskSummary;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDate;
 
 /** REST representation of a task. Dates are ISO local dates; instants are ISO-8601 UTC. */
-public record TaskDto(String id, String title, String note, String ownerId, String status, LocalDate dueDate,
-        LocalDate plannedDate, SourceDto source, String createdBy, Instant createdAt, Instant updatedAt,
-        Instant completedAt, String completedBy, long version) {
+public record TaskDto(String id, String title, String note, @Schema(nullable = true) String ownerId, String status,
+        @Schema(nullable = true) LocalDate dueDate, @Schema(nullable = true) LocalDate plannedDate,
+        @Schema(nullable = true) SourceDto source, String createdBy, Instant createdAt, Instant updatedAt,
+        @Schema(nullable = true) Instant completedAt, @Schema(nullable = true) String completedBy, long version) {
 
-    public record SourceDto(String documentId, String documentTitle) {
+    public record SourceDto(String documentId, @Schema(nullable = true) String documentTitle) {
     }
 
     static TaskDto from(TaskSummary s) {

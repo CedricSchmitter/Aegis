@@ -57,7 +57,13 @@ class RestoreIT extends PostgresIT {
     void restoreIntoWipedInstancePreservesIdsAndSourceLinksDespiteNewExternalIds() throws Exception {
         Actor anna = new Actor(members.findCredentials(ANNA).orElseThrow().id());
         Actor ben = new Actor(members.findCredentials(BEN).orElseThrow().id());
-        byte[] pdf = fixtureBytes();
+        // Unique content: the shared fixture may already exist from another IT class in the same database.
+        byte[] fixture = fixtureBytes();
+        byte[] marker = (" %% restore drill " + System.nanoTime() + " %% ")
+                .getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        byte[] pdf = new byte[fixture.length + marker.length];
+        System.arraycopy(fixture, 0, pdf, 0, fixture.length);
+        System.arraycopy(marker, 0, pdf, fixture.length, marker.length);
         var uploaded = upload.upload(anna, new UploadCommand("Restore Vertrag.pdf", "application/pdf", pdf.length,
                 new ByteArrayInputStream(pdf), List.of(new SubjectView("MEMBER", ben.memberId())))).document();
         DocumentId documentId = uploaded.id();

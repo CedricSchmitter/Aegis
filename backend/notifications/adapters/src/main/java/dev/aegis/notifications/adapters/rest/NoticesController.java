@@ -1,7 +1,6 @@
 package dev.aegis.notifications.adapters.rest;
 
 import dev.aegis.notifications.application.api.NoticeInbox;
-import dev.aegis.notifications.application.api.NoticeSummary;
 import dev.aegis.shared.Actor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,9 +31,9 @@ public class NoticesController {
 
     @Operation(operationId = "listNotices", summary = "List the current member's notices, newest first")
     @GetMapping
-    public List<NoticeSummary> list(Actor actor,
+    public List<NoticeDto> list(Actor actor,
             @RequestParam(name = "unreadOnly", defaultValue = "false") boolean unreadOnly) {
-        return inbox.list(actor, unreadOnly);
+        return inbox.list(actor, unreadOnly).stream().map(NoticeDto::from).toList();
     }
 
     @Operation(operationId = "unreadNoticeCount", summary = "Number of unread notices")
@@ -45,8 +44,8 @@ public class NoticesController {
 
     @Operation(operationId = "markNoticeRead", summary = "Mark one notice as read")
     @PostMapping("/{id}/read")
-    public NoticeSummary markRead(Actor actor, @PathVariable("id") String id) {
-        return inbox.markRead(actor, id);
+    public NoticeDto markRead(Actor actor, @PathVariable("id") String id) {
+        return NoticeDto.from(inbox.markRead(actor, id));
     }
 
     @Operation(operationId = "markAllNoticesRead", summary = "Mark every unread notice as read")

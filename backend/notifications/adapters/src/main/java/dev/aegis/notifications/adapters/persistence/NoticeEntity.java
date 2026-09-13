@@ -23,7 +23,7 @@ public class NoticeEntity {
     @Column(name = "dedup_key", nullable = false, length = 200)
     private String dedupKey;
 
-    @Column(name = "params_json", nullable = false)
+    @Column(name = "params_json", nullable = false, columnDefinition = "text")
     private String paramsJson;
 
     @Column(name = "link_type", length = 20)

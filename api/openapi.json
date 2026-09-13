@@ -1,0 +1,1481 @@
+{
+  "components" : {
+    "schemas" : {
+      "AssignRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "ownerId" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "CalendarStatusDto" : {
+        "properties" : {
+          "connected" : {
+            "type" : "boolean"
+          },
+          "provider" : {
+            "type" : [ "string", "null" ]
+          },
+          "readSupported" : {
+            "type" : "boolean"
+          },
+          "writeSupported" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "connected", "readSupported", "writeSupported" ],
+        "type" : "object"
+      },
+      "CreateTaskRequest" : {
+        "properties" : {
+          "dueDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownerId" : {
+            "type" : [ "string", "null" ]
+          },
+          "plannedDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "sourceDocumentId" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "title" ],
+        "type" : "object"
+      },
+      "DocumentDto" : {
+        "properties" : {
+          "checksumSha256" : {
+            "type" : "string"
+          },
+          "contentType" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "originalAvailable" : {
+            "type" : "boolean"
+          },
+          "originalFilename" : {
+            "type" : "string"
+          },
+          "processing" : {
+            "$ref" : "#/components/schemas/ProcessingDto"
+          },
+          "sizeBytes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjects" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SubjectDto"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "uploadedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "uploadedBy" : {
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "checksumSha256", "contentType", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "title", "uploadedAt", "uploadedBy", "version" ],
+        "type" : "object"
+      },
+      "DocumentListResponse" : {
+        "properties" : {
+          "contentSearch" : {
+            "enum" : [ "NOT_APPLIED", "READY", "UNAVAILABLE" ],
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentDto"
+            },
+            "type" : "array"
+          },
+          "totalDocuments" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "contentSearch", "items", "totalDocuments" ],
+        "type" : "object"
+      },
+      "DueDateRequest" : {
+        "properties" : {
+          "dueDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "EditTaskRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "expectedVersion", "title" ],
+        "type" : "object"
+      },
+      "ExportSummaryDto" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "documentCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "generation" : {
+            "type" : "string"
+          },
+          "location" : {
+            "type" : [ "string", "null" ]
+          },
+          "memberCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "missingOriginals" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "taskCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "createdAt", "documentCount", "generation", "memberCount", "missingOriginals", "taskCount" ],
+        "type" : "object"
+      },
+      "IntegrationStatusDto" : {
+        "properties" : {
+          "checkedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "detail" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastSuccessAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "state" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "name", "state" ],
+        "type" : "object"
+      },
+      "LocaleRequest" : {
+        "properties" : {
+          "locale" : {
+            "enum" : [ "DE", "EN" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "locale" ],
+        "type" : "object"
+      },
+      "LoginRequest" : {
+        "properties" : {
+          "password" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "username" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "password", "username" ],
+        "type" : "object"
+      },
+      "MarkAllReadResponse" : {
+        "properties" : {
+          "marked" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "marked" ],
+        "type" : "object"
+      },
+      "MemberDto" : {
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "locale" : {
+            "enum" : [ "DE", "EN" ],
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "displayName", "id", "locale", "username" ],
+        "type" : "object"
+      },
+      "NoticeDto" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "linkId" : {
+            "type" : [ "string", "null" ]
+          },
+          "linkType" : {
+            "type" : [ "string", "null" ]
+          },
+          "params" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "readAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "createdAt", "id", "kind", "params" ],
+        "type" : "object"
+      },
+      "PasswordChangeRequest" : {
+        "properties" : {
+          "currentPassword" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "newPassword" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "currentPassword", "newPassword" ],
+        "type" : "object"
+      },
+      "PlanWorkRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "plannedDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "ProcessingDto" : {
+        "properties" : {
+          "archivedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "attempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "lastErrorAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "lastErrorCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastErrorMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "nextAttemptAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "paperlessDocumentId" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "retryScheduled" : {
+            "type" : "boolean"
+          },
+          "state" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "attempts", "retryScheduled", "state" ],
+        "type" : "object"
+      },
+      "RenameRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "title" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "expectedVersion", "title" ],
+        "type" : "object"
+      },
+      "SessionResponse" : {
+        "properties" : {
+          "member" : {
+            "$ref" : "#/components/schemas/MemberDto"
+          }
+        },
+        "required" : [ "member" ],
+        "type" : "object"
+      },
+      "SourceDto" : {
+        "properties" : {
+          "documentId" : {
+            "type" : "string"
+          },
+          "documentTitle" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "documentId" ],
+        "type" : "object"
+      },
+      "SubjectDto" : {
+        "properties" : {
+          "kind" : {
+            "type" : "string"
+          },
+          "memberId" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "kind" ],
+        "type" : "object"
+      },
+      "SubjectsRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjects" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SubjectDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "expectedVersion", "subjects" ],
+        "type" : "object"
+      },
+      "SystemStatusDto" : {
+        "properties" : {
+          "documentProcessing" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "generatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "integrations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/IntegrationStatusDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "documentProcessing", "generatedAt", "integrations" ],
+        "type" : "object"
+      },
+      "TaskDto" : {
+        "properties" : {
+          "completedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "completedBy" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "dueDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "ownerId" : {
+            "type" : [ "string", "null" ]
+          },
+          "plannedDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "source" : {
+            "$ref" : "#/components/schemas/SourceDto",
+            "type" : "null"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "createdAt", "createdBy", "id", "note", "status", "title", "updatedAt", "version" ],
+        "type" : "object"
+      },
+      "TodayResponse" : {
+        "properties" : {
+          "calendar" : {
+            "$ref" : "#/components/schemas/CalendarStatusDto"
+          },
+          "date" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "dueToday" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TaskDto"
+            },
+            "type" : "array"
+          },
+          "overdue" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TaskDto"
+            },
+            "type" : "array"
+          },
+          "plannedToday" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TaskDto"
+            },
+            "type" : "array"
+          },
+          "unassigned" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TaskDto"
+            },
+            "type" : "array"
+          },
+          "upcoming" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TaskDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "calendar", "date", "dueToday", "overdue", "plannedToday", "unassigned", "upcoming" ],
+        "type" : "object"
+      },
+      "UnreadCountResponse" : {
+        "properties" : {
+          "unread" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "unread" ],
+        "type" : "object"
+      },
+      "UploadResponse" : {
+        "properties" : {
+          "document" : {
+            "$ref" : "#/components/schemas/DocumentDto"
+          },
+          "duplicate" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "document", "duplicate" ],
+        "type" : "object"
+      },
+      "VersionRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "VersionResponse" : {
+        "properties" : {
+          "application" : {
+            "type" : "string"
+          },
+          "buildTime" : {
+            "type" : "string"
+          },
+          "commit" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "application", "buildTime", "commit" ],
+        "type" : "object"
+      }
+    }
+  },
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/api/auth/login" : {
+      "post" : {
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Start a session with username and password",
+        "tags" : [ "auth" ]
+      }
+    },
+    "/api/auth/logout" : {
+      "post" : {
+        "operationId" : "logout",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "End the current session",
+        "tags" : [ "auth" ]
+      }
+    },
+    "/api/auth/session" : {
+      "get" : {
+        "operationId" : "currentSession",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Return the member of the current session",
+        "tags" : [ "auth" ]
+      }
+    },
+    "/api/documents" : {
+      "get" : {
+        "operationId" : "searchDocuments",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "List or search the shared document collection",
+        "tags" : [ "documents" ]
+      },
+      "post" : {
+        "operationId" : "uploadDocument",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "subjects",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "file" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "file" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UploadResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Upload a PDF; answers only after durable storage",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}" : {
+      "get" : {
+        "operationId" : "getDocument",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Document details including processing state",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/original" : {
+      "get" : {
+        "operationId" : "downloadOriginal",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "inline",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/octet-stream" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Original bytes, unchanged",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/retry" : {
+      "post" : {
+        "operationId" : "retryArchival",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Re-queue archival of a failed document",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/subjects" : {
+      "put" : {
+        "operationId" : "changeSubjects",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SubjectsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Replace the subject metadata of a document",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/title" : {
+      "put" : {
+        "operationId" : "renameDocument",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RenameRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Change the display title of a document",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/exports" : {
+      "get" : {
+        "operationId" : "listExports",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ExportSummaryDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Published export generations, newest first",
+        "tags" : [ "exports" ]
+      },
+      "post" : {
+        "operationId" : "createExport",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExportSummaryDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Create and atomically publish a new export generation",
+        "tags" : [ "exports" ]
+      }
+    },
+    "/api/members" : {
+      "get" : {
+        "operationId" : "listMembers",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/MemberDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "List all household members",
+        "tags" : [ "members" ]
+      }
+    },
+    "/api/members/me/locale" : {
+      "put" : {
+        "operationId" : "changeLocale",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LocaleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MemberDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Change the preferred product locale of the current member",
+        "tags" : [ "members" ]
+      }
+    },
+    "/api/members/me/password" : {
+      "post" : {
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasswordChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Change the password of the current member",
+        "tags" : [ "members" ]
+      }
+    },
+    "/api/notices" : {
+      "get" : {
+        "operationId" : "listNotices",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "unreadOnly",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/NoticeDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "List the current member's notices, newest first",
+        "tags" : [ "notices" ]
+      }
+    },
+    "/api/notices/read-all" : {
+      "post" : {
+        "operationId" : "markAllNoticesRead",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MarkAllReadResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Mark every unread notice as read",
+        "tags" : [ "notices" ]
+      }
+    },
+    "/api/notices/unread-count" : {
+      "get" : {
+        "operationId" : "unreadNoticeCount",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnreadCountResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Number of unread notices",
+        "tags" : [ "notices" ]
+      }
+    },
+    "/api/notices/{id}/read" : {
+      "post" : {
+        "operationId" : "markNoticeRead",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NoticeDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Mark one notice as read",
+        "tags" : [ "notices" ]
+      }
+    },
+    "/api/status" : {
+      "get" : {
+        "operationId" : "systemStatus",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SystemStatusDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Integration and processing status with last success times",
+        "tags" : [ "status" ]
+      }
+    },
+    "/api/system/version" : {
+      "get" : {
+        "operationId" : "version",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VersionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Deployed commit and build time",
+        "tags" : [ "system" ]
+      }
+    },
+    "/api/tasks" : {
+      "get" : {
+        "operationId" : "listTasks",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "includeDone",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "documentId",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/TaskDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "List tasks; open only unless includeDone is set",
+        "tags" : [ "tasks" ]
+      },
+      "post" : {
+        "operationId" : "createTask",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateTaskRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Create a task, optionally linked to a document",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}" : {
+      "get" : {
+        "operationId" : "getTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Task details",
+        "tags" : [ "tasks" ]
+      },
+      "put" : {
+        "operationId" : "editTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EditTaskRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Change title and note",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/assign" : {
+      "post" : {
+        "operationId" : "assignTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AssignRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Assign one member or leave unassigned (ownerId null)",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/complete" : {
+      "post" : {
+        "operationId" : "completeTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Mark a task done",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/due-date" : {
+      "post" : {
+        "operationId" : "changeTaskDueDate",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DueDateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Explicitly change the actual deadline",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/plan" : {
+      "post" : {
+        "operationId" : "planTaskWork",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PlanWorkRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Move the planned work date; the due date stays",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/reopen" : {
+      "post" : {
+        "operationId" : "reopenTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Reopen a completed task",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/today" : {
+      "get" : {
+        "operationId" : "today",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TodayResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Deterministic Today view computed from persisted tasks",
+        "tags" : [ "tasks" ]
+      }
+    }
+  }
+}

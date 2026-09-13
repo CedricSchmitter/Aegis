@@ -68,7 +68,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 /**
  * Explicit wiring of application services. Services that mutate state are exposed through transactional proxies
  * of their use-case interfaces; query services that call external systems are deliberately not transactional.
- * Raw service objects are not autowire candidates so that only the decorated interfaces are injected.
+ * Raw service objects live in holder records so that only the per-interface proxies are injectable.
  */
 @Configuration
 public class UseCaseConfiguration {
@@ -80,30 +80,34 @@ public class UseCaseConfiguration {
         return new HouseholdAccessPolicy(members);
     }
 
-    @Bean(autowireCandidate = false)
-    MemberService memberService(MemberRepository members, PasswordHasher hasher, HouseholdAccess access,
+    /** Raw service instances are held in records so that only the per-interface proxies are injectable. */
+    record IdentityServices(MemberService members) {
+    }
+
+    @Bean
+    IdentityServices identityServices(MemberRepository members, PasswordHasher hasher, HouseholdAccess access,
             Clock clock) {
-        return new MemberService(members, hasher, access, clock);
+        return new IdentityServices(new MemberService(members, hasher, access, clock));
     }
 
     @Bean
-    MemberDirectory memberDirectory(MemberService service, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(MemberDirectory.class, service, tm);
+    MemberDirectory memberDirectory(IdentityServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(MemberDirectory.class, services.members(), tm);
     }
 
     @Bean
-    MemberCredentialsQuery memberCredentialsQuery(MemberService service, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(MemberCredentialsQuery.class, service, tm);
+    MemberCredentialsQuery memberCredentialsQuery(IdentityServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(MemberCredentialsQuery.class, services.members(), tm);
     }
 
     @Bean
-    ProvisionMembers provisionMembers(MemberService service, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(ProvisionMembers.class, service, tm);
+    ProvisionMembers provisionMembers(IdentityServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ProvisionMembers.class, services.members(), tm);
     }
 
     @Bean
-    MemberPreferences memberPreferences(MemberService service, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(MemberPreferences.class, service, tm);
+    MemberPreferences memberPreferences(IdentityServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(MemberPreferences.class, services.members(), tm);
     }
 
     // Documents -----------------------------------------------------------------------------------------------
@@ -128,46 +132,45 @@ public class UseCaseConfiguration {
                 tm);
     }
 
-    @Bean(autowireCandidate = false)
-    DocumentCaptureService documentCaptureService(OriginalStore store, RegisterReceivedDocument registrar,
-            DocumentPresenter presenter, HouseholdAccess access, ArchivalSettings settings, Clock clock) {
-        return new DocumentCaptureService(store, registrar, presenter, access, settings, clock);
+    record DocumentServices(DocumentCaptureService capture, DocumentQueryService queries) {
     }
 
     @Bean
-    UploadDocument uploadDocument(DocumentCaptureService service) {
-        return service;
+    DocumentServices documentServices(OriginalStore store, RegisterReceivedDocument registrar,
+            DocumentPresenter presenter, HouseholdAccess access, ArchivalSettings settings, Clock clock,
+            DocumentRepository documents, PaperlessArchive archive) {
+        return new DocumentServices(new DocumentCaptureService(store, registrar, presenter, access, settings, clock),
+                new DocumentQueryService(documents, archive, store, presenter, access, clock));
     }
 
     @Bean
-    ImportDocument importDocument(DocumentCaptureService service) {
-        return service;
-    }
-
-    @Bean(autowireCandidate = false)
-    DocumentQueryService documentQueryService(DocumentRepository documents, PaperlessArchive archive,
-            OriginalStore store, DocumentPresenter presenter, HouseholdAccess access, Clock clock) {
-        return new DocumentQueryService(documents, archive, store, presenter, access, clock);
+    UploadDocument uploadDocument(DocumentServices services) {
+        return TransactionalProxy.expose(UploadDocument.class, services.capture());
     }
 
     @Bean
-    DocumentQueries documentQueries(DocumentQueryService service) {
-        return service;
+    ImportDocument importDocument(DocumentServices services) {
+        return TransactionalProxy.expose(ImportDocument.class, services.capture());
     }
 
     @Bean
-    DocumentReferenceQuery documentReferenceQuery(DocumentQueryService service) {
-        return service;
+    DocumentQueries documentQueries(DocumentServices services) {
+        return TransactionalProxy.expose(DocumentQueries.class, services.queries());
     }
 
     @Bean
-    DocumentExportQuery documentExportQuery(DocumentQueryService service) {
-        return service;
+    DocumentReferenceQuery documentReferenceQuery(DocumentServices services) {
+        return TransactionalProxy.expose(DocumentReferenceQuery.class, services.queries());
     }
 
     @Bean
-    DocumentStatusQuery documentStatusQuery(DocumentQueryService service) {
-        return service;
+    DocumentExportQuery documentExportQuery(DocumentServices services) {
+        return TransactionalProxy.expose(DocumentExportQuery.class, services.queries());
+    }
+
+    @Bean
+    DocumentStatusQuery documentStatusQuery(DocumentServices services) {
+        return TransactionalProxy.expose(DocumentStatusQuery.class, services.queries());
     }
 
     @Bean
@@ -197,53 +200,55 @@ public class UseCaseConfiguration {
         return new TaskPresenter(documents);
     }
 
-    @Bean(autowireCandidate = false)
-    TaskCommandService taskCommandService(TaskRepository tasks, DocumentReferenceQuery documents,
-            PlanningEvents events, TaskPresenter presenter, HouseholdAccess access, Clock clock) {
-        return new TaskCommandService(tasks, documents, events, presenter, access, clock);
+    record PlanningServices(TaskCommandService commands, TaskQueryService queries) {
     }
 
     @Bean
-    TaskCommands taskCommands(TaskCommandService service, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(TaskCommands.class, service, tm);
+    PlanningServices planningServices(TaskRepository tasks, DocumentReferenceQuery documents,
+            PlanningEvents events, TaskPresenter presenter, HouseholdAccess access, Clock clock,
+            CalendarPort calendar) {
+        return new PlanningServices(new TaskCommandService(tasks, documents, events, presenter, access, clock),
+                new TaskQueryService(tasks, calendar, presenter, access, clock));
     }
 
     @Bean
-    ImportTask importTask(TaskCommandService service, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(ImportTask.class, service, tm);
-    }
-
-    @Bean(autowireCandidate = false)
-    TaskQueryService taskQueryService(TaskRepository tasks, CalendarPort calendar, TaskPresenter presenter,
-            HouseholdAccess access, Clock clock) {
-        return new TaskQueryService(tasks, calendar, presenter, access, clock);
+    TaskCommands taskCommands(PlanningServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(TaskCommands.class, services.commands(), tm);
     }
 
     @Bean
-    TaskQueries taskQueries(TaskQueryService service) {
-        return service;
+    ImportTask importTask(PlanningServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ImportTask.class, services.commands(), tm);
     }
 
     @Bean
-    TaskExportQuery taskExportQuery(TaskQueryService service) {
-        return service;
+    TaskQueries taskQueries(PlanningServices services) {
+        return TransactionalProxy.expose(TaskQueries.class, services.queries());
+    }
+
+    @Bean
+    TaskExportQuery taskExportQuery(PlanningServices services) {
+        return TransactionalProxy.expose(TaskExportQuery.class, services.queries());
     }
 
     // Notifications -------------------------------------------------------------------------------------------
 
-    @Bean(autowireCandidate = false)
-    NoticeService noticeService(NoticeRepository notices, HouseholdAccess access, Clock clock) {
-        return new NoticeService(notices, access, clock);
+    record NotificationServices(NoticeService notices) {
     }
 
     @Bean
-    PublishNotice publishNotice(NoticeService service, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(PublishNotice.class, service, tm);
+    NotificationServices notificationServices(NoticeRepository notices, HouseholdAccess access, Clock clock) {
+        return new NotificationServices(new NoticeService(notices, access, clock));
     }
 
     @Bean
-    NoticeInbox noticeInbox(NoticeService service, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(NoticeInbox.class, service, tm);
+    PublishNotice publishNotice(NotificationServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(PublishNotice.class, services.notices(), tm);
+    }
+
+    @Bean
+    NoticeInbox noticeInbox(NotificationServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(NoticeInbox.class, services.notices(), tm);
     }
 
     // Operations ----------------------------------------------------------------------------------------------
@@ -256,21 +261,25 @@ public class UseCaseConfiguration {
 
     // Portability ---------------------------------------------------------------------------------------------
 
-    @Bean(autowireCandidate = false)
-    ExportService exportService(DocumentExportQuery documents, TaskExportQuery tasks, MemberDirectory members,
-            ExportStore store, ExportSerializer serializer, HouseholdAccess access, Clock clock,
-            @Value("${aegis.build.commit:dev}") String commit) {
-        return new ExportService(documents, tasks, members, store, serializer, access, clock, "aegis@" + commit);
+    record PortabilityServices(ExportService exports) {
     }
 
     @Bean
-    CreateExport createExport(ExportService service) {
-        return service;
+    PortabilityServices portabilityServices(DocumentExportQuery documents, TaskExportQuery tasks,
+            MemberDirectory members, ExportStore store, ExportSerializer serializer, HouseholdAccess access,
+            Clock clock, @Value("${aegis.build.commit:dev}") String commit) {
+        return new PortabilityServices(new ExportService(documents, tasks, members, store, serializer, access, clock,
+                "aegis@" + commit));
     }
 
     @Bean
-    ExportQueries exportQueries(ExportService service) {
-        return service;
+    CreateExport createExport(PortabilityServices services) {
+        return TransactionalProxy.expose(CreateExport.class, services.exports());
+    }
+
+    @Bean
+    ExportQueries exportQueries(PortabilityServices services) {
+        return TransactionalProxy.expose(ExportQueries.class, services.exports());
     }
 
     @Bean

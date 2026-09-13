@@ -11,6 +11,8 @@ export default tseslint.config(
     plugins: { "react-hooks": reactHooks },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // Pages load their data in effects and set state when the request resolves; that is intended here.
+      "react-hooks/set-state-in-effect": "off",
     },
   },
 );

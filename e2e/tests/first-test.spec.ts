@@ -155,6 +155,20 @@ test.describe("first runnable test", () => {
     await logout(page);
   });
 
+  test("records persist after restart: documents and tasks from earlier runs are still there", async ({ page }) => {
+    await login(page, userA);
+    const documents = (await (await page.request.get("/api/documents")).json()) as {
+      items: { title: string; processing: { state: string } }[];
+    };
+    const archived = documents.items.filter((d) => d.title.startsWith("Stromvertrag e2e") && d.processing.state === "ARCHIVED");
+    expect(archived.length).toBeGreaterThanOrEqual(1);
+    const tasks = (await (await page.request.get("/api/tasks?includeDone=true")).json()) as { title: string; status: string }[];
+    expect(tasks.some((t) => t.title.startsWith("Kündigen") && t.status === "DONE")).toBeTruthy();
+    await page.getByRole("link", { name: /Dokumente|Documents/ }).first().click();
+    await expect(page.locator("[data-testid=document-card]").first()).toBeVisible();
+    await logout(page);
+  });
+
   test("mobile layout shows the bottom navigation and the upload control @mobile", async ({ page }) => {
     await login(page, userA);
     await expect(page.getByRole("navigation").last()).toBeVisible();

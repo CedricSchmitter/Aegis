@@ -83,7 +83,7 @@ export function StatusPage() {
               {Object.entries(status.documentProcessing ?? {}).map(([state, count]) => (
                 <li key={state} className="flex flex-col">
                   <span className="text-2xl font-semibold">{count}</span>
-                  <span className="text-sm text-stone-600 dark:text-stone-400">{t(`documents.stateShort.${state}`, { defaultValue: state })}</span>
+                  <span className="text-sm text-stone-600 dark:text-stone-400">{String(t(`documents.stateShort.${state}`, { defaultValue: state }))}</span>
                 </li>
               ))}
             </ul>

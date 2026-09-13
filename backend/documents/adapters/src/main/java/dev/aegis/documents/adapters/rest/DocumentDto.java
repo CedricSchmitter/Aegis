@@ -4,6 +4,7 @@ import dev.aegis.documents.application.api.DocumentSummary;
 import dev.aegis.documents.application.api.ProcessingInfo;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.shared.MemberId;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 
@@ -12,7 +13,7 @@ public record DocumentDto(String id, String title, String originalFilename, Stri
         String checksumSha256, String uploadedBy, Instant uploadedAt, List<SubjectDto> subjects,
         ProcessingDto processing, boolean originalAvailable, long version) {
 
-    public record SubjectDto(String kind, String memberId) {
+    public record SubjectDto(String kind, @Schema(nullable = true) String memberId) {
         static SubjectDto from(SubjectView view) {
             return new SubjectDto(view.kind(), view.memberId() == null ? null : view.memberId().toString());
         }
@@ -22,9 +23,10 @@ public record DocumentDto(String id, String title, String originalFilename, Stri
         }
     }
 
-    public record ProcessingDto(String state, int attempts, String lastErrorCode, String lastErrorMessage,
-            Instant lastErrorAt, boolean retryScheduled, Instant nextAttemptAt, Integer paperlessDocumentId,
-            Instant archivedAt) {
+    public record ProcessingDto(String state, int attempts, @Schema(nullable = true) String lastErrorCode,
+            @Schema(nullable = true) String lastErrorMessage, @Schema(nullable = true) Instant lastErrorAt,
+            boolean retryScheduled, @Schema(nullable = true) Instant nextAttemptAt,
+            @Schema(nullable = true) Integer paperlessDocumentId, @Schema(nullable = true) Instant archivedAt) {
         static ProcessingDto from(ProcessingInfo info) {
             return new ProcessingDto(info.state(), info.attempts(), info.lastErrorCode(), info.lastErrorMessage(),
                     info.lastErrorAt(), info.retryScheduled(), info.nextAttemptAt(), info.paperlessDocumentId(),

@@ -80,3 +80,81 @@ jobs:
           build-args: AEGIS_COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  smoke:
+    name: Browser smoke (compose stack with real Paperless)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Prepare CI secrets and data directories (synthetic only)
+        run: |
+          set -eu
+          mkdir -p "$RUNNER_TEMP/aegis/data/ingress" "$RUNNER_TEMP/aegis/data/backup-state" "$RUNNER_TEMP/aegis/exports" deploy/secrets
+          sudo chown -R 10001:10001 "$RUNNER_TEMP/aegis/data/ingress" "$RUNNER_TEMP/aegis/data/backup-state" "$RUNNER_TEMP/aegis/exports"
+          for d in postgres valkey caddy/data caddy/config paperless/data paperless/media paperless/export paperless/consume; do mkdir -p "$RUNNER_TEMP/aegis/data/$d"; done
+          sudo chown -R 1000:1000 "$RUNNER_TEMP/aegis/data/paperless"
+          PW_A="ci-anna-$(openssl rand -hex 8)"; PW_B="ci-ben-$(openssl rand -hex 8)"
+          cat > deploy/secrets/initial-members.json <<EOF
+          {"members": [
+            {"username": "anna", "displayName": "Anna", "initialPassword": "$PW_A", "locale": "DE"},
+            {"username": "ben", "displayName": "Ben", "initialPassword": "$PW_B", "locale": "DE"}
+          ]}
+          EOF
+          cat > deploy/.env <<EOF
+          AEGIS_COMMIT=ci
+          AEGIS_DATA_DIR=$RUNNER_TEMP/aegis/data
+          AEGIS_EXPORTS_DIR=$RUNNER_TEMP/aegis/exports
+          AEGIS_DB_PASSWORD=$(openssl rand -hex 16)
+          PAPERLESS_DB_PASSWORD=$(openssl rand -hex 16)
+          PAPERLESS_SECRET_KEY=$(openssl rand -hex 32)
+          PAPERLESS_ADMIN_USER=aegis-service
+          PAPERLESS_ADMIN_PASSWORD=$(openssl rand -hex 16)
+          EOF
+          echo "AEGIS_PASSWORD_A=$PW_A" >> "$GITHUB_ENV"
+          echo "AEGIS_PASSWORD_B=$PW_B" >> "$GITHUB_ENV"
+      - name: Build application image
+        run: docker build -f deploy/Dockerfile --build-arg AEGIS_COMMIT=ci -t aegis-app:ci .
+      - name: Start stack
+        working-directory: deploy
+        run: docker compose --env-file .env -f compose.yaml -f compose.ci.yaml up -d --no-build
+      - name: Wait for readiness
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost/actuator/health/readiness >/dev/null; then echo ready; exit 0; fi
+            sleep 5
+          done
+          docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.ci.yaml logs --tail 100
+          exit 1
+      - name: Install Playwright
+        working-directory: e2e
+        run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Run browser smoke test
+        working-directory: e2e
+        env:
+          AEGIS_BASE_URL: http://localhost
+          AEGIS_USER_A: anna
+          AEGIS_USER_B: ben
+        run: npm test
+      - name: Restart application containers and verify records persist
+        run: |
+          docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.ci.yaml restart aegis caddy
+          for i in $(seq 1 40); do curl -fs http://localhost/actuator/health/readiness >/dev/null && break; sleep 5; done
+          cd e2e && AEGIS_BASE_URL=http://localhost AEGIS_USER_A=anna AEGIS_USER_B=ben npx playwright test --grep "persist after restart"
+      - name: Stack logs on failure
+        if: failure()
+        run: docker compose --env-file deploy/.env -f deploy/compose.yaml -f deploy/compose.ci.yaml logs --tail 200
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          if-no-files-found: ignore
+

@@ -13,6 +13,22 @@ public final class TransactionalProxy {
     private TransactionalProxy() {
     }
 
+    /**
+     * Exposes exactly one use-case interface of a service object without transaction handling, so that a
+     * service implementing several interfaces can be registered once per interface without ambiguity.
+     */
+    public static <T> T expose(Class<T> useCase, T target) {
+        Object proxy = Proxy.newProxyInstance(useCase.getClassLoader(), new Class<?>[] {useCase},
+                (self, method, args) -> {
+                    try {
+                        return method.invoke(target, args);
+                    } catch (InvocationTargetException e) {
+                        throw e.getTargetException();
+                    }
+                });
+        return useCase.cast(proxy);
+    }
+
     public static <T> T wrap(Class<T> useCase, T target, PlatformTransactionManager transactionManager) {
         TransactionTemplate template = new TransactionTemplate(transactionManager);
         Object proxy = Proxy.newProxyInstance(useCase.getClassLoader(), new Class<?>[] {useCase},
