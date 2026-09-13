@@ -17,7 +17,9 @@ class PaperlessClientConfiguration {
         var settings = HttpClientSettings.defaults()
                 .withConnectTimeout(properties.connectTimeout())
                 .withReadTimeout(properties.readTimeout());
-        var factory = ClientHttpRequestFactoryBuilder.detect().build(settings);
+        // The simple (HttpURLConnection) factory buffers request bodies and sends a Content-Length; Paperless
+        // rejects chunked multipart uploads with 400.
+        var factory = ClientHttpRequestFactoryBuilder.simple().build(settings);
         return builder.clone()
                 .baseUrl(properties.baseUrl())
                 .requestFactory(factory)

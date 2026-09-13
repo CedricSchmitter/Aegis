@@ -62,7 +62,8 @@ public class PaperlessClient implements PaperlessArchive {
             if (e.getStatusCode().is5xxServerError()) {
                 throw new ArchiveUnavailableException("Paperless answered " + e.getStatusCode(), e);
             }
-            return new Rejected("paperless.rejected", "Paperless rejected the upload with " + e.getStatusCode());
+            return new Rejected("paperless.rejected", "Paperless rejected the upload with " + e.getStatusCode()
+                    + excerpt(e));
         } catch (ResourceAccessException e) {
             throw new ArchiveUnavailableException("Paperless unreachable: " + e.getMessage(), e);
         }
@@ -147,7 +148,9 @@ public class PaperlessClient implements PaperlessArchive {
     @Override
     public ArchiveProbe probe() {
         try {
-            ResponseEntity<Void> response = client.get().uri("/api/").retrieve().toBodilessEntity();
+            // An authenticated list endpoint; the API root redirects to the browsable schema UI.
+            ResponseEntity<Void> response = client.get().uri("/api/documents/?page_size=1&fields=id").retrieve()
+                    .toBodilessEntity();
             String version = response.getHeaders().getFirst("X-Version");
             return new ArchiveProbe(true, version, null);
         } catch (RestClientResponseException e) {
@@ -175,6 +178,16 @@ public class PaperlessClient implements PaperlessArchive {
         }
         log.warn("Paperless rejected a request with {}", status);
         return new ArchiveRejectedException("paperless.rejected", "Paperless answered " + status);
+    }
+
+    /** Short, content-free excerpt of an error body for diagnostics (validation messages, never documents). */
+    private static String excerpt(RestClientResponseException e) {
+        String body = e.getResponseBodyAsString();
+        if (body == null || body.isBlank()) {
+            return "";
+        }
+        String flat = body.replaceAll("\\s+", " ").trim();
+        return ": " + (flat.length() > 200 ? flat.substring(0, 200) + "…" : flat);
     }
 
     private static String failureMessage(JsonNode result) {

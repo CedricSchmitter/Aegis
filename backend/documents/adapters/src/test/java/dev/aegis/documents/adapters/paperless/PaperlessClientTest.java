@@ -98,7 +98,8 @@ class PaperlessClientTest {
         server.expect(requestTo("http://paperless.test/api/documents/?text=strom&fields=id&page_size=200"))
                 .andRespond(withSuccess("{\"count\":2,\"results\":[{\"id\":3},{\"id\":5}]}",
                         MediaType.APPLICATION_JSON));
-        server.expect(requestTo("http://paperless.test/api/")).andRespond(withSuccess().header("X-Version", "3.1.3"));
+        server.expect(requestTo("http://paperless.test/api/documents/?page_size=1&fields=id"))
+                .andRespond(withSuccess().header("X-Version", "3.1.3"));
 
         assertThat(client.searchContent("strom")).containsExactly(3, 5);
         var probe = client.probe();
