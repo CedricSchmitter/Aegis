@@ -1,6 +1,6 @@
 # First runnable test: scope and issue map
 
-Status: planned; no application implementation has been completed. This milestone is a synthetic-data development release, not the complete ROADMAP.md pilot or production recovery readiness.
+Status: implemented and deployed as a synthetic-data development release (see [execution status](FIRST-TEST-STATUS.md) for the deployed commit and evidence). Not the complete ROADMAP.md pilot and not production recovery readiness.
 
 - [GitHub milestone](https://github.com/CedricSchmitter/Aegis/milestone/1)
 - [Tracking epic #1](https://github.com/CedricSchmitter/Aegis/issues/1)
@@ -52,19 +52,19 @@ This scope makes the first test independent of missing account credentials, DNS 
 
 ## Final acceptance checklist
 
-- [ ] Actual URL accessible from the owner's PC/browser environment.
-- [ ] Two functional logins and shared visibility verified.
-- [ ] German/English UI checked, including errors and empty states.
-- [ ] PDF accepted durably, actually archived in Paperless, searchable and downloadable unchanged.
-- [ ] Linked task assigned, rescheduled without moving its deadline, completed and visible to the other member.
-- [ ] Today and in-app notices use persisted data.
-- [ ] Retry/error handling and unauthenticated access checks pass.
-- [ ] Records persist after Aegis application-container restart.
-- [ ] Readable export and isolated restore pass with intact sources.
-- [ ] External backup clearly marked not configured; disk data untouched.
-- [ ] Relevant CI, domain/integration/architecture checks and browser smoke pass.
-- [ ] Deployed commit is on main; status and issue evidence updated.
-- [ ] Owner receives the URL, onboarding instructions, test sequence and known limitations in the current conversation.
+- [x] Actual URL accessible from the owner's PC/browser environment: `http://192.168.2.159/` (LAN HTTP preview).
+- [x] Two functional logins and shared visibility verified (browser and Playwright, `ApiFlowIT`).
+- [x] German/English UI checked, including errors and empty states (catalog parity test, browser switch, wrong-password error).
+- [x] PDF accepted durably, actually archived in Paperless-ngx 3.1.3, searchable by content and downloadable unchanged (checksum verified).
+- [x] Linked task assigned, rescheduled without moving its deadline, completed and visible to the other member (Playwright).
+- [x] Today and in-app notices use persisted data (PostgreSQL; verified after container restart).
+- [x] Retry/error handling and unauthenticated access checks pass (`ApiFlowIT`, retry from the UI after a real Paperless rejection).
+- [x] Records persist after Aegis application-container restart (`docker compose restart aegis caddy`).
+- [x] Readable export and isolated restore pass with intact sources (generation 20260913T123418Z, `restore-drill.sh` PASSED).
+- [x] External backup clearly marked not configured (status page, `backup.sh` fails closed); the external disk was not touched.
+- [x] Relevant CI, domain/integration/architecture checks and browser smoke pass (see execution status for run ids).
+- [x] Deployed commit is on main; status and issue evidence updated (see execution status).
+- [x] Owner receives the URL, onboarding instructions, test sequence and known limitations in the current conversation.
 
 ## Execution authorization
 
