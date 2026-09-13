@@ -48,6 +48,9 @@ inherited evidence in FIRST-TEST-STATUS.md. Reading a manifest alone does not in
   be established before switching the main endpoint. See HOUSEHOLD-PILOT.md.
 - No external disk work now. An actual external backup and a restore from it are gates before real household
   documents. Mail, calendar writes, AI and push remain deferred.
+- Public/internet access is explicitly deferred until local use is proven. The owner clarified this after the
+  local-DNS question; no public exposure or router changes were made. Private-IP HTTPS remains an alternative
+  to configuring a local name.
 
 ## Verification and practical limits
 
@@ -59,7 +62,43 @@ Caddy 2.11.4 accepted the prepared HTTPS configuration in a disposable container
 The final VM Maven run completed successfully at 2026-09-13 15:33 CEST: 64 unit tests, 8 architecture tests
 and 16 PostgreSQL integration tests (88 total, no failures/skips). Four Python backup tests and six frontend
 tests passed. The local Windows Maven wrapper did not start; the full Maven verification was run on the VM.
-PR, deployed commit and post-deployment checks are recorded below when completed.
+PR [#15](https://github.com/CedricSchmitter/Aegis/pull/15) merged fast-forward at 15:41 UTC after
+[CI 34765833558](https://github.com/CedricSchmitter/Aegis/actions/runs/34765833558) passed all four jobs,
+including the real-Paperless browser smoke and application restart/persistence check.
+The subsequent [main CI 34766346793](https://github.com/CedricSchmitter/Aegis/actions/runs/34766346793)
+also completed successfully in all four jobs for the exact deployed commit `e148ef8`.
 No Android device test, externally stored Restic restore, or browser certificate-trust test is claimed.
 Portable exports are one-way views, not coordinated full-system backups. The offline backup procedure still
 needs its first real-destination recovery exercise and scheduling before it can protect household data.
+
+## Household operations independently verified
+
+- The owner-approved account migration ran on the live VM from the tracked operator script. Before/after
+  checks confirmed identical member IDs, password hashes, preferences, document records and task records.
+  A session opened as anna before the migration continued to return the same member ID as lisa afterward.
+  Both `lisa` and `cedric` subsequently logged in and retrieved all three checksum-verified originals.
+- A fresh export `20260913T153456Z` contains the three documents, two tasks and new household names.
+- The isolated restore drill using image `e148ef8` passed for that export: all three originals were re-archived
+  and checksum-verified; both tasks retained their state, deadline and source link. The disposable stack was
+  removed afterwards. This is independent real-Paperless restore evidence, not an external backup.
+- Caddy's persistent local CA was prepared on the VM. A temporary proxy bound only to `127.0.0.1:18443`
+  served the live version endpoint with successful TLS/root verification for `aegis`, then was removed.
+  Only the public root certificate was copied to the owner's PC; client trust was not installed and the
+  household HTTP endpoint was not switched. The root fingerprint is recorded in HOUSEHOLD-PILOT.md.
+
+## Deployed review release
+
+Commit `e148ef8af157f28ba4cd6f649db5e3da2e841e90` was deployed after the successful PR CI. The deployment
+waited for health and checked the running version before updating its marker. `/api/system/version` and the
+release symlink agree. Post-deployment live checks verified both new logins, identical collections, all three
+original checksums, two tasks, anonymous rejection, logout, and HTTP 400 for malformed document ids.
+
+Export `20260913T154219Z-7cda357a-ddb4-47dc-941c-005832f3af17` is the first independently verified generation
+from the deployed review build, with no missing originals. The following commit may contain documentation
+evidence only; deployment remains tied to the tested application commit above.
+The final documentation-only evidence commit skips redundant CI; no application or operations code changes
+follow the verified release. Final VM inventory shows only the five intended containers, healthy application,
+Paperless, PostgreSQL and broker, and approximately 80 GiB free on the system filesystem.
+
+Follow-ups: [#16 trusted household HTTPS](https://github.com/CedricSchmitter/Aegis/issues/16) and
+[#17 external destination and recovery](https://github.com/CedricSchmitter/Aegis/issues/17).

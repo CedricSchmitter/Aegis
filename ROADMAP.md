@@ -462,11 +462,14 @@ Agree maintenance intervals in phase 1: regular inspection, grouped updates with
 
 ## 10. Next concrete work
 
-1. Identify mail/calendar accounts, host capacity and backup destination.
-2. Select ten real scenarios and representative records.
-3. Record ADRs for build boundaries, calendar ownership, jobs, mail capture and recovery.
-4. Implement phase 1 and pass its recovery/architecture checks.
-5. Demonstrate phone PDF upload, confirmed storage, retrieval and opening an export without the app.
+1. Complete local DNS and device trust for the prepared `aegis` HTTPS endpoint (issue #16).
+2. Continue synthetic phone workflows using the migrated Lisa/Cedric logins; verify upload and original access
+   on both actual Android phones.
+3. Before real household records, verify a non-destructive external destination and restore an actual backup
+   (issue #17). The owner deferred attaching the nonempty disk until this gate is needed.
+4. Run the small household pilot with representative scenarios before enabling mail, calendar or AI.
+5. Refine integration ADRs and priorities using that pilot's evidence. The first runnable implementation and
+   independent release review are already completed; do not restart them.
 
 Planned services are not implemented services. Verified tooling is recorded in VM-ACCESS.md.
 

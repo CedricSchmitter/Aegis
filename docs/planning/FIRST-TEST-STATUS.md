@@ -1,13 +1,16 @@
 # First test execution status
 
-Updated: 2026-09-13 (milestone verified; PR #14 merged fast-forward into `main`, the deployed commit is the
-`main` head reported by `/api/system/version`). Durable handoff for the autonomous
+Updated: 2026-09-13 (first-test milestone plus independent review follow-up). Durable handoff for the autonomous
 implementation of milestone "First runnable test" (#1). Never record passwords, tokens or private keys here.
 
 ## Independent follow-up
 
 The next session independently checked the repository, live APIs and GitHub. See
 [INDEPENDENT-REVIEW.md](INDEPENDENT-REVIEW.md) for findings, corrections and current verification.
+PR #15 is merged; deployed application commit is `e148ef8af157f28ba4cd6f649db5e3da2e841e90`.
+The actual logins are now `lisa` and `cedric`; the explicit migration preserved IDs, passwords and sessions.
+Three documents and two tasks were independently verified, including a fresh isolated real-Paperless restore.
+HTTPS is prepared but not switched; DNS/device trust and external backup remain open in issues #16 and #17.
 The evidence below is the inherited implementation report, not a claim that the reviewer repeated every check.
 
 ## Reported first-test state

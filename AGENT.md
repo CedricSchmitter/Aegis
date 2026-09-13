@@ -13,6 +13,9 @@ The tracked operator onboarding flow preserves existing identities and credentia
 hostname is `aegis`; DNS and device certificate trust still need verification. The owner deferred external
 disk attachment until it becomes necessary; continue synthetic tests without it, but require external
 backup and recovery evidence before relying on real household documents.
+Public/internet access is explicitly deferred until Aegis has proved useful locally. HTTPS preparation is
+LAN-only; do not create router port forwarding, public exposure or remote-access infrastructure. A local DNS
+name is optional: the prepared HTTPS configuration also supports the existing private IP address.
 
 Priority order: reliable data capture and recovery, useful daily workflows, maintainable architecture, then additional automation. AI must remain optional for storage, search, task management, and deterministic deadline calculation.
 

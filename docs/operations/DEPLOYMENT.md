@@ -68,9 +68,12 @@ The initial passwords are only on the VM:
 ssh ... aegis-agent@192.168.2.159 cat /srv/aegis/deploy/secrets/initial-members.json
 ```
 
-Log in at `http://192.168.2.159/login`, then change the password under Settings. Passwords are stored as
-BCrypt hashes; the JSON file only seeds accounts that do not exist yet and can be deleted after both members
-changed their passwords.
+The synthetic preview login is at `http://192.168.2.159/login`. Passwords are stored as
+BCrypt hashes. The explicit household onboarding maps the test accounts to `lisa` and `cedric` without
+resetting passwords; see HOUSEHOLD-PILOT.md. Change real passwords only after trusted HTTPS is available.
+The JSON file only seeds accounts that do not exist yet. After onboarding/password changes, retire its
+plaintext values by replacing its content with `{"members": []}`; keep the bind-mounted file in place so
+later container recreation does not encounter a missing file or create a directory in its place.
 
 ## Operations
 

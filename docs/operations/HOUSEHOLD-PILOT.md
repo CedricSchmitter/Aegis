@@ -2,6 +2,8 @@
 
 Owner choices on 2026-09-13: hostname `aegis`; map anna to Lisa and ben to Cedric while preserving identities;
 defer connecting the nonempty external disk. Keep using synthetic data until the external backup gate passes.
+The owner explicitly deferred internet/public access until the local pilot proves useful. This guide concerns
+LAN-only HTTPS, not remote access; no router port forwarding or public exposure was configured.
 
 ## Account onboarding
 
@@ -23,8 +25,9 @@ The certificate is available on the VM at the path below; no private key was cop
 `deploy/compose.https.yaml` enables port 443 and Secure session cookies. Deployment honors
 `AEGIS_HTTPS=true` in the private VM `.env`, so later releases retain the selected mode.
 
-1. Arrange local DNS `aegis -> 192.168.2.159` on the household resolver. The VM hostname itself does not
-   establish Android/PC DNS. Router changes are outside the current VM-only authorization.
+1. Optionally arrange local DNS `aegis -> 192.168.2.159` on the household resolver. This affects only the local
+   name; it does not publish Aegis on the internet. The private IP HTTPS fallback can be used without DNS.
+   Router changes are outside the current VM-only authorization.
 2. Prepare Caddy's persistent CA in the VM; copy only its public root certificate from
    `/srv/aegis/data/caddy/data/caddy/pki/authorities/local/root.crt`. Never distribute `root.key`.
 3. Check its SHA-256 fingerprint through verified SSH and install that public certificate into the trusted
