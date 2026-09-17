@@ -4,40 +4,17 @@ This is the canonical repository instruction file for human contributors, Codex,
 
 ## Project and priorities
 
-Latest verified backup state (2026-09-17): the owner personally formatted and attached the external 1 TB
-`BackupIntenso` disk. After specific approval, it was passed through only to VM 102. The VM independently
-identified the 931.5 GiB Toshiba USB disk (NTFS, UUID `30DAE27ADAE23C2A`), inspected its contents read-only,
-and now mounts it for an encrypted Restic backup. An actual external snapshot passed full data checking and
-isolated recovery; a daily timer is enabled. The separate host SATA/ext4 disk is outside this task. Never
-format, repartition or delete existing disk content; see docs/operations/BACKUP.md for evidence and limits.
-The owner confirmed HTTPS and the shared document/task workflow on both Android phones.
-See docs/planning/NEXT-SESSION-PROMPT.md for the current pilot handoff.
-
-Aegis is a shared household workspace for documents, tasks, calendars, and a future personal assistant. Optimize for two people using their own Android phones without technical assistance.
-
-The household members are **Lisa and Cedric**. The initial application accounts `anna` and `ben` are test identities, not their real names. Do not assume a mapping or rename/delete accounts without preserving IDs, ownership, sessions and existing data through an explicit migration or onboarding flow.
-
-On 2026-09-13 the owner approved the explicit mapping `anna -> lisa / Lisa`, `ben -> cedric / Cedric`.
-The migration is complete and preserved identities. Trusted LAN HTTPS works by private IP on the PC and
-both Android phones; the optional local hostname `aegis` remains unconfigured. One real invoice is already
-stored, so preserve all existing data. External backup and recovery evidence now exists. The owner confirmed
-that both shared temporary test passwords were replaced with individual credentials and both new logins worked;
-this password change is owner-reported, not independently verified by the agent.
-Public/internet access is explicitly deferred until Aegis has proved useful locally. HTTPS preparation is
-LAN-only; do not create router port forwarding, public exposure or remote-access infrastructure. A local DNS
-name is optional: the prepared HTTPS configuration also supports the existing private IP address.
+Aegis is a shared household workspace for documents and tasks. Optimize for Lisa and Cedric using their own Android phones without technical assistance.
 
 Priority order: reliable data capture and recovery, useful daily workflows, maintainable architecture, then additional automation. AI must remain optional for storage, search, task management, and deterministic deadline calculation.
 
-The initial household information space is shared by both members. Person/house/contract associations are metadata, not visibility restrictions; both can ask about each other's records and joint documents. Keep individual logins for responsibility, preferences, and audit. Do not implement private document silos in the MVP. Scope access by household and device capabilities; never expose credentials as shared household knowledge.
+Both members use individual accounts (`lisa` and `cedric`) in one shared household. The completed migration from test identities preserved IDs, ownership and sessions. Person/house/contract associations are metadata, not visibility restrictions. Keep individual logins for responsibility, preferences and audit; never expose credentials as household knowledge. Preserve all existing data.
 
-Start with in-app notifications and evaluate Android Web Push over HTTPS. Telegram is an optional future delivery adapter, not the initial primary interface. Prepare calendar read/write ports, but defer calendar writes until the basic workflow has been validated. The external 1 TB disk is the first local backup target and has passed an isolated recovery test. An offsite copy remains a future resilience improvement.
+Read [README.md](README.md) and the issue being worked on. Read [architecture foundations](docs/architecture/FOUNDATIONS.md) before backend/API work and [VM access](docs/VM-ACCESS.md) before remote operations. [Operational status](docs/operations/STATUS.md) records dated verification; [deployment](docs/operations/DEPLOYMENT.md), [household access](docs/operations/ACCESS.md) and [backup](docs/operations/BACKUP.md) describe current procedures. Verify actual state before operations.
 
-The owner reported the initial formatting and attachment; model, filesystem, contents and VM visibility were
-subsequently checked directly. The earlier local export drill remains separate from the verified external
-Restic recovery.
+Future work belongs in [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues), with scope, acceptance criteria and dependencies. Keep repository documentation focused on current behavior, architecture decisions and operating procedures; do not recreate roadmaps, startup prompts or session handoff files. Distinguish accepted rules from implemented capabilities.
 
-Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). Read [architecture foundations](docs/architecture/FOUNDATIONS.md) before backend or API work, and [VM access](docs/VM-ACCESS.md) before remote operations. Distinguish accepted decisions, proposed defaults, and implemented capabilities.
+Trusted HTTPS is LAN-only. Public access, router changes and remote-access infrastructure require a separate explicit request. The external USB backup is configured and recovery-tested; never format, repartition or delete existing disk content. Other host storage remains outside the Aegis scope.
 
 ## Language and localization
 
@@ -50,7 +27,7 @@ Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). R
 
 ## Backend: DDD and hexagonal architecture
 
-- Use Java 21 and Spring Boot. Confirm compatible stable dependency versions before introducing them; pin dependencies and use Maven Wrapper once the build exists.
+- Use Java 21 and Spring Boot. Confirm compatible stable dependency versions before introducing them; pin dependencies and use the Maven Wrapper.
 - Organize a Maven-multimodule modular monolith around business capabilities and bounded contexts, with separate domain, application, and adapter modules. Do not organize the whole backend into generic global `controller`, `service`, and `repository` buckets.
 - Keep the domain in plain Java: no Spring, JPA/Hibernate, HTTP, Jackson, vendor SDK, or database types. Aggregates protect invariants; value objects validate meaningful concepts. Avoid both anemic entity bags and patterns without a business need.
 - Application code coordinates use cases and owns input/output ports. It depends on domain code, not on infrastructure implementations. Domain repository contracts may live in the domain when they describe aggregate persistence.
@@ -65,7 +42,7 @@ Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). R
 ## Reliability and data rules
 
 - Only acknowledge an upload as saved after durable storage. Import, OCR, and AI processing have separate states and may fail independently.
-- Use persistent PostgreSQL-backed jobs, bounded retries, and explicit failure states. The proposed scheduler is db-scheduler. Prove atomic business-state/job creation; use an outbox if a shared transaction is unavailable.
+- Use persistent PostgreSQL-backed jobs through db-scheduler, bounded retries, and explicit failure states. Prove atomic business-state/job creation; use an outbox if a shared transaction is unavailable.
 - Assume at-least-once execution. Make external writes idempotent or reconcile uncertain outcomes before retrying. Job payloads carry stable IDs and schema versions, not serialized Java object graphs.
 - Preserve original files and emails. Paperless owns document originals; the chosen calendar service owns events; Aegis owns its tasks and contract facts. Exports are one-way views, not competing writable sources.
 - Facts need provenance and a review status. AI output cannot silently replace confirmed facts. Preserve validity periods and distinguish conflicting or superseded sources.
@@ -90,9 +67,9 @@ Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). R
 - Keep changes focused and reviewable. Use English commit messages that explain the resulting change. Preserve published history unless rewriting it is explicitly authorized.
 - For feature implementation, prefer short-lived branches and reviewable pull requests. The initial shared baseline may be updated directly when requested. Keep deployment tied to an identified commit and avoid untracked remote-only fixes.
 - Follow the user's current authorization for commits, pushes, deployment, and communication. These instructions do not introduce additional approval gates for already authorized routine work.
-- For the first runnable test, the owner explicitly authorizes Git fetch/pull, branches, commits, pushes, PR creation/merging, conflict resolution and issue updates without further Git approval, plus Aegis installation/deployment within the dedicated VM. Tool permission boundaries and preservation of unrelated data still apply.
-- Record decisions and implementation status in the repository, not only in private agent memory. Update relevant docs when behavior changes. Do not claim planned tests or services already exist.
-- Routine handoff: identify the branch/commit, files changed, verification performed, remaining gaps, and the next concrete step.
+- The existing owner authorization covers Git fetch/pull, branches, commits, pushes, PR creation/merging, conflict resolution and issue updates without further Git approval, plus Aegis installation/deployment within the dedicated VM. Tool permission boundaries and preservation of unrelated data still apply.
+- Record enduring decisions and current behavior in the repository; track planned work and completion evidence in issues. Update relevant docs when behavior changes. Do not claim planned tests or services already exist.
+- In the completion report, identify the branch/commit, changes, verification and any remaining limitations.
 
 ## Verification
 
@@ -104,7 +81,7 @@ Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). R
 - Verify both locale catalogs, interpolation variables, and visible language behavior when adding UI text. Never use translation-key strings as acceptable finished UI.
 - Run the checks appropriate to the change and report actual results. Fix a defect with a meaningful regression test when feasible; avoid tests that only duplicate implementation details.
 - Measure coverage to discover untested behavior, not to satisfy an arbitrary project-wide percentage. Prioritize invariants, error paths, permissions, concurrency, migrations, and adapters. Do not add getter/setter, framework, or trivial delegation tests merely to raise coverage.
-- Do not invent build commands while this repository contains only documentation and bootstrap scripts. Document runnable commands when adding the build.
+- Keep README build and verification commands accurate when changing the build.
 
 ## Infrastructure scope
 
@@ -117,4 +94,4 @@ Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). R
 
 ## Completion criteria
 
-A change is complete when the authorized scope works, relevant checks pass, documentation reflects reality, English/localization and architecture rules are followed, and any remaining limitations are clearly stated. Do not advance roadmap phases merely because a package was installed or a mockup looks complete.
+A change is complete when the authorized scope works, relevant checks pass, documentation reflects reality, English/localization and architecture rules are followed, and any remaining limitations are clearly stated. Close issues only when their acceptance criteria are met; installing a package or producing a mockup is not evidence of a completed integration.

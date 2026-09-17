@@ -1,13 +1,14 @@
 # Aegis
 
-A private household workspace for documents, tasks, calendars, and a future personal AI assistant.
+A private household workspace for shared documents and tasks, built with Java/Spring Boot and React.
 
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
 - [Architecture foundations](docs/architecture/FOUNDATIONS.md) and [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md): DDD, hexagonal modules, versions, transactions.
-- [Roadmap](ROADMAP.md): product scope, data ownership, and phased acceptance criteria.
-- [First runnable test](docs/planning/FIRST-RUNNABLE-TEST.md) and [execution status](docs/planning/FIRST-TEST-STATUS.md).
+- [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
+- [Operational status](docs/operations/STATUS.md): verified capabilities, release evidence and current limitations.
+- [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
 
 AGENTS.md and CLAUDE.md reference AGENT.md to avoid competing instruction sets.
@@ -19,11 +20,11 @@ backend/        Maven multimodule Spring Boot backend (Java 21): shared-kernel, 
                 notifications, operations, portability, bootstrap, architecture-tests
 frontend/       React/TypeScript/Vite web app (German/English), served by the backend from one origin
 api/            Committed OpenAPI contract; the TypeScript client is generated from it
-e2e/            Playwright browser smoke test of the first runnable test
+e2e/            Playwright browser smoke tests of core household workflows
 deploy/         Dockerfile, Compose stack, Caddyfile for the Aegis VM
 ops/            Deployment, backup and restore-drill scripts; VM bootstrap
 fixtures/       Synthetic test material only (known checksum)
-docs/           Architecture, planning, operations
+docs/           Architecture decisions and operating procedures
 ```
 
 ## Build and verify
@@ -65,15 +66,14 @@ generated-client drift check, and a container image build. It needs no private V
 
 ## Current state
 
-The first runnable test slice is implemented: two logins into one shared household, German/English UI,
-durable PDF capture with real Paperless archival, shared document list/search/original access, source-linked
-tasks with a deterministic Today view, a persisted in-app notice inbox, a truthful status page, atomic exports
-with an isolated restore drill, Compose deployment on the Aegis VM and CI. See the execution status document for
-the deployed commit, verification evidence and limitations. The owner confirmed trusted LAN HTTPS and the shared
-workflow on both Android phones. One real invoice is stored. An encrypted backup on the server-attached USB
-disk passed an isolated recovery test, and a daily timer is enabled. The first scheduled run is still pending.
-Mail, calendar, AI, Telegram and phone push are not connected. The owner confirmed both accounts now use
-individual passwords and both new logins worked; this was not independently verified by the agent.
+Aegis supports two individual logins into one shared household, German/English UI, durable PDF capture
+with Paperless archival, document list/search/original access, source-linked tasks, deterministic Today,
+in-app notifications, integration status, portable exports and isolated recovery.
 
-Source is maintained in this repository; the Aegis VM is the development/test environment. Private keys,
-tokens, household documents, and service data must not be committed.
+The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
+passed isolated recovery and its daily timer is enabled. The last recorded verification has not yet observed
+the first scheduled run. Mail, calendar, AI, MCP, messenger delivery, Web Push and Android share-target
+integration are not connected. See [operational status](docs/operations/STATUS.md) for dated evidence.
+
+Source is maintained in this repository; the Aegis VM is the deployment environment. Private keys,
+tokens, household documents and service data must not be committed.

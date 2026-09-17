@@ -1,6 +1,6 @@
 # Architecture foundations
 
-Status: owner-approved foundations, implemented by the first runnable test, plus explicitly marked future defaults and open product decisions. See the execution status and independent review for verified implementation evidence.
+Owner-approved engineering rules and architectural boundaries. See [operational status](../operations/STATUS.md) for implemented capabilities and [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues) for proposed integrations. An architectural boundary does not imply that an adapter is already implemented.
 
 ## Accepted requirements
 
@@ -21,8 +21,8 @@ The working architecture remains a modular monolith. Runtime distribution is ind
 
 ```mermaid
 flowchart LR
-    Bootstrap["Spring Boot composition root"] --> Inbound["Inbound adapters: REST, MCP, jobs"]
-    Bootstrap --> Outbound["Outbound adapters: JPA, mail, Paperless, AI"]
+    Bootstrap["Spring Boot composition root"] --> Inbound["Inbound adapter boundary"]
+    Bootstrap --> Outbound["Outbound adapter boundary"]
     Inbound --> App["Application: use cases and ports"]
     Outbound --> App
     App --> Domain["Domain: aggregates, value objects, policies"]
@@ -46,9 +46,9 @@ backend/
     domain/
     application/
     adapters/
-  documents/                  Added when its first use case is implemented
+  documents/                  Document domain, application and adapters
   bootstrap/                  Executable Spring Boot application and wiring
-frontend/                     React/TypeScript PWA
+frontend/                     React/TypeScript web app
 ```
 
 Within a context, adapters may initially share one module with separate inbound/outbound packages. Split them only when dependency isolation or testing warrants it. A public context contract must not expose internal aggregates or persistence entities to other contexts.
@@ -63,7 +63,7 @@ Place Spring transaction handling in decorators/configuration around application
 
 Use optimistic concurrency and explicit conflict responses. Inject `Clock` for time-sensitive logic. Store money with decimal precision and an explicit currency. Validate actual business constraints rather than imposing arbitrary aggregate complexity.
 
-## Provisional context map
+## Capability boundaries
 
 | Context/capability | Owns | Integration boundary |
 |---|---|---|
@@ -76,12 +76,12 @@ Use optimistic concurrency and explicit conflict responses. Inject `Clock` for t
 | Notifications | Delivery attempts and preferences | Delivery provider |
 | Operations/portability | Job status and export/import coordination | Scheduler and storage |
 
-These are candidate boundaries, not a mandate for eight aggregates or eight services. Refine names and boundaries around the first real workflows and capture changes in ADRs.
+Identity, documents, planning, notifications, operations and portability exist as modules. Inbox, contracts and assistant describe boundaries for issue-driven extensions, not implemented modules. Add modules only for concrete use cases and capture substantial boundary changes in ADRs.
 
 ## Localization contract
 
 - English is the internal language and translation-key language.
-- Product locale catalogs cover `de` and `en`; proposed initial default is German with a per-user preference.
+- Product locale catalogs cover `de` and `en`; the initial default is German with a per-user preference.
 - API responses use stable codes and parameters. UI and notification adapters render localized messages.
 - Preserve free text and source language. AI-generated prose follows the requested user's locale where appropriate, while source citations remain faithful to originals.
 - Test pluralization, missing translations, parameter parity, dates/currencies, accessibility labels, and fallback behavior. A locale switch must not change stored enum values or deadlines.
@@ -100,7 +100,6 @@ These are candidate boundaries, not a mandate for eight aggregates or eight serv
 | API | REST with explicit DTOs, stable error codes, OpenAPI-generated frontend client | Implementation default |
 | Git | Short feature branches and reviewable commits; published history preserved | Workflow accepted; initial baseline updates may be direct |
 | CI | Backend verification, architecture checks, frontend build/tests and locale checks | Implementation default supporting meaningful tests |
-| Scope | First complete vertical slice: capture, persist, retrieve, export | Roadmap direction |
 
 Do not equate an implementation default with a specific owner preference. These defaults can be refined without changing accepted architectural boundaries; explain consequential changes and record them in ADRs.
 
@@ -116,23 +115,42 @@ Do not equate an implementation default with a specific owner preference. These 
 - Add minimal health, readiness and operation visibility. Preserve useful diagnostics without logging household document content or tokens.
 - Use coverage reports to find gaps, especially branches and failure behavior. Domain invariants, permissions, retry behavior and data restoration matter more than trivial accessor coverage.
 
-## Household sharing and initial delivery decisions
+## Household sharing and integration boundaries
 
 The owner wants one shared information space. Both authenticated members can read household documents, facts and tasks, including records associated with the other person. A record may concern one person, both people, a house, or several subjects. Subject associations are searchable metadata, never inferred access restrictions. Keep uploader, subject and task owner as distinct concepts. Individual accounts remain useful for preferences, responsibilities, audit, and action approval.
 
-Do not add private document areas to the first release. Continue enforcing household membership and limited mirror/MCP identities. Authentication secrets and provider tokens are technical credentials, not searchable shared knowledge. The direct Paperless path must expose the same shared collection to both members.
+Do not infer private document areas from person associations. Continue enforcing household membership and limited mirror/MCP identities. Authentication secrets and provider tokens are technical credentials, not searchable shared knowledge. The direct Paperless path must expose the same shared collection to both members.
 
-Start with a durable in-app notification inbox. Add Android Web Push after HTTPS and actual-device tests. Model delivery through a port so a Telegram adapter can be added later without duplicating tasks or business rules. Telegram is not selected or required now. A notification opens the corresponding record in Aegis; delivery and task completion remain separate.
+The in-app notification inbox is durable. Delivery adapters reuse notification identity and application
+commands; notification delivery, read status and task completion are distinct states. Calendar integration
+uses the application-owned port; the selected external provider owns its events. AI/model adapters reuse
+authorized application tools and cannot become a prerequisite for capture or deterministic planning.
 
-Prepare calendar capabilities behind ports, including future writes, without implementing or granting unrestricted calendar mutations yet. Calendar reading can support the pilot; creation, rescheduling and deletion are deferred until the basic workflow proves useful and provider behavior is tested.
+## Data ownership and portability
 
-## Initial backup target and remaining checks
+| Data | Source of truth | Portability rule |
+|---|---|---|
+| Original documents and archive renditions | Paperless | Preserve original bytes, checksums and stable Aegis references |
+| Document title and classification | Paperless metadata | Make any additional Aegis hierarchy ownership explicit in its implementation ADR |
+| Tasks and confirmed contract facts | Aegis PostgreSQL | Versioned structured export with source relationships and review state |
+| Original email, when connected | Provider mailbox and unchanged local EML copy | Preserve attachment and message origins |
+| Calendar events, when connected | Selected calendar provider | Retain external identity, version and synchronization state |
+| Household prose/preferences | Versioned Markdown where appropriate; application preferences remain structured | Never include credentials |
+| Executable rules, conversations and action history, when implemented | Aegis PostgreSQL | Preserve structured state and audit; significant conclusions become explicit facts |
+| Indexes, summaries and embeddings | Rebuildable derived data | Never the only copy of an authoritative fact |
 
-An external 1 TB disk is available and is a reasonable candidate for the first local backup of the currently 100 GiB VM. Actual suitability depends on free space, health, existing contents, filesystem, backup scope and retention. Do not equate nominal capacity with guaranteed retention.
+Exports are one-way views, not another writable source of truth. Readability, migration and independent
+operation are separate promises: an exported CSV does not provide collaborative task management.
+Stable internal IDs and checksums preserve relationships when external Paperless IDs change.
+Manual originals and confirmed facts must survive AI reprocessing. Facts need source, validity and review
+state; conflicting or superseded sources remain distinguishable.
 
-Proposed first stage: consistent application backups with Restic to the external disk, with visible completion time and a tested restore. Offsite backup is a later improvement; one nearby disk does not protect against losing both devices together. If disconnected, automatic backups cannot run, and Aegis must show the stale backup state.
+## Recovery boundary
 
-Before configuring the disk, establish where it will be connected, what it already contains, and how it is safely exposed to the VM. Do not format, repartition, or change Proxmox storage based solely on its availability. Keep encryption/recovery credentials accessible outside the failed system. A 24-hour recovery point remains a proposal until the actual schedule and availability are agreed.
+The external Restic destination and isolated recovery are verified; see [BACKUP.md](../operations/BACKUP.md)
+for actual scope, destination identity, schedule and evidence. Preserve consistent database/file captures,
+visible failure/staleness and recovery keys outside the VM. A nearby external disk does not cover loss of
+both host and disk. Recovery objectives, retention and offsite extensions are tracked in issues.
 
 ## Shared agent entry points
 
