@@ -36,8 +36,15 @@ class DocumentCaptureServiceTest {
         store = new InMemoryOriginalStore();
         scheduler = new TestDoubles.RecordingScheduler();
         ArchivalSettings settings = new ArchivalSettings(3, Duration.ofMinutes(1), Duration.ofDays(1), 1024);
-        service = new DocumentCaptureService(store, new DocumentRegistrar(repository, scheduler),
-                new DocumentPresenter(scheduler), new TestDoubles.MembersOnly(anna, ben), settings,
+        var classifications = new InMemoryClassificationRepository();
+        var categories = new InMemoryCategoryRepository();
+        var labels = new InMemoryLabelRepository();
+        var lock = new NoOpCatalogLock();
+        var presenter = new DocumentPresenter(scheduler,
+                new ClassificationViews(classifications, categories, labels));
+        service = new DocumentCaptureService(store,
+                new DocumentRegistrar(repository, classifications, categories, lock, scheduler), presenter,
+                categories, new TestDoubles.MembersOnly(anna, ben), settings,
                 Clock.fixed(Instant.parse("2026-09-13T10:00:00Z"), ZoneOffset.UTC));
     }
 

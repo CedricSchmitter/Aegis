@@ -45,8 +45,10 @@ public class RestoreRunner implements ApplicationRunner {
                 "aegis.import.actor-username must name a provisioned member; got '" + actorUsername + "'"));
         var report = restore.restore(new Actor(credentials.id()), importPath);
         log.info("Restore of generation {} from {}: documents imported={} present={}, tasks imported={} present={}, "
-                + "member mappings={}, warnings={}", report.generation(), importPath, report.documentsImported(),
+                + "labels created={}, folders created={}, classifications applied={} kept={}, member mappings={}, "
+                + "warnings={}", report.generation(), importPath, report.documentsImported(),
                 report.documentsAlreadyPresent(), report.tasksImported(), report.tasksAlreadyPresent(),
-                report.memberIdMapping().size(), report.warnings());
+                report.labelsCreated(), report.foldersCreated(), report.classificationsApplied(),
+                report.classificationsKept(), report.memberIdMapping().size(), report.warnings());
     }
 }

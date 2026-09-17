@@ -3,15 +3,11 @@ package dev.aegis.documents.domain.catalog;
 import java.util.List;
 
 /**
- * Persistence of the folder tree. {@link #loadForUpdate()} must serialize structural changes (for example with a
- * database lock held until the surrounding transaction ends) so that concurrent moves cannot form a cycle.
+ * Persistence of the folder tree. Callers serialize structural changes (see the application catalog lock) so that
+ * concurrent moves cannot form a cycle; folder versions are still checked optimistically.
  */
 public interface CategoryRepository {
-    /** Current tree without locking, for reads. */
     CategoryTree load();
-
-    /** Current tree with exclusive structural access for the rest of the transaction. */
-    CategoryTree loadForUpdate();
 
     /**
      * Stores the changed folders with optimistic version checks, deletes removed folders and replaces the derived

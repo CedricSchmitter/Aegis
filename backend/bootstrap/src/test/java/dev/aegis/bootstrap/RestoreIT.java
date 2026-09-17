@@ -78,7 +78,13 @@ class RestoreIT extends PostgresIT {
         assertThat(Files.isRegularFile(Path.of(export.location()).resolve("manifest.json"))).isTrue();
 
         // Wipe household data (members stay, like a fresh instance provisioned with the same usernames).
-        jdbc.execute("TRUNCATE TABLE scheduled_tasks, notices, tasks, document_subjects, documents");
+        jdbc.execute("TRUNCATE TABLE scheduled_tasks, notices, tasks, document_labels, document_classifications, "
+                + "document_subjects, documents");
+        jdbc.execute("DELETE FROM category_label_effects");
+        jdbc.execute("DELETE FROM category_subject_effects");
+        jdbc.execute("DELETE FROM category_implied_labels");
+        jdbc.execute("DELETE FROM category_implied_subjects");
+        jdbc.execute("DELETE FROM categories");
         try (var files = Files.list(DATA.resolve("ingress"))) {
             for (Path file : files.filter(Files::isRegularFile).toList()) {
                 Files.delete(file);

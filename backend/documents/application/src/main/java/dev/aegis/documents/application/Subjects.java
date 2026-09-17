@@ -4,12 +4,16 @@ import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.domain.Subject;
 import dev.aegis.documents.domain.SubjectKind;
 import dev.aegis.shared.InvalidInputException;
+import dev.aegis.shared.MemberId;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Boundary mapping between subject views and domain subjects. */
+/** Boundary mapping between subject views, subject keys and domain subjects. */
 final class Subjects {
+    private static final String MEMBER_PREFIX = "MEMBER:";
+
     private Subjects() {
     }
 
@@ -30,7 +34,19 @@ final class Subjects {
         return subjects;
     }
 
-    static List<SubjectView> toViews(Set<Subject> subjects) {
+    static List<SubjectView> toViews(Collection<Subject> subjects) {
         return subjects.stream().map(s -> new SubjectView(s.kind().name(), s.member())).toList();
+    }
+
+    /** Stable key used in search filters and counts: HOUSE, HOUSEHOLD or MEMBER:{uuid}. */
+    static String key(Subject subject) {
+        return subject.memberId().map(member -> MEMBER_PREFIX + member).orElse(subject.kind().name());
+    }
+
+    static Subject fromKey(String key) {
+        if (key != null && key.startsWith(MEMBER_PREFIX)) {
+            return Subject.member(MemberId.of(key.substring(MEMBER_PREFIX.length())));
+        }
+        return fromViews(List.of(new SubjectView(key, null))).iterator().next();
     }
 }

@@ -58,7 +58,7 @@ class AtomicSchedulingIT extends PostgresIT {
     private RegistrationCommand command(DocumentId id, String stagingPath, long size, String checksumSeed) {
         return new RegistrationCommand(id, "Atomic " + id, "atomic.pdf", "application/pdf", size,
                 dev.aegis.documents.domain.Checksum.of(checksumSeed), anna(), Instant.now(),
-                Set.of(Subject.household()), stagingPath);
+                Set.of(Subject.household()), stagingPath, null);
     }
 
     @Test

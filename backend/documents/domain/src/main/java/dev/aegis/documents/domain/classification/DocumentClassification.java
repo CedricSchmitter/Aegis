@@ -186,6 +186,19 @@ public final class DocumentClassification {
         return true;
     }
 
+    /** Forgets a remembered rejection; used when the label itself is deleted. */
+    public boolean forget(LabelId label) {
+        LabelAssignment current = assignments.get(label);
+        if (current == null) {
+            return false;
+        }
+        if (current.state() != ReviewState.REJECTED) {
+            throw new IllegalStateException("label " + label + " is still in use on " + documentId);
+        }
+        assignments.remove(label);
+        return true;
+    }
+
     /** Moves the assignment of a merged label to its target; the stronger review state survives. */
     public boolean replaceLabel(LabelId from, LabelId to) {
         LabelAssignment source = assignments.remove(from);

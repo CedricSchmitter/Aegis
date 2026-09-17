@@ -76,6 +76,11 @@ public final class Category {
         return true;
     }
 
+    /** Whether the folder name equals the candidate after normalization. */
+    public boolean nameKeyEquals(String candidate) {
+        return candidate != null && nameKey().equals(CatalogNames.matchKey(candidate));
+    }
+
     String nameKey() {
         return CatalogNames.matchKey(name);
     }

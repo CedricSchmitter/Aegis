@@ -7,9 +7,6 @@ public interface LabelRepository {
     /** Whole vocabulary including retired and merged entries. */
     LabelVocabulary load();
 
-    /** Whole vocabulary with exclusive vocabulary access for the rest of the transaction. */
-    LabelVocabulary loadForUpdate();
-
     Optional<Label> findById(LabelId id);
 
     void save(Label label);

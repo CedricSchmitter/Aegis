@@ -37,8 +37,13 @@ class DocumentQueryServiceTest {
         store = new InMemoryOriginalStore();
         archive = new TestDoubles.FakeArchive();
         var scheduler = new TestDoubles.RecordingScheduler();
-        service = new DocumentQueryService(repository, archive, store, new DocumentPresenter(scheduler),
-                new TestDoubles.MembersOnly(anna, ben), Clock.fixed(NOW, ZoneOffset.UTC));
+        var classifications = new InMemoryClassificationRepository();
+        var categories = new InMemoryCategoryRepository();
+        var labels = new InMemoryLabelRepository();
+        var views = new ClassificationViews(classifications, categories, labels);
+        service = new DocumentQueryService(repository, archive, store, new DocumentPresenter(scheduler, views),
+                new InMemoryDocumentCatalog(repository, classifications, categories, labels), categories, labels,
+                classifications, views, new TestDoubles.MembersOnly(anna, ben), Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private Document stored(String title, MemberId uploader, Instant at, byte[] bytes) throws Exception {

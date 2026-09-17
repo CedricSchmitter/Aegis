@@ -1,17 +1,33 @@
 package dev.aegis.documents.application;
 
+import dev.aegis.documents.application.ports.CatalogLock;
 import dev.aegis.documents.application.ports.ProcessingScheduler;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.DocumentRepository;
+import dev.aegis.documents.domain.catalog.CategoryId;
+import dev.aegis.documents.domain.catalog.CategoryRepository;
+import dev.aegis.documents.domain.classification.ClassificationRepository;
+import dev.aegis.documents.domain.classification.DocumentClassification;
+import dev.aegis.shared.InvalidInputException;
 import java.util.Optional;
 
-/** Records a received document and its archival job in one unit of work; duplicates return the existing record. */
+/**
+ * Records a received document, its classification and its archival job in one unit of work; duplicates return the
+ * existing record unchanged. A folder deleted in the meantime never fails the upload: the document stays Unsorted.
+ */
 public class DocumentRegistrar implements RegisterReceivedDocument {
     private final DocumentRepository documents;
+    private final ClassificationRepository classifications;
+    private final CategoryRepository categories;
+    private final CatalogLock lock;
     private final ProcessingScheduler scheduler;
 
-    public DocumentRegistrar(DocumentRepository documents, ProcessingScheduler scheduler) {
+    public DocumentRegistrar(DocumentRepository documents, ClassificationRepository classifications,
+            CategoryRepository categories, CatalogLock lock, ProcessingScheduler scheduler) {
         this.documents = documents;
+        this.classifications = classifications;
+        this.categories = categories;
+        this.lock = lock;
         this.scheduler = scheduler;
     }
 
@@ -20,7 +36,7 @@ public class DocumentRegistrar implements RegisterReceivedDocument {
         Optional<Document> sameId = documents.findById(command.id());
         if (sameId.isPresent()) {
             if (!sameId.get().checksum().equals(command.checksum())) {
-                throw new dev.aegis.shared.InvalidInputException("document.importConflict",
+                throw new InvalidInputException("document.importConflict",
                         "Document id already belongs to different content");
             }
             return new RegistrationResult(sameId.get(), true);
@@ -33,6 +49,15 @@ public class DocumentRegistrar implements RegisterReceivedDocument {
                 command.contentType(), command.sizeBytes(), command.checksum(), command.uploadedBy(),
                 command.uploadedAt(), command.subjects(), command.stagingPath());
         documents.save(document);
+        DocumentClassification classification = DocumentClassification.unsorted(document.id());
+        if (command.categoryId() != null) {
+            lock.shared();
+            CategoryId category = new CategoryId(command.categoryId());
+            if (categories.load().find(category).isPresent()) {
+                classification.placeIn(category, command.uploadedBy(), command.uploadedAt());
+            }
+        }
+        classifications.save(classification);
         scheduler.scheduleArchival(document.id());
         return new RegistrationResult(document, false);
     }
