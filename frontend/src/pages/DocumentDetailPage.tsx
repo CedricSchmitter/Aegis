@@ -203,7 +203,7 @@ export function DocumentDetailPage() {
       <ErrorBox message={error} />
       {message && <InfoBox>{message}</InfoBox>}
 
-      <section className="card mb-4 flex flex-col gap-2" aria-label={t("documents.state." + p.state)}>
+      <section className="card mb-4 flex flex-col gap-2" aria-label={t(`documents.state.${p.state}`)}>
         <p className="font-medium" data-testid="processing-state">
           {t(`documents.state.${p.state}`)}
         </p>

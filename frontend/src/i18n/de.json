@@ -427,7 +427,8 @@
     "searchPlaceholder": "Label suchen",
     "noMatches": "Keine passenden Labels.",
     "existing": "„{{name}}“ gibt es bereits.",
-    "save": "Speichern"
+    "save": "Speichern",
+    "builtinBadge": "eingebaut"
   },
   "folders": {
     "title": "Ordner",

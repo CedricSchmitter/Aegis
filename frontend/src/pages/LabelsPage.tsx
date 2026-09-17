@@ -184,7 +184,7 @@ export function LabelsPage() {
                             {labelName(label, t)}
                             {label.builtinKey && (
                               <span className="ml-2 badge bg-stone-200 text-xs dark:bg-stone-800">
-                                {t("labels.builtin")}
+                                {t("labels.builtinBadge")}
                               </span>
                             )}
                             {label.status !== "ACTIVE" && (
