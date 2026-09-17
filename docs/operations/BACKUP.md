@@ -68,8 +68,9 @@ accounts and login before scheduling daily backups.
 
 On 2026-09-17 the owner reported personally formatting the disk and connecting it directly to the server.
 This supersedes earlier unattached/nonempty reports. A read-only check inside VM 102 found no external block
-or USB disk; its actual identity, filesystem, contents and host visibility remain unverified. Nothing below
-formats, repartitions or deletes existing data.
+or USB disk; its actual identity, filesystem, contents and host visibility remain unverified. Restic 0.18.0 is
+installed, but `backup.env`, the backup state file and an Aegis backup timer are absent. Nothing below formats,
+repartitions or deletes existing data.
 
 1. Identify the 1 TB device on the Proxmox host by size, model, serial, filesystem and UUID. Obtain specific
    authorization before changing host configuration. Pass through only this identified USB device to VM 102;
