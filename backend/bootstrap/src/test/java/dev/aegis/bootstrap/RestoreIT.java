@@ -5,7 +5,15 @@ import static org.awaitility.Awaitility.await;
 
 import dev.aegis.bootstrap.support.FakePaperlessArchive;
 import dev.aegis.bootstrap.support.PostgresIT;
+import dev.aegis.documents.application.api.CatalogQueries;
+import dev.aegis.documents.application.api.CategoryCommands;
+import dev.aegis.documents.application.api.CategoryCommands.CreateCategory;
+import dev.aegis.documents.application.api.CategoryView;
+import dev.aegis.documents.application.api.ClassificationCommands;
 import dev.aegis.documents.application.api.DocumentQueries;
+import dev.aegis.documents.application.api.LabelChip;
+import dev.aegis.documents.application.api.LabelCommands;
+import dev.aegis.documents.application.api.LabelView;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.application.api.UploadDocument;
 import dev.aegis.documents.application.api.UploadDocument.UploadCommand;
@@ -38,6 +46,14 @@ class RestoreIT extends PostgresIT {
     UploadDocument upload;
     @Autowired
     DocumentQueries documentQueries;
+    @Autowired
+    CategoryCommands categories;
+    @Autowired
+    LabelCommands labels;
+    @Autowired
+    ClassificationCommands classification;
+    @Autowired
+    CatalogQueries catalog;
     @Autowired
     TaskCommands tasks;
     @Autowired
@@ -72,6 +88,18 @@ class RestoreIT extends PostgresIT {
         int originalPaperlessId = documentQueries.get(anna, documentId).processing().paperlessDocumentId();
         TaskSummary task = tasks.create(ben, new CreateTaskCommand("Nach Restore prüfen", "", anna.memberId(),
                 LocalDate.of(2027, 1, 31), null, documentId));
+
+        // A folder with an implied label plus an own organization label: the export must carry both.
+        LabelView invoice = catalog.labels(anna).stream().filter(l -> "invoice".equals(l.builtinKey())).findFirst()
+                .orElseThrow();
+        LabelView provider = labels.create(anna, null, "ORGANIZATION", "Restore Provider " + System.nanoTime());
+        CategoryView folder = categories.create(anna, new CreateCategory(null, null,
+                "Restore Ordner " + System.nanoTime()));
+        categories.changeImplications(anna, folder.id(), List.of(invoice.id()),
+                List.of(new SubjectView("HOUSE", null)), folder.version());
+        var filed = classification.place(anna, documentId, folder.id(),
+                documentQueries.get(anna, documentId).classification().version());
+        classification.setLabels(anna, documentId, List.of(provider.id()), filed.classification().version());
 
         ExportSummary export = createExport.export(anna);
         assertThat(export.documentCount()).isGreaterThanOrEqualTo(1);
@@ -110,10 +138,37 @@ class RestoreIT extends PostgresIT {
         assertThat(restoredTask.ownerId()).isEqualTo(anna.memberId());
         assertThat(restoredTask.dueDate()).isEqualTo(LocalDate.of(2027, 1, 31));
 
+        // Folder, vocabulary and classification came back with their stable ids and their provenance.
+        assertThat(report.foldersCreated()).isGreaterThanOrEqualTo(1);
+        assertThat(report.classificationsApplied()).isGreaterThanOrEqualTo(1);
+        assertThat(catalog.categories(anna).categories()).extracting(CategoryView::id).contains(folder.id());
+        assertThat(catalog.categories(anna).categories()).filteredOn(view -> view.id().equals(folder.id()))
+                .singleElement().satisfies(view -> {
+                    assertThat(view.impliedLabelIds()).containsExactly(invoice.id());
+                    assertThat(view.impliedSubjects()).extracting(SubjectView::kind).containsExactly("HOUSE");
+                });
+        assertThat(catalog.labels(anna)).extracting(LabelView::id).contains(provider.id());
+        var restoredClassification = documentQueries.get(ben, documentId).classification();
+        assertThat(restoredClassification.categoryId()).isEqualTo(folder.id());
+        assertThat(restoredClassification.labels()).anySatisfy(chip -> {
+            assertThat(chip.labelId()).isEqualTo(provider.id());
+            assertThat(chip.source()).isEqualTo(LabelChip.SOURCE_OWN);
+        }).anySatisfy(chip -> {
+            assertThat(chip.labelId()).isEqualTo(invoice.id());
+            assertThat(chip.source()).isEqualTo(LabelChip.SOURCE_FOLDER);
+        });
+
+        int foldersBefore = catalog.categories(anna).categories().size();
+        int labelsBefore = catalog.labels(anna).size();
         RestoreExport.RestoreReport again = restore.restore(anna, export.location());
         assertThat(again.documentsImported()).isZero();
         assertThat(again.tasksImported()).isZero();
         assertThat(again.documentsAlreadyPresent()).isEqualTo(export.documentCount());
+        assertThat(again.foldersCreated()).isZero();
+        assertThat(again.labelsCreated()).isZero();
+        assertThat(again.classificationsKept()).isGreaterThanOrEqualTo(1);
+        assertThat(catalog.categories(anna).categories()).hasSize(foldersBefore);
+        assertThat(catalog.labels(anna)).hasSize(labelsBefore);
         archive.available = false;
         try {
             assertThat(documentQueries.original(ben, documentId).bytes()).isEqualTo(pdf);
