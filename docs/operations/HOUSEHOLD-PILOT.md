@@ -10,9 +10,10 @@ LAN-only HTTPS, not remote access; no router port forwarding or public exposure 
 Run the tracked `ops/deploy/onboard-household.py` as root inside aegis-dev only. It stops the application,
 keeps a restricted local recovery copy and database dump under `/srv/aegis/deploy/onboarding-recovery`, updates
 the provisioning seed and executes `onboard-household.sql` transactionally. It does not delete/recreate members
-or reset passwords. Old sessions continue to resolve their member IDs and show the new names. New logins are
-`lisa` and `cedric` with the corresponding existing passwords. Change passwords through Settings after HTTPS
-is trusted on the device. Credentials remain only in the VM's restricted seed file, never in this guide.
+or reset passwords. Old sessions continue to resolve their member IDs and show the new names. Current logins
+are `lisa` and `cedric`; the original provisioning passwords are stale after later password changes. Both
+accounts currently use temporary test passwords. Change to individual passwords through Settings before
+further real-document use. Never print or commit credentials.
 
 ## Trusted HTTPS (LAN endpoint enabled on 2026-09-17)
 
@@ -67,7 +68,8 @@ provisioning seed passwords are stale. Replace test passwords with individual cr
 
 The owner subsequently reported personally formatting the 1 TB disk and attaching it directly to the server.
 This supersedes the earlier deferred-attachment notes. A read-only check in VM 102 on 2026-09-17 showed only
-the 100 GB QEMU system disk and virtual DVD drive; no external block or USB disk is visible there. Filesystem,
-contents, UUID and host visibility remain unverified. No further formatting/deletion is authorized. External
-backup and isolated recovery are the next gate.
+the 100 GB QEMU system disk and virtual DVD drive; no external block or USB disk is visible there. A screenshot
+supplied by the owner shows two 1 TB disks on the Proxmox host, one WDC/ext4 and one Toshiba/NTFS. Neither is
+yet tied to the `BackupIntenso` label or a USB port; UUID and contents remain unknown. No further formatting
+or deletion is authorized. External backup and isolated recovery are the next gate.
 PR #18 merged after all four CI checks passed (run 35216385600).

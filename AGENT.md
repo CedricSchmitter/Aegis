@@ -5,9 +5,10 @@ This is the canonical repository instruction file for human contributors, Codex,
 ## Project and priorities
 
 Latest owner update (2026-09-17): the owner personally freshly formatted the external 1 TB disk and attached
-it directly to the server. This supersedes older unattached/nonempty-disk notes below. Its filesystem, contents
-and visibility inside VM 102 remain unverified. Inspect read-only first; no further formatting or deletion is
-authorized. The owner confirmed HTTPS and the shared document/task workflow on both Android phones.
+it directly to the server. This supersedes older unattached/nonempty-disk notes below. VM 102 has no visible
+external disk; a user-supplied Proxmox screenshot shows two different 1 TB disks, but does not identify which
+one is labeled `BackupIntenso`. Inspect read-only first; no further formatting or deletion is authorized.
+The owner confirmed HTTPS and the shared document/task workflow on both Android phones.
 See docs/planning/NEXT-SESSION-PROMPT.md for the current external-backup handoff.
 
 Aegis is a shared household workspace for documents, tasks, calendars, and a future personal assistant. Optimize for two people using their own Android phones without technical assistance.

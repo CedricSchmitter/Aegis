@@ -56,7 +56,8 @@ The original tooling-only notes below are historical. The first application stac
 Caddy publishes LAN ports 80 and 443; Aegis, PostgreSQL, Paperless and Valkey run privately. The independent review
 verified 81 GiB free on the VM at that time. A fresh read-only VM check on 2026-09-17 again found no external
 disk: `lsblk` showed only the 100 GB QEMU system disk and virtual DVD drive, and `lsusb` showed no storage
-device. The owner reports the 1 TB disk attached directly to the server; its host visibility is unverified. See
+device. A user-supplied Proxmox screenshot shows two 1 TB disks on the host, but does not identify which is
+`BackupIntenso`; neither is visible inside VM 102. See
 [independent review](planning/INDEPENDENT-REVIEW.md) for release and CI evidence.
 
 ## Not configured yet

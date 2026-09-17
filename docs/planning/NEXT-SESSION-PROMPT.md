@@ -26,8 +26,9 @@ Do not restart completed implementation, account migration, release review or HT
 The owner reports having freshly formatted the external 1 TB disk personally and connected it directly to
 the server. This supersedes older notes saying it is unattached and contains previous data. Read-only checks
 on 2026-09-17 found no external block or USB disk inside VM 102; only its 100 GB QEMU system disk and virtual
-DVD drive are visible. Host visibility, disk identity, filesystem, contents and UUID are still unverified.
-Do not format, repartition or delete it.
+DVD drive are visible. The owner then supplied a Proxmox disk screenshot showing two 1 TB disks: WDC/ext4
+`/dev/sdb` and Toshiba/NTFS `/dev/sdd`. The screenshot lacks the `BackupIntenso` label, USB transport and UUID;
+the intended disk is not yet identified. Contents remain unverified. Do not format, repartition or delete it.
 
 ## Next concrete work
 

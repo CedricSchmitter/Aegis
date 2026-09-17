@@ -57,17 +57,11 @@ Rollback to a previously built commit: `sh /srv/aegis/source/current/ops/deploy/
 
 ## Onboarding the two logins
 
-The initial passwords are only on the VM:
-
-```bash
-ssh ... aegis-agent@192.168.2.159 cat /srv/aegis/deploy/secrets/initial-members.json
-```
-
 The current login is at `https://192.168.2.159/login`. Passwords are stored as
 BCrypt hashes. The explicit household onboarding maps the test accounts to `lisa` and `cedric` without
 resetting passwords; see HOUSEHOLD-PILOT.md. Both accounts now use temporary test passwords changed through
-trusted HTTPS; the provisioning seed passwords are stale. Replace the test passwords with individual ones
-before further real-document use.
+trusted HTTPS; the provisioning seed passwords are stale and must not be used for login checks. Replace the
+test passwords with individual ones before further real-document use. Never print credentials in logs or Git.
 The JSON file only seeds accounts that do not exist yet. After onboarding/password changes, retire its
 plaintext values by replacing its content with `{"members": []}`; keep the bind-mounted file in place so
 later container recreation does not encounter a missing file or create a directory in its place.
