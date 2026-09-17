@@ -15,10 +15,9 @@ Aegis is a shared household workspace for documents, tasks, calendars, and a fut
 The household members are **Lisa and Cedric**. The initial application accounts `anna` and `ben` are test identities, not their real names. Do not assume a mapping or rename/delete accounts without preserving IDs, ownership, sessions and existing data through an explicit migration or onboarding flow.
 
 On 2026-09-13 the owner approved the explicit mapping `anna -> lisa / Lisa`, `ben -> cedric / Cedric`.
-The tracked operator onboarding flow preserves existing identities and credentials. The preferred local
-hostname is `aegis`; DNS and device certificate trust still need verification. The owner deferred external
-disk attachment until it becomes necessary; continue synthetic tests without it, but require external
-backup and recovery evidence before relying on real household documents.
+The migration is complete and preserved identities. Trusted LAN HTTPS works by private IP on the PC and
+both Android phones; the optional local hostname `aegis` remains unconfigured. One real invoice is already
+stored, so preserve all existing data. Require external backup and recovery evidence before further real use.
 Public/internet access is explicitly deferred until Aegis has proved useful locally. HTTPS preparation is
 LAN-only; do not create router port forwarding, public exposure or remote-access infrastructure. A local DNS
 name is optional: the prepared HTTPS configuration also supports the existing private IP address.
@@ -29,7 +28,9 @@ The initial household information space is shared by both members. Person/house/
 
 Start with in-app notifications and evaluate Android Web Push over HTTPS. Telegram is an optional future delivery adapter, not the initial primary interface. Prepare calendar read/write ports, but defer calendar writes until the basic workflow has been validated. A currently available external 1 TB disk is the proposed first local backup target; inspect it before any setup and never assume it is empty or authorized for formatting. An offsite copy remains a future resilience improvement.
 
-The owner confirmed that the external disk contains existing data and can eventually remain attached. Prepare its integration only until its contents and attachment are explicitly handled. For the first runnable synthetic-data test, follow docs/planning/FIRST-RUNNABLE-TEST.md: a local isolated restore drill is required, but actual external backup, live provider integrations and mobile push are deferred. Do not confuse this limited test with production readiness.
+The owner now reports that the external disk was freshly formatted and attached to the server. Its actual
+contents and VM visibility require read-only inspection before integration. The completed first runnable
+test included a local isolated restore drill; it is not evidence of external recovery.
 
 Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). Read [architecture foundations](docs/architecture/FOUNDATIONS.md) before backend or API work, and [VM access](docs/VM-ACCESS.md) before remote operations. Distinguish accepted decisions, proposed defaults, and implemented capabilities.
 

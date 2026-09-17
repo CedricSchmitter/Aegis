@@ -53,15 +53,17 @@ Reproduce installation with [bootstrap-vm.sh](../ops/bootstrap-vm.sh), only insi
 ## Current application state
 
 The original tooling-only notes below are historical. The first application stack is now deployed on this VM:
-Caddy publishes LAN port 80; Aegis, PostgreSQL, Paperless and Valkey run privately. The independent review
-verified 81 GiB free on the VM and no attached external 1 TB disk. See
+Caddy publishes LAN ports 80 and 443; Aegis, PostgreSQL, Paperless and Valkey run privately. The independent review
+verified 81 GiB free on the VM at that time. A fresh read-only VM check on 2026-09-17 again found no external
+disk: `lsblk` showed only the 100 GB QEMU system disk and virtual DVD drive, and `lsusb` showed no storage
+device. The owner reports the 1 TB disk attached directly to the server; its host visibility is unverified. See
 [independent review](planning/INDEPENDENT-REVIEW.md) for release and CI evidence.
 
 ## Not configured yet
 
 - Mail and calendar integration
 - External backup destination and tested recovery
-- Public web access and production household data
+- Public web access; further real-document use requires tested external recovery
 
 Restic alone is not a backup. Before relying on this system for household records, connect a separate backup destination and complete a restore test.
 

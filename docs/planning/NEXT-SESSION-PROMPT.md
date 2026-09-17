@@ -24,12 +24,15 @@ Do not restart completed implementation, account migration, release review or HT
 ## Updated disk decision
 
 The owner reports having freshly formatted the external 1 TB disk personally and connected it directly to
- the server. This supersedes older notes saying it is unattached and contains previous data. The agent has
-not verified the disk, filesystem, contents, UUID or VM visibility. Do not format, repartition or delete it.
+the server. This supersedes older notes saying it is unattached and contains previous data. Read-only checks
+on 2026-09-17 found no external block or USB disk inside VM 102; only its 100 GB QEMU system disk and virtual
+DVD drive are visible. Host visibility, disk identity, filesystem, contents and UUID are still unverified.
+Do not format, repartition or delete it.
 
 ## Next concrete work
 
-1. Inspect disk visibility within VM 102 read-only; identify by model/serial, capacity, filesystem and UUID.
+1. Identify the server-attached disk on Proxmox by model/serial, capacity, filesystem and UUID. VM 102 currently
+   has no view of it; repeat read-only inspection inside the VM after any passthrough.
 2. If visible only on Proxmox, explain a safe passthrough procedure specifically for VM 102 and obtain the
    missing host-change authorization or guide the owner through the UI. VM authorization is not host authorization.
 3. Review the existing backup scripts, select a dedicated directory and establish encrypted external backup

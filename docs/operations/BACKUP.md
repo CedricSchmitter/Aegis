@@ -66,23 +66,27 @@ accounts and login before scheduling daily backups.
 
 ### External 1 TB disk: non-destructive checklist
 
-The disk already contains data and may eventually stay attached. Nothing below formats, repartitions or
-mounts over existing data.
+On 2026-09-17 the owner reported personally formatting the disk and connecting it directly to the server.
+This supersedes earlier unattached/nonempty reports. A read-only check inside VM 102 found no external block
+or USB disk; its actual identity, filesystem, contents and host visibility remain unverified. Nothing below
+formats, repartitions or deletes existing data.
 
-1. The owner deferred attachment on 2026-09-13. When required, agree how the device is exposed to VM 102;
-   USB passthrough requires a separately authorized Proxmox change. Do not assume a host bind mount is
-   directly usable by a VM, and do not change Proxmox storage configuration for this.
+1. Identify the 1 TB device on the Proxmox host by size, model, serial, filesystem and UUID. Obtain specific
+   authorization before changing host configuration. Pass through only this identified USB device to VM 102;
+   do not alter other VMs or Proxmox storage. A host bind mount is not directly usable by a VM.
 2. Inspect before use, read-only: `lsblk -f`, `sudo blkid`, `sudo smartctl -H /dev/sdX` (install
    `smartmontools` only inside the VM). Record filesystem type, label, free space and health.
 3. Mount read-only first (`mount -o ro`) and list the top-level contents. Choose a dedicated subdirectory such
-   as `aegis-backup/` next to the existing data; never delete or move what is there.
-4. Create the marker file `.aegis-backup-destination` in the mount root only after the owner confirms the
-   directory; mount read-write with `nofail` in `/etc/fstab` so a missing disk does not block boot.
+   as `aegis-backup/` without deleting or moving anything already present.
+4. Create the marker file `.aegis-backup-destination` in the mount root after checking that path is unused;
+   mount read-write by the verified UUID with `nofail` in `/etc/fstab` so a missing disk does not block boot.
 5. Generate the Restic password, store a copy outside the VM (password manager and paper), point
    `RESTIC_PASSWORD_FILE` at a 0600 file on the VM, initialize only the dedicated empty repository directory
    with `restic init`, then run `backup.sh` once manually and inspect `restic snapshots`.
-6. Only then add a timer (systemd or cron) for daily runs and rehearse a restore from the Restic repository
-   into the isolated drill stack.
+6. Restore the actual external Restic snapshot into a separate directory and isolated stack; verify database
+   dumps, originals and checksums, member identities, task source links, configuration and login. The local
+   export drill alone does not meet this gate. Only after this succeeds add a daily timer and verify that
+   failed or stale runs appear on the Status page. Do not enable automatic `forget` or `prune`.
 
 Offsite copies remain a later improvement; a nearby disk does not protect against fire, theft or a failure
 that takes both devices.

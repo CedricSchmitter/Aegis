@@ -19,18 +19,13 @@ untouched.
 Only Caddy is reachable from the LAN. PostgreSQL, Valkey, Paperless and Docker administration are not
 published. Aegis talks to Paperless over the internal Compose network with a service account.
 
-## Access mode: LAN-only HTTP preview
+## Access mode: trusted LAN HTTPS
 
-The first test is served at `http://192.168.2.159/` without TLS. Consequences, stated in the UI as well:
-
-- The session cookie is `HttpOnly`, `SameSite=Lax` and not `Secure` (`AEGIS_COOKIE_SECURE=false`).
-- No installable PWA, no Web Push, no secure-context claims.
-- Suitable for synthetic data on the home LAN only; not for real household documents.
-
-HTTPS follow-up: the owner selected `aegis`. A local-CA Caddyfile and Compose override are prepared; client
-DNS and certificate trust remain to be established. See [HOUSEHOLD-PILOT.md](HOUSEHOLD-PILOT.md). Deployment
-honors `AEGIS_HTTPS=true` from `.env`, enables the override with Secure cookies, and displays an HTTPS-specific
-pilot banner. The external-backup gate remains in force even after HTTPS works.
+The first synthetic test used HTTP. The current endpoint is `https://192.168.2.159/` with the local CA trusted
+on the PC and both Android phones. `AEGIS_HTTPS=true` enables the Compose override and Secure session cookies.
+The preferred local name `aegis` remains optional and unconfigured. See [HOUSEHOLD-PILOT.md](HOUSEHOLD-PILOT.md)
+for verification and owner-confirmed phone tests. No Web Push or public access is configured. The external
+backup gate remains open; one real invoice is already stored and must be preserved.
 
 ## First-time setup
 
@@ -68,9 +63,11 @@ The initial passwords are only on the VM:
 ssh ... aegis-agent@192.168.2.159 cat /srv/aegis/deploy/secrets/initial-members.json
 ```
 
-The synthetic preview login is at `http://192.168.2.159/login`. Passwords are stored as
+The current login is at `https://192.168.2.159/login`. Passwords are stored as
 BCrypt hashes. The explicit household onboarding maps the test accounts to `lisa` and `cedric` without
-resetting passwords; see HOUSEHOLD-PILOT.md. Change real passwords only after trusted HTTPS is available.
+resetting passwords; see HOUSEHOLD-PILOT.md. Both accounts now use temporary test passwords changed through
+trusted HTTPS; the provisioning seed passwords are stale. Replace the test passwords with individual ones
+before further real-document use.
 The JSON file only seeds accounts that do not exist yet. After onboarding/password changes, retire its
 plaintext values by replacing its content with `{"members": []}`; keep the bind-mounted file in place so
 later container recreation does not encounter a missing file or create a directory in its place.

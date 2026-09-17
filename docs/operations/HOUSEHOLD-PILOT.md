@@ -1,7 +1,7 @@
 # Household pilot preparation
 
-Owner choices on 2026-09-13: hostname `aegis`; map anna to Lisa and ben to Cedric while preserving identities;
-defer connecting the nonempty external disk. Keep using synthetic data until the external backup gate passes.
+Owner choices on 2026-09-13: hostname `aegis`; map anna to Lisa and ben to Cedric while preserving identities.
+The disk decision changed on 2026-09-17; see the current evidence below. One real invoice is already stored.
 The owner explicitly deferred internet/public access until the local pilot proves useful. This guide concerns
 LAN-only HTTPS, not remote access; no router port forwarding or public exposure was configured.
 
@@ -23,8 +23,8 @@ Both household logins, all three original checksums, authorization and logout pa
 HTTP redirects preserve the requested host. `default_sni` selects the IP certificate for clients that omit
 SNI when connecting by IP; Docker's internal address must not determine that certificate selection.
 See [Caddy global options](https://caddyserver.com/docs/caddyfile/options#default-sni).
-Actual browser and Android checks remain pending; local DNS remains optional and unconfigured.
-No router, public access, other VM or external disk changes were made.
+The owner subsequently confirmed the Android workflow below. Local DNS remains optional and unconfigured.
+No router, public access or other VM changes were made by the Aegis deployment.
 
 The persistent CA was generated and a loopback-only proxy successfully served the live version API with
 certificate verification on 2026-09-13. Public root SHA-256 fingerprint (verified through trusted SSH):
@@ -52,8 +52,8 @@ The operator must establish client trust; Caddy running in a container cannot in
 
 ## Next data-safety gate
 
-When ready for real documents, attach and expose the existing disk to VM 102 through a separately agreed
-non-destructive procedure. Inspect filesystem, free space and health read-only before choosing a dedicated
+Before further real-document use, expose the server-attached disk to VM 102 through a separately authorized
+non-destructive Proxmox change. Inspect filesystem, free space and health read-only before choosing a dedicated
 directory. Do not format, repartition or delete existing data. Follow BACKUP.md; store the recovery password
 outside the VM, run an actual external backup and restore it into an isolated target before starting real use.
 
@@ -66,6 +66,8 @@ Temporary test passwords were changed through HTTPS for both accounts and new lo
 provisioning seed passwords are stale. Replace test passwords with individual credentials before further real use.
 
 The owner subsequently reported personally formatting the 1 TB disk and attaching it directly to the server.
-This supersedes the earlier deferred-attachment notes. Filesystem, contents and VM visibility remain unverified;
-no further formatting/deletion is authorized. External backup and isolated recovery are the next gate.
+This supersedes the earlier deferred-attachment notes. A read-only check in VM 102 on 2026-09-17 showed only
+the 100 GB QEMU system disk and virtual DVD drive; no external block or USB disk is visible there. Filesystem,
+contents, UUID and host visibility remain unverified. No further formatting/deletion is authorized. External
+backup and isolated recovery are the next gate.
 PR #18 merged after all four CI checks passed (run 35216385600).

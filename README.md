@@ -57,7 +57,7 @@ Browser smoke test against a deployed stack:
 
 ```bash
 cd e2e && npm ci && npm run install:browsers
-AEGIS_BASE_URL=http://192.168.2.159 AEGIS_USER_A=anna AEGIS_PASSWORD_A=... AEGIS_USER_B=ben AEGIS_PASSWORD_B=... npm test
+AEGIS_BASE_URL=https://192.168.2.159 AEGIS_USER_A=lisa AEGIS_PASSWORD_A=... AEGIS_USER_B=cedric AEGIS_PASSWORD_B=... npm test
 ```
 
 CI (`.github/workflows/ci.yml`) runs the backend verification with Testcontainers, the frontend checks with a
@@ -69,8 +69,9 @@ The first runnable test slice is implemented: two logins into one shared househo
 durable PDF capture with real Paperless archival, shared document list/search/original access, source-linked
 tasks with a deterministic Today view, a persisted in-app notice inbox, a truthful status page, atomic exports
 with an isolated restore drill, Compose deployment on the Aegis VM and CI. See the execution status document for
-the deployed commit, verification evidence and limitations. Mail, calendar, AI, Telegram, phone push and the
-external backup destination are deliberately not connected yet.
+the deployed commit, verification evidence and limitations. The owner confirmed trusted LAN HTTPS and the shared
+workflow on both Android phones. One real invoice is stored. Mail, calendar, AI, Telegram, phone push and the
+external backup destination are not connected yet; the disk is not currently visible inside VM 102.
 
 Source is maintained in this repository; the Aegis VM is the development/test environment. Private keys,
 tokens, household documents, and service data must not be committed.
