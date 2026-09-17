@@ -8,7 +8,10 @@ const FIXTURE = path.resolve(here, "../../fixtures/synthetic-contract.pdf");
 // Unique bytes per run so duplicate detection of earlier runs does not short-circuit the upload.
 const runId = Date.now().toString(36);
 const RUN_PDF = Buffer.concat([readFileSync(FIXTURE), Buffer.from(`\n%% catalog e2e ${runId}\n`, "latin1")]);
+// Every folder name carries the run id: leftovers of an earlier run must never be picked up by name.
 const ROOT = `E2E Haus ${runId}`;
+const INVOICES = `Rechnungen ${runId}`;
+const INTERNET = `Internet ${runId}`;
 const ORGANIZATION = `Telekom e2e ${runId}`;
 
 const userA = { username: process.env.AEGIS_USER_A ?? "anna", password: process.env.AEGIS_PASSWORD_A ?? "" };
@@ -60,6 +63,11 @@ function chip(page: Page, name: string) {
   return page.locator("[data-testid=label-chip]", { hasText: name }).first();
 }
 
+/** The folder line of the open document detail page. */
+function folderOf(page: Page) {
+  return page.getByTestId("document-folder").first();
+}
+
 test.describe("document tree, labels and faceted search", () => {
   test.skip(!userA.password || !userB.password, "AEGIS_PASSWORD_A and AEGIS_PASSWORD_B must be set");
 
@@ -70,8 +78,8 @@ test.describe("document tree, labels and faceted search", () => {
 
     // A small household structure with explicit folder labels: House -> Invoices -> Internet.
     const houseId = await createFolder(page, ROOT, null);
-    const invoicesId = await createFolder(page, "Rechnungen", houseId);
-    const internetId = await createFolder(page, "Internet", invoicesId);
+    const invoicesId = await createFolder(page, INVOICES, houseId);
+    const internetId = await createFolder(page, INTERNET, invoicesId);
     await mapFolder(page, houseId, "DOCUMENT_TYPE", undefined, "HOUSE");
     await mapFolder(page, invoicesId, "DOCUMENT_TYPE", "Rechnung");
     await mapFolder(page, internetId, "TOPIC", "Internet");
@@ -89,12 +97,14 @@ test.describe("document tree, labels and faceted search", () => {
     await expect(page.getByRole("status").first()).toContainText(/dauerhaft gespeichert/);
     const card = page.locator("[data-testid=document-card]", { hasText: `Telekom Rechnung e2e ${runId}` }).first();
     await expect(card).toBeVisible();
-    await expect(card.getByTestId("document-folder")).toContainText(`${ROOT} / Rechnungen / Internet`);
+    await expect(card.getByTestId("document-folder")).toContainText(`${ROOT} / ${INVOICES} / ${INTERNET}`);
     await card.getByRole("link").first().click();
+    // The SPA changes the URL before it renders the detail page, so wait for the heading of that document.
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(`Telekom Rechnung e2e ${runId}`);
     const documentUrl = page.url();
 
     // The document shows the owner example: invoice and internet from the folders, house as an inherited subject.
-    await expect(page.getByTestId("document-folder")).toContainText(`${ROOT} / Rechnungen / Internet`);
+    await expect(folderOf(page)).toContainText(`${ROOT} / ${INVOICES} / ${INTERNET}`);
     await expect(chip(page, "Rechnung")).toHaveAttribute("data-source", "FOLDER");
     await expect(chip(page, "Internet")).toHaveAttribute("data-source", "FOLDER");
     await expect(page.getByText(/Haus/).first()).toBeVisible();
@@ -130,7 +140,7 @@ test.describe("document tree, labels and faceted search", () => {
     await page.getByTestId("language-switch").click();
     await page.goto(documentUrl);
     await expect(chip(page, "Invoice")).toBeVisible();
-    await expect(page.getByTestId("document-folder")).toContainText(`${ROOT} / Rechnungen / Internet`);
+    await expect(folderOf(page)).toContainText(`${ROOT} / ${INVOICES} / ${INTERNET}`);
     await page.getByTestId("language-switch").click();
 
     // Folder scope: the whole subtree and the leaf both contain the document, an unrelated scope does not.
@@ -154,11 +164,12 @@ test.describe("document tree, labels and faceted search", () => {
 
     // Deleting a folder moves the document up and keeps the label it would otherwise lose.
     await page.goto("/documents/folders");
+    await page.getByTestId(`edit-folder-${invoicesId}`).click();
     page.once("dialog", (dialog) => void dialog.accept());
     await page.getByTestId(`delete-folder-${invoicesId}`).click();
     await expect(page.getByRole("status").first()).toContainText(/gelöscht|deleted/);
     await page.goto(documentUrl);
-    await expect(page.getByTestId("document-folder")).toContainText(`${ROOT} / Internet`);
+    await expect(folderOf(page)).toContainText(`${ROOT} / ${INTERNET}`);
     await expect(chip(page, "Rechnung")).toHaveAttribute("data-source", "OWN");
     await expect(page.getByTestId("open-original")).toBeVisible();
   });
