@@ -14,7 +14,17 @@ or reset passwords. Old sessions continue to resolve their member IDs and show t
 `lisa` and `cedric` with the corresponding existing passwords. Change passwords through Settings after HTTPS
 is trusted on the device. Credentials remain only in the VM's restricted seed file, never in this guide.
 
-## Trusted HTTPS (prepared, not yet switched)
+## Trusted HTTPS (LAN endpoint enabled on 2026-09-17)
+
+HTTPS is now enabled at `https://192.168.2.159`. The application remains at `e148ef8`;
+the HTTPS configuration is tracked separately in `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT` (`30554ee`).
+Windows user root trust and a normal .NET HTTPS request were verified without bypassing validation.
+Both household logins, all three original checksums, authorization and logout passed over verified TLS.
+HTTP redirects preserve the requested host. `default_sni` selects the IP certificate for clients that omit
+SNI when connecting by IP; Docker's internal address must not determine that certificate selection.
+See [Caddy global options](https://caddyserver.com/docs/caddyfile/options#default-sni).
+Actual browser and Android checks remain pending; local DNS remains optional and unconfigured.
+No router, public access, other VM or external disk changes were made.
 
 The persistent CA was generated and a loopback-only proxy successfully served the live version API with
 certificate verification on 2026-09-13. Public root SHA-256 fingerprint (verified through trusted SSH):
