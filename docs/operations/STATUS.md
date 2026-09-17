@@ -46,6 +46,9 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   tests, the container image build and 12 browser tests against real Paperless. The search integration test
   measured folder and facet queries over 10,000 seeded documents at 131 ms (listing), 493 ms (with facet
   counts), 189 ms (folder plus text) and 124 ms (missing-value filter).
+- Backward compatibility of the changed export format was checked on the VM: the isolated restore drill
+  (`ops/backup/restore-drill.sh`) restored the existing schema 1 generation `20260913T154219Z` into the new code
+  and passed with three re-archived documents under new Paperless ids and two tasks with intact source links.
 - The same commit is deployed on VM 102 and was exercised through `https://192.168.2.159` in German and English,
   on the desktop layout and at phone width, with two temporary QA accounts. The QA accounts, the test documents,
   folders and labels were removed afterwards; the household documents, tasks and members are unchanged, and the
