@@ -20,5 +20,5 @@ https://aegis, https://192.168.2.159 {
 }
 
 http://aegis, http://192.168.2.159 {
-    redir https://aegis{uri} permanent
+    redir https://{host}{uri} permanent
 }
