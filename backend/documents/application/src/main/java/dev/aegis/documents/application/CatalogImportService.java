@@ -97,7 +97,13 @@ public class CatalogImportService implements ImportCatalog {
             }
             if (local.isPresent()) {
                 labelIds.put(imported.id(), local.get().id().value());
-                adoptUnmodifiedBuiltin(local.get(), imported, vocabulary, now);
+                try {
+                    adoptUnmodifiedBuiltin(local.get(), imported, vocabulary, now);
+                } catch (InvalidInputException conflict) {
+                    // A restore never fails over a name that is already taken locally; the local name stays.
+                    warnings.add("kept the local name of built-in label " + local.get().id() + ": "
+                            + conflict.code());
+                }
                 continue;
             }
             Optional<Label> byName = keyMatch(vocabulary, facet, imported);
