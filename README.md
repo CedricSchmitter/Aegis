@@ -72,8 +72,8 @@ with an isolated restore drill, Compose deployment on the Aegis VM and CI. See t
 the deployed commit, verification evidence and limitations. The owner confirmed trusted LAN HTTPS and the shared
 workflow on both Android phones. One real invoice is stored. An encrypted backup on the server-attached USB
 disk passed an isolated recovery test, and a daily timer is enabled. The first scheduled run is still pending.
-Mail, calendar, AI, Telegram and phone push are not connected. Individual account passwords are required
-before further real-document use.
+Mail, calendar, AI, Telegram and phone push are not connected. The owner confirmed both accounts now use
+individual passwords and both new logins worked; this was not independently verified by the agent.
 
 Source is maintained in this repository; the Aegis VM is the development/test environment. Private keys,
 tokens, household documents, and service data must not be committed.

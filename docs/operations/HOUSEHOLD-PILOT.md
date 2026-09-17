@@ -13,8 +13,8 @@ keeps a restricted local recovery copy and database dump under `/srv/aegis/deplo
 the provisioning seed and executes `onboard-household.sql` transactionally. It does not delete/recreate members
 or reset passwords. Old sessions continue to resolve their member IDs and show the new names. Current logins
 are `lisa` and `cedric`; the original provisioning passwords are stale after later password changes. Both
-accounts currently use temporary test passwords. Change to individual passwords through Settings before
-further real-document use. Never print or commit credentials.
+accounts used temporary test passwords. The owner subsequently confirmed both were replaced with individual
+passwords and both new logins worked; this was not independently verified. Never print or commit credentials.
 
 ## Trusted HTTPS (LAN endpoint enabled on 2026-09-17)
 
@@ -57,8 +57,8 @@ The operator must establish client trust; Caddy running in a container cannot in
 
 The server-attached disk was passed through to VM 102 after specific approval. An encrypted external snapshot
 passed full data checking and recovery in isolation; see BACKUP.md. The daily timer is enabled, though its first
-scheduled run remains unobserved. Before further real-document use, both members must replace the shared
-temporary test passwords with individual ones. Do not format, repartition or delete existing disk content.
+scheduled run remains unobserved. The owner confirmed that both members changed to individual passwords and
+logged in again. Do not format, repartition or delete existing disk content.
 
 ## Owner-confirmed pilot and disk update (2026-09-17)
 
@@ -66,7 +66,8 @@ The owner confirmed trusted HTTPS, login and original PDF access on both Android
 was uploaded; its task was assigned to Lisa, surfaced as an in-app notice and completed by her. These are
 owner-reported device observations. The invoice is real data and must be preserved.
 Temporary test passwords were changed through HTTPS for both accounts and new logins independently verified;
-provisioning seed passwords are stale. Replace test passwords with individual credentials before further real use.
+provisioning seed passwords are stale. Later, the owner confirmed individual password changes and fresh logins
+for both accounts; the agent did not independently verify these newer credentials.
 
 The owner subsequently reported personally formatting the 1 TB disk and attaching it directly to the server.
 This supersedes the earlier deferred-attachment notes. An initial VM check found no external disk. The owner

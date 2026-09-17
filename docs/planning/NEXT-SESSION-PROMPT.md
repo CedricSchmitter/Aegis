@@ -14,9 +14,10 @@ Do not restart the completed account migration, HTTPS activation, USB identifica
 - Trusted LAN HTTPS at `https://192.168.2.159` works on the PC and both Android phones. The owner confirmed
   phone upload, original access, task assignment, in-app notice and completion. These are owner observations,
   distinct from the independently verified TLS, login, checksum, authorization and session-cookie checks.
-- Accounts are `lisa` and `cedric`. Both temporary test passwords were changed through HTTPS and new logins
-  verified. Provisioning passwords are stale. Shared temporary passwords must be replaced with individual
-  credentials before further real-document use. One real mixer invoice is already stored; preserve all data.
+- Accounts are `lisa` and `cedric`. The earlier change to temporary test passwords and logins was independently
+  verified through HTTPS; provisioning passwords are stale. The owner later confirmed both accounts changed
+  to individual passwords and both fresh logins worked. The later credential change is owner-reported, not
+  independently agent-verified. One real mixer invoice is already stored; preserve all data.
 - The owner reported personally formatting and attaching the 1 TB disk. Owner-supplied Proxmox output
   identified `BackupIntenso` as USB port `1-3`, TOSHIBA MQ01ABD100, serial `7376SWFGS`, NTFS, UUID
   `30DAE27ADAE23C2A`. After explicit approval, the owner passed only that port through to VM 102. Direct
@@ -38,12 +39,10 @@ Do not restart the completed account migration, HTTPS activation, USB identifica
 
 ## Next concrete work
 
-1. Have each member change their own temporary password in Settings to a unique individual password before
-   uploading more real documents. Do not request or record their passwords; obtain owner confirmation only.
-2. After the first scheduled 03:30 run, inspect `systemctl status aegis-backup.service`, `systemctl list-timers`,
+1. After the first scheduled 03:30 run, inspect `systemctl status aegis-backup.service`, `systemctl list-timers`,
    Restic snapshots, `/srv/aegis/data/backup-state/state.json` and the app Status page. Record actual evidence;
    timer activation alone does not prove a future run.
-3. Run the small household pilot with representative workflows. Arrange a second recovery-key copy and an
+2. Run the small household pilot with representative workflows. Arrange a second recovery-key copy and an
    offsite backup later. The same-server USB disk does not cover fire, theft or simultaneous hardware loss.
 
 ## Scope

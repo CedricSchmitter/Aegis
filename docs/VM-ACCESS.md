@@ -64,7 +64,7 @@ for inspection, backup and recovery evidence and
 ## Not configured yet
 
 - Mail and calendar integration
-- Public web access; further real-document use requires individual account passwords
+- Public web access
 
 The external Restic repository passed a full read check and isolated recovery. A daily backup timer is enabled;
 the first scheduled run has not yet been observed. An offsite copy remains future work.

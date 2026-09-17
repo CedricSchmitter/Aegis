@@ -470,8 +470,8 @@ Agree maintenance intervals in phase 1: regular inspection, grouped updates with
 
 1. Preserve the completed trusted HTTPS and Android upload, original, task and notice workflow. Local DNS
    for `aegis` is optional; the trusted private IP endpoint works on both phones.
-2. Have Lisa and Cedric replace their shared temporary test passwords with individual credentials through
-   Settings before further real-document use. Never record the passwords in Git or issues.
+2. Preserve the owner's confirmation that Lisa and Cedric changed to individual passwords and both new
+   logins worked. This was not independently verified; never record passwords in Git or issues.
 3. Check the first automatic daily backup run at 03:30 Europe/Berlin and inspect the Status page for success
    time or a visible failure. Periodically repeat recovery tests and arrange an offsite copy.
 4. Run the small household pilot with representative scenarios before enabling mail, calendar or AI.

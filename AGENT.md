@@ -20,8 +20,9 @@ The household members are **Lisa and Cedric**. The initial application accounts 
 On 2026-09-13 the owner approved the explicit mapping `anna -> lisa / Lisa`, `ben -> cedric / Cedric`.
 The migration is complete and preserved identities. Trusted LAN HTTPS works by private IP on the PC and
 both Android phones; the optional local hostname `aegis` remains unconfigured. One real invoice is already
-stored, so preserve all existing data. External backup and recovery evidence now exists; replace the shared
-temporary test passwords with individual credentials before further real-document use.
+stored, so preserve all existing data. External backup and recovery evidence now exists. The owner confirmed
+that both shared temporary test passwords were replaced with individual credentials and both new logins worked;
+this password change is owner-reported, not independently verified by the agent.
 Public/internet access is explicitly deferred until Aegis has proved useful locally. HTTPS preparation is
 LAN-only; do not create router port forwarding, public exposure or remote-access infrastructure. A local DNS
 name is optional: the prepared HTTPS configuration also supports the existing private IP address.
