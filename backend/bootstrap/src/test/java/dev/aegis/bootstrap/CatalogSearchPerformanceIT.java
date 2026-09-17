@@ -121,7 +121,7 @@ class CatalogSearchPerformanceIT extends PostgresIT {
             UUID id = UUID.randomUUID();
             UUID folder = folders.get(index % folders.size());
             documentRows.add(new Object[] {id, TITLE_PREFIX + index, "perf-" + index + ".pdf", "application/pdf",
-                    1024L, String.format("%064x", new java.math.BigInteger(1, id.toString().getBytes())), uploader,
+                    1024L, id.toString().replace("-", "").repeat(2), uploader,
                     java.sql.Timestamp.from(uploadedAt.plusSeconds(index)), "perf/" + id + ".pdf", "ARCHIVED",
                     100_000 + index});
             classificationRows.add(new Object[] {id, folder, uploader,

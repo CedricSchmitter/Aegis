@@ -17,9 +17,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class JdbcDocumentCatalog implements DocumentCatalog {
-    private static final String FROM = """
-             FROM documents d
-             LEFT JOIN document_classifications dc ON dc.document_id = d.id""";
+    private static final String FROM = " FROM documents d"
+            + " LEFT JOIN document_classifications dc ON dc.document_id = d.id";
 
     private final JdbcClient jdbc;
 

@@ -367,7 +367,7 @@ class DocumentCatalogIT extends PostgresIT {
         assertThat(moved.path("moved").asInt()).isEqualTo(1);
         assertThat(document(lisa, unsortedDocumentId).path("classification").path("path")).singleElement()
                 .satisfies(step -> assertThat(step.path("name").asText()).isEqualTo("Haus"));
-        assertThat(lisa.json(lisa.get("/api/categories")).path("unsortedCount").asLong()).isZero();
+        assertThat(ids(lisa, "/api/documents?category=unsorted")).doesNotContain(unsortedDocumentId);
     }
 
     @Test
