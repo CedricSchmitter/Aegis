@@ -78,9 +78,11 @@ export function LabelPicker({ facet, labels, onPick, onCreate, disabled }: Props
           className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-stone-300 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
         >
           {matches.map((label, index) => (
-            <li key={label.id} role="option" aria-selected={index === active}>
+            <li key={label.id}>
               <button
                 type="button"
+                role="option"
+                aria-selected={index === active}
                 className={`flex w-full min-h-11 items-center justify-between gap-2 px-3 text-left text-sm ${
                   index === active ? "bg-sky-50 dark:bg-stone-800" : ""
                 }`}
@@ -95,9 +97,11 @@ export function LabelPicker({ facet, labels, onPick, onCreate, disabled }: Props
             </li>
           ))}
           {canCreate && (
-            <li role="option" aria-selected={active === matches.length}>
+            <li>
               <button
                 type="button"
+                role="option"
+                aria-selected={active === matches.length}
                 className={`flex w-full min-h-11 items-center px-3 text-left text-sm ${
                   active === matches.length ? "bg-sky-50 dark:bg-stone-800" : ""
                 }`}

@@ -337,6 +337,7 @@ export function FoldersPage() {
                             <label key={value} className="flex items-center gap-2 text-sm">
                               <input
                                 type="checkbox"
+                                data-testid={`implied-subject-${value}`}
                                 checked={subjectDraft.includes(value)}
                                 onChange={() =>
                                   setSubjectDraft((draft) =>

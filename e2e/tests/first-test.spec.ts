@@ -86,13 +86,14 @@ test.describe("first runnable test", () => {
 
     // Upload a synthetic PDF and wait for real archival.
     await page.getByRole("link", { name: "Dokumente" }).first().click();
+    await page.getByTestId("upload-panel-toggle").click();
     await page.getByTestId("upload-input").setInputFiles({
       name: `Stromvertrag e2e ${runId}.pdf`,
       mimeType: "application/pdf",
       buffer: RUN_PDF,
     });
     await page.getByTestId("upload-submit").click();
-    await expect(page.getByRole("status")).toContainText("dauerhaft gespeichert");
+    await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
     const card = page.locator("[data-testid=document-card]", { hasText: `Stromvertrag e2e ${runId}` }).first();
     await expect(card).toBeVisible();
     await card.getByRole("link").first().click();
@@ -182,6 +183,7 @@ test.describe("first runnable test", () => {
     await login(page, userA);
     await expect(page.getByRole("navigation").last()).toBeVisible();
     await page.getByRole("link", { name: /Dokumente|Documents/ }).last().click();
+    await page.getByTestId("upload-panel-toggle").click();
     await expect(page.getByTestId("upload-input")).toBeVisible();
     await logout(page);
   });

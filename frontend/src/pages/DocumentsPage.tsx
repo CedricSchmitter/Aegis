@@ -39,6 +39,7 @@ export function DocumentsPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploadSubjects, setUploadSubjects] = useState<string[]>(["HOUSEHOLD"]);
   const [uploadFolder, setUploadFolder] = useState<string | null>(null);
+  const [showFolders, setShowFolders] = useState(false);
 
   const apply = useCallback(
     (next: CatalogFilters) => {
@@ -179,8 +180,10 @@ export function DocumentsPage() {
         {t("documents.title")}
       </PageTitle>
 
-      <details className="card mb-4">
-        <summary className="min-h-11 cursor-pointer font-semibold">{t("documents.upload")}</summary>
+      <details className="card mb-4" data-testid="upload-panel">
+        <summary className="min-h-11 cursor-pointer font-semibold" data-testid="upload-panel-toggle">
+          {t("documents.upload")}
+        </summary>
         <form className="mt-3 flex flex-col gap-3" onSubmit={onUpload} data-testid="upload-form">
           <p className="text-sm text-stone-600 dark:text-stone-400">{t("documents.uploadHint")}</p>
           <label className="label" htmlFor="file">
@@ -241,28 +244,28 @@ export function DocumentsPage() {
 
       <div className="grid gap-4 md:grid-cols-[16rem_1fr]">
         <div className="flex flex-col gap-2">
-          <details className="md:hidden" open>
-            <summary className="btn-secondary w-full cursor-pointer">{t("documents.folders")}</summary>
-            <div className="mt-2">
-              {catalog && (
-                <FolderTree
-                  categories={categories}
-                  unsortedCount={catalog.unsortedCount}
-                  totalDocuments={catalog.totalDocuments}
-                  selected={filters.category}
-                  onSelect={(category) => apply({ ...filters, category, page: 0 })}
-                />
-              )}
-            </div>
-          </details>
-          <div className="hidden md:block">
+          {/* One tree for both layouts: always visible from the medium breakpoint, toggled on a phone. */}
+          <button
+            type="button"
+            className="btn-secondary w-full md:hidden"
+            aria-expanded={showFolders}
+            aria-controls="folder-panel"
+            data-testid="folders-toggle"
+            onClick={() => setShowFolders((value) => !value)}
+          >
+            {t("documents.folders")}
+          </button>
+          <div id="folder-panel" className={`${showFolders ? "" : "hidden"} md:block`}>
             {catalog && (
               <FolderTree
                 categories={categories}
                 unsortedCount={catalog.unsortedCount}
                 totalDocuments={catalog.totalDocuments}
                 selected={filters.category}
-                onSelect={(category) => apply({ ...filters, category, page: 0 })}
+                onSelect={(category) => {
+                  apply({ ...filters, category, page: 0 });
+                  setShowFolders(false);
+                }}
               />
             )}
           </div>
