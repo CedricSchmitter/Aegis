@@ -16,6 +16,7 @@ export function LabelEditor({ chips, labels, onSave, onCreate }: Props) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<string[]>(() => ownLabelIds(chips));
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
   const known = byId(labels);
 
   const inFacet = (facet: Facet) =>
@@ -57,10 +58,16 @@ export function LabelEditor({ chips, labels, onSave, onCreate }: Props) {
           <LabelPicker
             facet={facet}
             labels={labels}
+            disabled={creating}
             onPick={(label) => add(facet, label.id)}
             onCreate={async (name) => {
-              const created = await onCreate(facet, name);
-              if (created) add(facet, created.id);
+              setCreating(true);
+              try {
+                const created = await onCreate(facet, name);
+                if (created) add(facet, created.id);
+              } finally {
+                setCreating(false);
+              }
             }}
           />
         </div>
@@ -69,7 +76,7 @@ export function LabelEditor({ chips, labels, onSave, onCreate }: Props) {
         <button
           type="button"
           className="btn-primary"
-          disabled={saving}
+          disabled={saving || creating}
           data-testid="save-labels"
           onClick={async () => {
             setSaving(true);

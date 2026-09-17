@@ -113,6 +113,7 @@ test.describe("document tree, labels and faceted search", () => {
     await page.getByTestId("edit-labels").click();
     await page.getByTestId("label-picker-ORGANIZATION").fill(ORGANIZATION);
     await page.getByTestId("label-create-ORGANIZATION").click();
+    await expect(page.getByTestId("label-editor").getByText(ORGANIZATION)).toBeVisible();
     await page.getByTestId("save-labels").click();
     await expect(page.getByRole("status").first()).toContainText(/Labels gespeichert|Labels saved/);
     await expect(chip(page, ORGANIZATION)).toHaveAttribute("data-source", "OWN");
