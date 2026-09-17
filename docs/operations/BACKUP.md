@@ -101,6 +101,21 @@ make the backup unreadable.
   reported as 2026-09-18 03:30 CEST. `Persistent=true` catches up after downtime. The service deliberately
   calls the script even if the disk is missing, allowing its failure state to reach the Status page.
 
+To reproduce the schedule on a replacement VM after restoring the disk, key and deploy configuration, install
+the tracked units as root and verify their next run:
+
+```bash
+install -m 0644 /srv/aegis/source/current/ops/backup/systemd/aegis-backup.service /etc/systemd/system/
+install -m 0644 /srv/aegis/source/current/ops/backup/systemd/aegis-backup.timer /etc/systemd/system/
+systemd-analyze verify /etc/systemd/system/aegis-backup.service /etc/systemd/system/aegis-backup.timer
+systemctl daemon-reload
+systemctl enable --now aegis-backup.timer
+systemctl list-timers aegis-backup.timer
+```
+
+After each run, inspect `systemctl status aegis-backup.service`, Restic snapshots and
+`/srv/aegis/data/backup-state/state.json`; the timer's enabled state alone does not prove that a backup ran.
+
 The status source preserves the previous success timestamp on a failed run and marks failures or a success
 older than 26 hours as `DEGRADED`. The Status page shows the last success and check time. No automatic
 `restic forget`, `prune` or other retention deletion is configured. Inspect capacity and arrange an offsite
