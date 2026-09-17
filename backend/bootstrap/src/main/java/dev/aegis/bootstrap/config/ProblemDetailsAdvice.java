@@ -46,7 +46,9 @@ public class ProblemDetailsAdvice {
 
     @ExceptionHandler(InvalidInputException.class)
     ProblemDetail invalid(InvalidInputException e) {
-        return problem(HttpStatus.BAD_REQUEST, e.code(), e.getMessage());
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, e.code(), e.getMessage());
+        e.details().forEach(problem::setProperty);
+        return problem;
     }
 
     @ExceptionHandler(NotAuthorizedException.class)
