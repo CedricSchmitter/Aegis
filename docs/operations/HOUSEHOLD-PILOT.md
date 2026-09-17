@@ -18,7 +18,7 @@ further real-document use. Never print or commit credentials.
 
 ## Trusted HTTPS (LAN endpoint enabled on 2026-09-17)
 
-HTTPS is now enabled at `https://192.168.2.159`. The application remains at `e148ef8`;
+HTTPS is now enabled at `https://192.168.2.159`. The application runs commit `e65a1b6`;
 the HTTPS configuration is tracked separately in `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT` (`30554ee`).
 Windows user root trust and a normal .NET HTTPS request were verified without bypassing validation.
 Both household logins, all three original checksums, authorization and logout passed over verified TLS.
@@ -48,7 +48,7 @@ The certificate is available on the VM at the path below; no private key was cop
    and confirm Secure/HttpOnly/SameSite session cookies. Do not bypass certificate errors as acceptance.
 5. Verify login, PDF upload/retrieval and both locales on the actual phones. The owner confirmed the core
    workflow on both phones. HTTPS alone does not implement PWA or Web Push. The status-aware backup banner
-   is included in the next application release; verify the deployed version before treating it as live.
+   is deployed in `e65a1b6`; the trusted HTTPS version endpoint and served bundle were checked.
 
 Reference: [Caddy local HTTPS](https://caddyserver.com/docs/automatic-https#local-https).
 The operator must establish client trust; Caddy running in a container cannot install trust on remote devices.

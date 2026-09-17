@@ -7,8 +7,9 @@ Do not restart the completed account migration, HTTPS activation, USB identifica
 ## Completed and verified on 2026-09-17
 
 - PR #18 merged after all four CI checks passed; it corrected IP-preserving HTTPS redirects and certificate
-  selection for clients without SNI. Last independently verified application build before the backup/status
-  release: `e148ef8`; HTTPS configuration commit: `30554ee`, recorded separately in
+  selection for clients without SNI. PR #19 merged after all four CI checks passed (run 35237838666).
+  Its merge commit `e65a1b6` is deployed and was independently verified through trusted HTTPS and in VM 102.
+  HTTPS configuration commit `30554ee` is recorded separately in
   `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT`. Verify the actual deployed commit before citing a newer one.
 - Trusted LAN HTTPS at `https://192.168.2.159` works on the PC and both Android phones. The owner confirmed
   phone upload, original access, task assignment, in-app notice and completion. These are owner observations,
@@ -32,18 +33,17 @@ Do not restart the completed account migration, HTTPS activation, USB identifica
 - `aegis-backup.timer` is enabled for 03:30 Europe/Berlin daily. Its first scheduled run is not yet observed.
   A failed run preserves the previous success timestamp and reports DEGRADED; success older than 26 hours
   also reports DEGRADED. The isolated status API passed success, failure and staleness simulations.
+- The deployed Status page bundle contains the new status-aware backup warning. Issue #17 was closed with the
+  external recovery evidence. The recovery-key copy on the PC should gain a second independent copy later.
 
 ## Next concrete work
 
-1. Finish review, CI, merge and deployment of the branch containing the backup/status documentation, systemd
-   units and frontend banner change. Confirm the VM reports the merged commit and healthy services. Before
-   deployment, the live pilot banner may still claim that external backup is unconfigured.
-2. Have each member change their own temporary password in Settings to a unique individual password before
+1. Have each member change their own temporary password in Settings to a unique individual password before
    uploading more real documents. Do not request or record their passwords; obtain owner confirmation only.
-3. After the first scheduled 03:30 run, inspect `systemctl status aegis-backup.service`, `systemctl list-timers`,
+2. After the first scheduled 03:30 run, inspect `systemctl status aegis-backup.service`, `systemctl list-timers`,
    Restic snapshots, `/srv/aegis/data/backup-state/state.json` and the app Status page. Record actual evidence;
    timer activation alone does not prove a future run.
-4. Run the small household pilot with representative workflows. Arrange a second recovery-key copy and an
+3. Run the small household pilot with representative workflows. Arrange a second recovery-key copy and an
    offsite backup later. The same-server USB disk does not cover fire, theft or simultaneous hardware loss.
 
 ## Scope
