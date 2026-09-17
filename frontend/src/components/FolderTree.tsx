@@ -58,7 +58,7 @@ export function FolderTree({ categories, unsortedCount, totalDocuments, selected
     });
   };
 
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>, row: Row) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLLIElement>, row: Row) => {
     const hasChildren = (row.node?.children.length ?? 0) > 0;
     const isExpanded = row.id ? expanded.includes(row.id) : false;
     switch (event.key) {
@@ -102,22 +102,25 @@ export function FolderTree({ categories, unsortedCount, totalDocuments, selected
           const hasChildren = (row.node?.children.length ?? 0) > 0;
           const isExpanded = row.id ? expanded.includes(row.id) : undefined;
           return (
-            <li key={row.id ?? "all"} role="treeitem" aria-selected={isSelected}
-                aria-expanded={hasChildren ? isExpanded : undefined}
-                aria-level={row.depth + 1} className="list-none">
-              <div
-                data-folder={row.id ?? "all"}
-                data-testid={`folder-${row.id ?? "all"}`}
-                tabIndex={row.id === activeRow ? 0 : -1}
-                onKeyDown={(event) => onKeyDown(event, row)}
-                onClick={() => onSelect(row.id)}
-                style={{ paddingLeft: `${row.depth * 0.75 + 0.25}rem` }}
-                className={`flex min-h-11 cursor-pointer items-center gap-1 rounded-lg px-2 text-sm ${
-                  isSelected
-                    ? "bg-sky-100 font-semibold text-sky-900 dark:bg-sky-900 dark:text-sky-100"
-                    : "hover:bg-stone-100 dark:hover:bg-stone-800"
-                }`}
-              >
+            <li
+              key={row.id ?? "all"}
+              role="treeitem"
+              aria-selected={isSelected}
+              aria-expanded={hasChildren ? isExpanded : undefined}
+              aria-level={row.depth + 1}
+              data-folder={row.id ?? "all"}
+              data-testid={`folder-${row.id ?? "all"}`}
+              tabIndex={row.id === activeRow ? 0 : -1}
+              onKeyDown={(event) => onKeyDown(event, row)}
+              onClick={() => onSelect(row.id)}
+              style={{ paddingLeft: `${row.depth * 0.75 + 0.25}rem` }}
+              className={`flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-lg px-2 text-sm ${
+                isSelected
+                  ? "bg-sky-100 font-semibold text-sky-900 dark:bg-sky-900 dark:text-sky-100"
+                  : "hover:bg-stone-100 dark:hover:bg-stone-800"
+              }`}
+            >
+              <>
                 {hasChildren ? (
                   <button
                     type="button"
@@ -136,7 +139,7 @@ export function FolderTree({ categories, unsortedCount, totalDocuments, selected
                 )}
                 <span className="flex-1 truncate">{row.label}</span>
                 <span className="text-xs text-stone-500">{row.count}</span>
-              </div>
+              </>
             </li>
           );
         })}

@@ -46,7 +46,8 @@ async function mapFolder(page: Page, folderId: string, facet: string, labelName?
   const row = page.locator(`[data-folder-id="${folderId}"]`);
   if (labelName) {
     await row.getByTestId(`label-picker-${facet}`).fill(labelName);
-    await page.getByRole("option", { name: new RegExp(labelName) }).first().click();
+    // Scoped to the autocomplete list: native select options of the folder pickers also expose the option role.
+    await row.getByTestId(`label-options-${facet}`).getByRole("option", { name: labelName }).first().click();
   }
   if (subject) {
     await row.getByTestId(`implied-subject-${subject}`).check();
@@ -162,21 +163,6 @@ test.describe("document tree, labels and faceted search", () => {
     await expect(page.getByTestId("open-original")).toBeVisible();
   });
 
-  test("the folder panel and the filters are usable on a phone @mobile", async ({ page }) => {
-    await login(page, userA);
-    await ensureGerman(page);
-    await page.goto("/documents");
-
-    await page.getByTestId("folders-toggle").click();
-    await expect(page.getByRole("tree")).toBeVisible();
-    await expect(page.getByTestId("folder-all")).toBeVisible();
-    await expect(page.getByTestId("folder-unsorted")).toBeVisible();
-    await page.getByTestId("filters-toggle").click();
-    await expect(page.getByTestId("facet-filters")).toBeVisible();
-    await page.getByTestId("upload-panel-toggle").click();
-    await expect(page.getByTestId("upload-input")).toBeVisible();
-  });
-
   test("the folder tree can be operated with the keyboard", async ({ page }) => {
     await login(page, userA);
     await ensureGerman(page);
@@ -191,5 +177,25 @@ test.describe("document tree, labels and faceted search", () => {
     await page.getByTestId("folder-all").focus();
     await page.keyboard.press("Enter");
     await expect(page).not.toHaveURL(/category=unsorted/);
+  });
+});
+
+test.describe("document folders on a phone", () => {
+  test.skip(!userA.password, "AEGIS_PASSWORD_A must be set");
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test("the folder panel and the filters are reachable @mobile", async ({ page }) => {
+    await login(page, userA);
+    await ensureGerman(page);
+    await page.goto("/documents");
+
+    await page.getByTestId("folders-toggle").click();
+    await expect(page.getByRole("tree")).toBeVisible();
+    await expect(page.getByTestId("folder-all")).toBeVisible();
+    await expect(page.getByTestId("folder-unsorted")).toBeVisible();
+    await page.getByTestId("filters-toggle").click();
+    await expect(page.getByTestId("facet-filters")).toBeVisible();
+    await page.getByTestId("upload-panel-toggle").click();
+    await expect(page.getByTestId("upload-input")).toBeVisible();
   });
 });

@@ -75,6 +75,7 @@ export function LabelPicker({ facet, labels, onPick, onCreate, disabled }: Props
         <ul
           id={listId}
           role="listbox"
+          data-testid={`label-options-${facet}`}
           className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-stone-300 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
         >
           {matches.map((label, index) => (

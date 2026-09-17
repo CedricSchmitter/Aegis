@@ -13,8 +13,10 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   to `lisa` and `cedric` preserved IDs, ownership and sessions. The owner confirmed individual passwords
   and successful fresh logins; those later credential changes were not independently agent-verified.
 - Implemented capabilities: German/English UI, durable PDF capture, Paperless archival and full-text search,
-  original retrieval, source-linked tasks, deterministic Today, in-app notifications, integration status,
-  portable exports and isolated recovery.
+  original retrieval, a browsable folder tree with an Unsorted inbox, structured labels (document type,
+  organization, topic, tags) with folder-implied labels and faceted search, source-linked tasks, deterministic
+  Today, in-app notifications, integration status, portable exports and isolated recovery. Folders, labels and
+  search work without AI; automatic classification is not connected.
 - Trusted TLS, redirects, session-cookie settings, authorization and original checksums were independently
   checked. The owner confirmed upload, original access, task assignment, notification and completion on
   both Android phones. Real household data is present and must be preserved.
@@ -36,6 +38,20 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
 - [PR #19](https://github.com/CedricSchmitter/Aegis/pull/19) records external recovery and backup-status work;
   [CI run 35237838666](https://github.com/CedricSchmitter/Aegis/actions/runs/35237838666) passed all four jobs.
   Its merge commit `e65a1b6` was verified on the VM and through trusted HTTPS.
+
+- [PR #51](https://github.com/CedricSchmitter/Aegis/pull/51) added the document folder tree, the structured
+  label vocabulary and faceted search for issues #20 and #46, with the ownership and cardinality decisions in
+  [ADR-0002](../architecture/adr/ADR-0002-document-tree-and-labels.md). Verified on 2026-09-17:
+  [CI run 35265591580](https://github.com/CedricSchmitter/Aegis/actions/runs/35265591580) passed 127 unit tests,
+  8 architecture tests, 30 PostgreSQL integration tests, 21 frontend tests, the container image build and the
+  browser smoke suite against real Paperless. The search integration test measured folder and facet queries over
+  10,000 seeded documents at 120 ms (listing), 424 ms (facet counts), 187 ms (folder plus text) and 105 ms
+  (missing-value filter). The deployed release was additionally exercised through the browser at
+  `https://192.168.2.159` in German and English, on the desktop layout and an emulated phone, with two temporary
+  QA accounts that were removed afterwards.
+- Not verified by the agent: the flows on the two real Android phones. Automatic classification (#23), bounded
+  AI execution (#21), assistant retrieval (#25) and the optional backfill of existing documents remain open
+  parts of #46.
 
 ## Recovery
 
