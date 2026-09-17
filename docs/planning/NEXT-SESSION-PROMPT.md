@@ -37,6 +37,13 @@ Do not infer a deployed commit from a branch name or from an old deployment repo
 
 ## Next concrete step
 
+Update 2026-09-17: LAN HTTPS is enabled at `https://192.168.2.159`; Windows user trust and a normal
+.NET HTTPS request passed. Both accounts and original checksums passed over TLS. PR #18 fixes IP-preserving
+redirects and certificate selection for clients without SNI. Application build remains `e148ef8` and
+HTTPS configuration `30554ee` is recorded separately on the VM. Do not repeat activation or account migration.
+Next: verify the owner's browser, then install the same public root on both Android phones and test PDFs.
+The original preparation instructions below describe the setup sequence; server activation is now complete.
+
 Finish issue #16 as LAN-only HTTPS: establish certificate trust on the PC and both Android phones. The prepared
 private-IP endpoint avoids making router/DNS configuration a blocker. If the owner wants the friendly name too,
 arrange local DNS for aegis -> 192.168.2.159; it did not resolve on the PC during review. Ask only for device-side
