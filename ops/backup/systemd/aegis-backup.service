@@ -1,0 +1,11 @@
+[Unit]
+Description=Aegis external Restic backup
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+UMask=0077
+Nice=10
+ExecStart=/bin/sh /srv/aegis/source/current/ops/backup/backup.sh
+TimeoutStartSec=2h

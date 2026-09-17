@@ -9,7 +9,7 @@
 - Resources: 4 vCPU, 8 GiB RAM, 100 GiB virtual disk
 - Remote project directory: /srv/aegis
 
-SSH access is scoped to this VM. No access or configuration changes were made to the Proxmox host, Home Assistant, or Mealie.
+SSH access is scoped to this VM. The owner separately authorized USB passthrough for `BackupIntenso` to VM 102 through Proxmox; Home Assistant and Mealie were not changed.
 
 ## Connect from this Windows PC
 
@@ -54,19 +54,20 @@ Reproduce installation with [bootstrap-vm.sh](../ops/bootstrap-vm.sh), only insi
 
 The original tooling-only notes below are historical. The first application stack is now deployed on this VM:
 Caddy publishes LAN ports 80 and 443; Aegis, PostgreSQL, Paperless and Valkey run privately. The independent review
-verified 81 GiB free on the VM at that time. A fresh read-only VM check on 2026-09-17 again found no external
-disk: `lsblk` showed only the 100 GB QEMU system disk and virtual DVD drive, and `lsusb` showed no storage
-device. A user-supplied Proxmox screenshot shows two 1 TB disks on the host, but does not identify which is
-`BackupIntenso`; neither is visible inside VM 102. See
+verified 81 GiB free on the VM at that time. On 2026-09-17 the owner authorized and performed passthrough of
+the identified `BackupIntenso` USB port only to VM 102. The VM independently verified the Toshiba model,
+serial `7376SWFGS`, NTFS label and UUID `30DAE27ADAE23C2A`; it now mounts the disk at
+`/mnt/aegis-backup`. The separate host SATA/ext4 disk was not touched. See [BACKUP.md](operations/BACKUP.md)
+for inspection, backup and recovery evidence and
 [independent review](planning/INDEPENDENT-REVIEW.md) for release and CI evidence.
 
 ## Not configured yet
 
 - Mail and calendar integration
-- External backup destination and tested recovery
-- Public web access; further real-document use requires tested external recovery
+- Public web access; further real-document use requires individual account passwords
 
-Restic alone is not a backup. Before relying on this system for household records, connect a separate backup destination and complete a restore test.
+The external Restic repository passed a full read check and isolated recovery. A daily backup timer is enabled;
+the first scheduled run has not yet been observed. An offsite copy remains future work.
 
 ## Historical tooling setup evidence (before application deployment)
 
@@ -80,4 +81,4 @@ Restic alone is not a backup. Before relying on this system for household record
 - No Aegis web services or database ports have been published.
 
 These observations describe the initial tooling setup only. Application deployment and a local export restore
-drill have since been completed; external backup and recovery from that destination remain outstanding.
+drill have since been completed, followed by external backup and recovery from `BackupIntenso`.

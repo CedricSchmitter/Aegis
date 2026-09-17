@@ -1,9 +1,9 @@
-# Export, restore drill and backup preparation
+# Export, external backup and recovery
 
-Status after the first runnable test: portable export and an isolated local restore drill are implemented and
-verified. **An external backup is not configured.** The status page reports `externalBackup: NOT_CONFIGURED`
-until a verified destination and a successful run exist. A local drill does not protect against losing the VM or
-the Proxmox host.
+Status on 2026-09-17: portable export, the synthetic local drill and an encrypted external Restic backup are
+implemented and verified. The external snapshot was restored into an isolated PostgreSQL/Paperless/Aegis
+stack, including the real invoice. Daily backup is enabled. A local export drill alone would not protect
+against losing the VM or host; the external recovery evidence is recorded below.
 
 ## Export (implemented)
 
@@ -44,9 +44,9 @@ is removed afterwards unless `AEGIS_DRILL_KEEP=yes`.
 The running household instance is never touched by the drill. The same import path is exercised in CI by
 `RestoreIT` against PostgreSQL with an in-process archive fake.
 
-## External backup (prepared, not configured)
+## External backup (configured and recovery-tested)
 
-Run `sudo -n sh /srv/aegis/source/current/ops/backup/backup.sh` inside aegis-dev after destination setup.
+Run `sudo -n sh /srv/aegis/source/current/ops/backup/backup.sh` inside aegis-dev for a manual backup.
 The wrapper loads the restricted `backup.env` and calls `backup.py`. The script stops Aegis, Paperless and
 the broker during both database dumps and file capture, then restarts only services that were running before.
 It stores PostgreSQL dumps, ingress originals, Paperless data/media, broker data, Caddy CA/configuration,
@@ -60,35 +60,59 @@ a success older than 26 hours is also DEGRADED. Concurrent backup runs are locke
 and retention deletion are manual; this script never runs `restic init`, `forget` or `prune`.
 
 Regression tests mock Restic/Compose and use temporary files. They prove destination guards, writer ordering
-and failure cleanup, not recovery from an actual disk. After the first external snapshot, restore its dumps,
-files, secrets and configuration into an isolated environment and verify original checksums, source links,
-accounts and login before scheduling daily backups.
+and failure cleanup. The actual external recovery test below separately proves that a snapshot can restore
+the databases, originals, source links, configuration and a working login.
 
-### External 1 TB disk: non-destructive checklist
+### Destination and key
 
-On 2026-09-17 the owner reported personally formatting the disk and connecting it directly to the server.
-This supersedes earlier unattached/nonempty reports. A read-only check inside VM 102 found no external block
-or USB disk. A user-supplied Proxmox disk screenshot shows two 1 TB disks: `/dev/sdb` (WDC, ext4 partition)
-and `/dev/sdd` (Toshiba, NTFS). The screenshot does not show the `BackupIntenso` label, USB transport, UUID or
-contents, so neither disk is yet identified as the backup target. Restic 0.18.0 is installed, but `backup.env`,
-the backup state file and an Aegis backup timer are absent. Nothing below formats, repartitions or deletes data.
+The owner personally formatted and attached the 1 TB disk. User-supplied Proxmox output identified it as
+`BackupIntenso`, TOSHIBA MQ01ABD100, serial `7376SWFGS`, 931.5 GiB, USB port `1-3`, NTFS, UUID
+`30DAE27ADAE23C2A`. The other 1 TB host disk is SATA/ext4 and was not touched. After the owner's specific
+approval, only this USB device was passed through to VM 102. Inside the VM, model, serial, label and UUID
+matched independently. A read-only NTFS3 mount showed only `System Volume Information` at the root, with
+about 932 GiB free and 128 MiB used. It was unmounted before any write.
 
-1. Identify the 1 TB device on the Proxmox host by size, model, serial, filesystem and UUID. Obtain specific
-   authorization before changing host configuration. Pass through only this identified USB device to VM 102;
-   do not alter other VMs or Proxmox storage. A host bind mount is not directly usable by a VM.
-2. Inspect before use, read-only: `lsblk -f`, `sudo blkid`, `sudo smartctl -H /dev/sdX` (install
-   `smartmontools` only inside the VM). Record filesystem type, label, free space and health.
-3. Mount read-only first (`mount -o ro`) and list the top-level contents. Choose a dedicated subdirectory such
-   as `aegis-backup/` without deleting or moving anything already present.
-4. Create the marker file `.aegis-backup-destination` in the mount root after checking that path is unused;
-   mount read-write by the verified UUID with `nofail` in `/etc/fstab` so a missing disk does not block boot.
-5. Generate the Restic password, store a copy outside the VM (password manager and paper), point
-   `RESTIC_PASSWORD_FILE` at a 0600 file on the VM, initialize only the dedicated empty repository directory
-   with `restic init`, then run `backup.sh` once manually and inspect `restic snapshots`.
-6. Restore the actual external Restic snapshot into a separate directory and isolated stack; verify database
-   dumps, originals and checksums, member identities, task source links, configuration and login. The local
-   export drill alone does not meet this gate. Only after this succeeds add a daily timer and verify that
-   failed or stale runs appear on the Status page. Do not enable automatic `forget` or `prune`.
+The VM now mounts this UUID with `ntfs3` and `nofail` at `/mnt/aegis-backup`; the fstab entry was verified by
+unmounting and remounting. The marker is at the mount root. Only the new
+`/mnt/aegis-backup/aegis-backup/restic` directory holds the Restic repository (ID `70388d4b72`). No existing
+disk entry was removed or moved. `/srv/aegis/deploy/backup.env` and the VM password file are root-only.
+The recovery password also exists outside the VM at
+`C:\Users\cedri\Aegis-Recovery\restic-password.txt` with an ACL for the Windows owner only. Never print or
+commit it. The owner should also store a separate password-manager or paper copy so loss of the PC does not
+make the backup unreadable.
 
-Offsite copies remain a later improvement; a nearby disk does not protect against fire, theft or a failure
-that takes both devices.
+### Backup and restore evidence (2026-09-17)
+
+- Manual external snapshot `7ceae7c9` succeeded; `restic check --read-data` read every pack without errors.
+- Restic restored that snapshot to the root-only `/srv/aegis/restore-external-20260917` directory. Both
+  PostgreSQL dumps imported into a separate, network-isolated PostgreSQL instance. The recovered Aegis,
+  Paperless and broker containers started on an internal Docker network; no LAN port was published.
+- The recovered databases contain 2 members (`lisa`, `cedric`), 4 documents and 3 tasks, with no broken task
+  source links. All 4 restored Paperless originals match the Aegis and Paperless SHA-256 values and IDs.
+  The recovered Aegis API served all 4 originals with matching checksums. A login passed after setting a
+  random password **only in the isolated database**; production password hashes were not changed.
+- The older export generation in the snapshot contains 3 documents and 2 tasks; all 9 manifest-listed files
+  passed SHA-256 validation. The PostgreSQL/Paperless restore, not that older export, verified the real invoice.
+- The isolated `/api/status` returned `CONNECTED` for the success state and `DEGRADED` for simulated failure
+  and staleness. Only the isolated state file was changed during this test, then restored. The isolated
+  containers were stopped; their root-only data remains available for review.
+- The tracked systemd service completed a second real snapshot `bb4a6aa0` with `Result=success`.
+  `aegis-backup.timer` is enabled and active, scheduled daily at 03:30 Europe/Berlin; the next run was
+  reported as 2026-09-18 03:30 CEST. `Persistent=true` catches up after downtime. The service deliberately
+  calls the script even if the disk is missing, allowing its failure state to reach the Status page.
+
+The status source preserves the previous success timestamp on a failed run and marks failures or a success
+older than 26 hours as `DEGRADED`. The Status page shows the last success and check time. No automatic
+`restic forget`, `prune` or other retention deletion is configured. Inspect capacity and arrange an offsite
+copy later; a disk attached to the same server does not cover fire, theft or simultaneous hardware loss.
+
+### Recovery starting point outside the VM
+
+Keep this repository and the separate recovery password available without the Aegis VM. Mount the identified
+disk on a replacement machine, then point `RESTIC_REPOSITORY` to its `aegis-backup/restic` directory and
+`RESTIC_PASSWORD_FILE` to the outside-VM copy of the password. Run `restic snapshots` and restore a selected
+snapshot to a **new empty directory**. The recovered tree contains `srv/aegis/backup-staging/generation-*/`
+with `aegis.dump`, `paperless.dump` and `recovery.json`, plus `srv/aegis/data/` media/ingress/Caddy files,
+`srv/aegis/deploy/` configuration and `srv/aegis/exports/`. Import both dumps into isolated PostgreSQL 17.11
+and verify originals and links before replacing any live service data. The successful isolated rehearsal above
+is evidence for this route; do not overwrite a running installation as a shortcut.

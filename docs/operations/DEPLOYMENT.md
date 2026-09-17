@@ -1,7 +1,8 @@
 # Deployment on the Aegis VM (first runnable test)
 
 Target: Proxmox VM 102 `aegis-dev`, `192.168.2.159`, user `aegis-agent` (see [VM-ACCESS.md](../VM-ACCESS.md)).
-Everything below touches only this VM. Home Assistant, Mealie, the Proxmox host and the external disk stay
+Application deployment touches only this VM. The separately authorized backup setup passed the identified
+`BackupIntenso` USB device through Proxmox to VM 102; Home Assistant, Mealie and the other host disk were
 untouched.
 
 ## What runs
@@ -24,8 +25,8 @@ published. Aegis talks to Paperless over the internal Compose network with a ser
 The first synthetic test used HTTP. The current endpoint is `https://192.168.2.159/` with the local CA trusted
 on the PC and both Android phones. `AEGIS_HTTPS=true` enables the Compose override and Secure session cookies.
 The preferred local name `aegis` remains optional and unconfigured. See [HOUSEHOLD-PILOT.md](HOUSEHOLD-PILOT.md)
-for verification and owner-confirmed phone tests. No Web Push or public access is configured. The external
-backup gate remains open; one real invoice is already stored and must be preserved.
+for verification and owner-confirmed phone tests. No Web Push or public access is configured. External
+backup and isolated recovery passed; one real invoice is already stored and must be preserved.
 
 ## First-time setup
 
@@ -80,5 +81,6 @@ later container recreation does not encounter a missing file or create a directo
 ## Restore drill and backup
 
 See [BACKUP.md](BACKUP.md). `ops/backup/restore-drill.sh` runs the isolated local restore drill;
-`ops/backup/backup.sh` is prepared for an external Restic destination and refuses to run until that
-destination is verified.
+`ops/backup/backup.sh` writes to the verified external Restic destination and refuses an unmounted or
+unverified destination. The tracked `ops/backup/systemd/aegis-backup.timer` runs it daily at 03:30 local time.
+The external snapshot passed an isolated recovery test; see BACKUP.md for evidence and limits.

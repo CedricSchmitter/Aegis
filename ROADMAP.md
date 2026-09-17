@@ -1,8 +1,9 @@
 # Aegis household workspace roadmap
 
 Updated: 2026-09-17. The first runnable test is deployed. The owner confirmed trusted LAN HTTPS and the shared
-workflow on both Android phones; one real invoice is already stored. External backup and recovery are still
-open. This roadmap contains future phases; see [household pilot](docs/operations/HOUSEHOLD-PILOT.md) for current evidence.
+workflow on both Android phones; one real invoice is already stored. External backup and isolated recovery
+passed on 2026-09-17; the first scheduled run is still pending. This roadmap contains future phases; see
+[household pilot](docs/operations/HOUSEHOLD-PILOT.md) for current evidence.
 
 Repository rules live in [AGENT.md](AGENT.md). The owner's DDD/hexagonal architecture, Maven multimodule, maintainability, and English/localization requirements are detailed in [FOUNDATIONS.md](docs/architecture/FOUNDATIONS.md) and apply to every phase.
 
@@ -26,11 +27,12 @@ Known requirements:
 - One shared household information space: person and house associations are metadata, not private silos. Separate logins retain responsibility, preferences and audit.
 - In-app notifications first, Android Web Push to be tested; Telegram remains an optional adapter.
 - Calendar read/write capabilities are prepared, but writes are deferred until the basic workflow proves useful.
-- The owner reports the freshly formatted external 1 TB disk connected to the server. It is not visible in
-  VM 102; host identity, filesystem, contents and free space still require verification.
+- The owner reported personally formatting and attaching the external 1 TB disk. After specific approval,
+  `BackupIntenso` was passed through only to VM 102, inspected read-only, and used for a verified Restic
+  backup and isolated recovery. See [BACKUP.md](docs/operations/BACKUP.md).
 
-Still to establish: mail provider, accounts behind Samsung Calendar, host capacity, safe disk passthrough/free
-space and actual Web Push reliability. Internet access remains explicitly excluded; local DNS is optional.
+Still to establish: mail provider, accounts behind Samsung Calendar, host capacity, and actual Web Push
+reliability. Internet access remains explicitly excluded; local DNS is optional.
 
 ## 2. Independent review conclusions
 
@@ -468,10 +470,10 @@ Agree maintenance intervals in phase 1: regular inspection, grouped updates with
 
 1. Preserve the completed trusted HTTPS and Android upload, original, task and notice workflow. Local DNS
    for `aegis` is optional; the trusted private IP endpoint works on both phones.
-2. Identify the server-attached 1 TB disk on the Proxmox host and obtain specific authorization for
-   passthrough only to VM 102. Inspect it read-only inside the VM before choosing a dedicated backup folder.
-3. Make an actual encrypted external backup and restore it into isolation (issue #17), then schedule and
-   monitor daily runs. Replace temporary test passwords with individual ones before further real-document use.
+2. Have Lisa and Cedric replace their shared temporary test passwords with individual credentials through
+   Settings before further real-document use. Never record the passwords in Git or issues.
+3. Check the first automatic daily backup run at 03:30 Europe/Berlin and inspect the Status page for success
+   time or a visible failure. Periodically repeat recovery tests and arrange an offsite copy.
 4. Run the small household pilot with representative scenarios before enabling mail, calendar or AI.
 5. Refine integration ADRs and priorities using that pilot's evidence. The first runnable implementation and
    independent release review are already completed; do not restart them.

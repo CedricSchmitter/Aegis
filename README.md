@@ -70,8 +70,10 @@ durable PDF capture with real Paperless archival, shared document list/search/or
 tasks with a deterministic Today view, a persisted in-app notice inbox, a truthful status page, atomic exports
 with an isolated restore drill, Compose deployment on the Aegis VM and CI. See the execution status document for
 the deployed commit, verification evidence and limitations. The owner confirmed trusted LAN HTTPS and the shared
-workflow on both Android phones. One real invoice is stored. Mail, calendar, AI, Telegram, phone push and the
-external backup destination are not connected yet; the disk is not currently visible inside VM 102.
+workflow on both Android phones. One real invoice is stored. An encrypted backup on the server-attached USB
+disk passed an isolated recovery test, and a daily timer is enabled. The first scheduled run is still pending.
+Mail, calendar, AI, Telegram and phone push are not connected. Individual account passwords are required
+before further real-document use.
 
 Source is maintained in this repository; the Aegis VM is the development/test environment. Private keys,
 tokens, household documents, and service data must not be committed.
