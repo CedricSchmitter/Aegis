@@ -12,7 +12,7 @@
     "no": "Nein",
     "unknownMember": "Unbekanntes Mitglied",
     "previewNotice": "LAN-Vorschau über HTTP: keine verschlüsselte Verbindung, keine Push-Benachrichtigungen. Nur für den ersten Test mit synthetischen Daten.",
-    "pilotNotice": "Haushaltstest über HTTPS. Externes Backup und Push-Benachrichtigungen sind noch nicht eingerichtet. Bitte weiterhin synthetische Testdaten verwenden.",
+    "pilotNotice": "Haushaltstest über HTTPS im Heimnetz. Push-Benachrichtigungen sind nicht eingerichtet. Den aktuellen Backup-Status findest du unter Status.",
     "version": "Version {{commit}}",
     "skipToContent": "Zum Inhalt springen"
   },
@@ -195,7 +195,7 @@
     "noExports": "Noch kein Export erstellt.",
     "exportLine": "{{generation}}: {{documents}} Dokumente, {{tasks}} Aufgaben",
     "missingOriginals": "{{count}} Originale fehlen im Export",
-    "backupWarning": "Ein externes Backup ist noch nicht eingerichtet. Der lokale Wiederherstellungstest ersetzt kein Backup außerhalb dieses Servers.",
+    "backupWarning": "Das externe Backup ist nicht betriebsbereit oder nicht aktuell. Prüfe den Backup-Status unten.",
     "version": "Laufende Version: {{commit}} (Build {{time}})"
   },
   "settings": {

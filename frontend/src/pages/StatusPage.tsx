@@ -14,6 +14,7 @@ export function StatusPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const backupHealthy = status?.integrations.some((integration) => integration.name === "externalBackup" && integration.state === "CONNECTED");
 
   const load = useCallback(async () => {
     try {
@@ -52,9 +53,7 @@ export function StatusPage() {
       {!status && !error && <Loading />}
       {status && (
         <div className="flex flex-col gap-4">
-          <p className="alert-warn" role="note">
-            {t("status.backupWarning")}
-          </p>
+          {!backupHealthy && <p className="alert-warn" role="note">{t("status.backupWarning")}</p>}
           <section aria-labelledby="integrations">
             <h2 id="integrations" className="mb-2 text-lg font-semibold">
               {t("status.integrations")}

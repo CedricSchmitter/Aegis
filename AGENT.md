@@ -4,21 +4,24 @@ This is the canonical repository instruction file for human contributors, Codex,
 
 ## Project and priorities
 
-Latest owner update (2026-09-17): the owner personally freshly formatted the external 1 TB disk and attached
-it directly to the server. This supersedes older unattached/nonempty-disk notes below. Its filesystem, contents
-and visibility inside VM 102 remain unverified. Inspect read-only first; no further formatting or deletion is
-authorized. The owner confirmed HTTPS and the shared document/task workflow on both Android phones.
-See docs/planning/NEXT-SESSION-PROMPT.md for the current external-backup handoff.
+Latest verified backup state (2026-09-17): the owner personally formatted and attached the external 1 TB
+`BackupIntenso` disk. After specific approval, it was passed through only to VM 102. The VM independently
+identified the 931.5 GiB Toshiba USB disk (NTFS, UUID `30DAE27ADAE23C2A`), inspected its contents read-only,
+and now mounts it for an encrypted Restic backup. An actual external snapshot passed full data checking and
+isolated recovery; a daily timer is enabled. The separate host SATA/ext4 disk is outside this task. Never
+format, repartition or delete existing disk content; see docs/operations/BACKUP.md for evidence and limits.
+The owner confirmed HTTPS and the shared document/task workflow on both Android phones.
+See docs/planning/NEXT-SESSION-PROMPT.md for the current pilot handoff.
 
 Aegis is a shared household workspace for documents, tasks, calendars, and a future personal assistant. Optimize for two people using their own Android phones without technical assistance.
 
 The household members are **Lisa and Cedric**. The initial application accounts `anna` and `ben` are test identities, not their real names. Do not assume a mapping or rename/delete accounts without preserving IDs, ownership, sessions and existing data through an explicit migration or onboarding flow.
 
 On 2026-09-13 the owner approved the explicit mapping `anna -> lisa / Lisa`, `ben -> cedric / Cedric`.
-The tracked operator onboarding flow preserves existing identities and credentials. The preferred local
-hostname is `aegis`; DNS and device certificate trust still need verification. The owner deferred external
-disk attachment until it becomes necessary; continue synthetic tests without it, but require external
-backup and recovery evidence before relying on real household documents.
+The migration is complete and preserved identities. Trusted LAN HTTPS works by private IP on the PC and
+both Android phones; the optional local hostname `aegis` remains unconfigured. One real invoice is already
+stored, so preserve all existing data. External backup and recovery evidence now exists; replace the shared
+temporary test passwords with individual credentials before further real-document use.
 Public/internet access is explicitly deferred until Aegis has proved useful locally. HTTPS preparation is
 LAN-only; do not create router port forwarding, public exposure or remote-access infrastructure. A local DNS
 name is optional: the prepared HTTPS configuration also supports the existing private IP address.
@@ -27,9 +30,11 @@ Priority order: reliable data capture and recovery, useful daily workflows, main
 
 The initial household information space is shared by both members. Person/house/contract associations are metadata, not visibility restrictions; both can ask about each other's records and joint documents. Keep individual logins for responsibility, preferences, and audit. Do not implement private document silos in the MVP. Scope access by household and device capabilities; never expose credentials as shared household knowledge.
 
-Start with in-app notifications and evaluate Android Web Push over HTTPS. Telegram is an optional future delivery adapter, not the initial primary interface. Prepare calendar read/write ports, but defer calendar writes until the basic workflow has been validated. A currently available external 1 TB disk is the proposed first local backup target; inspect it before any setup and never assume it is empty or authorized for formatting. An offsite copy remains a future resilience improvement.
+Start with in-app notifications and evaluate Android Web Push over HTTPS. Telegram is an optional future delivery adapter, not the initial primary interface. Prepare calendar read/write ports, but defer calendar writes until the basic workflow has been validated. The external 1 TB disk is the first local backup target and has passed an isolated recovery test. An offsite copy remains a future resilience improvement.
 
-The owner confirmed that the external disk contains existing data and can eventually remain attached. Prepare its integration only until its contents and attachment are explicitly handled. For the first runnable synthetic-data test, follow docs/planning/FIRST-RUNNABLE-TEST.md: a local isolated restore drill is required, but actual external backup, live provider integrations and mobile push are deferred. Do not confuse this limited test with production readiness.
+The owner reported the initial formatting and attachment; model, filesystem, contents and VM visibility were
+subsequently checked directly. The earlier local export drill remains separate from the verified external
+Restic recovery.
 
 Read [README.md](README.md) and the relevant part of [ROADMAP.md](ROADMAP.md). Read [architecture foundations](docs/architecture/FOUNDATIONS.md) before backend or API work, and [VM access](docs/VM-ACCESS.md) before remote operations. Distinguish accepted decisions, proposed defaults, and implemented capabilities.
 

@@ -1,47 +1,55 @@
-# Next session: external backup and verified recovery
+# Next session: household pilot and backup monitoring
 
 Continue Aegis in `D:\projekte\Aegis`. Read AGENT.md, docs/operations/HOUSEHOLD-PILOT.md,
 docs/operations/BACKUP.md and docs/VM-ACCESS.md. Inspect Git, CI and the actual VM state before changes.
-Do not restart completed implementation, account migration, release review or HTTPS activation.
+Do not restart the completed account migration, HTTPS activation, USB identification or recovery drill.
 
-## Completed and verified
+## Completed and verified on 2026-09-17
 
-- PR #15 delivered the independent release review and fixes; see INDEPENDENT-REVIEW.md.
-- PR #18 is merged after all four CI checks passed (run 35216385600). It corrects IP-preserving HTTPS
-  redirects and certificate selection for clients without SNI.
-- Last independently verified application build: `e148ef8`; HTTPS configuration: `30554ee`, recorded separately
-  in `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT`. A newer Git main does not imply a newer deployed application.
-- LAN HTTPS is active at `https://192.168.2.159`. Windows user trust, verified TLS, both account logins,
-  original checksums, authorization, logout and Secure/HttpOnly/SameSite session cookies passed.
-- Owner-confirmed device evidence: trusted HTTPS and login work on both Android phones; a mixer invoice was
-  uploaded and its original opened on both phones. A linked task was assigned to Lisa, she received an
-  in-app notice and completed it. These are user observations, not automated browser-test results.
-- Accounts are `lisa` and `cedric`. Owner-requested temporary test passwords were changed through HTTPS and
-  both new logins verified. Provisioning seed passwords are now stale; do not use them for live review scripts.
-  Do not print or commit credentials. Individual passwords are required before further real-document use.
-- One real invoice is already stored. Preserve it and all existing documents/tasks.
-
-## Updated disk decision
-
-The owner reports having freshly formatted the external 1 TB disk personally and connected it directly to
- the server. This supersedes older notes saying it is unattached and contains previous data. The agent has
-not verified the disk, filesystem, contents, UUID or VM visibility. Do not format, repartition or delete it.
+- PR #18 merged after all four CI checks passed; it corrected IP-preserving HTTPS redirects and certificate
+  selection for clients without SNI. Last independently verified application build before the backup/status
+  release: `e148ef8`; HTTPS configuration commit: `30554ee`, recorded separately in
+  `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT`. Verify the actual deployed commit before citing a newer one.
+- Trusted LAN HTTPS at `https://192.168.2.159` works on the PC and both Android phones. The owner confirmed
+  phone upload, original access, task assignment, in-app notice and completion. These are owner observations,
+  distinct from the independently verified TLS, login, checksum, authorization and session-cookie checks.
+- Accounts are `lisa` and `cedric`. Both temporary test passwords were changed through HTTPS and new logins
+  verified. Provisioning passwords are stale. Shared temporary passwords must be replaced with individual
+  credentials before further real-document use. One real mixer invoice is already stored; preserve all data.
+- The owner reported personally formatting and attaching the 1 TB disk. Owner-supplied Proxmox output
+  identified `BackupIntenso` as USB port `1-3`, TOSHIBA MQ01ABD100, serial `7376SWFGS`, NTFS, UUID
+  `30DAE27ADAE23C2A`. After explicit approval, the owner passed only that port through to VM 102. Direct
+  VM checks confirmed the device identifiers. A read-only NTFS3 mount showed only `System Volume Information`
+  before any backup directory was created. The separate host SATA/ext4 1 TB disk was untouched.
+- The USB disk is mounted by UUID at `/mnt/aegis-backup`; the dedicated encrypted Restic repository is
+  `/mnt/aegis-backup/aegis-backup/restic`. An outside-VM recovery password copy exists at
+  `C:\Users\cedri\Aegis-Recovery\restic-password.txt` with owner-only ACL. Never print or commit it.
+- External snapshot `7ceae7c9` passed `restic check --read-data`. Its two PostgreSQL dumps and files were
+  restored to an isolated environment. The recovered Aegis/Paperless stack served all four originals with
+  matching SHA-256 checksums, preserved both members and task links, and passed login using a credential
+  changed only in the isolated database. The recovered state included the real invoice. A second snapshot
+  `bb4a6aa0` succeeded via the tracked systemd service. No production passwords or data were changed.
+- `aegis-backup.timer` is enabled for 03:30 Europe/Berlin daily. Its first scheduled run is not yet observed.
+  A failed run preserves the previous success timestamp and reports DEGRADED; success older than 26 hours
+  also reports DEGRADED. The isolated status API passed success, failure and staleness simulations.
 
 ## Next concrete work
 
-1. Inspect disk visibility within VM 102 read-only; identify by model/serial, capacity, filesystem and UUID.
-2. If visible only on Proxmox, explain a safe passthrough procedure specifically for VM 102 and obtain the
-   missing host-change authorization or guide the owner through the UI. VM authorization is not host authorization.
-3. Review the existing backup scripts, select a dedicated directory and establish encrypted external backup
-   without deleting existing contents. Keep recovery-key access outside the VM.
-4. Perform an actual backup and restore to an isolated target; local export drills do not satisfy this gate.
-5. Establish regular backups and visible failure/staleness reporting after actual recovery verification.
-6. Record evidence and reconcile issues #16/#17 with the completed device tests and remaining backup work.
+1. Finish review, CI, merge and deployment of the branch containing the backup/status documentation, systemd
+   units and frontend banner change. Confirm the VM reports the merged commit and healthy services. Before
+   deployment, the live pilot banner may still claim that external backup is unconfigured.
+2. Have each member change their own temporary password in Settings to a unique individual password before
+   uploading more real documents. Do not request or record their passwords; obtain owner confirmation only.
+3. After the first scheduled 03:30 run, inspect `systemctl status aegis-backup.service`, `systemctl list-timers`,
+   Restic snapshots, `/srv/aegis/data/backup-state/state.json` and the app Status page. Record actual evidence;
+   timer activation alone does not prove a future run.
+4. Run the small household pilot with representative workflows. Arrange a second recovery-key copy and an
+   offsite backup later. The same-server USB disk does not cover fire, theft or simultaneous hardware loss.
 
 ## Scope
 
-Only Aegis VM 102 (`aegis-dev`, `192.168.2.159`) is authorized for infrastructure changes. Git operations,
-including commits, push/pull, PR and merge, remain authorized. Other VMs and Proxmox settings stay untouched
-without specific approval. Public/internet access is explicitly deferred; local DNS is optional.
-Ask only for genuinely missing decisions and continue independent work. Conversation is German; repository
+Only Aegis VM 102 (`aegis-dev`, `192.168.2.159`) is authorized for infrastructure changes. The specific
+Proxmox USB passthrough was separately approved and completed; no other host change is authorized. Git
+operations, including commit, push, PR and merge, remain authorized. Other VMs stay untouched. Public and
+internet access remain explicitly excluded; local DNS is optional. Conversation is German; repository
 content is English. Keep secrets and household document content out of Git, logs and issues.

@@ -1,7 +1,8 @@
 # Household pilot preparation
 
-Owner choices on 2026-09-13: hostname `aegis`; map anna to Lisa and ben to Cedric while preserving identities;
-defer connecting the nonempty external disk. Keep using synthetic data until the external backup gate passes.
+Owner choices on 2026-09-13: hostname `aegis`; map anna to Lisa and ben to Cedric while preserving identities.
+The backup disk was connected and recovery-tested on 2026-09-17; see the evidence below. One real invoice is
+already stored.
 The owner explicitly deferred internet/public access until the local pilot proves useful. This guide concerns
 LAN-only HTTPS, not remote access; no router port forwarding or public exposure was configured.
 
@@ -10,9 +11,10 @@ LAN-only HTTPS, not remote access; no router port forwarding or public exposure 
 Run the tracked `ops/deploy/onboard-household.py` as root inside aegis-dev only. It stops the application,
 keeps a restricted local recovery copy and database dump under `/srv/aegis/deploy/onboarding-recovery`, updates
 the provisioning seed and executes `onboard-household.sql` transactionally. It does not delete/recreate members
-or reset passwords. Old sessions continue to resolve their member IDs and show the new names. New logins are
-`lisa` and `cedric` with the corresponding existing passwords. Change passwords through Settings after HTTPS
-is trusted on the device. Credentials remain only in the VM's restricted seed file, never in this guide.
+or reset passwords. Old sessions continue to resolve their member IDs and show the new names. Current logins
+are `lisa` and `cedric`; the original provisioning passwords are stale after later password changes. Both
+accounts currently use temporary test passwords. Change to individual passwords through Settings before
+further real-document use. Never print or commit credentials.
 
 ## Trusted HTTPS (LAN endpoint enabled on 2026-09-17)
 
@@ -23,8 +25,8 @@ Both household logins, all three original checksums, authorization and logout pa
 HTTP redirects preserve the requested host. `default_sni` selects the IP certificate for clients that omit
 SNI when connecting by IP; Docker's internal address must not determine that certificate selection.
 See [Caddy global options](https://caddyserver.com/docs/caddyfile/options#default-sni).
-Actual browser and Android checks remain pending; local DNS remains optional and unconfigured.
-No router, public access, other VM or external disk changes were made.
+The owner subsequently confirmed the Android workflow below. Local DNS remains optional and unconfigured.
+No router, public access or other VM changes were made by the Aegis deployment.
 
 The persistent CA was generated and a loopback-only proxy successfully served the live version API with
 certificate verification on 2026-09-13. Public root SHA-256 fingerprint (verified through trusted SSH):
@@ -44,18 +46,19 @@ The certificate is available on the VM at the path below; no private key was cop
    certificate store on the PC and both Android phones. Android menu names depend on device/version.
 4. Set `AEGIS_HTTPS=true`, deploy the identified release, verify a trusted TLS handshake and HTTP redirect,
    and confirm Secure/HttpOnly/SameSite session cookies. Do not bypass certificate errors as acceptance.
-5. Verify login, PDF upload/retrieval and both locales on the actual phones. The HTTPS pilot banner still
-   states that external backup and push are unconfigured. HTTPS alone does not implement PWA or Web Push.
+5. Verify login, PDF upload/retrieval and both locales on the actual phones. The owner confirmed the core
+   workflow on both phones. HTTPS alone does not implement PWA or Web Push. The status-aware backup banner
+   is included in the next application release; verify the deployed version before treating it as live.
 
 Reference: [Caddy local HTTPS](https://caddyserver.com/docs/automatic-https#local-https).
 The operator must establish client trust; Caddy running in a container cannot install trust on remote devices.
 
 ## Next data-safety gate
 
-When ready for real documents, attach and expose the existing disk to VM 102 through a separately agreed
-non-destructive procedure. Inspect filesystem, free space and health read-only before choosing a dedicated
-directory. Do not format, repartition or delete existing data. Follow BACKUP.md; store the recovery password
-outside the VM, run an actual external backup and restore it into an isolated target before starting real use.
+The server-attached disk was passed through to VM 102 after specific approval. An encrypted external snapshot
+passed full data checking and recovery in isolation; see BACKUP.md. The daily timer is enabled, though its first
+scheduled run remains unobserved. Before further real-document use, both members must replace the shared
+temporary test passwords with individual ones. Do not format, repartition or delete existing disk content.
 
 ## Owner-confirmed pilot and disk update (2026-09-17)
 
@@ -66,6 +69,11 @@ Temporary test passwords were changed through HTTPS for both accounts and new lo
 provisioning seed passwords are stale. Replace test passwords with individual credentials before further real use.
 
 The owner subsequently reported personally formatting the 1 TB disk and attaching it directly to the server.
-This supersedes the earlier deferred-attachment notes. Filesystem, contents and VM visibility remain unverified;
-no further formatting/deletion is authorized. External backup and isolated recovery are the next gate.
+This supersedes the earlier deferred-attachment notes. An initial VM check found no external disk. The owner
+supplied Proxmox `lsblk` and `udevadm` output identifying `BackupIntenso` as the 931.5 GiB Toshiba USB disk,
+NTFS, UUID `30DAE27ADAE23C2A`, at USB port `1-3`. After the owner explicitly authorized passthrough only
+to VM 102 and added that port, direct VM checks confirmed the model, serial, label and UUID. A read-only mount
+found only `System Volume Information` before a dedicated Aegis directory was created. The separate 1 TB
+SATA/ext4 host disk was not touched. Two actual Restic snapshots, a full repository read check and an isolated
+database/Paperless/Aegis recovery are recorded in BACKUP.md. No further formatting or deletion is authorized.
 PR #18 merged after all four CI checks passed (run 35216385600).
