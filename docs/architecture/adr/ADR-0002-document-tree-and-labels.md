@@ -126,6 +126,12 @@ roots keep optimistic versions (`UPDATE … WHERE version = ?`, HTTP 409 `versio
 aggregate stays on JPA; its version is independent of the classification version, so archival progress does not
 invalidate a member's pending folder or label edit.
 
+### Migrations
+
+The catalog migration is `V2_2` in the documents context. Because ADR-0001 numbers migrations per context, a new
+migration of one context can carry a lower version than already applied migrations of another context, so Flyway
+runs with `spring.flyway.out-of-order=true`. Every migration stays additive; no applied migration is edited.
+
 ### Portability
 
 Export schema version 2 adds `data/catalog.json` (labels with aliases, status and merge redirects; folders with
