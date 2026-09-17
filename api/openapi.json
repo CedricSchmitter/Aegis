@@ -1,6 +1,22 @@
 {
   "components" : {
     "schemas" : {
+      "AliasesRequest" : {
+        "properties" : {
+          "aliases" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "aliases", "expectedVersion" ],
+        "type" : "object"
+      },
       "AssignRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -32,6 +48,150 @@
         "required" : [ "connected", "readSupported", "writeSupported" ],
         "type" : "object"
       },
+      "CategoryDto" : {
+        "properties" : {
+          "documentCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "impliedLabelIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "impliedSubjects" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SubjectDto"
+            },
+            "type" : "array"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "parentId" : {
+            "type" : [ "string", "null" ]
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "documentCount", "id", "impliedLabelIds", "impliedSubjects", "name", "version" ],
+        "type" : "object"
+      },
+      "CategoryListResponse" : {
+        "properties" : {
+          "categories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryDto"
+            },
+            "type" : "array"
+          },
+          "totalDocuments" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "unsortedCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "categories", "totalDocuments", "unsortedCount" ],
+        "type" : "object"
+      },
+      "CategoryRefDto" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "name" ],
+        "type" : "object"
+      },
+      "CategoryRequest" : {
+        "properties" : {
+          "categoryId" : {
+            "type" : [ "string", "null" ]
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "ClassificationDto" : {
+        "properties" : {
+          "categoryId" : {
+            "type" : [ "string", "null" ]
+          },
+          "folderSubjects" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SubjectDto"
+            },
+            "type" : "array"
+          },
+          "labels" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LabelChipDto"
+            },
+            "type" : "array"
+          },
+          "path" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryRefDto"
+            },
+            "type" : "array"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "folderSubjects", "labels", "path", "version" ],
+        "type" : "object"
+      },
+      "CreateCategoryRequest" : {
+        "properties" : {
+          "id" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "parentId" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "name" ],
+        "type" : "object"
+      },
+      "CreateLabelRequest" : {
+        "properties" : {
+          "facet" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "id" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "facet", "name" ],
+        "type" : "object"
+      },
       "CreateTaskRequest" : {
         "properties" : {
           "dueDate" : {
@@ -59,10 +219,41 @@
         "required" : [ "title" ],
         "type" : "object"
       },
+      "DeletionResponse" : {
+        "properties" : {
+          "contentsMovedTo" : {
+            "type" : [ "string", "null" ]
+          },
+          "deletedId" : {
+            "type" : "string"
+          },
+          "documentsMoved" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "foldersMoved" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "labelsKept" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "subjectsKept" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "deletedId", "documentsMoved", "foldersMoved", "labelsKept", "subjectsKept" ],
+        "type" : "object"
+      },
       "DocumentDto" : {
         "properties" : {
           "checksumSha256" : {
             "type" : "string"
+          },
+          "classification" : {
+            "$ref" : "#/components/schemas/ClassificationDto"
           },
           "contentType" : {
             "type" : "string"
@@ -104,7 +295,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "checksumSha256", "contentType", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "title", "uploadedAt", "uploadedBy", "version" ],
+        "required" : [ "checksumSha256", "classification", "contentType", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "title", "uploadedAt", "uploadedBy", "version" ],
         "type" : "object"
       },
       "DocumentListResponse" : {
@@ -113,18 +304,37 @@
             "enum" : [ "NOT_APPLIED", "READY", "UNAVAILABLE" ],
             "type" : "string"
           },
+          "facets" : {
+            "$ref" : "#/components/schemas/FacetCounts"
+          },
           "items" : {
             "items" : {
               "$ref" : "#/components/schemas/DocumentDto"
             },
             "type" : "array"
           },
+          "matchingDocuments" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "notContentIndexed" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "totalDocuments" : {
             "format" : "int64",
             "type" : "integer"
           }
         },
-        "required" : [ "contentSearch", "items", "totalDocuments" ],
+        "required" : [ "contentSearch", "facets", "items", "matchingDocuments", "notContentIndexed", "page", "size", "totalDocuments" ],
         "type" : "object"
       },
       "DueDateRequest" : {
@@ -192,6 +402,65 @@
         "required" : [ "createdAt", "documentCount", "generation", "memberCount", "missingOriginals", "taskCount" ],
         "type" : "object"
       },
+      "FacetCounts" : {
+        "properties" : {
+          "missing" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "values" : {
+            "additionalProperties" : {
+              "additionalProperties" : {
+                "format" : "int64",
+                "type" : "integer"
+              },
+              "type" : "object"
+            },
+            "type" : "object"
+          }
+        },
+        "required" : [ "missing", "values" ],
+        "type" : "object"
+      },
+      "FacetRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "facet" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "expectedVersion", "facet" ],
+        "type" : "object"
+      },
+      "ImplicationsRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "labelIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "subjects" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SubjectDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "expectedVersion", "labelIds", "subjects" ],
+        "type" : "object"
+      },
       "IntegrationStatusDto" : {
         "properties" : {
           "checkedAt" : {
@@ -213,6 +482,105 @@
           }
         },
         "required" : [ "name", "state" ],
+        "type" : "object"
+      },
+      "LabelChipDto" : {
+        "properties" : {
+          "builtinKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "confidence" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "facet" : {
+            "type" : "string"
+          },
+          "folderId" : {
+            "type" : [ "string", "null" ]
+          },
+          "labelId" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "origin" : {
+            "type" : [ "string", "null" ]
+          },
+          "reviewState" : {
+            "type" : [ "string", "null" ]
+          },
+          "source" : {
+            "type" : "string"
+          },
+          "sourceRef" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "facet", "labelId", "source" ],
+        "type" : "object"
+      },
+      "LabelDto" : {
+        "properties" : {
+          "aliases" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "assignmentCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "builtinKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "facet" : {
+            "type" : "string"
+          },
+          "folderCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "mergedInto" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "suggestionCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "aliases", "assignmentCount", "facet", "folderCount", "id", "status", "suggestionCount", "version" ],
+        "type" : "object"
+      },
+      "LabelsRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "labelIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "expectedVersion", "labelIds" ],
         "type" : "object"
       },
       "LocaleRequest" : {
@@ -268,6 +636,50 @@
         "required" : [ "displayName", "id", "locale", "username" ],
         "type" : "object"
       },
+      "MergeRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "targetId" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "expectedVersion", "targetId" ],
+        "type" : "object"
+      },
+      "MergeResponse" : {
+        "properties" : {
+          "documentsUpdated" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "foldersUpdated" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "target" : {
+            "$ref" : "#/components/schemas/LabelDto"
+          }
+        },
+        "required" : [ "documentsUpdated", "foldersUpdated", "target" ],
+        "type" : "object"
+      },
+      "MoveCategoryRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "parentId" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
       "NoticeDto" : {
         "properties" : {
           "createdAt" : {
@@ -312,6 +724,45 @@
           }
         },
         "required" : [ "currentPassword", "newPassword" ],
+        "type" : "object"
+      },
+      "PlacementItem" : {
+        "properties" : {
+          "documentId" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "documentId", "expectedVersion" ],
+        "type" : "object"
+      },
+      "PlacementRequest" : {
+        "properties" : {
+          "categoryId" : {
+            "type" : [ "string", "null" ]
+          },
+          "documents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PlacementItem"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "documents" ],
+        "type" : "object"
+      },
+      "PlacementResponse" : {
+        "properties" : {
+          "moved" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "moved" ],
         "type" : "object"
       },
       "PlanWorkRequest" : {
@@ -364,6 +815,34 @@
           }
         },
         "required" : [ "attempts", "retryScheduled", "state" ],
+        "type" : "object"
+      },
+      "RenameCategoryRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "expectedVersion", "name" ],
+        "type" : "object"
+      },
+      "RenameLabelRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "expectedVersion", "name" ],
         "type" : "object"
       },
       "RenameRequest" : {
@@ -665,6 +1144,198 @@
         "tags" : [ "auth" ]
       }
     },
+    "/api/categories" : {
+      "get" : {
+        "operationId" : "listCategories",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CategoryListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Folder tree with document counts and Unsorted size",
+        "tags" : [ "categories" ]
+      },
+      "post" : {
+        "operationId" : "createCategory",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateCategoryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CategoryDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Create a folder; a client id makes retries idempotent",
+        "tags" : [ "categories" ]
+      }
+    },
+    "/api/categories/{id}" : {
+      "delete" : {
+        "operationId" : "deleteCategory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "expectedVersion",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeletionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Delete a folder; documents and subfolders move up and keep the labels they would lose",
+        "tags" : [ "categories" ]
+      }
+    },
+    "/api/categories/{id}/implications" : {
+      "put" : {
+        "operationId" : "changeCategoryImplications",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ImplicationsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CategoryDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Replace the labels and subjects documents inherit from this folder",
+        "tags" : [ "categories" ]
+      }
+    },
+    "/api/categories/{id}/name" : {
+      "put" : {
+        "operationId" : "renameCategory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RenameCategoryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CategoryDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Rename a folder",
+        "tags" : [ "categories" ]
+      }
+    },
+    "/api/categories/{id}/parent" : {
+      "put" : {
+        "operationId" : "moveCategory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MoveCategoryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CategoryDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Move a folder; an empty parent means the top level",
+        "tags" : [ "categories" ]
+      }
+    },
     "/api/documents" : {
       "get" : {
         "operationId" : "searchDocuments",
@@ -674,6 +1345,123 @@
           "required" : false,
           "schema" : {
             "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "subfolders",
+          "required" : false,
+          "schema" : {
+            "default" : true,
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "organization",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "topic",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "tag",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "subject",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "topicMatch",
+          "required" : false,
+          "schema" : {
+            "default" : "ANY",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "tagMatch",
+          "required" : false,
+          "schema" : {
+            "default" : "ANY",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "missing",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sort",
+          "required" : false,
+          "schema" : {
+            "default" : "NEWEST",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 25,
+            "format" : "int32",
+            "type" : "integer"
           }
         } ],
         "responses" : {
@@ -688,7 +1476,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "List or search the shared document collection",
+        "summary" : "List or search the shared collection by text, folder and facets",
         "tags" : [ "documents" ]
       },
       "post" : {
@@ -702,6 +1490,13 @@
               "type" : "string"
             },
             "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "categoryId",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "requestBody" : {
@@ -736,6 +1531,35 @@
         "tags" : [ "documents" ]
       }
     },
+    "/api/documents/placement" : {
+      "post" : {
+        "operationId" : "placeDocuments",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PlacementRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PlacementResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "File several documents into the same folder",
+        "tags" : [ "documents" ]
+      }
+    },
     "/api/documents/{id}" : {
       "get" : {
         "operationId" : "getDocument",
@@ -759,7 +1583,169 @@
             "description" : "OK"
           }
         },
-        "summary" : "Document details including processing state",
+        "summary" : "Document details including processing state and labels",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/category" : {
+      "put" : {
+        "operationId" : "placeDocument",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CategoryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "File a document into a folder; empty means Unsorted",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/labels" : {
+      "put" : {
+        "operationId" : "changeDocumentLabels",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LabelsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Replace the own labels of a document across all facets",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/labels/{labelId}/accept" : {
+      "post" : {
+        "operationId" : "acceptLabelSuggestion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "labelId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Confirm an automatically proposed label",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/labels/{labelId}/reject" : {
+      "post" : {
+        "operationId" : "rejectLabelSuggestion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "labelId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Reject an automatically proposed label; the decision is remembered",
         "tags" : [ "documents" ]
       }
     },
@@ -937,6 +1923,339 @@
         },
         "summary" : "Create and atomically publish a new export generation",
         "tags" : [ "exports" ]
+      }
+    },
+    "/api/labels" : {
+      "get" : {
+        "operationId" : "listLabels",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/LabelDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Whole vocabulary with usage counts",
+        "tags" : [ "labels" ]
+      },
+      "post" : {
+        "operationId" : "createLabel",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateLabelRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LabelDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Create a label; a client id makes retries idempotent",
+        "tags" : [ "labels" ]
+      }
+    },
+    "/api/labels/resolve" : {
+      "get" : {
+        "operationId" : "resolveLabel",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "facet",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "name",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LabelDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Find a label by name or alias within one facet",
+        "tags" : [ "labels" ]
+      }
+    },
+    "/api/labels/{id}" : {
+      "delete" : {
+        "operationId" : "deleteLabel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "expectedVersion",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Delete an unused label; documents are never deleted",
+        "tags" : [ "labels" ]
+      }
+    },
+    "/api/labels/{id}/aliases" : {
+      "put" : {
+        "operationId" : "replaceLabelAliases",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AliasesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LabelDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Replace the alternative spellings of a label",
+        "tags" : [ "labels" ]
+      }
+    },
+    "/api/labels/{id}/facet" : {
+      "post" : {
+        "operationId" : "convertLabel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FacetRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LabelDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Turn a tag into an organization or topic",
+        "tags" : [ "labels" ]
+      }
+    },
+    "/api/labels/{id}/merge" : {
+      "post" : {
+        "operationId" : "mergeLabel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MergeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MergeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Fold a label into another one; assignments and folder mappings follow",
+        "tags" : [ "labels" ]
+      }
+    },
+    "/api/labels/{id}/name" : {
+      "put" : {
+        "operationId" : "renameLabel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RenameLabelRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LabelDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Rename a label without losing its assignments",
+        "tags" : [ "labels" ]
+      }
+    },
+    "/api/labels/{id}/reactivate" : {
+      "post" : {
+        "operationId" : "reactivateLabel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LabelDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Offer a retired label again",
+        "tags" : [ "labels" ]
+      }
+    },
+    "/api/labels/{id}/retire" : {
+      "post" : {
+        "operationId" : "retireLabel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LabelDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Stop offering a label for new assignments",
+        "tags" : [ "labels" ]
       }
     },
     "/api/members" : {

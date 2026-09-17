@@ -55,6 +55,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Folder tree with document counts and Unsorted size */
+        get: operations["listCategories"];
+        put?: never;
+        /** Create a folder; a client id makes retries idempotent */
+        post: operations["createCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a folder; documents and subfolders move up and keep the labels they would lose */
+        delete: operations["deleteCategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/categories/{id}/implications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the labels and subjects documents inherit from this folder */
+        put: operations["changeCategoryImplications"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/categories/{id}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename a folder */
+        put: operations["renameCategory"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/categories/{id}/parent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Move a folder; an empty parent means the top level */
+        put: operations["moveCategory"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents": {
         parameters: {
             query?: never;
@@ -62,11 +148,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List or search the shared document collection */
+        /** List or search the shared collection by text, folder and facets */
         get: operations["searchDocuments"];
         put?: never;
         /** Upload a PDF; answers only after durable storage */
         post: operations["uploadDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/placement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** File several documents into the same folder */
+        post: operations["placeDocuments"];
         delete?: never;
         options?: never;
         head?: never;
@@ -80,10 +183,78 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Document details including processing state */
+        /** Document details including processing state and labels */
         get: operations["getDocument"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/category": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** File a document into a folder; empty means Unsorted */
+        put: operations["placeDocument"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the own labels of a document across all facets */
+        put: operations["changeDocumentLabels"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/labels/{labelId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm an automatically proposed label */
+        post: operations["acceptLabelSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/labels/{labelId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject an automatically proposed label; the decision is remembered */
+        post: operations["rejectLabelSuggestion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -170,6 +341,160 @@ export interface paths {
         put?: never;
         /** Create and atomically publish a new export generation */
         post: operations["createExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whole vocabulary with usage counts */
+        get: operations["listLabels"];
+        put?: never;
+        /** Create a label; a client id makes retries idempotent */
+        post: operations["createLabel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/labels/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find a label by name or alias within one facet */
+        get: operations["resolveLabel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/labels/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an unused label; documents are never deleted */
+        delete: operations["deleteLabel"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/labels/{id}/aliases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the alternative spellings of a label */
+        put: operations["replaceLabelAliases"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/labels/{id}/facet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turn a tag into an organization or topic */
+        post: operations["convertLabel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/labels/{id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fold a label into another one; assignments and folder mappings follow */
+        post: operations["mergeLabel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/labels/{id}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename a label without losing its assignments */
+        put: operations["renameLabel"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/labels/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Offer a retired label again */
+        post: operations["reactivateLabel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/labels/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop offering a label for new assignments */
+        post: operations["retireLabel"];
         delete?: never;
         options?: never;
         head?: never;
@@ -471,6 +796,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AliasesRequest: {
+            aliases: string[];
+            /** Format: int64 */
+            expectedVersion: number;
+        };
         AssignRequest: {
             /** Format: int64 */
             expectedVersion: number;
@@ -482,6 +812,51 @@ export interface components {
             readSupported: boolean;
             writeSupported: boolean;
         };
+        CategoryDto: {
+            /** Format: int64 */
+            documentCount: number;
+            id: string;
+            impliedLabelIds: string[];
+            impliedSubjects: components["schemas"]["SubjectDto"][];
+            name: string;
+            parentId?: string | null;
+            /** Format: int64 */
+            version: number;
+        };
+        CategoryListResponse: {
+            categories: components["schemas"]["CategoryDto"][];
+            /** Format: int64 */
+            totalDocuments: number;
+            /** Format: int64 */
+            unsortedCount: number;
+        };
+        CategoryRefDto: {
+            id: string;
+            name: string;
+        };
+        CategoryRequest: {
+            categoryId?: string | null;
+            /** Format: int64 */
+            expectedVersion: number;
+        };
+        ClassificationDto: {
+            categoryId?: string | null;
+            folderSubjects: components["schemas"]["SubjectDto"][];
+            labels: components["schemas"]["LabelChipDto"][];
+            path: components["schemas"]["CategoryRefDto"][];
+            /** Format: int64 */
+            version: number;
+        };
+        CreateCategoryRequest: {
+            id?: string | null;
+            name: string;
+            parentId?: string | null;
+        };
+        CreateLabelRequest: {
+            facet: string;
+            id?: string | null;
+            name: string;
+        };
         CreateTaskRequest: {
             /** Format: date */
             dueDate?: string | null;
@@ -492,8 +867,21 @@ export interface components {
             sourceDocumentId?: string | null;
             title: string;
         };
+        DeletionResponse: {
+            contentsMovedTo?: string | null;
+            deletedId: string;
+            /** Format: int32 */
+            documentsMoved: number;
+            /** Format: int32 */
+            foldersMoved: number;
+            /** Format: int32 */
+            labelsKept: number;
+            /** Format: int32 */
+            subjectsKept: number;
+        };
         DocumentDto: {
             checksumSha256: string;
+            classification: components["schemas"]["ClassificationDto"];
             contentType: string;
             id: string;
             originalAvailable: boolean;
@@ -512,7 +900,16 @@ export interface components {
         DocumentListResponse: {
             /** @enum {string} */
             contentSearch: "NOT_APPLIED" | "READY" | "UNAVAILABLE";
+            facets: components["schemas"]["FacetCounts"];
             items: components["schemas"]["DocumentDto"][];
+            /** Format: int64 */
+            matchingDocuments: number;
+            /** Format: int64 */
+            notContentIndexed: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
             /** Format: int64 */
             totalDocuments: number;
         };
@@ -541,6 +938,27 @@ export interface components {
             /** Format: int32 */
             taskCount: number;
         };
+        FacetCounts: {
+            missing: {
+                [key: string]: number;
+            };
+            values: {
+                [key: string]: {
+                    [key: string]: number;
+                };
+            };
+        };
+        FacetRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            facet: string;
+        };
+        ImplicationsRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            labelIds: string[];
+            subjects: components["schemas"]["SubjectDto"][];
+        };
         IntegrationStatusDto: {
             /** Format: date-time */
             checkedAt?: string | null;
@@ -549,6 +967,41 @@ export interface components {
             lastSuccessAt?: string | null;
             name: string;
             state: string;
+        };
+        LabelChipDto: {
+            builtinKey?: string | null;
+            /** Format: double */
+            confidence?: number | null;
+            facet: string;
+            folderId?: string | null;
+            labelId: string;
+            name?: string | null;
+            origin?: string | null;
+            reviewState?: string | null;
+            source: string;
+            sourceRef?: string | null;
+        };
+        LabelDto: {
+            aliases: string[];
+            /** Format: int64 */
+            assignmentCount: number;
+            builtinKey?: string | null;
+            facet: string;
+            /** Format: int64 */
+            folderCount: number;
+            id: string;
+            mergedInto?: string | null;
+            name?: string | null;
+            status: string;
+            /** Format: int64 */
+            suggestionCount: number;
+            /** Format: int64 */
+            version: number;
+        };
+        LabelsRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            labelIds: string[];
         };
         LocaleRequest: {
             /** @enum {string} */
@@ -569,6 +1022,23 @@ export interface components {
             locale: "DE" | "EN";
             username: string;
         };
+        MergeRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            targetId: string;
+        };
+        MergeResponse: {
+            /** Format: int32 */
+            documentsUpdated: number;
+            /** Format: int32 */
+            foldersUpdated: number;
+            target: components["schemas"]["LabelDto"];
+        };
+        MoveCategoryRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            parentId?: string | null;
+        };
         NoticeDto: {
             /** Format: date-time */
             createdAt: string;
@@ -585,6 +1055,19 @@ export interface components {
         PasswordChangeRequest: {
             currentPassword: string;
             newPassword: string;
+        };
+        PlacementItem: {
+            documentId: string;
+            /** Format: int64 */
+            expectedVersion: number;
+        };
+        PlacementRequest: {
+            categoryId?: string | null;
+            documents: components["schemas"]["PlacementItem"][];
+        };
+        PlacementResponse: {
+            /** Format: int32 */
+            moved: number;
         };
         PlanWorkRequest: {
             /** Format: int64 */
@@ -607,6 +1090,16 @@ export interface components {
             paperlessDocumentId?: number | null;
             retryScheduled: boolean;
             state: string;
+        };
+        RenameCategoryRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            name: string;
+        };
+        RenameLabelRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            name: string;
         };
         RenameRequest: {
             /** Format: int64 */
@@ -757,10 +1250,169 @@ export interface operations {
             };
         };
     };
+    listCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CategoryListResponse"];
+                };
+            };
+        };
+    };
+    createCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CategoryDto"];
+                };
+            };
+        };
+    };
+    deleteCategory: {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DeletionResponse"];
+                };
+            };
+        };
+    };
+    changeCategoryImplications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImplicationsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CategoryDto"];
+                };
+            };
+        };
+    };
+    renameCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CategoryDto"];
+                };
+            };
+        };
+    };
+    moveCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CategoryDto"];
+                };
+            };
+        };
+    };
     searchDocuments: {
         parameters: {
             query?: {
                 query?: string;
+                category?: string;
+                subfolders?: boolean;
+                type?: string[];
+                organization?: string[];
+                topic?: string[];
+                tag?: string[];
+                subject?: string[];
+                topicMatch?: string;
+                tagMatch?: string;
+                missing?: string[];
+                sort?: string;
+                page?: number;
+                size?: number;
             };
             header?: never;
             path?: never;
@@ -783,6 +1435,7 @@ export interface operations {
         parameters: {
             query?: {
                 subjects?: string[];
+                categoryId?: string;
             };
             header?: never;
             path?: never;
@@ -808,6 +1461,30 @@ export interface operations {
             };
         };
     };
+    placeDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlacementRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PlacementResponse"];
+                };
+            };
+        };
+    };
     getDocument: {
         parameters: {
             query?: never;
@@ -818,6 +1495,112 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    placeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    changeDocumentLabels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    acceptLabelSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                labelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    rejectLabelSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                labelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -964,6 +1747,251 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ExportSummaryDto"];
+                };
+            };
+        };
+    };
+    listLabels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LabelDto"][];
+                };
+            };
+        };
+    };
+    createLabel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLabelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LabelDto"];
+                };
+            };
+        };
+    };
+    resolveLabel: {
+        parameters: {
+            query: {
+                facet: string;
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LabelDto"];
+                };
+            };
+        };
+    };
+    deleteLabel: {
+        parameters: {
+            query: {
+                expectedVersion: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    replaceLabelAliases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AliasesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LabelDto"];
+                };
+            };
+        };
+    };
+    convertLabel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FacetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LabelDto"];
+                };
+            };
+        };
+    };
+    mergeLabel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MergeResponse"];
+                };
+            };
+        };
+    };
+    renameLabel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameLabelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LabelDto"];
+                };
+            };
+        };
+    };
+    reactivateLabel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LabelDto"];
+                };
+            };
+        };
+    };
+    retireLabel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LabelDto"];
                 };
             };
         };

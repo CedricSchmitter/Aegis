@@ -286,7 +286,7 @@ class DocumentCatalogIT extends PostgresIT {
         assertThat(ids(lisa, "/api/documents?organization=" + telekomLabelId)).contains(telekomDocumentId);
         assertThat(ids(lisa, "/api/documents?organization=" + longNameId))
                 .as("old filter links keep working through the merge redirect").contains(telekomDocumentId);
-        assertThat(lisa.json(lisa.get("/api/labels/resolve?facet=ORGANIZATION&name=Telekom Deutschland GmbH"))
+        assertThat(lisa.json(lisa.get("/api/labels/resolve?facet=ORGANIZATION&name=Telekom%20Deutschland%20GmbH"))
                 .path("id").asText()).isEqualTo(telekomLabelId);
     }
 
