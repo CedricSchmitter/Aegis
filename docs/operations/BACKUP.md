@@ -78,8 +78,7 @@ unmounting and remounting. The marker is at the mount root. Only the new
 disk entry was removed or moved. `/srv/aegis/deploy/backup.env` and the VM password file are root-only.
 The recovery password also exists outside the VM at
 `C:\Users\cedri\Aegis-Recovery\restic-password.txt` with an ACL for the Windows owner only. Never print or
-commit it. The owner should also store a separate password-manager or paper copy so loss of the PC does not
-make the backup unreadable.
+commit it. A second independent key copy is tracked in [issue #40](https://github.com/CedricSchmitter/Aegis/issues/40).
 
 ### Backup and restore evidence (2026-09-17)
 
@@ -118,8 +117,9 @@ After each run, inspect `systemctl status aegis-backup.service`, Restic snapshot
 
 The status source preserves the previous success timestamp on a failed run and marks failures or a success
 older than 26 hours as `DEGRADED`. The Status page shows the last success and check time. No automatic
-`restic forget`, `prune` or other retention deletion is configured. Inspect capacity and arrange an offsite
-copy later; a disk attached to the same server does not cover fire, theft or simultaneous hardware loss.
+`restic forget`, `prune` or other retention deletion is configured. A disk attached to the same server does not cover fire, theft or simultaneous hardware loss.
+Retention and offsite work are tracked in [issue #40](https://github.com/CedricSchmitter/Aegis/issues/40);
+scheduled-run and maintenance verification are tracked in [issue #39](https://github.com/CedricSchmitter/Aegis/issues/39).
 
 ### Recovery starting point outside the VM
 

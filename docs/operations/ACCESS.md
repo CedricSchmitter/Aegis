@@ -1,0 +1,42 @@
+# Household access
+
+The household endpoint is `https://192.168.2.159` on the local network. Public access is not configured.
+The optional hostname `aegis` is unconfigured; private-IP HTTPS works without local DNS.
+See [STATUS.md](STATUS.md) for dated device and release verification.
+
+## Accounts
+
+Current usernames are `lisa` and `cedric`. Both see the shared household collection; person associations
+do not restrict visibility. Each account has its own preferences, responsibility and session history.
+The owner confirmed individual passwords and successful fresh logins. Do not use stale provisioning
+passwords for checks or print credentials in logs, Git or issues.
+
+The completed migration from `anna` and `ben` preserved member IDs, password hashes, ownership and
+sessions. Do not repeat it on the existing installation. For recovery of a legacy installation only,
+`ops/deploy/onboard-household.py` runs as root inside aegis-dev, stops the application, keeps a restricted
+recovery copy under `/srv/aegis/deploy/onboarding-recovery`, and applies `onboard-household.sql`
+transactionally together with the provisioning seed update. It does not recreate members or reset passwords.
+
+## Trusted HTTPS and new devices
+
+`deploy/Caddyfile.https` serves the private IP and the optional local hostname through Caddy's persistent
+local CA. `deploy/compose.https.yaml` publishes port 443 and enables Secure session cookies.
+`AEGIS_HTTPS=true` in the private VM configuration preserves HTTPS across deployments.
+
+1. Copy only the public CA certificate from
+   `/srv/aegis/data/caddy/data/caddy/pki/authorities/local/root.crt` through verified SSH.
+2. Verify its SHA-256 fingerprint against the trusted VM before installing it into the client's certificate
+   trust store. Never distribute `root.key` or bypass certificate errors.
+3. Open the private-IP HTTPS endpoint and verify login, upload, original retrieval and German/English UI.
+   Android trust-store menus depend on the device/version.
+
+Recorded public-root fingerprint:
+`6B:26:73:D6:B7:F2:89:14:68:E8:1C:56:FB:42:EB:7D:82:75:C5:85:66:86:E6:A8:C7:5E:5C:76:4D:10:AD:5D`.
+Investigate any difference through verified SSH; a changed fingerprint is not automatically trustworthy.
+
+HTTP redirects preserve the requested host. Caddy's `default_sni` selects the IP certificate for clients
+that omit SNI when connecting by IP. HTTPS alone does not implement PWA installation or Web Push.
+Router/resolver changes are outside the standing VM-only infrastructure scope.
+
+References: [Caddy local HTTPS](https://caddyserver.com/docs/automatic-https#local-https),
+[Caddy global options](https://caddyserver.com/docs/caddyfile/options#default-sni).

@@ -1,4 +1,4 @@
-# Deployment on the Aegis VM (first runnable test)
+# Deployment on the Aegis VM
 
 Target: Proxmox VM 102 `aegis-dev`, `192.168.2.159`, user `aegis-agent` (see [VM-ACCESS.md](../VM-ACCESS.md)).
 Application deployment touches only this VM. The separately authorized backup setup passed the identified
@@ -11,7 +11,7 @@ untouched.
 
 | Service | Image | Published port | Persistent data |
 |---|---|---|---|
-| caddy | caddy:2.11.4-alpine | 80 (LAN) | /srv/aegis/data/caddy |
+| caddy | caddy:2.11.4-alpine | 80 and 443 (LAN, HTTPS override) | /srv/aegis/data/caddy |
 | aegis | built from `deploy/Dockerfile` as `aegis-app:<commit>` | none | /srv/aegis/data/ingress, /srv/aegis/exports |
 | postgres | postgres:17.11 | none | /srv/aegis/data/postgres (databases `aegis` and `paperless`) |
 | broker | valkey/valkey:9-alpine | none | /srv/aegis/data/valkey |
@@ -24,7 +24,7 @@ published. Aegis talks to Paperless over the internal Compose network with a ser
 
 The first synthetic test used HTTP. The current endpoint is `https://192.168.2.159/` with the local CA trusted
 on the PC and both Android phones. `AEGIS_HTTPS=true` enables the Compose override and Secure session cookies.
-The preferred local name `aegis` remains optional and unconfigured. See [HOUSEHOLD-PILOT.md](HOUSEHOLD-PILOT.md)
+The preferred local name `aegis` remains optional and unconfigured. See [ACCESS.md](ACCESS.md)
 for verification and owner-confirmed phone tests. No Web Push or public access is configured. External
 backup and isolated recovery passed; one real invoice is already stored and must be preserved.
 
@@ -60,7 +60,7 @@ Rollback to a previously built commit: `sh /srv/aegis/source/current/ops/deploy/
 
 The current login is at `https://192.168.2.159/login`. Passwords are stored as
 BCrypt hashes. The explicit household onboarding maps the test accounts to `lisa` and `cedric` without
-resetting passwords; see HOUSEHOLD-PILOT.md. The provisioning seed passwords are stale and must not be used
+resetting passwords; see ACCESS.md. The provisioning seed passwords are stale and must not be used
 for login checks. The owner confirmed both accounts changed from shared temporary test passwords to
 individual passwords and both new logins worked; the agent did not independently verify the newer credentials.
 Never print credentials in logs or Git.
