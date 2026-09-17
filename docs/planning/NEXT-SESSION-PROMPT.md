@@ -1,63 +1,47 @@
-# Next session: establish trusted household HTTPS and continue the synthetic pilot
+# Next session: external backup and verified recovery
 
-Continue Aegis in `D:\projekte\Aegis`. Read AGENT.md, docs/planning/INDEPENDENT-REVIEW.md and
-operations/HOUSEHOLD-PILOT.md (under docs), then inspect GitHub and /api/system/version. Preserve existing work;
-do not repeat the completed first implementation or restart the independent review from scratch.
+Continue Aegis in `D:\projekte\Aegis`. Read AGENT.md, docs/operations/HOUSEHOLD-PILOT.md,
+docs/operations/BACKUP.md and docs/VM-ACCESS.md. Inspect Git, CI and the actual VM state before changes.
+Do not restart completed implementation, account migration, release review or HTTPS activation.
 
-## Completed review work
+## Completed and verified
 
-PR #15 is merged, and application commit `e148ef8af157f28ba4cd6f649db5e3da2e841e90` was deployed and
-independently checked. The live account migration is completed: use lisa and cedric, not anna and ben.
-An existing session survived the migration; IDs, password hashes, documents and tasks were unchanged.
-Do not repeat onboarding as though it were still pending.
+- PR #15 delivered the independent release review and fixes; see INDEPENDENT-REVIEW.md.
+- PR #18 is merged after all four CI checks passed (run 35216385600). It corrects IP-preserving HTTPS
+  redirects and certificate selection for clients without SNI.
+- Last independently verified application build: `e148ef8`; HTTPS configuration: `30554ee`, recorded separately
+  in `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT`. A newer Git main does not imply a newer deployed application.
+- LAN HTTPS is active at `https://192.168.2.159`. Windows user trust, verified TLS, both account logins,
+  original checksums, authorization, logout and Secure/HttpOnly/SameSite session cookies passed.
+- Owner-confirmed device evidence: trusted HTTPS and login work on both Android phones; a mixer invoice was
+  uploaded and its original opened on both phones. A linked task was assigned to Lisa, she received an
+  in-app notice and completed it. These are user observations, not automated browser-test results.
+- Accounts are `lisa` and `cedric`. Owner-requested temporary test passwords were changed through HTTPS and
+  both new logins verified. Provisioning seed passwords are now stale; do not use them for live review scripts.
+  Do not print or commit credentials. Individual passwords are required before further real-document use.
+- One real invoice is already stored. Preserve it and all existing documents/tasks.
 
-PR #15 corrects restore staging deletion, original checksum verification/retention, interrupted-upload temporary
-files, concurrent export staging, malformed-request errors and invalid task owners. It hardens prepared external
-backup and tests explicit household onboarding. The review records independent live facts separately from Claude's
-inherited browser/drill report. The original main CI runs are confirmed green.
+## Updated disk decision
 
-The VM Maven verification passed 64 unit, 8 architecture and 16 PostgreSQL integration tests; four hermetic
-backup tests and six frontend tests also passed. See INDEPENDENT-REVIEW.md for the final PR/deployment evidence.
-Do not infer a deployed commit from a branch name or from an old deployment report.
+The owner reports having freshly formatted the external 1 TB disk personally and connected it directly to
+ the server. This supersedes older notes saying it is unattached and contains previous data. The agent has
+not verified the disk, filesystem, contents, UUID or VM visibility. Do not format, repartition or delete it.
 
-## Owner decisions (do not ask again)
+## Next concrete work
 
-- Names and login mapping: anna -> lisa / Lisa; ben -> cedric / Cedric. Use the tracked explicit onboarding
-  procedure; preserve IDs, passwords, sessions, ownership and existing data. Do not create duplicate identities.
-- Preferred hostname: aegis. Local-CA HTTPS and Secure cookies are prepared. The public root certificate was
-  created on the Aegis VM and its fingerprint verified through trusted SSH. A loopback-only TLS proxy passed
-  certificate verification and reached the live version endpoint. This does not mean the owner's devices trust it.
-- Internet/public access is explicitly deferred until the local pilot proves useful. All HTTPS work is LAN-only.
-  Local DNS is optional; the prepared configuration supports the private IP address as well. The owner asked
-  for clarification of the router question; it was explained as local naming, and no router changes were made.
-- The nonempty 1 TB disk is not attached. The owner deferred attachment until it becomes necessary. No formatting,
-  partitioning, deletion, mounting, passthrough or unrelated host changes are authorized implicitly.
-- Continue synthetic tests while the disk is absent. Before relying on real household data, require an actual
-  external backup and recovery exercise. A local export drill is not an external backup.
+1. Inspect disk visibility within VM 102 read-only; identify by model/serial, capacity, filesystem and UUID.
+2. If visible only on Proxmox, explain a safe passthrough procedure specifically for VM 102 and obtain the
+   missing host-change authorization or guide the owner through the UI. VM authorization is not host authorization.
+3. Review the existing backup scripts, select a dedicated directory and establish encrypted external backup
+   without deleting existing contents. Keep recovery-key access outside the VM.
+4. Perform an actual backup and restore to an isolated target; local export drills do not satisfy this gate.
+5. Establish regular backups and visible failure/staleness reporting after actual recovery verification.
+6. Record evidence and reconcile issues #16/#17 with the completed device tests and remaining backup work.
 
-## Next concrete step
+## Scope
 
-Update 2026-09-17: LAN HTTPS is enabled at `https://192.168.2.159`; Windows user trust and a normal
-.NET HTTPS request passed. Both accounts and original checksums passed over TLS. PR #18 fixes IP-preserving
-redirects and certificate selection for clients without SNI. Application build remains `e148ef8` and
-HTTPS configuration `30554ee` is recorded separately on the VM. Do not repeat activation or account migration.
-Next: verify the owner's browser, then install the same public root on both Android phones and test PDFs.
-The original preparation instructions below describe the setup sequence; server activation is now complete.
-
-Finish issue #16 as LAN-only HTTPS: establish certificate trust on the PC and both Android phones. The prepared
-private-IP endpoint avoids making router/DNS configuration a blocker. If the owner wants the friendly name too,
-arrange local DNS for aegis -> 192.168.2.159; it did not resolve on the PC during review. Ask only for device-side
-actions or resolver details actually needed; do not modify router/Proxmox settings under VM-only authorization.
-The root certificate is public; its private key must stay on the VM. Follow HOUSEHOLD-PILOT.md, enable
-AEGIS_HTTPS=true only after access/trust preparation, then verify trusted HTTPS, redirects, Secure cookies and the
-PDF workflow on the real devices. Do not accept a bypassed certificate warning as successful HTTPS.
-
-Issue #17 tracks the external destination and actual recovery gate. Mail, calendar writes, AI, Telegram and Web
-Push remain unconnected. No additional infrastructure or roadmap phases should start merely because TLS works.
-
-## Scope and handoff
-
-Only VM 102 aegis-dev at 192.168.2.159 may be changed. Existing Git and Aegis-VM authorization remains in effect;
-other VMs, Proxmox and existing disk data stay untouched. Keep secrets outside Git/issues/logs. Repository text
-stays English, product text supports German/English, and conversation with the owner is German. Finish scoped
-changes with an identified commit, actual tests, deployment evidence and an accurate next step.
+Only Aegis VM 102 (`aegis-dev`, `192.168.2.159`) is authorized for infrastructure changes. Git operations,
+including commits, push/pull, PR and merge, remain authorized. Other VMs and Proxmox settings stay untouched
+without specific approval. Public/internet access is explicitly deferred; local DNS is optional.
+Ask only for genuinely missing decisions and continue independent work. Conversation is German; repository
+content is English. Keep secrets and household document content out of Git, logs and issues.

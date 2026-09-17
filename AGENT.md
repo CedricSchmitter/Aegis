@@ -4,6 +4,12 @@ This is the canonical repository instruction file for human contributors, Codex,
 
 ## Project and priorities
 
+Latest owner update (2026-09-17): the owner personally freshly formatted the external 1 TB disk and attached
+it directly to the server. This supersedes older unattached/nonempty-disk notes below. Its filesystem, contents
+and visibility inside VM 102 remain unverified. Inspect read-only first; no further formatting or deletion is
+authorized. The owner confirmed HTTPS and the shared document/task workflow on both Android phones.
+See docs/planning/NEXT-SESSION-PROMPT.md for the current external-backup handoff.
+
 Aegis is a shared household workspace for documents, tasks, calendars, and a future personal assistant. Optimize for two people using their own Android phones without technical assistance.
 
 The household members are **Lisa and Cedric**. The initial application accounts `anna` and `ben` are test identities, not their real names. Do not assume a mapping or rename/delete accounts without preserving IDs, ownership, sessions and existing data through an explicit migration or onboarding flow.

@@ -56,3 +56,16 @@ When ready for real documents, attach and expose the existing disk to VM 102 thr
 non-destructive procedure. Inspect filesystem, free space and health read-only before choosing a dedicated
 directory. Do not format, repartition or delete existing data. Follow BACKUP.md; store the recovery password
 outside the VM, run an actual external backup and restore it into an isolated target before starting real use.
+
+## Owner-confirmed pilot and disk update (2026-09-17)
+
+The owner confirmed trusted HTTPS, login and original PDF access on both Android phones. A mixer invoice
+was uploaded; its task was assigned to Lisa, surfaced as an in-app notice and completed by her. These are
+owner-reported device observations. The invoice is real data and must be preserved.
+Temporary test passwords were changed through HTTPS for both accounts and new logins independently verified;
+provisioning seed passwords are stale. Replace test passwords with individual credentials before further real use.
+
+The owner subsequently reported personally formatting the 1 TB disk and attaching it directly to the server.
+This supersedes the earlier deferred-attachment notes. Filesystem, contents and VM visibility remain unverified;
+no further formatting/deletion is authorized. External backup and isolated recovery are the next gate.
+PR #18 merged after all four CI checks passed (run 35216385600).
