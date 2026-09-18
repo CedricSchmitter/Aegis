@@ -81,6 +81,11 @@ describe("locale catalogs", () => {
       ...["ACTIVE", "RETIRED", "MERGED"].map((status) => `labels.status.${status}`),
       ...["house", "invoices", "internet", "water", "insurance"].map((key) => `folders.structure.${key}`),
       ...["HOUSE", "HOUSEHOLD", "MEMBER"].map((kind) => `subjects.${kind}`),
+      ...["CONNECTION_CHECK", "DOCUMENT_CLASSIFICATION", "DOCUMENT_REVIEW", "CHAT"].map((w) => `ai.workload.${w}`),
+      ...["QUEUED", "RUNNING", "WAITING_RETRY", "SUCCEEDED", "FAILED", "CANCELLED"].map((s) => `ai.state.${s}`),
+      ...["NOT_CONFIGURED", "AUTHENTICATION", "MODEL_UNAVAILABLE", "INVALID_REQUEST", "RATE_LIMITED",
+        "PROVIDER_UNAVAILABLE", "TIMEOUT", "INVALID_OUTPUT", "REFUSED", "BUDGET_EXHAUSTED", "TOOL_DENIED",
+        "NOT_AUTHORIZED", "STALE_SOURCE", "SOURCE_UNAVAILABLE", "INTERRUPTED", "INTERNAL"].map((c) => `ai.failure.${c}`),
     ];
 
     for (const key of families) {

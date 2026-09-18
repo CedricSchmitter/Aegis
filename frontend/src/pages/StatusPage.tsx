@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import type { ExportSummary, SystemStatus, VersionResponse } from "../api/types";
+import { AiSection } from "../components/AiSection";
 import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import { formatDateTime } from "../lib/format";
 import { problemMessage } from "../lib/problem";
@@ -87,6 +88,7 @@ export function StatusPage() {
               ))}
             </ul>
           </section>
+          <AiSection />
           <section aria-labelledby="exports">
             <div className="mb-2 flex items-center justify-between">
               <h2 id="exports" className="text-lg font-semibold">

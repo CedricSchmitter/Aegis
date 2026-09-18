@@ -22,6 +22,16 @@ export function formatBytes(bytes: number, t: TFunction, language: string): stri
   return t("format.megabytes", { value: number.format(bytes / (1024 * 1024)) });
 }
 
+/** Amounts with their explicit currency; AI costs are small, so up to four decimals are shown. */
+export function formatMoney(amount: number, currency: string, language: string): string {
+  return new Intl.NumberFormat(language === "en" ? "en-GB" : "de-DE", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  }).format(amount);
+}
+
 export function todayIso(): string {
   const now = new Date();
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);

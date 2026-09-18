@@ -63,7 +63,10 @@ test.describe("first runnable test", () => {
     await login(page, userA);
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/Heute|Today/);
     const current = await page.getByTestId("language-switch").textContent();
+    // Reload only after the member preference is stored; otherwise the reload can race the request.
+    const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/locale") && response.ok());
     await page.getByTestId("language-switch").click();
+    await saved;
     if (current?.trim() === "EN") {
       await expect(page.getByRole("heading", { level: 1 })).toContainText("Today");
       await page.reload();
@@ -162,6 +165,10 @@ test.describe("first runnable test", () => {
     await expect(page.getByTestId("integration-paperless")).toContainText(/Verbunden/);
     await expect(page.getByTestId("integration-externalBackup")).toContainText(/Nicht eingerichtet/);
     await expect(page.getByTestId("integration-calendar")).toContainText(/Nicht eingerichtet/);
+    // Without provider credentials the AI boundary says so and capture, search and tasks above still worked.
+    await expect(page.getByTestId("integration-ai")).toContainText(/Nicht eingerichtet/);
+    await expect(page.getByTestId("ai-section")).toContainText("Kein KI-Anbieter eingerichtet");
+    await expect(page.getByTestId("ai-check")).toBeDisabled();
     await logout(page);
   });
 

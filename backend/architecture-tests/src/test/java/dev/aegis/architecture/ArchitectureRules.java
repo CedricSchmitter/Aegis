@@ -17,7 +17,7 @@ import java.util.List;
 final class ArchitectureRules {
     static final String[] FRAMEWORK_PACKAGES = {"org.springframework..", "jakarta.persistence..",
         "jakarta.servlet..", "jakarta.validation..", "tools.jackson..", "com.fasterxml..", "org.hibernate..",
-        "com.github.kagkarlsson..", "io.swagger..", "org.slf4j.."};
+        "com.github.kagkarlsson..", "io.swagger..", "org.slf4j..", "com.anthropic..", "okhttp3..", "kotlin.."};
 
     private ArchitectureRules() {
     }
@@ -41,6 +41,29 @@ final class ArchitectureRules {
         return noClasses().that().resideInAPackage(base + ".*.application..")
                 .should().dependOnClassesThat().resideInAnyPackage(base + ".*.adapters..", base + ".bootstrap..")
                 .as("application must not depend on adapters or bootstrap");
+    }
+
+    /** Model provider SDKs stay inside their provider adapter package, so replacing a provider touches one place. */
+    static ArchRule vendorSdkStaysInItsAdapter(String base) {
+        return noClasses().that().resideOutsideOfPackage(base + ".assistant.adapters.anthropic..")
+                .should().dependOnClassesThat().resideInAnyPackage("com.anthropic..")
+                .as("only the Anthropic adapter may use the Anthropic SDK");
+    }
+
+    /**
+     * Aegis never starts processes: no shell, no CLI subprocess and no command the model could influence. AI work
+     * goes through model gateways and application tools only.
+     */
+    static ArchRule noProcessExecution(String base) {
+        return noClasses().that().resideInAPackage(base + "..")
+                .should().dependOnClassesThat().areAssignableTo(ProcessBuilder.class)
+                .orShould().callMethod(Runtime.class, "exec", String.class)
+                .orShould().callMethod(Runtime.class, "exec", String[].class)
+                .orShould().callMethod(Runtime.class, "exec", String.class, String[].class)
+                .orShould().callMethod(Runtime.class, "exec", String[].class, String[].class)
+                .orShould().callMethod(Runtime.class, "exec", String.class, String[].class, java.io.File.class)
+                .orShould().callMethod(Runtime.class, "exec", String[].class, String[].class, java.io.File.class)
+                .as("Aegis code must not start operating-system processes");
     }
 
     /**

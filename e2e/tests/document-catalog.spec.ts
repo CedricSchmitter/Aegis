@@ -27,9 +27,16 @@ async function login(page: Page, user: { username: string; password: string }) {
 
 async function ensureGerman(page: Page) {
   if ((await page.getByTestId("language-switch").textContent())?.trim() === "DE") {
-    await page.getByTestId("language-switch").click();
+    await switchLanguage(page);
     await expect(page.getByTestId("language-switch")).toHaveText("EN");
   }
+}
+
+/** Toggles the language and waits until the member preference is stored, so a following navigation keeps it. */
+async function switchLanguage(page: Page) {
+  const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/locale") && response.ok());
+  await page.getByTestId("language-switch").click();
+  await saved;
 }
 
 async function createFolder(page: Page, name: string, parentId: string | null): Promise<string> {
@@ -138,11 +145,11 @@ test.describe("document tree, labels and faceted search", () => {
     await expect(page).not.toHaveURL(/organization=/);
 
     // English shows the built-in label in English while the member-authored folder names stay unchanged.
-    await page.getByTestId("language-switch").click();
+    await switchLanguage(page);
     await page.goto(documentUrl);
     await expect(chip(page, "Invoice")).toBeVisible();
     await expect(folderOf(page)).toContainText(`${ROOT} / ${INVOICES} / ${INTERNET}`);
-    await page.getByTestId("language-switch").click();
+    await switchLanguage(page);
 
     // Folder scope: the whole subtree and the leaf both contain the document, an unrelated scope does not.
     await page.goto(`/documents?category=${houseId}`);

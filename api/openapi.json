@@ -1,6 +1,34 @@
 {
   "components" : {
     "schemas" : {
+      "AiOverviewDto" : {
+        "properties" : {
+          "configured" : {
+            "type" : "boolean"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "dailyCostLimit" : {
+            "type" : "number"
+          },
+          "maxConcurrentRuns" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "spentToday" : {
+            "type" : "number"
+          },
+          "workloads" : {
+            "items" : {
+              "$ref" : "#/components/schemas/WorkloadDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "configured", "currency", "dailyCostLimit", "maxConcurrentRuns", "spentToday", "workloads" ],
+        "type" : "object"
+      },
       "AliasesRequest" : {
         "properties" : {
           "aliases" : {
@@ -859,6 +887,119 @@
         "required" : [ "expectedVersion", "title" ],
         "type" : "object"
       },
+      "RunDto" : {
+        "properties" : {
+          "attempt" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "cancelRequested" : {
+            "type" : "boolean"
+          },
+          "cost" : {
+            "type" : "number"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "deniedToolCalls" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failureCategory" : {
+            "type" : [ "string", "null" ]
+          },
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "failureMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "finishedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "inputTokens" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "maxAttempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxCost" : {
+            "type" : "number"
+          },
+          "model" : {
+            "type" : "string"
+          },
+          "modelCalls" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "nextAttemptAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "output" : {
+            "description" : "Validated result as JSON",
+            "type" : [ "string", "null" ]
+          },
+          "outputTokens" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "provider" : {
+            "type" : "string"
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "requestedBy" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "retryOf" : {
+            "format" : "uuid",
+            "type" : [ "string", "null" ]
+          },
+          "sources" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SourceDto"
+            },
+            "type" : "array"
+          },
+          "state" : {
+            "enum" : [ "QUEUED", "RUNNING", "WAITING_RETRY", "SUCCEEDED", "FAILED", "CANCELLED" ],
+            "type" : "string"
+          },
+          "steps" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StepDto"
+            },
+            "type" : "array"
+          },
+          "toolCalls" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "workload" : {
+            "enum" : [ "CONNECTION_CHECK", "DOCUMENT_CLASSIFICATION", "DOCUMENT_REVIEW", "CHAT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "attempt", "cancelRequested", "cost", "currency", "deniedToolCalls", "id", "inputTokens", "maxAttempts", "maxCost", "model", "modelCalls", "outputTokens", "provider", "requestedAt", "requestedBy", "sources", "state", "steps", "toolCalls", "version", "workload" ],
+        "type" : "object"
+      },
       "SessionResponse" : {
         "properties" : {
           "member" : {
@@ -878,6 +1019,45 @@
           }
         },
         "required" : [ "documentId" ],
+        "type" : "object"
+      },
+      "StepDto" : {
+        "properties" : {
+          "at" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "attempt" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "cost" : {
+            "type" : [ "number", "null" ]
+          },
+          "inputTokens" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kind" : {
+            "enum" : [ "ATTEMPT_STARTED", "MODEL_CALL", "TOOL_CALL", "TOOL_DENIED", "ATTEMPT_FAILED", "CANCELLED", "COMPLETED" ],
+            "type" : "string"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "outcome" : {
+            "type" : [ "string", "null" ]
+          },
+          "outputTokens" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "seq" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "at", "attempt", "inputTokens", "kind", "outputTokens", "seq" ],
         "type" : "object"
       },
       "SubjectDto" : {
@@ -1075,6 +1255,57 @@
         },
         "required" : [ "application", "buildTime", "commit" ],
         "type" : "object"
+      },
+      "WorkloadDto" : {
+        "properties" : {
+          "available" : {
+            "type" : "boolean"
+          },
+          "handlerAvailable" : {
+            "type" : "boolean"
+          },
+          "maxAttempts" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxConcurrent" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxCost" : {
+            "type" : "number"
+          },
+          "maxDurationSeconds" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "maxModelCalls" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxOutputTokens" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxToolCalls" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "model" : {
+            "type" : [ "string", "null" ]
+          },
+          "provider" : {
+            "type" : [ "string", "null" ]
+          },
+          "providerConfigured" : {
+            "type" : "boolean"
+          },
+          "workload" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "available", "handlerAvailable", "maxAttempts", "maxConcurrent", "maxCost", "maxDurationSeconds", "maxModelCalls", "maxOutputTokens", "maxToolCalls", "providerConfigured", "workload" ],
+        "type" : "object"
       }
     }
   },
@@ -1084,6 +1315,163 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/ai/connection-checks" : {
+      "post" : {
+        "operationId" : "checkAiConnection",
+        "responses" : {
+          "202" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/RunDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Accepted"
+          }
+        },
+        "summary" : "Start one connection check per configured model",
+        "tags" : [ "ai" ]
+      }
+    },
+    "/api/ai/overview" : {
+      "get" : {
+        "operationId" : "aiOverview",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AiOverviewDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Configured workloads, budgets and today's AI spending",
+        "tags" : [ "ai" ]
+      }
+    },
+    "/api/ai/runs" : {
+      "get" : {
+        "operationId" : "listAiRuns",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/RunDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Most recent AI runs of the household",
+        "tags" : [ "ai" ]
+      }
+    },
+    "/api/ai/runs/{id}" : {
+      "get" : {
+        "operationId" : "getAiRun",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RunDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "One AI run with its audit steps",
+        "tags" : [ "ai" ]
+      }
+    },
+    "/api/ai/runs/{id}/cancel" : {
+      "post" : {
+        "operationId" : "cancelAiRun",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RunDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Cancel a run; a running attempt never applies its result",
+        "tags" : [ "ai" ]
+      }
+    },
+    "/api/ai/runs/{id}/retry" : {
+      "post" : {
+        "operationId" : "retryAiRun",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RunDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "summary" : "Start a new run for the work of a failed or cancelled run",
+        "tags" : [ "ai" ]
+      }
+    },
     "/api/auth/login" : {
       "post" : {
         "operationId" : "login",

@@ -23,6 +23,8 @@ export type SystemStatus = Schemas["SystemStatusDto"];
 export type IntegrationStatus = Schemas["IntegrationStatusDto"];
 export type ExportSummary = Schemas["ExportSummaryDto"];
 export type VersionResponse = Schemas["VersionResponse"];
+export type AiOverview = Schemas["AiOverviewDto"];
+export type AiRun = Schemas["RunDto"];
 export type ProductLocale = MemberDto["locale"];
 
 /** Facet groups in display order; subjects and the folder are separate groups. */

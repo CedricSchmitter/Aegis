@@ -14,6 +14,9 @@ fi
 [ -f "$DEPLOY_DIR/.env" ] || { echo "Missing $DEPLOY_DIR/.env; run ops/deploy/init-secrets.sh first." >&2; exit 1; }
 
 mkdir -p "$DEPLOY_DIR/postgres-init"
+# Directory for the optional AI provider key (ADR-0003). The owner places the key file there; the application
+# container (group 10001) may read it, nobody else. An empty directory means "AI not configured".
+sudo -n install -d -m 0750 -o aegis-agent -g 10001 "$DEPLOY_DIR/secrets/ai"
 cp "$RELEASE_DIR/deploy/compose.yaml" "$DEPLOY_DIR/compose.yaml"
 cp "$RELEASE_DIR/deploy/Caddyfile" "$DEPLOY_DIR/Caddyfile"
 cp "$RELEASE_DIR/deploy/Caddyfile.https" "$DEPLOY_DIR/Caddyfile.https"

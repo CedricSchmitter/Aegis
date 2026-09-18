@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 class ArchitectureTest {
     static final String BASE = "dev.aegis";
     static final List<String> CONTEXTS = List.of("identity", "documents", "planning", "notifications", "operations",
-            "portability");
+            "portability", "assistant");
     private static JavaClasses classes;
 
     @BeforeAll
@@ -46,8 +46,18 @@ class ArchitectureTest {
         noClasses().that().resideInAPackage(BASE + ".shared..")
                 .should().dependOnClassesThat().resideInAnyPackage(BASE + ".identity..", BASE + ".documents..",
                         BASE + ".planning..", BASE + ".notifications..", BASE + ".operations..",
-                        BASE + ".portability..", BASE + ".bootstrap..")
+                        BASE + ".portability..", BASE + ".assistant..", BASE + ".bootstrap..")
                 .as("shared kernel must not depend on any context").check(classes);
+    }
+
+    @Test
+    void providerSdkStaysInItsAdapter() {
+        ArchitectureRules.vendorSdkStaysInItsAdapter(BASE).check(classes);
+    }
+
+    @Test
+    void noProcessIsStarted() {
+        ArchitectureRules.noProcessExecution(BASE).check(classes);
     }
 
     @Test

@@ -50,7 +50,8 @@ sh ops/deploy/deploy.sh <commit-ish>
 
 The script ships `git archive` of the commit to `/srv/aegis/source/releases/aegis-<sha>`, links
 `/srv/aegis/source/current`, then runs `ops/deploy/remote-deploy.sh` on the VM: copy compose files into
-`/srv/aegis/deploy`, pin `AEGIS_COMMIT=<sha>` in `.env`, build `aegis-app:<sha>` and `docker compose up -d`.
+`/srv/aegis/deploy`, prepare the optional AI key directory, pin `AEGIS_COMMIT=<sha>` in `.env`, build
+`aegis-app:<sha>` and `docker compose up -d`.
 The script updates `DEPLOYED_COMMIT` only after readiness and running-version checks pass. The running
 commit is visible at `/api/system/version` and in the UI footer.
 
@@ -69,10 +70,35 @@ The JSON file only seeds accounts that do not exist yet. After onboarding/passwo
 plaintext values by replacing its content with `{"members": []}`; keep the bind-mounted file in place so
 later container recreation does not encounter a missing file or create a directory in its place.
 
+## AI provider key (optional)
+
+AI runs through the bounded execution boundary of [ADR-0003](../architecture/adr/ADR-0003-bounded-ai-execution.md).
+Without a key file every AI workload is reported as not configured; capture, search and tasks are unaffected.
+`remote-deploy.sh` prepares `/srv/aegis/deploy/secrets/ai` (mode 0750, group 10001), which the application
+container mounts read-only at `/run/secrets/ai`.
+
+To connect the Claude API, the owner creates an API key in the Claude Console (billed to that account) and stores it
+on the VM without echoing it into the shell history:
+
+```bash
+# on the VM; paste the key, press Enter, then Ctrl-D
+sudo sh -c 'umask 027; cat > /srv/aegis/deploy/secrets/ai/anthropic-api-key'
+sudo chown aegis-agent:10001 /srv/aegis/deploy/secrets/ai/anthropic-api-key
+sudo chmod 0640 /srv/aegis/deploy/secrets/ai/anthropic-api-key
+```
+
+The file is read again when it changes, so no restart is needed; deleting it disconnects AI. Then use
+"Check connection" on the Status page: it runs one structured call per configured model and shows the result, cost
+and any failure category. The household daily limit defaults to 2.00 USD (`AEGIS_AI_DAILY_COST_LIMIT` in `.env`);
+models, prices and per-run budgets are in `aegis.ai` of `application.yml`. Never put the key into `.env`, Git,
+tickets or chat. The deployment secrets, including this file, are part of the encrypted external backup.
+
 ## Operations
 
-- Status page (in the app) and `GET /api/status`: database, Paperless, export, external backup and the
-  deliberately unconnected integrations (calendar, mail, AI, Web Push, Telegram).
+- Status page (in the app) and `GET /api/status`: database, Paperless, export, external backup, AI (not configured,
+  unverified, connected or degraded by a provider failure) and the deliberately unconnected integrations (calendar,
+  mail, Web Push, Telegram). The AI section lists workload budgets, today's spending and recent runs with cancel and
+  retry.
 - Logs: `sudo docker compose --env-file /srv/aegis/deploy/.env -f /srv/aegis/deploy/compose.yaml logs -f aegis`.
 - Restart application containers only: `... restart aegis caddy` (records persist in PostgreSQL, ingress and
   Paperless volumes; logins persist because sessions are stored in PostgreSQL).

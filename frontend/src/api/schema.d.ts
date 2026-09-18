@@ -4,6 +4,108 @@
  */
 
 export interface paths {
+    "/api/ai/connection-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start one connection check per configured model */
+        post: operations["checkAiConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Configured workloads, budgets and today's AI spending */
+        get: operations["aiOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Most recent AI runs of the household */
+        get: operations["listAiRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One AI run with its audit steps */
+        get: operations["getAiRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/runs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a run; a running attempt never applies its result */
+        post: operations["cancelAiRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/runs/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a new run for the work of a failed or cancelled run */
+        post: operations["retryAiRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -796,6 +898,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AiOverviewDto: {
+            configured: boolean;
+            currency: string;
+            dailyCostLimit: number;
+            /** Format: int32 */
+            maxConcurrentRuns: number;
+            spentToday: number;
+            workloads: components["schemas"]["WorkloadDto"][];
+        };
         AliasesRequest: {
             aliases: string[];
             /** Format: int64 */
@@ -1106,12 +1217,76 @@ export interface components {
             expectedVersion: number;
             title: string;
         };
+        RunDto: {
+            /** Format: int32 */
+            attempt: number;
+            cancelRequested: boolean;
+            cost: number;
+            currency: string;
+            /** Format: int32 */
+            deniedToolCalls: number;
+            failureCategory?: string | null;
+            failureCode?: string | null;
+            failureMessage?: string | null;
+            /** Format: date-time */
+            finishedAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: int64 */
+            inputTokens: number;
+            /** Format: int32 */
+            maxAttempts: number;
+            maxCost: number;
+            model: string;
+            /** Format: int32 */
+            modelCalls: number;
+            /** Format: date-time */
+            nextAttemptAt?: string | null;
+            /** @description Validated result as JSON */
+            output?: string | null;
+            /** Format: int64 */
+            outputTokens: number;
+            provider: string;
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: uuid */
+            requestedBy: string;
+            /** Format: uuid */
+            retryOf?: string | null;
+            sources: components["schemas"]["SourceDto"][];
+            /** @enum {string} */
+            state: "QUEUED" | "RUNNING" | "WAITING_RETRY" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+            steps: components["schemas"]["StepDto"][];
+            /** Format: int32 */
+            toolCalls: number;
+            /** Format: int64 */
+            version: number;
+            /** @enum {string} */
+            workload: "CONNECTION_CHECK" | "DOCUMENT_CLASSIFICATION" | "DOCUMENT_REVIEW" | "CHAT";
+        };
         SessionResponse: {
             member: components["schemas"]["MemberDto"];
         };
         SourceDto: {
             documentId: string;
             documentTitle?: string | null;
+        };
+        StepDto: {
+            /** Format: date-time */
+            at: string;
+            /** Format: int32 */
+            attempt: number;
+            cost?: number | null;
+            /** Format: int64 */
+            inputTokens: number;
+            /** @enum {string} */
+            kind: "ATTEMPT_STARTED" | "MODEL_CALL" | "TOOL_CALL" | "TOOL_DENIED" | "ATTEMPT_FAILED" | "CANCELLED" | "COMPLETED";
+            name?: string | null;
+            outcome?: string | null;
+            /** Format: int64 */
+            outputTokens: number;
+            /** Format: int32 */
+            seq: number;
         };
         SubjectDto: {
             kind: string;
@@ -1179,6 +1354,27 @@ export interface components {
             buildTime: string;
             commit: string;
         };
+        WorkloadDto: {
+            available: boolean;
+            handlerAvailable: boolean;
+            /** Format: int32 */
+            maxAttempts: number;
+            /** Format: int32 */
+            maxConcurrent: number;
+            maxCost: number;
+            /** Format: int64 */
+            maxDurationSeconds: number;
+            /** Format: int32 */
+            maxModelCalls: number;
+            /** Format: int32 */
+            maxOutputTokens: number;
+            /** Format: int32 */
+            maxToolCalls: number;
+            model?: string | null;
+            provider?: string | null;
+            providerConfigured: boolean;
+            workload: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -1188,6 +1384,134 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    checkAiConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RunDto"][];
+                };
+            };
+        };
+    };
+    aiOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AiOverviewDto"];
+                };
+            };
+        };
+    };
+    listAiRuns: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RunDto"][];
+                };
+            };
+        };
+    };
+    getAiRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RunDto"];
+                };
+            };
+        };
+    };
+    cancelAiRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RunDto"];
+                };
+            };
+        };
+    };
+    retryAiRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RunDto"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;

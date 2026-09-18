@@ -35,6 +35,24 @@ class ArchitectureRulesDetectViolationsTest {
     }
 
     @Test
+    void providerSdkOutsideItsAdapterIsRejected() {
+        var framework = ArchitectureRules.coreIsFrameworkFree(FIXTURE_BASE).evaluate(fixtures);
+        var vendor = ArchitectureRules.vendorSdkStaysInItsAdapter(FIXTURE_BASE).evaluate(fixtures);
+
+        assertThat(framework.getFailureReport().toString()).contains("VendorTypedService");
+        assertThat(vendor.hasViolation()).isTrue();
+        assertThat(vendor.getFailureReport().toString()).contains("VendorTypedService");
+    }
+
+    @Test
+    void startingProcessesIsRejected() {
+        var result = ArchitectureRules.noProcessExecution(FIXTURE_BASE).evaluate(fixtures);
+
+        assertThat(result.hasViolation()).isTrue();
+        assertThat(result.getFailureReport().toString()).contains("ShellingOutAdapter");
+    }
+
+    @Test
     void domainDependingOnApplicationIsRejected() {
         var result = ArchitectureRules.dependenciesPointInward(FIXTURE_BASE).evaluate(fixtures);
 

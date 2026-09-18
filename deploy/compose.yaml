@@ -42,12 +42,16 @@ services:
       AEGIS_MEMBERS_FILE: /run/secrets/initial-members.json
       AEGIS_BACKUP_STATE_FILE: /srv/aegis/backup-state/state.json
       AEGIS_COOKIE_SECURE: "false"
+      # Optional AI provider key (ADR-0003); without a key file every AI workload is reported as not configured.
+      AEGIS_ANTHROPIC_API_KEY_FILE: /run/secrets/ai/anthropic-api-key
+      AEGIS_AI_DAILY_COST_LIMIT: ${AEGIS_AI_DAILY_COST_LIMIT:-2.00}
       TZ: Europe/Berlin
     volumes:
       - ${AEGIS_DATA_DIR}/ingress:/srv/aegis/ingress
       - ${AEGIS_EXPORTS_DIR}:/srv/aegis/exports
       - ${AEGIS_DATA_DIR}/backup-state:/srv/aegis/backup-state:ro
       - ./secrets/initial-members.json:/run/secrets/initial-members.json:ro
+      - ./secrets/ai:/run/secrets/ai:ro
     depends_on:
       postgres:
         condition: service_healthy
