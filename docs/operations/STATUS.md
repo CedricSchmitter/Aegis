@@ -53,9 +53,10 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   on the desktop layout and at phone width, with two temporary QA accounts. The QA accounts, the test documents,
   folders and labels were removed afterwards; the household documents, tasks and members are unchanged, and the
   folder tree and the custom vocabulary start empty.
-- Not verified by the agent: the flows on the two real Android phones. Automatic classification (#23), bounded
-  AI execution (#21), assistant retrieval (#25) and the optional backfill of existing documents remain open
-  parts of #46. The browser suite asserts the CI state of the external backup, so a LAN run against this VM
+- The owner confirmed on 2026-09-18 that creating folders, filing documents, setting labels and filtering work
+  on both Android phones; the agent did not operate the phones itself. Issue #20 is closed. Automatic
+  classification (#23), bounded AI execution (#21), assistant retrieval (#25) and the optional backfill of
+  existing documents remain open parts of #46. The browser suite asserts the CI state of the external backup, so a LAN run against this VM
   reports that one integration expectation as failed while the backup is configured here.
 
 ## Recovery
