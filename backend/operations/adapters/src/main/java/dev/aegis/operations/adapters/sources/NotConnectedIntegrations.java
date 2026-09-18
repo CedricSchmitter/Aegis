@@ -38,11 +38,6 @@ public class NotConnectedIntegrations {
     }
 
     @Bean
-    IntegrationStatusSource aiStatusSource() {
-        return fixed(60, "ai", "no AI provider configured; capture, search and planning work without AI");
-    }
-
-    @Bean
     IntegrationStatusSource webPushStatusSource() {
         return fixed(70, "webPush", "in-app notices only; phone push requires HTTPS and device tests");
     }

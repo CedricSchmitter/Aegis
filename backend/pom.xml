@@ -21,6 +21,8 @@
     <db-scheduler.version>16.12.0</db-scheduler.version>
     <springdoc.version>3.1.1</springdoc.version>
     <archunit.version>1.5.0</archunit.version>
+    <!-- Official Anthropic Java SDK, used only inside the assistant adapters (ADR-0003). -->
+    <anthropic-java.version>2.63.0</anthropic-java.version>
 
     <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
     <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
@@ -52,6 +54,9 @@
     <module>operations/adapters</module>
     <module>portability/application</module>
     <module>portability/adapters</module>
+    <module>assistant/domain</module>
+    <module>assistant/application</module>
+    <module>assistant/adapters</module>
     <module>bootstrap</module>
     <module>architecture-tests</module>
   </modules>
@@ -81,6 +86,11 @@
         <version>${springdoc.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.anthropic</groupId>
+        <artifactId>anthropic-java</artifactId>
+        <version>${anthropic-java.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.tngtech.archunit</groupId>
         <artifactId>archunit</artifactId>
         <version>${archunit.version}</version>
@@ -104,6 +114,9 @@
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-operations-adapters</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-portability-application</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-portability-adapters</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-assistant-domain</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-assistant-application</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-assistant-adapters</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-bootstrap</artifactId><version>${project.version}</version></dependency>
     </dependencies>
   </dependencyManagement>
