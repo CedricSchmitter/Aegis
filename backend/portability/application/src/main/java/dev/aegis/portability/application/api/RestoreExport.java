@@ -11,7 +11,8 @@ import java.util.Map;
 public interface RestoreExport {
 
     record RestoreReport(String generation, int documentsImported, int documentsAlreadyPresent, int tasksImported,
-            int tasksAlreadyPresent, Map<String, String> memberIdMapping, List<String> warnings) {
+            int tasksAlreadyPresent, int labelsCreated, int foldersCreated, int classificationsApplied,
+            int classificationsKept, Map<String, String> memberIdMapping, List<String> warnings) {
     }
 
     RestoreReport restore(Actor actor, String sourceLocation);

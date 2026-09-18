@@ -37,7 +37,8 @@ sh /srv/aegis/source/current/ops/deploy/init-secrets.sh
 
 `init-secrets.sh` writes `/srv/aegis/deploy/.env` (database and Paperless secrets) and
 `/srv/aegis/deploy/secrets/initial-members.json` (the two household logins with random initial passwords),
-both mode 0600, and prepares the data directories. It never overwrites existing files.
+and prepares the data directories. The environment file stays mode 0600; the members file is written
+0640 with group 10001 so the application container can read it. It never overwrites existing files.
 
 ## Deploy an identified commit
 

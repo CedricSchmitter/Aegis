@@ -1,10 +1,14 @@
 package dev.aegis.documents.adapters.rest;
 
 import dev.aegis.documents.adapters.rest.DocumentDto.SubjectDto;
+import dev.aegis.documents.application.api.ClassificationCommands;
+import dev.aegis.documents.application.api.ClassificationCommands.Placement;
 import dev.aegis.documents.application.api.ContentSearchState;
 import dev.aegis.documents.application.api.DocumentCommands;
 import dev.aegis.documents.application.api.DocumentQueries;
+import dev.aegis.documents.application.api.DocumentSearchRequest;
 import dev.aegis.documents.application.api.DocumentSearchResult;
+import dev.aegis.documents.application.api.FacetCounts;
 import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.application.api.UploadDocument;
@@ -15,6 +19,7 @@ import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.MemberId;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -23,7 +28,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -40,7 +48,11 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/** Shared document collection: upload, list/search, original access and metadata changes. */
+/**
+ * Shared document collection: upload, structured search, original access, folder placement and label editing.
+ * Search combines free text, folder scope and facets; every parameter is part of the URL so a filtered view can be
+ * shared or bookmarked.
+ */
 @RestController
 @RequestMapping("/api/documents")
 @Tag(name = "documents")
@@ -48,15 +60,23 @@ public class DocumentsController {
     private final UploadDocument upload;
     private final DocumentQueries queries;
     private final DocumentCommands commands;
+    private final ClassificationCommands classification;
 
-    public DocumentsController(UploadDocument upload, DocumentQueries queries, DocumentCommands commands) {
+    public DocumentsController(UploadDocument upload, DocumentQueries queries, DocumentCommands commands,
+            ClassificationCommands classification) {
         this.upload = upload;
         this.queries = queries;
         this.commands = commands;
+        this.classification = classification;
     }
 
+    /**
+     * {@code facets} carries one value map per facet group with document counts, plus the number of documents
+     * without a value in that group. {@code notContentIndexed} counts matching documents that are not archived yet.
+     */
     public record DocumentListResponse(List<DocumentDto> items, ContentSearchState contentSearch,
-            long totalDocuments) {
+            long totalDocuments, long matchingDocuments, int page, int size, FacetCounts facets,
+            long notContentIndexed) {
     }
 
     public record UploadResponse(DocumentDto document, boolean duplicate) {
@@ -68,24 +88,64 @@ public class DocumentsController {
     public record RenameRequest(@NotBlank String title, long expectedVersion) {
     }
 
-    @Operation(operationId = "searchDocuments", summary = "List or search the shared document collection")
+    public record CategoryRequest(@Schema(nullable = true) String categoryId, long expectedVersion) {
+    }
+
+    public record LabelsRequest(@NotNull List<String> labelIds, long expectedVersion) {
+    }
+
+    public record PlacementRequest(@Schema(nullable = true) String categoryId,
+            @NotNull List<PlacementItem> documents) {
+    }
+
+    public record PlacementItem(@NotBlank String documentId, long expectedVersion) {
+    }
+
+    public record PlacementResponse(int moved) {
+    }
+
+    @Operation(operationId = "searchDocuments",
+            summary = "List or search the shared collection by text, folder and facets")
     @GetMapping
-    public DocumentListResponse search(Actor actor, @RequestParam(name = "query", required = false) String query) {
-        DocumentSearchResult result = queries.search(actor, query);
+    public DocumentListResponse search(Actor actor,
+            @RequestParam(name = "query", required = false) String query,
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(name = "subfolders", defaultValue = "true") boolean subfolders,
+            @RequestParam(name = "type", required = false) List<String> documentTypes,
+            @RequestParam(name = "organization", required = false) List<String> organizations,
+            @RequestParam(name = "topic", required = false) List<String> topics,
+            @RequestParam(name = "tag", required = false) List<String> tags,
+            @RequestParam(name = "subject", required = false) List<String> subjects,
+            @RequestParam(name = "topicMatch", defaultValue = "ANY") String topicMatch,
+            @RequestParam(name = "tagMatch", defaultValue = "ANY") String tagMatch,
+            @RequestParam(name = "missing", required = false) List<String> missing,
+            @RequestParam(name = "sort", defaultValue = "NEWEST") String sort,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "25") int size) {
+        boolean unsorted = "unsorted".equalsIgnoreCase(category);
+        DocumentSearchRequest request = new DocumentSearchRequest(query,
+                unsorted ? null : RestIds.optional(category), subfolders, unsorted,
+                RestIds.all(documentTypes), RestIds.all(organizations), RestIds.all(topics), RestIds.all(tags),
+                parseSubjects(subjects), matchAll(topicMatch), matchAll(tagMatch), missingGroups(missing),
+                sort == null ? null : sort.toUpperCase(Locale.ROOT), page, size);
+        DocumentSearchResult result = queries.search(actor, request);
         return new DocumentListResponse(result.items().stream().map(DocumentDto::from).toList(),
-                result.contentSearch(), result.totalDocuments());
+                result.contentSearch(), result.totalDocuments(), result.matchingDocuments(), result.page(),
+                result.size(), result.facets(), result.notContentIndexed());
     }
 
     @Operation(operationId = "uploadDocument", summary = "Upload a PDF; answers only after durable storage")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponse> upload(Actor actor, @RequestPart("file") MultipartFile file,
-            @RequestParam(name = "subjects", required = false) List<String> subjects) {
+            @RequestParam(name = "subjects", required = false) List<String> subjects,
+            @RequestParam(name = "categoryId", required = false) String categoryId) {
         if (file.isEmpty()) {
             throw new InvalidInputException("document.empty", "Uploaded file is empty");
         }
         try (InputStream content = file.getInputStream()) {
             UploadResult result = upload.upload(actor, new UploadCommand(file.getOriginalFilename(),
-                    file.getContentType(), file.getSize(), content, parseSubjects(subjects)));
+                    file.getContentType(), file.getSize(), content, parseSubjects(subjects),
+                    RestIds.optional(categoryId)));
             return ResponseEntity.status(result.duplicate() ? HttpStatus.OK : HttpStatus.CREATED)
                     .body(new UploadResponse(DocumentDto.from(result.document()), result.duplicate()));
         } catch (IOException e) {
@@ -93,7 +153,7 @@ public class DocumentsController {
         }
     }
 
-    @Operation(operationId = "getDocument", summary = "Document details including processing state")
+    @Operation(operationId = "getDocument", summary = "Document details including processing state and labels")
     @GetMapping("/{id}")
     public DocumentDto get(Actor actor, @PathVariable("id") String id) {
         return DocumentDto.from(queries.get(actor, DocumentId.of(id)));
@@ -131,7 +191,64 @@ public class DocumentsController {
         return DocumentDto.from(commands.rename(actor, DocumentId.of(id), body.title(), body.expectedVersion()));
     }
 
-    /** Subjects arrive as form values: HOUSE, HOUSEHOLD or MEMBER:{memberId}. */
+    @Operation(operationId = "placeDocument", summary = "File a document into a folder; empty means Unsorted")
+    @PutMapping("/{id}/category")
+    public DocumentDto place(Actor actor, @PathVariable("id") String id,
+            @Valid @RequestBody CategoryRequest body) {
+        return DocumentDto.from(classification.place(actor, DocumentId.of(id),
+                RestIds.optional(body.categoryId()), body.expectedVersion()));
+    }
+
+    @Operation(operationId = "placeDocuments", summary = "File several documents into the same folder")
+    @PostMapping("/placement")
+    public PlacementResponse placeAll(Actor actor, @Valid @RequestBody PlacementRequest body) {
+        List<Placement> placements = body.documents().stream()
+                .map(item -> new Placement(DocumentId.of(item.documentId()), item.expectedVersion())).toList();
+        return new PlacementResponse(classification.placeAll(actor, placements,
+                RestIds.optional(body.categoryId())));
+    }
+
+    @Operation(operationId = "changeDocumentLabels",
+            summary = "Replace the own labels of a document across all facets")
+    @PutMapping("/{id}/labels")
+    public DocumentDto changeLabels(Actor actor, @PathVariable("id") String id,
+            @Valid @RequestBody LabelsRequest body) {
+        return DocumentDto.from(classification.setLabels(actor, DocumentId.of(id), RestIds.all(body.labelIds()),
+                body.expectedVersion()));
+    }
+
+    @Operation(operationId = "acceptLabelSuggestion", summary = "Confirm an automatically proposed label")
+    @PostMapping("/{id}/labels/{labelId}/accept")
+    public DocumentDto accept(Actor actor, @PathVariable("id") String id, @PathVariable("labelId") String labelId,
+            @Valid @RequestBody LabelsController.VersionRequest body) {
+        return DocumentDto.from(classification.acceptSuggestion(actor, DocumentId.of(id),
+                RestIds.required(labelId), body.expectedVersion()));
+    }
+
+    @Operation(operationId = "rejectLabelSuggestion",
+            summary = "Reject an automatically proposed label; the decision is remembered")
+    @PostMapping("/{id}/labels/{labelId}/reject")
+    public DocumentDto reject(Actor actor, @PathVariable("id") String id, @PathVariable("labelId") String labelId,
+            @Valid @RequestBody LabelsController.VersionRequest body) {
+        return DocumentDto.from(classification.rejectSuggestion(actor, DocumentId.of(id),
+                RestIds.required(labelId), body.expectedVersion()));
+    }
+
+    private static boolean matchAll(String value) {
+        return "ALL".equalsIgnoreCase(value);
+    }
+
+    private static Set<String> missingGroups(List<String> raw) {
+        Set<String> groups = new LinkedHashSet<>();
+        if (raw == null) {
+            return groups;
+        }
+        raw.stream().filter(value -> value != null && !value.isBlank())
+                .forEach(value -> groups.add(value.trim().toUpperCase(Locale.ROOT)));
+        return groups;
+    }
+
+    /** Subjects arrive as form or query values: HOUSE, HOUSEHOLD or MEMBER:{memberId}. */
     static List<SubjectView> parseSubjects(List<String> raw) {
         List<SubjectView> views = new ArrayList<>();
         if (raw == null) {
@@ -150,7 +267,7 @@ public class DocumentsController {
                     throw new InvalidInputException("subject.member.invalid", "Invalid member id in subject");
                 }
             }
-            views.add(new SubjectView(parts[0].toUpperCase(java.util.Locale.ROOT), member));
+            views.add(new SubjectView(parts[0].toUpperCase(Locale.ROOT), member));
         }
         return views;
     }

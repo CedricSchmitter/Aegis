@@ -8,7 +8,12 @@ public interface DocumentQueries {
     DocumentSummary get(Actor actor, DocumentId id);
 
     /** Blank query lists everything; otherwise title matches plus archive full-text matches when reachable. */
-    DocumentSearchResult search(Actor actor, String query);
+    default DocumentSearchResult search(Actor actor, String query) {
+        return search(actor, DocumentSearchRequest.text(query));
+    }
+
+    /** Text, folder and facet search with counts and pagination, evaluated in the database. */
+    DocumentSearchResult search(Actor actor, DocumentSearchRequest request);
 
     /**
      * Original bytes, preferring the archived copy and falling back to the retained staging copy.

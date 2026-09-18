@@ -16,6 +16,9 @@ spring:
     properties:
       hibernate.jdbc.time_zone: UTC
   flyway:
+    # Migrations are numbered per context (ADR-0001), so a new migration of one context can be lower than
+    # migrations of another context that are already applied. Additive migrations are applied out of order.
+    out-of-order: true
     locations:
       - classpath:db/migration/platform
       - classpath:db/migration/identity

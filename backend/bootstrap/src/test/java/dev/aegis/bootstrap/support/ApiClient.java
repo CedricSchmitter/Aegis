@@ -41,6 +41,10 @@ public class ApiClient {
                 .POST(HttpRequest.BodyPublishers.ofString(json == null ? "{}" : json, StandardCharsets.UTF_8)));
     }
 
+    public Response delete(String path) {
+        return send(HttpRequest.newBuilder(URI.create(baseUrl + path)).DELETE());
+    }
+
     public Response putJson(String path, String json) {
         return send(HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")

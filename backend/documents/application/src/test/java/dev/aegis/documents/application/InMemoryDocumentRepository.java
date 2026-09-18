@@ -23,6 +23,11 @@ public class InMemoryDocumentRepository implements DocumentRepository {
     }
 
     @Override
+    public List<Document> findByIds(java.util.Collection<DocumentId> ids) {
+        return ids.stream().map(store::get).filter(java.util.Objects::nonNull).toList();
+    }
+
+    @Override
     public Optional<Document> findByChecksum(Checksum checksum) {
         return store.values().stream().filter(d -> d.checksum().equals(checksum)).findFirst();
     }
