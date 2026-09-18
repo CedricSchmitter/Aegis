@@ -7,8 +7,9 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
 ## Application
 
 - VM 102 serves `https://192.168.2.159` on the household LAN. On 2026-09-18 09:29 the VM was brought from
-  `364b322` to `96e177c` (main with the review corrections of `5759743` from PR #51) and at 12:41 to `85404a9`
-  (PR #54, bounded AI execution); each time marker, running version and HTTPS answer matched afterwards.
+  `364b322` to `96e177c` (main with the review corrections of `5759743` from PR #51), at 12:41 to `85404a9`
+  (PR #54, bounded AI execution), at 13:00 to `efc86f9` (PR #55) and at 13:37 to `e2efc47` (PR #56, subscription
+  provider); each time marker, running version and HTTPS answer matched afterwards.
   HTTPS configuration commit `30554ee` is recorded separately. Check
   `/api/system/version`, `/srv/aegis/deploy/DEPLOYED_COMMIT` and `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT` before
   operating on it.
@@ -94,7 +95,11 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   `efc86f9` was deployed at 13:00 after another `pg_dump` (`aegis-before-efc86f9.dump`) with unchanged household
   counts. A second isolated QA instance of that image reported AI as degraded while both models were unverified and,
   after the check, as degraded for `claude-opus-5: MODEL_UNAVAILABLE` although `claude-haiku-4-5` succeeded.
-- PR #56 adds the owner-chosen subscription provider: the unmodified Claude Code CLI 2.1.276 (musl build) in the
+- [PR #56](https://github.com/CedricSchmitter/Aegis/pull/56) adds the owner-chosen subscription provider
+  ([CI run 35339565549](https://github.com/CedricSchmitter/Aegis/actions/runs/35339565549) passed all four jobs;
+  deployed as `e2efc47` after `aegis-before-e2efc47.dump`, household counts unchanged, `.env` sets
+  `AEGIS_AI_SUBSCRIPTION_MEMBERS=cedric`; the running container has the CLI as uid 10001 and an empty key directory,
+  because the owner postponed storing his token): the unmodified Claude Code CLI 2.1.276 (musl build) in the
   image, started per call with every tool removed, no MCP servers, an empty temporary home and only the token in its
   environment, and limited to the listed members. In the built image the CLI ran as uid 10001, accepted these flags
   and answered without a token with "Not logged in" and with an invalid token with "401 OAuth access token is
