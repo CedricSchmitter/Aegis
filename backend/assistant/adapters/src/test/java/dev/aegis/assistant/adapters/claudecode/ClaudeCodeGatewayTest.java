@@ -10,11 +10,6 @@ import dev.aegis.assistant.application.ports.ModelRequest;
 import dev.aegis.assistant.application.ports.ModelTurn;
 import dev.aegis.assistant.application.ports.ToolSpec;
 import dev.aegis.assistant.domain.FailureCategory;
-import dev.aegis.identity.application.api.MemberDirectory;
-import dev.aegis.identity.application.api.MemberSummary;
-import dev.aegis.shared.Actor;
-import dev.aegis.shared.MemberId;
-import dev.aegis.shared.ProductLocale;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +19,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,9 +26,6 @@ import tools.jackson.databind.json.JsonMapper;
 
 /** The Claude Code (subscription) adapter against a controlled stand-in for the CLI. */
 class ClaudeCodeGatewayTest {
-    static final MemberSummary CEDRIC = new MemberSummary(MemberId.random(), "cedric", "Cedric", ProductLocale.DE,
-            true);
-    static final MemberSummary LISA = new MemberSummary(MemberId.random(), "lisa", "Lisa", ProductLocale.DE, true);
     static final Map<String, Object> SCHEMA = Map.of("type", "object",
             "properties", Map.of("status", Map.of("type", "string")), "required", List.of("status"),
             "additionalProperties", false);
@@ -52,19 +43,8 @@ class ClaudeCodeGatewayTest {
         String classes = Path.of(FakeClaudeCli.class.getProtectionDomain().getCodeSource().getLocation().toURI())
                 .toString();
         List<String> command = List.of(java, "-cp", classes, FakeClaudeCli.class.getName(), record.toString());
-        MemberDirectory members = new MemberDirectory() {
-            @Override
-            public List<MemberSummary> listMembers(Actor actor) {
-                return List.of(CEDRIC, LISA);
-            }
-
-            @Override
-            public Optional<MemberSummary> findMember(MemberId id) {
-                return List.of(CEDRIC, LISA).stream().filter(member -> member.id().equals(id)).findFirst();
-            }
-        };
-        gateway = new ClaudeCodeGateway(new ClaudeCodeProperties(command, tokenFile.toString(), List.of(" Cedric "),
-                null), members, JsonMapper.builder().build());
+        gateway = new ClaudeCodeGateway(new ClaudeCodeProperties(command, tokenFile.toString(), null),
+                JsonMapper.builder().build());
     }
 
     private static ModelRequest request(String model, Map<String, Object> schema) {
@@ -81,13 +61,6 @@ class ClaudeCodeGatewayTest {
             }
         }
         return values;
-    }
-
-    @Test
-    void subscriptionIsLimitedToTheListedMembers() {
-        assertThat(gateway.allows(CEDRIC.id())).isTrue();
-        assertThat(gateway.allows(LISA.id())).isFalse();
-        assertThat(gateway.allows(MemberId.random())).isFalse();
     }
 
     @Test

@@ -70,7 +70,7 @@ public final class AiDtos {
     }
 
     public record AiOverviewDto(boolean configured,
-            @Schema(description = "Whether the asking member may use at least one configured model") boolean memberAllowed,
+            @Schema(description = "Whether the authenticated household member may use a configured provider") boolean memberAllowed,
             BigDecimal dailyCostLimit, BigDecimal spentToday, String currency, int maxConcurrentRuns,
             List<WorkloadDto> workloads) {
         static AiOverviewDto from(AiOverview overview) {

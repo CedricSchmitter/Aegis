@@ -23,7 +23,7 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
 - Bounded AI execution ([ADR-0003](../architecture/adr/ADR-0003-bounded-ai-execution.md), issue #21): durable runs
   with per-workload provider, model and budgets, visible state, cancellation, retry, audit steps, a connection
   check, a Claude API adapter and a Claude Code adapter for the owner's subscription. The owner chose his
-  subscription on 2026-09-18; it serves only the members listed in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Until he stores
+  subscription on 2026-09-18. Until he stores
   his `claude setup-token` token on the VM, AI is reported as not configured and no model has been called from the
   VM with real credentials; classification, review and chat workflows (#23, #24, #25) are not connected.
 - Trusted TLS, redirects, session-cookie settings, authorization and original checksums were independently
@@ -96,7 +96,7 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   after the check, as degraded for `claude-opus-5: MODEL_UNAVAILABLE` although `claude-haiku-4-5` succeeded.
 - PR #56 adds the owner-chosen subscription provider: the unmodified Claude Code CLI 2.1.276 (musl build) in the
   image, started per call with every tool removed, no MCP servers, an empty temporary home and only the token in its
-  environment, and limited to the listed members. In the built image the CLI ran as uid 10001, accepted these flags
+  environment. In the built image the CLI ran as uid 10001, accepted these flags
   and answered without a token with "Not logged in" and with an invalid token with "401 OAuth access token is
   invalid", both classified as `AUTHENTICATION`. `./mvnw verify` on the VM passed with 43 PostgreSQL integration
   tests; a stand-in executable covers the CLI's lock-down, environment isolation, token masking, timeout kill and

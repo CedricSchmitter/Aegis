@@ -23,17 +23,10 @@ class ScriptedGateway implements ModelGateway {
     final List<ModelRequest> requests = new ArrayList<>();
     private final Deque<Function<ModelRequest, ModelTurn>> script = new ArrayDeque<>();
     boolean configured = true;
-    /** Members whose runs may use this provider; null allows everybody. */
-    java.util.Set<dev.aegis.shared.MemberId> allowedMembers;
 
     @Override
     public String provider() {
         return PROVIDER;
-    }
-
-    @Override
-    public boolean allows(dev.aegis.shared.MemberId member) {
-        return allowedMembers == null || allowedMembers.contains(member);
     }
 
     @Override

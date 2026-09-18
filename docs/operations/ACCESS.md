@@ -6,8 +6,12 @@ See [STATUS.md](STATUS.md) for dated device and release verification.
 
 ## Accounts
 
-Current usernames are `lisa` and `cedric`. Both see the shared household collection; person associations
-do not restrict visibility. Each account has its own preferences, responsibility and session history.
+Current usernames are `lisa`, `cedric` and `aegis-dev`. All three see the shared household collection; person
+associations do not restrict visibility. Each account has its own preferences, responsibility and session history.
+`aegis-dev` is the agent test login. Its random password is stored only on the VM at
+`/srv/aegis/deploy/secrets/aegis-dev-login.json` (mode 0600, readable by `aegis-agent`); retrieve it through the
+verified SSH connection when needed and keep it out of Git, logs and issues. The provisioning seed was emptied again
+after the account was created, so later restarts do not retain its plaintext password.
 The owner confirmed individual passwords and successful fresh logins. Do not use stale provisioning
 passwords for checks or print credentials in logs, Git or issues.
 

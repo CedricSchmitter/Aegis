@@ -101,6 +101,10 @@ public class RunExecutionService implements RunExecution {
     public AiRun.Checkpoint beforeModelCall(RunId id, int attempt, AiRun.CallQuote quote) {
         AiRun run = load(id);
         Instant now = clock.instant();
+        AiRun.Checkpoint membership = requireActiveMember(run, attempt, now);
+        if (membership != null) {
+            return membership;
+        }
         Money spentToday = runs.costSince(settings.startOfDay(now), settings.currency());
         AiRun.Checkpoint checkpoint = run.authorizeModelCall(attempt, quote, spentToday, settings.dailyCostLimit(),
                 now);
@@ -133,6 +137,10 @@ public class RunExecutionService implements RunExecution {
         if (!(gate instanceof AiRun.Continue)) {
             saveIfChanged(run);
             return gate;
+        }
+        AiRun.Checkpoint membership = requireActiveMember(run, attempt, now);
+        if (membership != null) {
+            return membership;
         }
         WorkloadHandler handler = handlers.get(run.workload());
         RunContext context = context(run, attempt);
@@ -170,6 +178,18 @@ public class RunExecutionService implements RunExecution {
     private void saveIfChanged(AiRun run) {
         if (!run.pendingSteps().isEmpty()) {
             runs.save(run);
+        }
+    }
+
+    private AiRun.Checkpoint requireActiveMember(AiRun run, int attempt, Instant now) {
+        try {
+            access.requireMember(new Actor(run.requestedBy()));
+            return null;
+        } catch (NotAuthorizedException notMember) {
+            AiRun.Checkpoint denied = run.fail(attempt, FailureCategory.NOT_AUTHORIZED, "auth.forbidden",
+                    "the requesting member is no longer an active household member", null, now);
+            runs.save(run);
+            return denied;
         }
     }
 

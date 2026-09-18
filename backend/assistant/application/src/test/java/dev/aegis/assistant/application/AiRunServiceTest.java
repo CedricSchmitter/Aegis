@@ -106,23 +106,18 @@ class AiRunServiceTest {
     }
 
     @Test
-    void personalProviderServesOnlyItsOwnersRuns() {
-        kit.gateway.allowedMembers = java.util.Set.of(AiTestKit.LISA);
+    void configuredProviderServesBothHouseholdMembers() {
         RunRequest request = new RunRequest("DOCUMENT_CLASSIFICATION", "classification:doc-7:1", List.of(),
                 Map.of(), false);
 
-        assertThatThrownBy(() -> kit.service().request(AS_CEDRIC, request))
-                .extracting(e -> ((InvalidInputException) e).code()).isEqualTo("ai.provider.memberNotAllowed");
-        assertThatThrownBy(() -> kit.service().checkConnection(AS_CEDRIC))
-                .extracting(e -> ((InvalidInputException) e).code()).isEqualTo("ai.provider.memberNotAllowed");
         AiOverview cedrics = kit.service().overview(AS_CEDRIC);
         AiOverview lisas = kit.service().overview(AS_LISA);
 
-        assertThat(cedrics.memberAllowed()).isFalse();
+        assertThat(cedrics.memberAllowed()).isTrue();
         assertThat(cedrics.workloads()).filteredOn(view -> view.workload().equals("DOCUMENT_CLASSIFICATION"))
-                .singleElement().extracting(WorkloadView::available).isEqualTo(false);
+                .singleElement().extracting(WorkloadView::available).isEqualTo(true);
         assertThat(lisas.memberAllowed()).isTrue();
-        assertThat(kit.service().request(AS_LISA, request).state()).isEqualTo("QUEUED");
+        assertThat(kit.service().request(AS_CEDRIC, request).state()).isEqualTo("QUEUED");
         assertThat(kit.runs.size()).isEqualTo(1);
     }
 

@@ -108,11 +108,6 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
             throw new InvalidInputException("ai.notConfigured",
                     "No AI provider with credentials and a priced model is configured");
         }
-        targets.keySet().removeIf(model -> !allows(model, actor));
-        if (targets.isEmpty()) {
-            throw new InvalidInputException("ai.provider.memberNotAllowed",
-                    "The configured AI provider is not available for this member");
-        }
         List<RunView> started = new ArrayList<>();
         targets.forEach((model, workloads) -> started.add(view(create(actor, Workload.CONNECTION_CHECK,
                 "connection-check:" + model.provider() + ":" + model.model(), null, model, check.budget(), List.of(),
@@ -175,10 +170,6 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
             throw new InvalidInputException("ai.notConfigured",
                     "Provider " + model.provider() + " has no server-side credentials");
         }
-        if (!allows(model, actor)) {
-            throw new InvalidInputException("ai.provider.memberNotAllowed",
-                    "Provider " + model.provider() + " is not available for this member");
-        }
         if (settings.prices().find(model.model()).isEmpty()) {
             throw new InvalidInputException("ai.price.unknown", "No price is configured for " + model.model());
         }
@@ -189,43 +180,33 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         return gateway != null && gateway.configured();
     }
 
-    private boolean allows(ModelSelection model, Actor actor) {
-        ModelGateway gateway = gateways.get(model.provider());
-        return gateway != null && gateway.allows(actor.memberId());
-    }
-
     // Queries -------------------------------------------------------------------------------------------------------
 
     @Override
     public AiOverview overview(Actor actor) {
         access.requireMember(actor);
         Instant now = clock.instant();
+        boolean configured = anyProviderConfigured();
         List<WorkloadView> workloads = new ArrayList<>();
-        boolean memberAllowed = false;
         for (Workload workload : Workload.values()) {
             Optional<WorkloadProfile> profile = settings.profile(workload);
             if (profile.isPresent()) {
-                workloads.add(workloadView(profile.get(), actor));
-                memberAllowed |= profile.get().modelSelection()
-                        .filter(model -> providerConfigured(model) && allows(model, actor)).isPresent();
+                workloads.add(workloadView(profile.get()));
             }
         }
-        return new AiOverview(anyProviderConfigured(), memberAllowed, settings.dailyCostLimit().amount(),
+        return new AiOverview(configured, configured, settings.dailyCostLimit().amount(),
                 runs.costSince(settings.startOfDay(now), settings.currency()).amount(),
                 settings.currency().getCurrencyCode(), settings.maxConcurrentRuns(), workloads);
     }
 
-    private WorkloadView workloadView(WorkloadProfile profile, Actor actor) {
+    private WorkloadView workloadView(WorkloadProfile profile) {
         ModelSelection model = profile.model();
         boolean handler = handlers.containsKey(profile.workload());
         boolean provider = model == null ? anyProviderConfigured() : providerConfigured(model);
-        boolean allowed = model == null
-                ? gateways.values().stream().anyMatch(g -> g.configured() && g.allows(actor.memberId()))
-                : allows(model, actor);
         boolean priced = model == null || settings.prices().find(model.model()).isPresent();
         RunBudget budget = profile.budget();
         return new WorkloadView(profile.workload().name(), model == null ? null : model.provider(),
-                model == null ? null : model.model(), provider, handler, handler && provider && allowed && priced,
+                model == null ? null : model.model(), provider, handler, handler && provider && priced,
                 budget.maxCost().amount(), budget.maxDuration().toSeconds(), budget.maxModelCalls(),
                 budget.maxToolCalls(), budget.maxOutputTokens(), budget.maxAttempts(), profile.maxConcurrent());
     }

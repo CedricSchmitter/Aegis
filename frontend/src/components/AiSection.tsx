@@ -82,7 +82,6 @@ export function AiSection() {
       {overview && (
         <div className="card mb-2 flex flex-col gap-2 text-sm">
           <p>{overview.configured ? t("ai.configured") : t("ai.notConfigured")}</p>
-          {overview.configured && !overview.memberAllowed && <p data-testid="ai-member-not-allowed">{t("ai.memberNotAllowed")}</p>}
           <p>{t("ai.spentToday", { spent: money(overview.spentToday), limit: money(overview.dailyCostLimit) })}</p>
           <ul className="flex flex-col gap-1">
             {overview.workloads.map((workload) => (
