@@ -114,12 +114,11 @@ aegis:
         api-key-file: ${AEGIS_ANTHROPIC_API_KEY_FILE:/run/secrets/ai/anthropic-api-key}
         base-url: https://api.anthropic.com
         connect-timeout: 10s
-      # The owner's Claude subscription through the official Claude Code CLI (`claude setup-token`). Personal:
-      # only the listed usernames' own runs may use it; costs below are API-equivalent estimates, not charges.
+      # The owner's Claude subscription through the official Claude Code CLI (`claude setup-token`).
+      # Costs below are API-equivalent estimates, not charges.
       claude-code:
         command: ${AEGIS_CLAUDE_CODE_COMMAND:/opt/claude/claude}
         token-file: ${AEGIS_CLAUDE_CODE_TOKEN_FILE:/run/secrets/ai/claude-code-oauth-token}
-        allowed-members: ${AEGIS_AI_SUBSCRIPTION_MEMBERS:}
         max-turns: 3
     # Claude API list prices per million tokens, checked on platform.claude.com on 2026-09-18.
     # A model without a price cannot run, because its cost budget could not be enforced.

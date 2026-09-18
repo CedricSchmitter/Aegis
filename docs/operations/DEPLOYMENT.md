@@ -81,9 +81,9 @@ tickets or chat. The deployment secrets, including these files, are part of the 
 
 ### Owner's Claude subscription (default, `AEGIS_AI_PROVIDER=claude-code`)
 
-The owner's subscription may only serve his own runs, so `.env` lists the members it serves
-(`AEGIS_AI_SUBSCRIPTION_MEMBERS=cedric`); other members see that AI is not enabled for them. The token is a personal
-credential; storing it on the VM is the owner's explicit decision, and only he generates and stores it:
+The owner supplies the Claude credential for the shared household AI connection. All active household members can
+request runs through the same application authorization and budgets. The token is a personal credential; storing it
+on the VM is the owner's explicit decision, and only he generates and stores it:
 
 ```bash
 # on the owner's PC with Claude Code signed in to the subscription: prints a one-year token
@@ -105,7 +105,7 @@ that account) and stores it the same way as `/srv/aegis/deploy/secrets/ai/anthro
 
 ### Verify
 
-Use "Check connection" on the Status page (as a member the provider serves): it runs one structured call per
+Use "Check connection" on the Status page as any active household member: it runs one structured call per
 configured model and shows the result, the (API-equivalent) cost and any failure category. The household daily limit
 defaults to 2.00 USD (`AEGIS_AI_DAILY_COST_LIMIT` in `.env`); models, prices and per-run budgets are in `aegis.ai` of
 `application.yml`. Changing `.env` needs `docker compose ... up -d aegis` to take effect.

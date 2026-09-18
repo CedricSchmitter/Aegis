@@ -110,10 +110,6 @@ public class RunExecutor {
             throw new ModelCallException(FailureCategory.NOT_CONFIGURED, "ai.provider.notConfigured",
                     "provider " + run.model().provider() + " has no server-side credentials");
         }
-        if (!gateway.allows(run.actor().memberId())) {
-            throw new ModelCallException(FailureCategory.NOT_AUTHORIZED, "ai.provider.memberNotAllowed",
-                    "provider " + run.model().provider() + " is not available for the requesting member");
-        }
         ModelPrice price = settings.prices().find(run.model().model())
                 .orElseThrow(() -> new ModelCallException(FailureCategory.NOT_CONFIGURED, "ai.price.unknown",
                         "no price is configured for model " + run.model().model()));

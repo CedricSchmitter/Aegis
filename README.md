@@ -82,7 +82,7 @@ recovery. Folders, labels and search work without AI; automatic classification i
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, a Claude API adapter and a locked-down Claude Code adapter
-for the owner's own subscription (default provider, limited to the members listed in `AEGIS_AI_SUBSCRIPTION_MEMBERS`).
+for the owner's subscription (default provider, available to authenticated household members).
 Until the owner stores his subscription token the status page reports AI as not configured; classification, scheduled
 review and chat workflows (#23, #24, #25) are not connected.
 

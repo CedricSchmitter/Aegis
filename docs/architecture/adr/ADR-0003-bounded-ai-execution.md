@@ -19,7 +19,7 @@ Checked on 2026-09-18 against the current Anthropic documentation (Claude Code "
 | Criterion | Claude Code CLI, headless (`claude -p`) | Claude Agent SDK | Claude API (Messages) through the official Java SDK |
 |---|---|---|---|
 | Runtime in Aegis | Separate CLI binary in the application image, one subprocess per run | Python or TypeScript library bundling the Claude Code harness; no Java SDK, so a second service | In-process library `com.anthropic:anthropic-java` 2.63.0 |
-| Authentication allowed for Aegis | Subscription (OAuth) login is meant for ordinary individual use of Claude Code; routing a service's requests for several household members through Pro/Max credentials is not permitted. `--bare` mode reads only `ANTHROPIC_API_KEY`. | Anthropic requires Console API-key (or cloud provider) authentication for products built on the Agent SDK | Console API key, billed to the key owner; permitted for the owner's own authorized users |
+| Authentication in Aegis | Owner-supplied OAuth credential through `claude setup-token`; `--bare` mode reads only `ANTHROPIC_API_KEY`. | Console API key or cloud provider authentication | Console API key, billed to the key owner |
 | Tool surface | Built-in Bash, file read/write/edit, web tools; each must be denied per run; Aegis tools only via MCP | Same built-in tools plus MCP and permission callbacks | Only the tools Aegis declares; no shell, file or network tool exists |
 | Budgets | `--max-turns`, client-side cost estimate in the JSON result, process timeout | Turn and budget options, client-side cost estimate | Aegis enforces time, cost from reported usage, model calls, tool calls, attempts and concurrency; SDK retries disabled |
 | Structured output | `--json-schema` | Supported | `output_config.format` with a JSON schema (supported by Claude Haiku 4.5, Sonnet 5, Opus 5) |
@@ -41,12 +41,9 @@ Two gateways exist, selected per workload (`AEGIS_AI_PROVIDER`):
    authenticated with a Console API key billed to its owner. It supports tool loops and is the path for household-wide
    workloads.
 2. **The owner's Claude subscription** through the unmodified official Claude Code CLI (`assistant.adapters.claudecode`,
-   provider `claude-code`). The owner decided on 2026-09-18 to use his subscription for his own, mainly development-
-   related AI work instead of a Console key. Anthropic documents `claude setup-token` (a one-year OAuth token in
-   `CLAUDE_CODE_OAUTH_TOKEN`, not read in `--bare` mode) for scripts and CI of the subscriber, but does not permit
-   routing requests of other users through Pro/Max credentials. The gateway therefore serves only runs requested by
-   the members listed in `AEGIS_AI_SUBSCRIPTION_MEMBERS` (checked when a run is requested and before every call);
-   other members see that AI is not enabled for them, and their capture, search and tasks are unaffected.
+   provider `claude-code`). The owner decided on 2026-09-18 to supply his subscription credential instead of a
+   Console key. `claude setup-token` provides an OAuth token in `CLAUDE_CODE_OAUTH_TOKEN`, which is not read in
+   `--bare` mode. All active household members use the same application authorization and bounded execution path.
 
 The Agent SDK remains rejected (no Java SDK, second runtime). The CLI is confined as follows: one process per call with
 `--disallowedTools "*"` (every built-in tool removed), `--strict-mcp-config` without servers, `--disable-slash-commands`,
@@ -138,9 +135,9 @@ unless reprocessing is requested explicitly.
 
 ### Degradation and visibility
 
-Capture, search, tasks and planning never call the AI context. Requests that cannot run (no credentials, provider not
-enabled for the member, no handler, no price) are refused with `ai.notConfigured`, `ai.provider.memberNotAllowed`,
-`ai.workload.unavailable` or `ai.price.unknown` instead of queuing work. The status page shows the AI integration, judged per configured model from its latest succeeded or failed
+Capture, search, tasks and planning never call the AI context. Requests that cannot run (no credentials, no handler,
+no price) are refused with `ai.notConfigured`, `ai.workload.unavailable` or `ai.price.unknown` instead of queuing work.
+The status page shows the AI integration, judged per configured model from its latest succeeded or failed
 run (not configured; degraded while a model is unverified or its latest run failed for a provider reason;
 otherwise connected), the workload profiles with their budgets, today's spending, the connection check and recent runs with
 cancel and retry. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`, `/api/ai/runs/{id}/cancel`,
@@ -160,9 +157,9 @@ cancel and retry. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`,
 - Streaming for chat, Message Batches for review and prompt caching are adapter extensions that do not change the run
   model. The cost of an interrupted attempt is counted when its call returns; a call lost with its process is not
   counted by Aegis.
-- With the subscription provider only the listed members' runs can use AI. Household-wide automatic workloads (for
-  example classifying every upload in #23) either run on behalf of a listed member's own actions or need the API
-  provider. Subscription usage limits surface as `RATE_LIMITED` with the reported reset time.
+- Household-wide automatic workloads (for example classifying every upload in #23) run on behalf of an active
+  member. Tool-using workloads need the API provider. Subscription usage limits surface as `RATE_LIMITED` with the
+  reported reset time.
 - The subscription gateway classifies CLI failures by their messages (observed with Claude Code 2.1.276); unknown
   failures count as provider outages and are retried within the attempt budget. Updating the pinned CLI version is a
   deliberate image change.

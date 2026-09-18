@@ -10,9 +10,6 @@ import dev.aegis.assistant.application.ports.ModelRequest;
 import dev.aegis.assistant.application.ports.ModelTurn;
 import dev.aegis.assistant.domain.FailureCategory;
 import dev.aegis.assistant.domain.TokenUsage;
-import dev.aegis.identity.application.api.MemberDirectory;
-import dev.aegis.identity.application.api.MemberSummary;
-import dev.aegis.shared.MemberId;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +24,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -40,8 +36,7 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * Claude through the owner's subscription: runs the unmodified official Claude Code CLI in print mode with the
- * owner's {@code claude setup-token} OAuth token (ADR-0003). The subscription is personal, so only runs requested by
- * the configured members may use it.
+ * owner's {@code claude setup-token} OAuth token (ADR-0003). Household membership is enforced by the application.
  *
  * <p>Each call starts one CLI process with every built-in tool removed, no MCP servers, no skills or slash commands,
  * no session persistence, an empty temporary home and working directory and an environment that contains only the
@@ -61,17 +56,13 @@ public class ClaudeCodeGateway implements ModelGateway {
 
     private final List<String> command;
     private final SecretFile tokenFile;
-    private final Set<String> allowedMembers;
     private final int maxTurns;
-    private final MemberDirectory members;
     private final ObjectMapper json;
 
-    public ClaudeCodeGateway(ClaudeCodeProperties properties, MemberDirectory members, ObjectMapper json) {
+    public ClaudeCodeGateway(ClaudeCodeProperties properties, ObjectMapper json) {
         this.command = properties.command();
         this.tokenFile = new SecretFile(Path.of(properties.tokenFile()));
-        this.allowedMembers = Set.copyOf(properties.allowedMembers());
         this.maxTurns = properties.maxTurns();
-        this.members = members;
         this.json = json;
     }
 
@@ -83,12 +74,6 @@ public class ClaudeCodeGateway implements ModelGateway {
     @Override
     public boolean configured() {
         return tokenFile.read().isPresent() && Files.isExecutable(Path.of(command.getFirst()));
-    }
-
-    @Override
-    public boolean allows(MemberId member) {
-        return members.findMember(member).filter(MemberSummary::active)
-                .map(summary -> allowedMembers.contains(summary.username().toLowerCase(Locale.ROOT))).orElse(false);
     }
 
     @Override
