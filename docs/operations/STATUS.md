@@ -101,6 +101,12 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   invalid", both classified as `AUTHENTICATION`. `./mvnw verify` on the VM passed with 43 PostgreSQL integration
   tests; a stand-in executable covers the CLI's lock-down, environment isolation, token masking, timeout kill and
   failure classification.
+- On 2026-09-18, `d8d698f` removed the extra provider-specific member list. Active household members use the shared
+  AI connection through the existing application authorization and budgets. `aegis-dev` was provisioned as an agent
+  test account with its random password stored privately on the VM; the startup seed was emptied again. The image
+  was deployed to VM 102, all five services became healthy, and the deployed marker and HTTPS version both matched
+  the commit. A fresh HTTPS login as `aegis-dev` returned all three members. The AI overview still reported
+  `configured=false` because the owner has not stored the Claude token; no live model call was attempted.
 
 ## Recovery
 
