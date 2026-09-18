@@ -27,3 +27,6 @@ backend/data/
 review-*.log
 review-source.tar.gz
 __pycache__/
+
+# Temporary agent notes, status snapshots and investigation output
+/.agent-notes/

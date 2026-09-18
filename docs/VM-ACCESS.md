@@ -58,9 +58,9 @@ verified 81 GiB free on the VM at that time. On 2026-09-17 the owner authorized 
 the identified `BackupIntenso` USB port only to VM 102. The VM independently verified the Toshiba model,
 serial `7376SWFGS`, NTFS label and UUID `30DAE27ADAE23C2A`; it now mounts the disk at
 `/mnt/aegis-backup`. The separate host SATA/ext4 disk was not touched. See [BACKUP.md](operations/BACKUP.md)
-for inspection, backup and recovery evidence and
-[operational status](operations/STATUS.md) for release and CI evidence.
+for inspection, backup and recovery procedures.
 
-For integration availability and dated verification, see [STATUS.md](operations/STATUS.md).
+For integration availability, use the application's Status page; for dated verification, use the relevant issues,
+pull requests and CI runs.
 Check current capacity and service versions before maintenance; historical free-space measurements are
 not a current capacity guarantee.

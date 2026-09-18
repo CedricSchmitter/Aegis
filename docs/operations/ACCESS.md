@@ -2,7 +2,7 @@
 
 The household endpoint is `https://192.168.2.159` on the local network. Public access is not configured.
 The optional hostname `aegis` is unconfigured; private-IP HTTPS works without local DNS.
-See [STATUS.md](STATUS.md) for dated device and release verification.
+For dated device and release verification, use the relevant issues, pull requests and CI runs.
 
 ## Accounts
 
