@@ -63,7 +63,10 @@ test.describe("first runnable test", () => {
     await login(page, userA);
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/Heute|Today/);
     const current = await page.getByTestId("language-switch").textContent();
+    // Reload only after the member preference is stored; otherwise the reload can race the request.
+    const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/locale") && response.ok());
     await page.getByTestId("language-switch").click();
+    await saved;
     if (current?.trim() === "EN") {
       await expect(page.getByRole("heading", { level: 1 })).toContainText("Today");
       await page.reload();
