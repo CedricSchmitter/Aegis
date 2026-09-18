@@ -6,6 +6,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { TodayPage } from "./pages/TodayPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { DocumentDetailPage } from "./pages/DocumentDetailPage";
+import { FoldersPage } from "./pages/FoldersPage";
+import { LabelsPage } from "./pages/LabelsPage";
 import { TasksPage } from "./pages/TasksPage";
 import { TaskDetailPage } from "./pages/TaskDetailPage";
 import { NoticesPage } from "./pages/NoticesPage";
@@ -39,6 +41,8 @@ export function App() {
         <Route path="/login" element={<Navigate to="/today" replace />} />
         <Route path="/today" element={<TodayPage />} />
         <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/documents/folders" element={<FoldersPage />} />
+        <Route path="/documents/labels" element={<LabelsPage />} />
         <Route path="/documents/:id" element={<DocumentDetailPage />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/tasks/:id" element={<TaskDetailPage />} />

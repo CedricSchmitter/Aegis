@@ -2,6 +2,7 @@ package dev.aegis.portability.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.aegis.documents.application.api.CatalogExport;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentExportRecord;
 import dev.aegis.documents.application.api.OriginalContent;
@@ -35,6 +36,9 @@ class ExportServiceTest {
     private final MemberId anna = MemberId.random();
     private final DocumentId contract = DocumentId.random();
     private final DocumentId lost = DocumentId.random();
+    private final java.util.UUID house = java.util.UUID.randomUUID();
+    private final java.util.UUID invoiceLabel = java.util.UUID.randomUUID();
+    private final java.util.UUID telekomLabel = java.util.UUID.randomUUID();
 
     /** Records writes and publication; never touches a filesystem. */
     static final class MemoryStore implements ExportStore {
@@ -95,9 +99,14 @@ class ExportServiceTest {
             public List<DocumentExportRecord> exportAll(Actor actor) {
                 return List.of(new DocumentExportRecord(contract, "Mietvertrag Müller", "vertrag.pdf",
                         "application/pdf", pdf.length, ExportService.sha256(pdf), anna, NOW,
-                        List.of(new SubjectView("HOUSE", null)), "ARCHIVED", 7, NOW), new DocumentExportRecord(lost,
-                        "Verloren", "lost.pdf", "application/pdf", 3, "a".repeat(64), anna, NOW, List.of(),
-                        "FAILED", null, null));
+                        List.of(new SubjectView("HOUSE", null)), "ARCHIVED", 7, NOW,
+                        new DocumentExportRecord.Classification(house, List.of("Haus", "Rechnungen"),
+                                List.of(new DocumentExportRecord.Assignment(telekomLabel, "ORGANIZATION", "Telekom",
+                                        "MANUAL", "CONFIRMED", null, null, anna, NOW),
+                                        new DocumentExportRecord.Assignment(invoiceLabel, "DOCUMENT_TYPE",
+                                                "Invoice", "AUTOMATIC", "SUGGESTED", 0.4, "run:1", null, NOW)))),
+                        new DocumentExportRecord(lost, "Verloren", "lost.pdf", "application/pdf", 3,
+                                "a".repeat(64), anna, NOW, List.of(), "FAILED", null, null, null));
             }
 
             @Override
@@ -106,6 +115,16 @@ class ExportServiceTest {
                     return new OriginalContent("vertrag.pdf", "application/pdf", pdf, OriginalContent.SOURCE_ARCHIVE);
                 }
                 throw new OriginalUnavailableException("gone");
+            }
+
+            @Override
+            public CatalogExport exportCatalog(Actor actor) {
+                return new CatalogExport(List.of(new CatalogExport.LabelEntry(invoiceLabel, "DOCUMENT_TYPE",
+                        "invoice", null, "Invoice", List.of("Rechnung", "Invoice"), "ACTIVE", null),
+                        new CatalogExport.LabelEntry(telekomLabel, "ORGANIZATION", null, "Telekom", "Telekom",
+                                List.of("Deutsche Telekom"), "ACTIVE", null)),
+                        List.of(new CatalogExport.FolderEntry(house, null, "Haus", List.of("Haus"), List.of(),
+                                List.of(new SubjectView("HOUSE", null)))));
             }
         };
         TaskExportQuery tasks = actor -> List.of(new TaskExportRecord(TaskId.random(), "Kündigen", "", anna, "OPEN",
@@ -132,15 +151,25 @@ class ExportServiceTest {
                 + contract.toString().substring(0, 8) + ".pdf";
         assertThat(store.published).isTrue();
         assertThat(store.staged).containsKeys(originalPath, ExportFormat.DOCUMENTS_JSON, ExportFormat.TASKS_JSON,
-                ExportFormat.MEMBERS_JSON, ExportFormat.DOCUMENTS_CSV, ExportFormat.TASKS_CSV, ExportFormat.INDEX_MD,
-                ExportFormat.MANIFEST);
+                ExportFormat.MEMBERS_JSON, ExportFormat.CATALOG_JSON, ExportFormat.DOCUMENTS_CSV,
+                ExportFormat.TASKS_CSV, ExportFormat.LABELS_CSV, ExportFormat.INDEX_MD, ExportFormat.MANIFEST);
         assertThat(store.staged.get(originalPath)).isEqualTo(pdf);
         assertThat(summary.documentCount()).isEqualTo(2);
         assertThat(summary.taskCount()).isEqualTo(1);
         assertThat(summary.missingOriginals()).containsExactly(lost.toString());
         String index = new String(store.staged.get(ExportFormat.INDEX_MD), StandardCharsets.UTF_8);
         assertThat(index).contains("[Mietvertrag Müller](" + originalPath + ")")
-                .contains("source [Mietvertrag Müller](" + originalPath + ")").contains("Verloren (original not included)");
+                .contains("source [Mietvertrag Müller](" + originalPath + ")")
+                .contains("Verloren (original not included)").contains("### Haus / Rechnungen")
+                .contains("### (unsorted)").contains("labels Telekom");
+        String documentsCsv = new String(store.staged.get(ExportFormat.DOCUMENTS_CSV), StandardCharsets.UTF_8);
+        assertThat(documentsCsv).contains("folder,documentType,organizations,topics,tags")
+                .contains("Haus / Rechnungen,,Telekom,,");
+        String labelsCsv = new String(store.staged.get(ExportFormat.LABELS_CSV), StandardCharsets.UTF_8);
+        assertThat(labelsCsv).contains("DOCUMENT_TYPE,Invoice,invoice,Rechnung; Invoice,ACTIVE,,0")
+                .contains("ORGANIZATION,Telekom,,Deutsche Telekom,ACTIVE,,0");
+        String catalog = new String(store.staged.get(ExportFormat.CATALOG_JSON), StandardCharsets.UTF_8);
+        assertThat(catalog).contains(telekomLabel.toString()).contains("Haus");
         String manifest = new String(store.staged.get(ExportFormat.MANIFEST), StandardCharsets.UTF_8);
         assertThat(manifest).contains(originalPath + "=" + ExportService.sha256(pdf));
         String csv = new String(store.staged.get(ExportFormat.TASKS_CSV), StandardCharsets.UTF_8);
@@ -158,6 +187,11 @@ class ExportServiceTest {
             @Override
             public OriginalContent originalForExport(Actor actor, DocumentId id) {
                 throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public CatalogExport exportCatalog(Actor actor) {
+                return new CatalogExport(List.of(), List.of());
             }
         };
         MemoryStore store = new MemoryStore();

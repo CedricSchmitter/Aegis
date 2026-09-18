@@ -1,6 +1,7 @@
 package dev.aegis.documents.adapters.persistence;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +13,8 @@ interface DocumentJpaRepository extends JpaRepository<DocumentEntity, UUID> {
     Optional<DocumentEntity> findByChecksumSha256(String checksum);
 
     List<DocumentEntity> findAllByOrderByUploadedAtDesc();
+
+    List<DocumentEntity> findByIdIn(Collection<UUID> ids);
 
     @Query("select d from DocumentEntity d where lower(d.title) like lower(concat('%', :fragment, '%')) "
             + "order by d.uploadedAt desc")

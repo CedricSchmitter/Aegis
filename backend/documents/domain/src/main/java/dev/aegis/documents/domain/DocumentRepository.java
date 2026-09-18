@@ -2,12 +2,16 @@ package dev.aegis.documents.domain;
 
 import dev.aegis.shared.DocumentId;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 /** Aggregate persistence for documents. Implementations apply optimistic locking on the version. */
 public interface DocumentRepository {
     Optional<Document> findById(DocumentId id);
+
+    /** Documents with the given ids in the order of {@code ids}; unknown ids are skipped. */
+    List<Document> findByIds(Collection<DocumentId> ids);
 
     Optional<Document> findByChecksum(Checksum checksum);
 

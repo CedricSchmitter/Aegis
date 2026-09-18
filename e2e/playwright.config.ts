@@ -14,6 +14,9 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
   use: {
     baseURL: process.env.AEGIS_BASE_URL ?? "http://localhost",
+    // CI runs against plain HTTP. Set AEGIS_INSECURE_TLS=true only for a LAN run against the household
+    // certificate authority, which the test runner does not trust.
+    ignoreHTTPSErrors: process.env.AEGIS_INSECURE_TLS === "true",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "off",

@@ -11,7 +11,7 @@ import java.util.List;
 /** REST representation of a document; ids are strings, enum-like values keep their stable English names. */
 public record DocumentDto(String id, String title, String originalFilename, String contentType, long sizeBytes,
         String checksumSha256, String uploadedBy, Instant uploadedAt, List<SubjectDto> subjects,
-        ProcessingDto processing, boolean originalAvailable, long version) {
+        ProcessingDto processing, boolean originalAvailable, long version, ClassificationDto classification) {
 
     public record SubjectDto(String kind, @Schema(nullable = true) String memberId) {
         static SubjectDto from(SubjectView view) {
@@ -38,6 +38,7 @@ public record DocumentDto(String id, String title, String originalFilename, Stri
         return new DocumentDto(summary.id().toString(), summary.title(), summary.originalFilename(),
                 summary.contentType(), summary.sizeBytes(), summary.checksumSha256(), summary.uploadedBy().toString(),
                 summary.uploadedAt(), summary.subjects().stream().map(SubjectDto::from).toList(),
-                ProcessingDto.from(summary.processing()), summary.originalAvailable(), summary.version());
+                ProcessingDto.from(summary.processing()), summary.originalAvailable(), summary.version(),
+                ClassificationDto.from(summary.classification()));
     }
 }

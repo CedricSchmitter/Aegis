@@ -11,6 +11,10 @@ import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +34,18 @@ public class JpaDocumentRepository implements DocumentRepository {
     @Override
     public Optional<Document> findById(DocumentId id) {
         return jpa.findById(id.value()).map(JpaDocumentRepository::toDomain);
+    }
+
+    @Override
+    public List<Document> findByIds(Collection<DocumentId> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, Document> found = new LinkedHashMap<>();
+        jpa.findByIdIn(ids.stream().map(DocumentId::value).toList())
+                .forEach(entity -> found.put(entity.getId(), toDomain(entity)));
+        // Keeps the order the read model determined (relevance, date or title), not the database order.
+        return ids.stream().map(id -> found.get(id.value())).filter(java.util.Objects::nonNull).toList();
     }
 
     @Override

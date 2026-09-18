@@ -1,6 +1,6 @@
 # Verified operational state
 
-Last recorded verification: 2026-09-17. This is dated evidence, not a live health check.
+Last recorded verification: 2026-09-18. This is dated evidence, not a live health check.
 Use the application Status page and the deployment markers to inspect the current installation.
 Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues).
 
@@ -13,8 +13,10 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   to `lisa` and `cedric` preserved IDs, ownership and sessions. The owner confirmed individual passwords
   and successful fresh logins; those later credential changes were not independently agent-verified.
 - Implemented capabilities: German/English UI, durable PDF capture, Paperless archival and full-text search,
-  original retrieval, source-linked tasks, deterministic Today, in-app notifications, integration status,
-  portable exports and isolated recovery.
+  original retrieval, a browsable folder tree with an Unsorted inbox, structured labels (document type,
+  organization, topic, tags) with folder-implied labels and faceted search, source-linked tasks, deterministic
+  Today, in-app notifications, integration status, portable exports and isolated recovery. Folders, labels and
+  search work without AI; automatic classification is not connected.
 - Trusted TLS, redirects, session-cookie settings, authorization and original checksums were independently
   checked. The owner confirmed upload, original access, task assignment, notification and completion on
   both Android phones. Real household data is present and must be preserved.
@@ -36,6 +38,25 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
 - [PR #19](https://github.com/CedricSchmitter/Aegis/pull/19) records external recovery and backup-status work;
   [CI run 35237838666](https://github.com/CedricSchmitter/Aegis/actions/runs/35237838666) passed all four jobs.
   Its merge commit `e65a1b6` was verified on the VM and through trusted HTTPS.
+- [PR #51](https://github.com/CedricSchmitter/Aegis/pull/51) added the document folder tree, the structured
+  label vocabulary and faceted search for issues #20 and #46, with the ownership, cardinality and search
+  decisions in [ADR-0002](../architecture/adr/ADR-0002-document-tree-and-labels.md). Verified on 2026-09-18:
+  [CI run 35283222691](https://github.com/CedricSchmitter/Aegis/actions/runs/35283222691) passed all four jobs
+  for commit `b5d452d` with 127 unit tests, 8 architecture tests, 30 PostgreSQL integration tests, 24 frontend
+  tests, the container image build and 12 browser tests against real Paperless. The search integration test
+  measured folder and facet queries over 10,000 seeded documents at 131 ms (listing), 493 ms (with facet
+  counts), 189 ms (folder plus text) and 124 ms (missing-value filter).
+- Backward compatibility of the changed export format was checked on the VM: the isolated restore drill
+  (`ops/backup/restore-drill.sh`) restored the existing schema 1 generation `20260913T154219Z` into the new code
+  and passed with three re-archived documents under new Paperless ids and two tasks with intact source links.
+- The same commit is deployed on VM 102 and was exercised through `https://192.168.2.159` in German and English,
+  on the desktop layout and at phone width, with two temporary QA accounts. The QA accounts, the test documents,
+  folders and labels were removed afterwards; the household documents, tasks and members are unchanged, and the
+  folder tree and the custom vocabulary start empty.
+- Not verified by the agent: the flows on the two real Android phones. Automatic classification (#23), bounded
+  AI execution (#21), assistant retrieval (#25) and the optional backfill of existing documents remain open
+  parts of #46. The browser suite asserts the CI state of the external backup, so a LAN run against this VM
+  reports that one integration expectation as failed while the backup is configured here.
 
 ## Recovery
 

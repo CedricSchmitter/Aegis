@@ -3,6 +3,8 @@ package dev.aegis.documents.application;
 import dev.aegis.documents.application.api.ImportDocument;
 import dev.aegis.documents.application.api.UploadDocument;
 import dev.aegis.documents.application.ports.OriginalStore;
+import dev.aegis.documents.domain.catalog.CategoryId;
+import dev.aegis.documents.domain.catalog.CategoryRepository;
 import dev.aegis.documents.application.ports.OriginalStore.StoredOriginal;
 import dev.aegis.documents.domain.Checksum;
 import dev.aegis.documents.domain.Subject;
@@ -28,15 +30,18 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
     private final OriginalStore store;
     private final RegisterReceivedDocument registrar;
     private final DocumentPresenter presenter;
+    private final CategoryRepository categories;
     private final HouseholdAccess access;
     private final ArchivalSettings settings;
     private final Clock clock;
 
     public DocumentCaptureService(OriginalStore store, RegisterReceivedDocument registrar,
-            DocumentPresenter presenter, HouseholdAccess access, ArchivalSettings settings, Clock clock) {
+            DocumentPresenter presenter, CategoryRepository categories, HouseholdAccess access,
+            ArchivalSettings settings, Clock clock) {
         this.store = store;
         this.registrar = registrar;
         this.presenter = presenter;
+        this.categories = categories;
         this.access = access;
         this.settings = settings;
         this.clock = clock;
@@ -49,12 +54,16 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
         if (command.declaredSize() > settings.maxUploadBytes()) {
             throw new InvalidInputException("document.tooLarge", "Upload exceeds " + settings.maxUploadBytes());
         }
+        if (command.categoryId() != null) {
+            // Rejected before the file is stored: a chosen folder that does not exist is a client error.
+            categories.load().require(new CategoryId(command.categoryId()));
+        }
         DocumentId id = DocumentId.random();
         StoredOriginal stored = storeValidated(id, command.content());
         Set<Subject> subjects = Subjects.fromViews(command.subjects());
         var registration = registrar.register(new RegisterReceivedDocument.RegistrationCommand(id, titleFrom(filename),
                 filename, PDF_CONTENT_TYPE, stored.sizeBytes(), stored.checksum(), actor.memberId(), clock.instant(),
-                subjects, stored.stagingPath()));
+                subjects, stored.stagingPath(), command.categoryId()));
         if (registration.duplicate()) {
             deleteQuietly(stored.stagingPath());
         }
@@ -77,7 +86,7 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
         var registration = registrar.register(new RegisterReceivedDocument.RegistrationCommand(command.id(),
                 command.title(), safeFilename(command.originalFilename()), PDF_CONTENT_TYPE, stored.sizeBytes(),
                 stored.checksum(), command.uploadedBy(), uploadedAt, Subjects.fromViews(command.subjects()),
-                stored.stagingPath()));
+                stored.stagingPath(), null));
         if (registration.duplicate()) {
             deleteQuietly(stored.stagingPath());
             if (!registration.document().id().equals(command.id())) {

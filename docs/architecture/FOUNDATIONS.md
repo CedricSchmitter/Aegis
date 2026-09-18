@@ -130,8 +130,8 @@ authorized application tools and cannot become a prerequisite for capture or det
 
 | Data | Source of truth | Portability rule |
 |---|---|---|
-| Original documents and archive renditions | Paperless | Preserve original bytes, checksums and stable Aegis references |
-| Document title and classification | Paperless metadata | Make any additional Aegis hierarchy ownership explicit in its implementation ADR |
+| Original documents, archive renditions and OCR full text | Paperless | Preserve original bytes, checksums and stable Aegis references |
+| Document title, folder tree, labels and their assignments | Aegis PostgreSQL ([ADR-0002](adr/ADR-0002-document-tree-and-labels.md)) | Stable folder/label IDs, aliases, provenance and review state in the versioned export; Paperless classification fields are not written |
 | Tasks and confirmed contract facts | Aegis PostgreSQL | Versioned structured export with source relationships and review state |
 | Original email, when connected | Provider mailbox and unchanged local EML copy | Preserve attachment and message origins |
 | Calendar events, when connected | Selected calendar provider | Retain external identity, version and synchronization state |

@@ -2,13 +2,17 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
-import type { DocumentDto, TaskDto } from "../api/types";
+import type { CategoryDto, DocumentDto, Facet, LabelChipDto, LabelDto, TaskDto } from "../api/types";
 import { useSession } from "../auth/SessionContext";
+import { FolderSelect } from "../components/FolderSelect";
+import { LabelChips } from "../components/LabelChips";
+import { LabelEditor } from "../components/LabelEditor";
 import { SubjectList } from "../components/SubjectList";
 import { TaskForm } from "../components/TaskForm";
 import { TaskItem } from "../components/TaskItem";
 import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
+import { suggestions } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
 
 export function DocumentDetailPage() {
@@ -17,20 +21,32 @@ export function DocumentDetailPage() {
   const { members, memberName } = useSession();
   const [document, setDocument] = useState<DocumentDto | null>(null);
   const [tasks, setTasks] = useState<TaskDto[]>([]);
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
+  const [labels, setLabels] = useState<LabelDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [editingSubjects, setEditingSubjects] = useState(false);
   const [subjectDraft, setSubjectDraft] = useState<string[]>([]);
+  const [editingLabels, setEditingLabels] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [folderDraft, setFolderDraft] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [doc, linked] = await Promise.all([
+      const [doc, linked, tree, vocabulary] = await Promise.all([
         api.GET("/api/documents/{id}", { params: { path: { id } } }),
         api.GET("/api/tasks", { params: { query: { documentId: id } } }),
+        api.GET("/api/categories"),
+        api.GET("/api/labels"),
       ]);
-      setDocument(unwrap(doc));
+      const loaded = unwrap(doc);
+      setDocument(loaded);
+      setFolderDraft(loaded.classification.categoryId ?? null);
       setTasks(unwrap(linked));
+      setCategories(unwrap(tree).categories);
+      setLabels(unwrap(vocabulary));
       setError(null);
     } catch (failure) {
       setError(problemMessage(t, failure));
@@ -63,8 +79,105 @@ export function DocumentDetailPage() {
         const [kind, memberId] = value.split(":");
         return { kind, memberId: memberId ?? null };
       });
-      setDocument(unwrap(await api.PUT("/api/documents/{id}/subjects", { params: { path: { id } }, body: { subjects, expectedVersion: document.version } })));
+      setDocument(
+        unwrap(
+          await api.PUT("/api/documents/{id}/subjects", {
+            params: { path: { id } },
+            body: { subjects, expectedVersion: document.version },
+          }),
+        ),
+      );
       setEditingSubjects(false);
+    } catch (failure) {
+      setError(problemMessage(t, failure));
+      await load();
+    }
+  };
+
+  const saveTitle = async () => {
+    if (!document) return;
+    try {
+      setDocument(
+        unwrap(
+          await api.PUT("/api/documents/{id}/title", {
+            params: { path: { id } },
+            body: { title: titleDraft, expectedVersion: document.version },
+          }),
+        ),
+      );
+      setEditingTitle(false);
+      setMessage(t("documents.renamed"));
+    } catch (failure) {
+      setError(problemMessage(t, failure));
+      await load();
+    }
+  };
+
+  const saveFolder = async () => {
+    if (!document) return;
+    try {
+      setDocument(
+        unwrap(
+          await api.PUT("/api/documents/{id}/category", {
+            params: { path: { id } },
+            body: { categoryId: folderDraft, expectedVersion: document.classification.version },
+          }),
+        ),
+      );
+      setMessage(t("documents.folderSaved"));
+      setError(null);
+    } catch (failure) {
+      setError(problemMessage(t, failure));
+      await load();
+    }
+  };
+
+  const saveLabels = async (labelIds: string[]) => {
+    if (!document) return;
+    try {
+      setDocument(
+        unwrap(
+          await api.PUT("/api/documents/{id}/labels", {
+            params: { path: { id } },
+            body: { labelIds, expectedVersion: document.classification.version },
+          }),
+        ),
+      );
+      setEditingLabels(false);
+      setMessage(t("documents.labelsSaved"));
+      setError(null);
+    } catch (failure) {
+      setError(problemMessage(t, failure));
+      await load();
+    }
+  };
+
+  const createLabel = async (facet: Facet, name: string): Promise<LabelDto | null> => {
+    try {
+      const created = unwrap(await api.POST("/api/labels", { body: { facet, name } }));
+      setLabels((current) => [...current, created]);
+      return created;
+    } catch (failure) {
+      setError(problemMessage(t, failure));
+      return null;
+    }
+  };
+
+  const review = async (chip: LabelChipDto, decision: "accept" | "reject") => {
+    if (!document) return;
+    try {
+      const path = decision === "accept"
+        ? "/api/documents/{id}/labels/{labelId}/accept"
+        : "/api/documents/{id}/labels/{labelId}/reject";
+      setDocument(
+        unwrap(
+          await api.POST(path, {
+            params: { path: { id, labelId: chip.labelId } },
+            body: { expectedVersion: document.classification.version },
+          }),
+        ),
+      );
+      setError(null);
     } catch (failure) {
       setError(problemMessage(t, failure));
       await load();
@@ -74,6 +187,8 @@ export function DocumentDetailPage() {
   if (!document && !error) return <Loading />;
   if (!document) return <ErrorBox message={error} />;
   const p = document.processing;
+  const folderName = (folderId: string) => categories.find((category) => category.id === folderId)?.name ?? "";
+  const pending = suggestions(document.classification.labels);
 
   return (
     <>
@@ -82,32 +197,50 @@ export function DocumentDetailPage() {
           ← {t("documents.title")}
         </Link>
       </p>
-      <PageTitle actions={<Badge state={p.state} label={t(`documents.stateShort.${p.state}`)} />}>{document.title}</PageTitle>
+      <PageTitle actions={<Badge state={p.state} label={t(`documents.stateShort.${p.state}`)} />}>
+        {document.title}
+      </PageTitle>
       <ErrorBox message={error} />
       {message && <InfoBox>{message}</InfoBox>}
 
-      <section className="card mb-4 flex flex-col gap-2" aria-label={t("documents.state." + p.state)}>
-        <p className="font-medium" data-testid="processing-state">{t(`documents.state.${p.state}`)}</p>
+      <section className="card mb-4 flex flex-col gap-2" aria-label={t(`documents.state.${p.state}`)}>
+        <p className="font-medium" data-testid="processing-state">
+          {t(`documents.state.${p.state}`)}
+        </p>
         {p.retryScheduled && (
           <p className="text-sm text-stone-600 dark:text-stone-400">
-            {t("documents.retrying")} · {p.nextAttemptAt && t("documents.nextAttempt", { date: formatDateTime(p.nextAttemptAt, i18n.language) })}
+            {t("documents.retrying")} ·{" "}
+            {p.nextAttemptAt && t("documents.nextAttempt", { date: formatDateTime(p.nextAttemptAt, i18n.language) })}
           </p>
         )}
-        {p.attempts > 0 && <p className="text-sm text-stone-600 dark:text-stone-400">{t("documents.attempts", { count: p.attempts })}</p>}
+        {p.attempts > 0 && (
+          <p className="text-sm text-stone-600 dark:text-stone-400">
+            {t("documents.attempts", { count: p.attempts })}
+          </p>
+        )}
         {p.lastErrorCode && (
           <p className="text-sm text-red-700 dark:text-red-300">
-            {t("documents.lastError", { message: t(`errors.${p.lastErrorCode}`, { defaultValue: p.lastErrorMessage ?? p.lastErrorCode }) })}
+            {t("documents.lastError", {
+              message: t(`errors.${p.lastErrorCode}`, { defaultValue: p.lastErrorMessage ?? p.lastErrorCode }),
+            })}
           </p>
         )}
         {p.state === "ARCHIVED" && (
           <p className="text-sm text-stone-600 dark:text-stone-400">
-            {t("documents.paperlessId", { id: p.paperlessDocumentId })} · {t("documents.archivedAt", { date: formatDateTime(p.archivedAt, i18n.language) })}
+            {t("documents.paperlessId", { id: p.paperlessDocumentId })} ·{" "}
+            {t("documents.archivedAt", { date: formatDateTime(p.archivedAt, i18n.language) })}
           </p>
         )}
         <div className="flex flex-wrap gap-2">
           {document.originalAvailable ? (
             <>
-              <a className="btn-primary" href={`/api/documents/${document.id}/original?inline=true`} target="_blank" rel="noreferrer" data-testid="open-original">
+              <a
+                className="btn-primary"
+                href={`/api/documents/${document.id}/original?inline=true`}
+                target="_blank"
+                rel="noreferrer"
+                data-testid="open-original"
+              >
                 {t("documents.original")}
               </a>
               <a className="btn-secondary" href={`/api/documents/${document.id}/original`} data-testid="download-original">
@@ -125,9 +258,62 @@ export function DocumentDetailPage() {
         </div>
       </section>
 
+      <section className="card mb-4 flex flex-col gap-3" aria-label={t("documents.folder")}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium">{t("documents.folder")}:</span>
+          <span className="text-sm" data-testid="document-folder">
+            🗂 {document.classification.path.map((step) => step.name).join(" / ") || t("documents.unsorted")}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <FolderSelect
+            categories={categories}
+            value={folderDraft}
+            onChange={setFolderDraft}
+            label={t("documents.chooseFolder")}
+            id="document-folder-select"
+          />
+          <button type="button" className="btn-secondary" onClick={saveFolder} data-testid="save-folder">
+            {t("app.save")}
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium">{t("documents.labels")}:</span>
+          <LabelChips
+            chips={document.classification.labels}
+            folderName={folderName}
+            onAccept={(chip) => void review(chip, "accept")}
+            onReject={(chip) => void review(chip, "reject")}
+          />
+          {document.classification.labels.length === 0 && (
+            <span className="text-xs text-stone-500">{t("subjects.none")}</span>
+          )}
+          {!editingLabels && (
+            <button type="button" className="btn-ghost" onClick={() => setEditingLabels(true)} data-testid="edit-labels">
+              {t("documents.editLabels")}
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-stone-500">{t("documents.inheritedFromFolder")}</p>
+        {pending.length > 0 && <p className="text-xs text-stone-500">{t("documents.confidenceHint")}</p>}
+        {editingLabels && (
+          <LabelEditor
+            key={document.classification.version}
+            chips={document.classification.labels}
+            labels={labels}
+            onSave={saveLabels}
+            onCreate={createLabel}
+          />
+        )}
+      </section>
+
       <section className="card mb-4 flex flex-col gap-2">
         <p className="text-sm text-stone-600 dark:text-stone-400">
-          {t("documents.uploadedBy", { name: memberName(document.uploadedBy) ?? t("app.unknownMember"), date: formatDateTime(document.uploadedAt, i18n.language) })}
+          {t("documents.uploadedBy", {
+            name: memberName(document.uploadedBy) ?? t("app.unknownMember"),
+            date: formatDateTime(document.uploadedAt, i18n.language),
+          })}
         </p>
         <p className="text-sm">
           {document.originalFilename} · {formatBytes(document.sizeBytes, t, i18n.language)}
@@ -136,14 +322,56 @@ export function DocumentDetailPage() {
           {t("documents.checksum")}: {document.checksumSha256}
         </p>
         <div className="flex flex-wrap items-center gap-2">
+          {editingTitle ? (
+            <>
+              <label className="label mb-0" htmlFor="title-draft">
+                {t("documents.renameTitle")}
+              </label>
+              <input
+                id="title-draft"
+                className="field max-w-sm"
+                value={titleDraft}
+                onChange={(event) => setTitleDraft(event.target.value)}
+              />
+              <button type="button" className="btn-primary" onClick={saveTitle} data-testid="save-title">
+                {t("app.save")}
+              </button>
+              <button type="button" className="btn-ghost" onClick={() => setEditingTitle(false)}>
+                {t("app.cancel")}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => {
+                setTitleDraft(document.title);
+                setEditingTitle(true);
+              }}
+              data-testid="rename-document"
+            >
+              {t("documents.renameTitle")}
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">{t("documents.subjects")}:</span>
           <SubjectList subjects={document.subjects} />
+          {document.classification.folderSubjects.length > 0 && (
+            <span className="text-xs text-stone-500">
+              🗂 <SubjectList subjects={document.classification.folderSubjects} />
+            </span>
+          )}
           {!editingSubjects && (
             <button
               type="button"
               className="btn-ghost"
               onClick={() => {
-                setSubjectDraft(document.subjects.map((s) => (s.kind === "MEMBER" ? `MEMBER:${s.memberId}` : s.kind)));
+                setSubjectDraft(
+                  document.subjects.map((subject) =>
+                    subject.kind === "MEMBER" ? `MEMBER:${subject.memberId}` : subject.kind,
+                  ),
+                );
                 setEditingSubjects(true);
               }}
             >
@@ -153,18 +381,26 @@ export function DocumentDetailPage() {
         </div>
         {editingSubjects && (
           <div className="flex flex-wrap items-center gap-3">
-            {["HOUSEHOLD", "HOUSE", ...members.map((m) => `MEMBER:${m.id}`)].map((value) => (
+            {["HOUSEHOLD", "HOUSE", ...members.map((member) => `MEMBER:${member.id}`)].map((value) => (
               <label key={value} className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={subjectDraft.includes(value)}
-                  onChange={() => setSubjectDraft((d) => (d.includes(value) ? d.filter((x) => x !== value) : [...d, value]))}
+                  onChange={() =>
+                    setSubjectDraft((draft) =>
+                      draft.includes(value) ? draft.filter((entry) => entry !== value) : [...draft, value],
+                    )
+                  }
                 />
                 {value.startsWith("MEMBER:") ? (memberName(value.substring(7)) ?? value) : t(`subjects.${value}`)}
               </label>
             ))}
-            <button type="button" className="btn-primary" onClick={saveSubjects}>{t("app.save")}</button>
-            <button type="button" className="btn-ghost" onClick={() => setEditingSubjects(false)}>{t("app.cancel")}</button>
+            <button type="button" className="btn-primary" onClick={saveSubjects}>
+              {t("app.save")}
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => setEditingSubjects(false)}>
+              {t("app.cancel")}
+            </button>
           </div>
         )}
       </section>
@@ -174,7 +410,12 @@ export function DocumentDetailPage() {
           <h2 id="linked-tasks" className="text-lg font-semibold">
             {t("documents.linkedTasks")}
           </h2>
-          <button type="button" className="btn-secondary" onClick={() => setShowTaskForm((v) => !v)} data-testid="new-task-toggle">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setShowTaskForm((value) => !value)}
+            data-testid="new-task-toggle"
+          >
             {t("documents.newTask")}
           </button>
         </div>
@@ -195,7 +436,13 @@ export function DocumentDetailPage() {
         ) : (
           <div className="flex flex-col gap-2">
             {tasks.map((task) => (
-              <TaskItem key={task.id} task={task} onChange={(updated) => setTasks((current) => current.map((x) => (x.id === updated.id ? updated : x)))} />
+              <TaskItem
+                key={task.id}
+                task={task}
+                onChange={(updated) =>
+                  setTasks((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)))
+                }
+              />
             ))}
           </div>
         )}

@@ -1,7 +1,8 @@
 #!/bin/sh
 # Verifies a restored Aegis instance against the export it was restored from:
 # every exported document exists with the same id, becomes ARCHIVED (new Paperless id assigned by the isolated
-# archive), its original matches the exported checksum, and every task keeps its source document link.
+# archive), its original matches the exported checksum, every task keeps its source document link, and every
+# exported folder placement and label comes back on the document. Export schema 1 files carry no classification.
 # Usage: verify-drill.sh <base-url> <members-file> <export-generation-dir>
 set -eu
 BASE="$1"
@@ -46,13 +47,27 @@ for d in documents:
     original = get(f"/api/documents/{d['id']}/original", raw=True)
     if hashlib.sha256(original).hexdigest() != d["checksumSha256"]:
         problems.append(f"document {d['id']} original checksum mismatch")
+classified = 0
+for d in documents:
+    exported = d.get("classification") or {}
+    if not exported.get("folderId") and not exported.get("labels"):
+        continue
+    classified += 1
+    restored = get(f"/api/documents/{d['id']}").get("classification") or {}
+    if exported.get("folderId") and restored.get("categoryId") != exported["folderId"]:
+        problems.append(f"document {d['id']} lost its folder")
+    own = {c["labelId"] for c in restored.get("labels", []) if c["source"] == "OWN"}
+    for a in exported.get("labels", []):
+        if a["reviewState"] in ("CONFIRMED", "APPLIED") and a["labelId"] not in own:
+            problems.append(f"document {d['id']} lost label {a['labelId']}")
 for t in tasks:
     current = get(f"/api/tasks/{t['id']}")
     if t.get("sourceDocumentId") and (current.get("source") or {}).get("documentId") != t["sourceDocumentId"]:
         problems.append(f"task {t['id']} lost its source link")
     if current["status"] != t["status"] or current.get("dueDate") != t.get("dueDate"):
         problems.append(f"task {t['id']} state differs")
-print(f"verified {len(documents)} documents and {len(tasks)} tasks from generation {manifest['generation']}")
+print(f"verified {len(documents)} documents ({classified} with a folder or labels) and {len(tasks)} tasks "
+      f"from generation {manifest['generation']} (schema {manifest['schemaVersion']})")
 if problems:
     print("\n".join(problems))
     sys.exit(1)
