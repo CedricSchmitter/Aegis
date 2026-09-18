@@ -17,7 +17,7 @@
             "type" : "integer"
           },
           "memberAllowed" : {
-            "description" : "Whether the asking member may use at least one configured model",
+            "description" : "Whether the authenticated household member may use a configured provider",
             "type" : "boolean"
           },
           "spentToday" : {

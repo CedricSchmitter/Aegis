@@ -904,7 +904,7 @@ export interface components {
             dailyCostLimit: number;
             /** Format: int32 */
             maxConcurrentRuns: number;
-            /** @description Whether the asking member may use at least one configured model */
+            /** @description Whether the authenticated household member may use a configured provider */
             memberAllowed: boolean;
             spentToday: number;
             workloads: components["schemas"]["WorkloadDto"][];
