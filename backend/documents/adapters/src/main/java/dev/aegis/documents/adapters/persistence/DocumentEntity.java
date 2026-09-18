@@ -24,6 +24,9 @@ public class DocumentEntity {
     @Column(nullable = false, length = 200)
     private String title;
 
+    @Column(name = "title_origin", nullable = false, length = 20)
+    private String titleOrigin;
+
     @Column(name = "original_filename", nullable = false, length = 255)
     private String originalFilename;
 
@@ -99,6 +102,14 @@ public class DocumentEntity {
 
     void setTitle(String title) {
         this.title = title;
+    }
+
+    String getTitleOrigin() {
+        return titleOrigin;
+    }
+
+    void setTitleOrigin(String titleOrigin) {
+        this.titleOrigin = titleOrigin;
     }
 
     String getOriginalFilename() {

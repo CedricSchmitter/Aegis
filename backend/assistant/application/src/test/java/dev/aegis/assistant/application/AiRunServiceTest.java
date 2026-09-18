@@ -58,6 +58,63 @@ class AiRunServiceTest {
         assertThat(kit.scheduled).hasSize(2);
     }
 
+    /** Regression for issue #59: a key names one unit of work and cannot be reused for different work. */
+    @Test
+    void aReusedKeyForDifferentWorkIsRejectedWhileActiveAndAfterSuccess() {
+        RunView active = kit.classify("doc-1", 3, "Rechnung", false);
+        RunRequest otherVersion = new RunRequest("DOCUMENT_CLASSIFICATION", "classification:doc-1:3",
+                List.of(new dev.aegis.assistant.application.api.SourceVersion("document", "doc-1", 4)),
+                Map.of("content", "Rechnung"), false);
+        RunRequest otherParameters = new RunRequest("DOCUMENT_CLASSIFICATION", "classification:doc-1:3",
+                List.of(new dev.aegis.assistant.application.api.SourceVersion("document", "doc-1", 3)),
+                Map.of("content", "Police"), false);
+
+        for (RunRequest conflicting : List.of(otherVersion, otherParameters)) {
+            assertThatThrownBy(() -> kit.service().request(AS_LISA, conflicting))
+                    .isInstanceOf(InvalidInputException.class)
+                    .hasFieldOrPropertyWithValue("code", "ai.run.keyConflict");
+        }
+        kit.gateway.answer(json(Map.of("label", "invoice")));
+        kit.executor().execute(new RunId(active.id()));
+        assertThatThrownBy(() -> kit.service().request(AS_LISA, otherVersion)).isInstanceOf(
+                InvalidInputException.class).hasFieldOrPropertyWithValue("code", "ai.run.keyConflict");
+        assertThatThrownBy(() -> kit.service().request(AS_LISA, new RunRequest(otherVersion.workload(),
+                otherVersion.idempotencyKey(), otherVersion.sources(), otherVersion.parameters(), true)))
+                .as("reprocessing does not make a key reusable for other work")
+                .hasFieldOrPropertyWithValue("code", "ai.run.keyConflict");
+        assertThat(kit.service().get(AS_LISA, active.id()).state()).isEqualTo("SUCCEEDED");
+        assertThat(kit.scheduled).hasSize(1);
+    }
+
+    @Test
+    void bothMembersRequestingTheSameWorkShareOneRun() {
+        RunView lisas = kit.classify("doc-1", 3, "Rechnung", false);
+        RunView cedrics = kit.service().request(AS_CEDRIC, new RunRequest("DOCUMENT_CLASSIFICATION",
+                "classification:doc-1:3", List.of(new dev.aegis.assistant.application.api.SourceVersion("document",
+                        "doc-1", 3)), Map.of("content", "Rechnung"), false));
+
+        assertThat(cedrics.id()).isEqualTo(lisas.id());
+        assertThat(kit.scheduled).hasSize(1);
+    }
+
+    @Test
+    void tryRequestReportsUnavailabilityInsteadOfThrowing() {
+        RunRequest request = new RunRequest("DOCUMENT_CLASSIFICATION", "classification:doc-9:1",
+                List.of(new dev.aegis.assistant.application.api.SourceVersion("document", "doc-9", 1)), Map.of(),
+                false);
+
+        assertThat(kit.service().tryRequest(new Actor(MemberId.random()), request))
+                .isEqualTo(new dev.aegis.assistant.application.api.RequestOutcome.Refused("auth.forbidden"));
+        kit.gateway.configured = false;
+        assertThat(kit.service().tryRequest(AS_LISA, request))
+                .isEqualTo(new dev.aegis.assistant.application.api.RequestOutcome.Refused("ai.notConfigured"));
+        kit.gateway.configured = true;
+        assertThat(kit.service().tryRequest(AS_LISA, request))
+                .isInstanceOf(dev.aegis.assistant.application.api.RequestOutcome.Requested.class);
+        assertThat(kit.service().latestByKeys(List.of("classification:doc-9:1", "unknown")))
+                .containsOnlyKeys("classification:doc-9:1");
+    }
+
     @Test
     void everyEntryPointRequiresHouseholdMembership() {
         Actor stranger = new Actor(MemberId.random());

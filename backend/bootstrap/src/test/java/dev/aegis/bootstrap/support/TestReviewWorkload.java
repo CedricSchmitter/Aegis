@@ -22,22 +22,23 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Integration-test stand-in for the classifier of issue #23. It reads the document through the documents contract,
- * lets the model use the real {@code search_documents} tool and applies a suggestion through the real
- * {@link ProposeClassification} use case, so the tests exercise the effect path against PostgreSQL.
+ * Integration-test workload for the generic AI execution boundary. It uses {@code DOCUMENT_REVIEW}, which has no
+ * production handler yet: it reads the document through the documents contract, lets the model use the real
+ * {@code search_documents} tool and applies a suggestion through the real {@link ProposeClassification} use case, so
+ * restart, cancellation, tool and outage tests exercise the effect path against PostgreSQL.
  */
-public class TestClassificationWorkload implements WorkloadHandler {
+public class TestReviewWorkload implements WorkloadHandler {
     private final DocumentQueries documents;
     private final ProposeClassification proposals;
 
-    public TestClassificationWorkload(DocumentQueries documents, ProposeClassification proposals) {
+    public TestReviewWorkload(DocumentQueries documents, ProposeClassification proposals) {
         this.documents = documents;
         this.proposals = proposals;
     }
 
     @Override
     public Workload workload() {
-        return Workload.DOCUMENT_CLASSIFICATION;
+        return Workload.DOCUMENT_REVIEW;
     }
 
     @Override
@@ -77,7 +78,7 @@ public class TestClassificationWorkload implements WorkloadHandler {
     @Override
     public Optional<String> effectKey(RunContext run, ValidatedOutput output) {
         SourceRef source = run.sources().getFirst();
-        return Optional.of("it-classification:" + source.id() + ":" + source.version());
+        return Optional.of("it-review:" + source.id() + ":" + source.version());
     }
 
     @Override

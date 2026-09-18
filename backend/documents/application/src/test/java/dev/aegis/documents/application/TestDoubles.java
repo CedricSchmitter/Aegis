@@ -1,7 +1,12 @@
 package dev.aegis.documents.application;
 
 import dev.aegis.documents.application.api.OriginalContent;
+import dev.aegis.documents.application.ports.AnalysisRuns;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
+import dev.aegis.documents.domain.naming.BuiltinLabelNames;
+import java.time.ZoneId;
+import java.util.Collection;
+import java.util.UUID;
 import dev.aegis.documents.application.ports.DocumentEvents;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.application.ports.ProcessingScheduler;
@@ -70,10 +75,58 @@ final class TestDoubles {
         }
     }
 
+    /** AI boundary stand-in: records requests, can refuse them and reports controlled run states. */
+    static final class RecordingRuns implements AnalysisRuns {
+        final List<String> requested = new ArrayList<>();
+        final Map<String, RunStatus> states = new HashMap<>();
+        String refusal;
+
+        @Override
+        public Outcome request(Actor requester, DocumentId id, int generation, long classificationVersion) {
+            if (refusal != null) {
+                return new Unavailable(refusal);
+            }
+            String key = AnalysisRuns.key(id, generation);
+            requested.add(key + "@" + classificationVersion + " by " + requester.memberId());
+            UUID run = UUID.randomUUID();
+            states.put(key, new RunStatus(run, "QUEUED", null, null, null, null));
+            return new Requested(run);
+        }
+
+        void finish(DocumentId id, int generation, String state, String category, String code) {
+            String key = AnalysisRuns.key(id, generation);
+            states.put(key, new RunStatus(states.get(key).runId(), state, category, code, null,
+                    Instant.parse("2026-09-13T10:05:00Z")));
+        }
+
+        @Override
+        public Map<String, RunStatus> latest(Collection<String> keys) {
+            Map<String, RunStatus> result = new HashMap<>();
+            keys.forEach(key -> Optional.ofNullable(states.get(key)).ifPresent(status -> result.put(key, status)));
+            return result;
+        }
+    }
+
+    static AnalysisSettings analysisSettings() {
+        return new AnalysisSettings(true, BuiltinLabelNames.Language.DE, 5_000, ZoneId.of("Europe/Berlin"));
+    }
+
+    static DocumentPresenter presenter(ProcessingScheduler scheduler, ClassificationViews views) {
+        return new DocumentPresenter(scheduler, views, new AnalysisViews(new InMemoryDocumentAnalysisRepository(),
+                new RecordingRuns(), analysisSettings()));
+    }
+
     static final class FakeArchive implements PaperlessArchive {
         boolean available = true;
         final Map<Integer, byte[]> originals = new HashMap<>();
+        final Map<Integer, String> texts = new HashMap<>();
         final Map<String, List<Integer>> contentHits = new HashMap<>();
+
+        @Override
+        public String fetchContent(int paperlessDocumentId) {
+            requireAvailable();
+            return texts.getOrDefault(paperlessDocumentId, "");
+        }
 
         @Override
         public SubmissionOutcome submit(Path file, String title, String originalFilename) {

@@ -20,6 +20,7 @@ public final class Document {
 
     private final DocumentId id;
     private String title;
+    private TitleOrigin titleOrigin;
     private final String originalFilename;
     private final String contentType;
     private final long sizeBytes;
@@ -43,6 +44,7 @@ public final class Document {
             Checksum checksum, MemberId uploadedBy, Instant uploadedAt, Set<Subject> subjects, String stagingPath) {
         this.id = Objects.requireNonNull(id);
         this.title = requireTitle(title);
+        this.titleOrigin = TitleOrigin.FILENAME;
         this.originalFilename = Objects.requireNonNull(originalFilename);
         this.contentType = Objects.requireNonNull(contentType);
         this.sizeBytes = sizeBytes;
@@ -66,12 +68,22 @@ public final class Document {
                 stagingPath);
     }
 
+    /** Durable receipt of a restored document whose title keeps its exported origin. */
+    public static Document received(DocumentId id, String title, TitleOrigin titleOrigin, String originalFilename,
+            String contentType, long sizeBytes, Checksum checksum, MemberId uploadedBy, Instant now,
+            Set<Subject> subjects, String stagingPath) {
+        Document document = received(id, title, originalFilename, contentType, sizeBytes, checksum, uploadedBy, now,
+                subjects, stagingPath);
+        document.titleOrigin = Objects.requireNonNull(titleOrigin, "title origin");
+        return document;
+    }
+
     /** Rehydration from persistence; performs no business validation. */
     public static Document rehydrate(DocumentId id, String title, String originalFilename, String contentType,
             long sizeBytes, Checksum checksum, MemberId uploadedBy, Instant uploadedAt, Set<Subject> subjects,
             String stagingPath, boolean stagingPresent, ProcessingState state, int attempts,
             ProcessingFailure lastFailure, String paperlessTaskId, Integer paperlessDocumentId, Instant submittedAt,
-            Instant archivedAt, long version) {
+            Instant archivedAt, long version, TitleOrigin titleOrigin) {
         Document document = new Document(id, title, originalFilename, contentType, sizeBytes, checksum, uploadedBy,
                 uploadedAt, subjects, stagingPath);
         document.stagingPresent = stagingPresent;
@@ -83,6 +95,7 @@ public final class Document {
         document.submittedAt = submittedAt;
         document.archivedAt = archivedAt;
         document.version = version;
+        document.titleOrigin = titleOrigin == null ? TitleOrigin.MANUAL : titleOrigin;
         return document;
     }
 
@@ -148,8 +161,25 @@ public final class Document {
         subjects.addAll(newSubjects);
     }
 
+    /** A member chose the title; automatic classification never replaces it afterwards. */
     public void rename(String newTitle) {
         this.title = requireTitle(newTitle);
+        this.titleOrigin = TitleOrigin.MANUAL;
+    }
+
+    /**
+     * Applies a generated title while the title is still the filename-derived one the classifier analyzed. A title
+     * a member chose, or one an earlier run generated, is never replaced, so reprocessing cannot keep renaming.
+     *
+     * @return whether the title changed
+     */
+    public boolean applyGeneratedTitle(String generated, String analyzedTitle) {
+        if (titleOrigin != TitleOrigin.FILENAME || !title.equals(analyzedTitle)) {
+            return false;
+        }
+        this.title = requireTitle(generated);
+        this.titleOrigin = TitleOrigin.AUTOMATIC;
+        return true;
     }
 
     /** Staging copy removed after verified archival and retention; only valid once archived. */
@@ -166,6 +196,10 @@ public final class Document {
 
     public String title() {
         return title;
+    }
+
+    public TitleOrigin titleOrigin() {
+        return titleOrigin;
     }
 
     public String originalFilename() {

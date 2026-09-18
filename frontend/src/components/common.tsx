@@ -54,6 +54,11 @@ const STATE_STYLES: Record<string, string> = {
   WAITING_RETRY: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
   SUCCEEDED: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
   CANCELLED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
+  NOT_REQUESTED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
+  WAITING_FOR_ARCHIVE: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
+  PENDING: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
+  CLASSIFIED: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
+  NEEDS_REVIEW: "bg-violet-100 text-violet-900 dark:bg-violet-900 dark:text-violet-100",
   OPEN: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
   DONE: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
 };

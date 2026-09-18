@@ -28,6 +28,8 @@ class DocumentCaptureServiceTest {
     private InMemoryDocumentRepository repository;
     private InMemoryOriginalStore store;
     private TestDoubles.RecordingScheduler scheduler;
+    private InMemoryDocumentAnalysisRepository analyses;
+    private AnalysisSettings analysisSettings;
     private DocumentCaptureService service;
 
     @BeforeEach
@@ -40,11 +42,13 @@ class DocumentCaptureServiceTest {
         var categories = new InMemoryCategoryRepository();
         var labels = new InMemoryLabelRepository();
         var lock = new NoOpCatalogLock();
-        var presenter = new DocumentPresenter(scheduler,
-                new ClassificationViews(classifications, categories, labels));
+        var presenter = TestDoubles.presenter(scheduler, new ClassificationViews(classifications, categories,
+                labels));
+        analyses = new InMemoryDocumentAnalysisRepository();
+        analysisSettings = TestDoubles.analysisSettings();
         service = new DocumentCaptureService(store,
-                new DocumentRegistrar(repository, classifications, categories, lock, scheduler), presenter,
-                categories, new TestDoubles.MembersOnly(anna, ben), settings,
+                new DocumentRegistrar(repository, classifications, categories, lock, scheduler, analyses), presenter,
+                categories, new TestDoubles.MembersOnly(anna, ben), settings, analysisSettings,
                 Clock.fixed(Instant.parse("2026-09-13T10:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -131,9 +135,26 @@ class DocumentCaptureServiceTest {
 
     private dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand importCommand(
             dev.aegis.shared.DocumentId id, byte[] bytes) {
-        return new dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand(id, "a", "a.pdf",
+        return new dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand(id, "a", null, "a.pdf",
                 "application/pdf", anna, null, List.of(), InMemoryOriginalStore.sha256(bytes).sha256Hex(),
                 new ByteArrayInputStream(bytes));
+    }
+
+    @Test
+    void uploadsAreMarkedForAutomaticAnalysisButRestoresNeverAre() {
+        UploadResult upload = service.upload(new Actor(anna), command("Scan 0001.pdf", PDF));
+        analysisSettings.setAutomatic(false);
+        UploadResult manual = service.upload(new Actor(anna), command("b.pdf", "%PDF-1.4 other".getBytes()));
+        var restored = service.importDocument(new Actor(anna), importCommand(dev.aegis.shared.DocumentId.random(),
+                "%PDF-1.4 restored".getBytes()));
+
+        assertThat(analyses.findById(upload.document().id())).hasValueSatisfying(analysis ->
+                assertThat(analysis.awaitsArchive()).isTrue());
+        assertThat(upload.document().titleOrigin()).isEqualTo("FILENAME");
+        assertThat(analyses.findById(manual.document().id())).isEmpty();
+        assertThat(analyses.findById(restored.id())).isEmpty();
+        assertThat(repository.findById(restored.id()).orElseThrow().titleOrigin())
+                .isEqualTo(dev.aegis.documents.domain.TitleOrigin.MANUAL);
     }
 
     @Test

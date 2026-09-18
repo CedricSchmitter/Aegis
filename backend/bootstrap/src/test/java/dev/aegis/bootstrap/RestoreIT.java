@@ -68,6 +68,8 @@ class RestoreIT extends PostgresIT {
     JdbcTemplate jdbc;
     @Autowired
     FakePaperlessArchive archive;
+    @Autowired
+    dev.aegis.documents.application.api.DocumentAnalysisCommands analysisCommands;
 
     @Test
     void restoreIntoWipedInstancePreservesIdsAndSourceLinksDespiteNewExternalIds() throws Exception {
@@ -100,6 +102,11 @@ class RestoreIT extends PostgresIT {
         var filed = classification.place(anna, documentId, folder.id(),
                 documentQueries.get(anna, documentId).classification().version());
         classification.setLabels(anna, documentId, List.of(provider.id()), filed.classification().version());
+        // A member-chosen friendly filename is part of the analysis metadata and must survive the round trip.
+        var named = analysisCommands.setFilename(anna, documentId, "Restore Vertrag Haus",
+                documentQueries.get(anna, documentId).analysis().version());
+        String friendlyName = named.filename().filename();
+        assertThat(friendlyName).startsWith("Restore-Vertrag-Haus_");
 
         ExportSummary export = createExport.export(anna);
         assertThat(export.documentCount()).isGreaterThanOrEqualTo(1);
@@ -107,7 +114,7 @@ class RestoreIT extends PostgresIT {
 
         // Wipe household data (members stay, like a fresh instance provisioned with the same usernames).
         jdbc.execute("TRUNCATE TABLE scheduled_tasks, notices, tasks, document_labels, document_classifications, "
-                + "document_subjects, documents");
+                + "document_analyses, document_subjects, documents");
         jdbc.execute("DELETE FROM category_label_effects");
         jdbc.execute("DELETE FROM category_subject_effects");
         jdbc.execute("DELETE FROM category_implied_labels");
@@ -132,6 +139,15 @@ class RestoreIT extends PostgresIT {
         assertThat(restored.processing().paperlessDocumentId()).as("new external id").isNotEqualTo(originalPaperlessId);
         assertThat(restored.subjects()).extracting(SubjectView::memberId).containsExactly(ben.memberId());
         assertThat(documentQueries.original(ben, documentId).bytes()).isEqualTo(pdf);
+        assertThat(documentQueries.original(ben, documentId).filename()).isEqualTo(friendlyName);
+        assertThat(restored.filename().source()).isEqualTo("MANUAL");
+        assertThat(restored.titleOrigin()).isEqualTo("FILENAME");
+        assertThat(restored.originalFilename()).isEqualTo("Restore Vertrag.pdf");
+        assertThat(restored.analysis().state()).as("a restore never starts a model run")
+                .isEqualTo("NOT_REQUESTED");
+        assertThat(report.analysesApplied()).isGreaterThanOrEqualTo(1);
+        assertThat(Files.readAllBytes(Path.of(export.location()).resolve("documents/originals/" + friendlyName)))
+                .isEqualTo(pdf);
         TaskSummary restoredTask = taskQueries.get(ben, task.id());
         assertThat(restoredTask.source().documentId()).isEqualTo(documentId);
         assertThat(restoredTask.source().documentTitle()).isEqualTo("Restore Vertrag");

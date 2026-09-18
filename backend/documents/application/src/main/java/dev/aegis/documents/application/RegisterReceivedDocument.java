@@ -3,6 +3,7 @@ package dev.aegis.documents.application;
 import dev.aegis.documents.domain.Checksum;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.Subject;
+import dev.aegis.documents.domain.TitleOrigin;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import java.time.Instant;
@@ -15,10 +16,13 @@ import java.util.UUID;
  */
 public interface RegisterReceivedDocument {
 
-    /** {@code categoryId} null (or a folder that no longer exists) files the document in Unsorted. */
-    record RegistrationCommand(DocumentId id, String title, String originalFilename, String contentType,
-            long sizeBytes, Checksum checksum, MemberId uploadedBy, Instant uploadedAt, Set<Subject> subjects,
-            String stagingPath, UUID categoryId) {
+    /**
+     * {@code categoryId} null (or a folder that no longer exists) files the document in Unsorted.
+     * {@code analyzeWhenArchived} marks an upload for automatic analysis; restores never set it.
+     */
+    record RegistrationCommand(DocumentId id, String title, TitleOrigin titleOrigin, String originalFilename,
+            String contentType, long sizeBytes, Checksum checksum, MemberId uploadedBy, Instant uploadedAt,
+            Set<Subject> subjects, String stagingPath, UUID categoryId, boolean analyzeWhenArchived) {
     }
 
     record RegistrationResult(Document document, boolean duplicate) {

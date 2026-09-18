@@ -393,7 +393,14 @@
     "ai.workload.unknown": "Unbekannte KI-Aufgabe.",
     "ai.price.unknown": "Für dieses Modell ist kein Preis hinterlegt, daher kann das Kostenbudget nicht geprüft werden.",
     "ai.run.notRetryable": "Nur fehlgeschlagene oder abgebrochene Läufe können wiederholt werden.",
-    "aiRun.notFound": "KI-Lauf nicht gefunden."
+    "aiRun.notFound": "KI-Lauf nicht gefunden.",
+    "analysis.pending": "Für dieses Dokument läuft bereits eine Einordnung.",
+    "analysis.bulk.size": "Bitte wähle 1 bis {{max}} Dokumente aus.",
+    "analysis.title.noSuggestion": "Es gibt keinen offenen Titelvorschlag mehr.",
+    "analysis.candidate.missing": "Dieser Namensvorschlag ist nicht mehr offen.",
+    "analysis.subject.missing": "Dieser Zuordnungsvorschlag ist nicht mehr offen.",
+    "document.notArchived": "Das Dokument ist noch nicht archiviert.",
+    "ai.run.keyConflict": "Diese Anfrage passt nicht zu einem bereits vorhandenen KI-Lauf."
   },
   "format": {
     "bytes": "{{value}} B",
@@ -526,5 +533,78 @@
       "water": "Wasser",
       "insurance": "Versicherungen"
     }
+  },
+  "analysis": {
+    "title": "Automatische Einordnung",
+    "state": {
+      "NOT_REQUESTED": "Dieses Dokument wurde noch nicht automatisch eingeordnet.",
+      "WAITING_FOR_ARCHIVE": "Die Einordnung startet, sobald das Archiv den Text erkannt hat.",
+      "PENDING": "Die Einordnung läuft.",
+      "CLASSIFIED": "Eingeordnet. Automatisch gesetzte Werte kannst du jederzeit ändern.",
+      "NEEDS_REVIEW": "Eingeordnet. Einige Vorschläge warten auf deine Prüfung.",
+      "FAILED": "Die Einordnung ist fehlgeschlagen. Das Dokument selbst ist gespeichert und archiviert.",
+      "UNAVAILABLE": "Die KI war nicht verfügbar. Das Dokument selbst ist gespeichert."
+    },
+    "stateShort": {
+      "NOT_REQUESTED": "Nicht eingeordnet",
+      "WAITING_FOR_ARCHIVE": "Wartet auf Archiv",
+      "PENDING": "Wird eingeordnet",
+      "CLASSIFIED": "Eingeordnet",
+      "NEEDS_REVIEW": "Prüfen",
+      "FAILED": "Einordnung fehlgeschlagen",
+      "UNAVAILABLE": "KI nicht verfügbar"
+    },
+    "completed": "Zuletzt eingeordnet am {{date}} mit {{model}}, angestoßen von {{name}}.",
+    "flag": {
+      "POOR_OCR": "Der erkannte Text ist schlecht lesbar. Nichts wurde automatisch übernommen.",
+      "NO_TEXT": "Im Dokument wurde kein Text erkannt. Nichts wurde automatisch übernommen.",
+      "CONFLICTING_INFORMATION": "Das Dokument widerspricht sich. Nichts wurde automatisch übernommen.",
+      "EMBEDDED_INSTRUCTIONS": "Das Dokument enthält Anweisungen an eine KI. Sie wurden ignoriert; nichts wurde automatisch übernommen.",
+      "MULTIPLE_DOCUMENTS": "Die Datei scheint mehrere Dokumente zu enthalten. Nichts wurde automatisch übernommen."
+    },
+    "titleApplied": "Titel automatisch gesetzt: „{{title}}“",
+    "titleSuggested": "Vorgeschlagener Titel: „{{title}}“",
+    "keepTitle": "Titel behalten",
+    "revertTitle": "Alten Titel wiederherstellen",
+    "useTitle": "Titel übernehmen",
+    "rejectTitle": "Ablehnen",
+    "dateFound": "Dokumentdatum: {{date}}",
+    "date": {
+      "FOUND": "Dokumentdatum gefunden.",
+      "CONFLICTING": "Mehrere widersprüchliche Dokumentdaten – nicht übernommen.",
+      "UNVERIFIED": "Das genannte Datum ließ sich im Text nicht belegen – nicht übernommen.",
+      "UNKNOWN": "Kein Dokumentdatum erkannt."
+    },
+    "evidence": "Beleg: „{{text}}“",
+    "newNames": "Neue Namen, die noch nicht im Vokabular sind:",
+    "modelEstimate": "Einschätzung des Modells {{value}}",
+    "createAndAssign": "Anlegen und zuordnen",
+    "subjectSuggestions": "Vorgeschlagene Zuordnung (Betrifft):",
+    "accept": "Übernehmen",
+    "reject": "Ablehnen",
+    "filename": "Dateiname beim Herunterladen und im Export",
+    "filenameSource": {
+      "GENERATED": "Aus belegten Angaben erzeugt",
+      "FALLBACK": "Aus Titel und Kennung erzeugt",
+      "MANUAL": "Von einem Mitglied festgelegt"
+    },
+    "originalFilename": "Ursprünglicher Dateiname: {{name}}",
+    "filenameEdit": "Dateinamen ändern",
+    "filenameReset": "Wieder automatisch benennen",
+    "filenameSaved": "Der Dateiname wurde gespeichert.",
+    "filenameHint": "Die Kennung am Ende und die Endung werden immer angehängt. Die Originaldatei bleibt unverändert.",
+    "start": "Jetzt einordnen",
+    "retry": "Erneut versuchen",
+    "reprocess": "Erneut einordnen",
+    "requested": "Die Einordnung wurde gestartet.",
+    "costHint": "Nutzt das gemeinsame KI-Tagesbudget.",
+    "policyHint": "Übernommen wird nur, was im Text belegt ist und schon im Vokabular steht. Alles andere bleibt ein Vorschlag. Eure Entscheidungen werden bei späteren Läufen nicht überschrieben.",
+    "history": "Frühere Ergebnisse ({{count}})",
+    "analyzeSelected": "Auswahl einordnen",
+    "selectionLimit": "Es können höchstens {{max}} Dokumente auf einmal eingeordnet werden.",
+    "bulkStarted": "Einordnung für {{count}} Dokumente gestartet.",
+    "bulkStarted_one": "Einordnung für {{count}} Dokument gestartet.",
+    "bulkPartly": "Einordnung für {{count}} Dokumente gestartet, {{skipped}} übersprungen (nicht archiviert, schon in Arbeit oder KI nicht verfügbar).",
+    "bulkPartly_one": "Einordnung für {{count}} Dokument gestartet, {{skipped}} übersprungen (nicht archiviert, schon in Arbeit oder KI nicht verfügbar)."
   }
 }

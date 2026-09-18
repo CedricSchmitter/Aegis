@@ -21,6 +21,9 @@ import {
 } from "../lib/catalogSearch";
 import { problemMessage } from "../lib/problem";
 
+/** Upper bound of one explicit analysis request; matches the server's bulk limit. */
+const MAX_ANALYSIS_SELECTION = 10;
+
 export function DocumentsPage() {
   const { t } = useTranslation();
   const { members } = useSession();
@@ -157,6 +160,23 @@ export function DocumentsPage() {
     } catch (failure) {
       setError(problemMessage(t, failure));
       await load();
+    }
+  };
+
+  const analyzeSelected = async () => {
+    if (selection.length === 0) return;
+    try {
+      const result = unwrap(await api.POST("/api/documents/analysis", { body: { documentIds: selection } }));
+      setMessage(
+        result.skipped.length > 0
+          ? t("analysis.bulkPartly", { count: result.requested.length, skipped: result.skipped.length })
+          : t("analysis.bulkStarted", { count: result.requested.length }),
+      );
+      setError(null);
+      setSelection([]);
+      await load();
+    } catch (failure) {
+      setError(problemMessage(t, failure));
     }
   };
 
@@ -380,9 +400,23 @@ export function DocumentsPage() {
                   <button type="button" className="btn-primary" onClick={moveSelected} data-testid="move-selected">
                     {t("documents.moveSelected")}
                   </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={analyzeSelected}
+                    disabled={selection.length > MAX_ANALYSIS_SELECTION}
+                    data-testid="analyze-selected"
+                  >
+                    {t("analysis.analyzeSelected")}
+                  </button>
                   <button type="button" className="btn-ghost" onClick={() => setSelection([])}>
                     {t("documents.clearSelection")}
                   </button>
+                  {selection.length > MAX_ANALYSIS_SELECTION && (
+                    <p className="w-full text-xs text-stone-500">
+                      {t("analysis.selectionLimit", { max: MAX_ANALYSIS_SELECTION })}
+                    </p>
+                  )}
                 </div>
               )}
 

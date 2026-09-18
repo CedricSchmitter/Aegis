@@ -85,6 +85,19 @@ public class JdbcAiRunRepository implements AiRunRepository {
     }
 
     @Override
+    public java.util.Map<String, AiRun> findLatestByKeys(java.util.Collection<String> idempotencyKeys) {
+        java.util.Map<String, AiRun> latest = new java.util.LinkedHashMap<>();
+        if (idempotencyKeys.isEmpty()) {
+            return latest;
+        }
+        jdbc.sql("SELECT DISTINCT ON (idempotency_key) " + COLUMNS
+                + " FROM ai_runs WHERE idempotency_key IN (:keys) ORDER BY idempotency_key, requested_at DESC, id")
+                .param("keys", List.copyOf(idempotencyKeys)).query(this::map).list()
+                .forEach(run -> latest.put(run.idempotencyKey(), run));
+        return latest;
+    }
+
+    @Override
     public List<AiRun> findRunning() {
         return jdbc.sql(SELECT_RUNS + "WHERE state = 'RUNNING'").query(this::map).list();
     }

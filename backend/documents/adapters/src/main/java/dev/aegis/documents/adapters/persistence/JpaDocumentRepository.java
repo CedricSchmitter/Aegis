@@ -7,6 +7,7 @@ import dev.aegis.documents.domain.ProcessingFailure;
 import dev.aegis.documents.domain.ProcessingState;
 import dev.aegis.documents.domain.Subject;
 import dev.aegis.documents.domain.SubjectKind;
+import dev.aegis.documents.domain.TitleOrigin;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
@@ -102,6 +103,7 @@ public class JpaDocumentRepository implements DocumentRepository {
 
     private static void copy(Document document, DocumentEntity entity) {
         entity.setTitle(document.title());
+        entity.setTitleOrigin(document.titleOrigin().name());
         entity.setOriginalFilename(document.originalFilename());
         entity.setContentType(document.contentType());
         entity.setSizeBytes(document.sizeBytes());
@@ -141,6 +143,7 @@ public class JpaDocumentRepository implements DocumentRepository {
                 new MemberId(e.getUploadedBy()), e.getUploadedAt(), subjects, e.getStagingPath(),
                 e.isStagingPresent(), ProcessingState.valueOf(e.getState()), e.getAttempts(), failure,
                 e.getPaperlessTaskId(), e.getPaperlessDocumentId(), e.getSubmittedAt(), e.getArchivedAt(),
-                e.getVersion() == null ? 0 : e.getVersion());
+                e.getVersion() == null ? 0 : e.getVersion(),
+                e.getTitleOrigin() == null ? TitleOrigin.MANUAL : TitleOrigin.valueOf(e.getTitleOrigin()));
     }
 }

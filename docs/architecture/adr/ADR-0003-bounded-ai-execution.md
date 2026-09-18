@@ -96,7 +96,8 @@ owning context's public application commands. Four guards prevent duplicate or u
 
 A process restart leaves a run `RUNNING`; the revived job records the interrupted attempt and starts the next one
 within the attempt and cost budgets. Idempotent requests return the active run for the same key, and a succeeded run
-unless reprocessing is requested explicitly.
+unless reprocessing is requested explicitly. A key names one unit of work (workload, sources with versions,
+parameters; not the requester): reusing it for different work is rejected with `ai.run.keyConflict` (issue #59).
 
 ### Untrusted content and least privilege
 

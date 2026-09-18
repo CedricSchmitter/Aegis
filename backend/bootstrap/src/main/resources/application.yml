@@ -94,6 +94,13 @@ aegis:
     poll-timeout: 20m
     staging-retention: 7d
     max-upload-bytes: 52428800
+  documents:
+    # Automatic classification of new uploads once archived (ADR-0004). Existing and restored documents are only
+    # analyzed when a member selects them. Filenames use one household naming language, not the UI language.
+    analysis:
+      automatic: ${AEGIS_DOCUMENT_ANALYSIS_AUTOMATIC:true}
+      filename-language: DE
+      max-text-chars: 20000
   backup:
     state-file: ${AEGIS_BACKUP_STATE_FILE:}
   import:
@@ -133,6 +140,8 @@ aegis:
       classification:
         provider: ${AEGIS_AI_PROVIDER:anthropic}
         model: claude-sonnet-5
+        # One structured call per document; low effort keeps thinking short within the output allowance.
+        effort: low
         max-cost: 0.05
         max-duration: 2m
         max-model-calls: 4

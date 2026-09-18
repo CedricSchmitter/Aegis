@@ -8,11 +8,13 @@ import java.util.Set;
 /**
  * Versioned structured export files. Field names are stable English identifiers; ids are strings so that files stay
  * readable and migratable without Aegis. Schema 2 adds the shared catalog (folders and label vocabulary) and the
- * classification of each document; schema 1 files restore without them.
+ * classification of each document; schema 3 adds the title origin, the friendly filename the original is exported
+ * under and the automatic analysis (generated values, member decisions, filename override and history). Older
+ * files restore without the newer parts.
  */
 public final class ExportFormat {
-    public static final int SCHEMA_VERSION = 2;
-    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2);
+    public static final int SCHEMA_VERSION = 3;
+    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3);
     public static final String MANIFEST = "manifest.json";
     public static final String DOCUMENTS_JSON = "data/documents.json";
     public static final String TASKS_JSON = "data/tasks.json";
@@ -39,10 +41,40 @@ public final class ExportFormat {
     public record ClassificationEntry(String folderId, List<String> folderPath, List<AssignmentEntry> labels) {
     }
 
-    public record DocumentEntry(String id, String title, String originalFilename, String contentType, long sizeBytes,
-            String checksumSha256, String uploadedBy, Instant uploadedAt, List<SubjectEntry> subjects,
-            String processingState, Integer paperlessDocumentId, Instant archivedAt, String originalPath,
-            ClassificationEntry classification) {
+    /**
+     * {@code originalFilename} is the immutable upload name; {@code filename} the friendly name under which the
+     * unchanged original is stored in {@code originalPath}. {@code titleOrigin} and {@code analysis} are absent
+     * before schema 3.
+     */
+    public record DocumentEntry(String id, String title, String titleOrigin, String originalFilename,
+            String filename, String contentType, long sizeBytes, String checksumSha256, String uploadedBy,
+            Instant uploadedAt, List<SubjectEntry> subjects, String processingState, Integer paperlessDocumentId,
+            Instant archivedAt, String originalPath, ClassificationEntry classification, AnalysisEntry analysis) {
+    }
+
+    /** A name the classifier found that was not in the vocabulary, with the member's decision. */
+    public record CandidateEntry(String facet, String name, String evidence, Double confidence, String decision,
+            String labelId, String decidedBy, Instant decidedAt) {
+    }
+
+    public record SubjectSuggestionEntry(SubjectEntry subject, Double confidence, String evidence, String decision,
+            String decidedBy, Instant decidedAt) {
+    }
+
+    public record GeneratedEntry(int generation, String runRef, String model, Instant completedAt, String title,
+            String documentDate, String shortTopic) {
+    }
+
+    /**
+     * Automatic analysis of a document: generated values with provenance ({@code runRef}, {@code model}), review
+     * decisions, the filename override and earlier generated values. The document date is the evidenced issue date.
+     */
+    public record AnalysisEntry(String status, int generation, String trigger, String requestedBy,
+            Instant requestedAt, Instant completedAt, String runRef, String model, int appliedLabels,
+            int suggestedLabels, String title, String titleDecision, String titleBefore, String documentDate,
+            String documentDateEvidence, String documentDateStatus, String shortTopic, String correspondentLabelId,
+            List<String> flags, List<CandidateEntry> candidates, List<SubjectSuggestionEntry> subjects,
+            String filenameOverride, String filenameBy, Instant filenameAt, List<GeneratedEntry> history) {
     }
 
     public record TaskEntry(String id, String title, String note, String ownerId, String status, String dueDate,

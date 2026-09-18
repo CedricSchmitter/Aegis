@@ -11,6 +11,7 @@ import dev.aegis.assistant.application.WorkloadHandler;
 import dev.aegis.assistant.application.api.AiHealthQuery;
 import dev.aegis.assistant.application.api.AiRunCommands;
 import dev.aegis.assistant.application.api.AiRunQueries;
+import dev.aegis.assistant.application.api.AiRunStatusQuery;
 import dev.aegis.assistant.application.api.RequestAiRun;
 import dev.aegis.assistant.application.ports.AiLock;
 import dev.aegis.assistant.application.ports.AiTool;
@@ -110,6 +111,11 @@ public class AssistantConfiguration {
     @Bean
     AiRunCommands aiRunCommands(AssistantServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(AiRunCommands.class, services.runs(), tm);
+    }
+
+    @Bean
+    AiRunStatusQuery aiRunStatusQuery(AssistantServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(AiRunStatusQuery.class, services.runs(), tm);
     }
 
     @Bean

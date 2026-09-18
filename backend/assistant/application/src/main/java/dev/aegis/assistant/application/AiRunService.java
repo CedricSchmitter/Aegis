@@ -5,7 +5,11 @@ import dev.aegis.assistant.application.api.AiHealthQuery;
 import dev.aegis.assistant.application.api.AiOverview;
 import dev.aegis.assistant.application.api.AiRunCommands;
 import dev.aegis.assistant.application.api.AiRunQueries;
+import dev.aegis.assistant.application.api.AiRunStatusQuery;
 import dev.aegis.assistant.application.api.RequestAiRun;
+import dev.aegis.assistant.application.api.RequestOutcome;
+import dev.aegis.shared.NotAuthorizedException;
+import java.util.Collection;
 import dev.aegis.assistant.application.api.RunRequest;
 import dev.aegis.assistant.application.api.RunView;
 import dev.aegis.assistant.application.api.SourceVersion;
@@ -41,8 +45,11 @@ import java.util.UUID;
  * entry point checks household membership. Requests that cannot run (no credentials, no handler, unknown price) are
  * refused instead of queued. Wrapped in a transaction by the composition root; no call waits on a model.
  */
-public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, AiHealthQuery {
+public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, AiHealthQuery, AiRunStatusQuery {
     public static final int MAX_LIST = 100;
+    /** Codes of requests that cannot run with the current configuration or membership. */
+    static final Set<String> UNAVAILABLE_CODES = Set.of("ai.notConfigured", "ai.workload.unavailable",
+            "ai.price.unknown");
 
     private final AiRunRepository runs;
     private final RunScheduler scheduler;
@@ -93,6 +100,23 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
     }
 
     @Override
+    public RequestOutcome tryRequest(Actor actor, RunRequest request) {
+        try {
+            access.requireMember(actor);
+        } catch (NotAuthorizedException notMember) {
+            return new RequestOutcome.Refused("auth.forbidden");
+        }
+        try {
+            return new RequestOutcome.Requested(request(actor, request));
+        } catch (InvalidInputException refused) {
+            if (UNAVAILABLE_CODES.contains(refused.code())) {
+                return new RequestOutcome.Refused(refused.code());
+            }
+            throw refused;
+        }
+    }
+
+    @Override
     public List<RunView> checkConnection(Actor actor) {
         access.requireMember(actor);
         WorkloadProfile check = settings.profile(Workload.CONNECTION_CHECK).orElseThrow(() ->
@@ -110,7 +134,8 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         List<RunView> started = new ArrayList<>();
         targets.forEach((model, workloads) -> started.add(view(create(actor, Workload.CONNECTION_CHECK,
-                "connection-check:" + model.provider() + ":" + model.model(), null, model, check.budget(), List.of(),
+                "connection-check:" + model.provider() + ":" + model.model() + ":" + String.join(",", workloads), null,
+                model, check.budget(), List.of(),
                 Map.of("workloads", String.join(",", workloads)), true))));
         return started;
     }
@@ -144,11 +169,18 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         lock.exclusive();
         Optional<AiRun> active = runs.findActiveByKey(key);
+        Optional<AiRun> latest = runs.findLatestByKey(key);
+        for (AiRun existing : List.of(active, latest).stream().flatMap(Optional::stream).toList()) {
+            if (!existing.sameWork(workload, sources, parameters)) {
+                throw new InvalidInputException("ai.run.keyConflict",
+                        "The idempotency key already identifies different AI work", Map.of("key", key));
+            }
+        }
         if (active.isPresent()) {
             return active.get();
         }
         if (!reprocess) {
-            Optional<AiRun> succeeded = runs.findLatestByKey(key).filter(run -> run.state() == RunState.SUCCEEDED);
+            Optional<AiRun> succeeded = latest.filter(run -> run.state() == RunState.SUCCEEDED);
             if (succeeded.isPresent()) {
                 return succeeded.get();
             }
@@ -216,6 +248,16 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         access.requireMember(actor);
         int bounded = Math.max(1, Math.min(limit, MAX_LIST));
         return runs.findRecent(bounded).stream().map(run -> RunViews.view(run, List.of())).toList();
+    }
+
+    @Override
+    public Map<String, RunView> latestByKeys(Collection<String> idempotencyKeys) {
+        Map<String, RunView> views = new LinkedHashMap<>();
+        if (idempotencyKeys.isEmpty()) {
+            return views;
+        }
+        runs.findLatestByKeys(idempotencyKeys).forEach((key, run) -> views.put(key, RunViews.view(run, List.of())));
+        return views;
     }
 
     @Override

@@ -53,7 +53,6 @@ import java.util.Optional;
  */
 public class ExportService implements CreateExport, ExportQueries {
     private static final DateTimeFormatter GENERATION_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final String UNSORTED = "(unsorted)";
 
     private final DocumentExportQuery documents;
@@ -109,21 +108,27 @@ public class ExportService implements CreateExport, ExportQueries {
         CatalogExport catalog = documents.exportCatalog(actor);
 
         List<DocumentEntry> documentEntries = new ArrayList<>();
-        for (DocumentExportRecord record : documents.exportAll(actor)) {
+        List<DocumentExportRecord> records = documents.exportAll(actor);
+        Map<String, String> filenames = exportFilenames(records);
+        for (DocumentExportRecord record : records) {
             String originalPath = null;
             try {
                 OriginalContent original = documents.originalForExport(actor, record.id());
-                originalPath = ExportFormat.ORIGINALS_DIR + originalFilename(record);
+                if (!record.checksumSha256().equals(sha256(original.bytes()))) {
+                    throw new OriginalUnavailableException("original checksum mismatch");
+                }
+                originalPath = ExportFormat.ORIGINALS_DIR + filenames.get(record.id().toString());
                 put(staging, checksums, originalPath, original.bytes());
             } catch (OriginalUnavailableException unavailable) {
                 missingOriginals.add(record.id().toString());
             }
-            documentEntries.add(new DocumentEntry(record.id().toString(), record.title(), record.originalFilename(),
-                    record.contentType(), record.sizeBytes(), record.checksumSha256(), record.uploadedBy().toString(),
+            documentEntries.add(new DocumentEntry(record.id().toString(), record.title(), record.titleOrigin(),
+                    record.originalFilename(), filenames.get(record.id().toString()), record.contentType(),
+                    record.sizeBytes(), record.checksumSha256(), record.uploadedBy().toString(),
                     record.uploadedAt(), record.subjects().stream()
                             .map(s -> new SubjectEntry(s.kind(), s.memberId() == null ? null : s.memberId().toString()))
                             .toList(), record.processingState(), record.paperlessDocumentId(), record.archivedAt(),
-                    originalPath, classification(record)));
+                    originalPath, classification(record), ExportAnalysis.toEntry(record.analysis())));
         }
 
         List<TaskEntry> taskEntries = new ArrayList<>();
@@ -187,10 +192,32 @@ public class ExportService implements CreateExport, ExportQueries {
         }
     }
 
-    static String originalFilename(DocumentExportRecord record) {
-        String date = DATE_FORMAT.format(record.uploadedAt().atZone(ZoneId.of("Europe/Berlin")).toLocalDate());
-        String shortId = record.id().toString().substring(0, 8);
-        return date + "_" + Slugs.slug(record.title(), 60) + "_" + shortId + ".pdf";
+    /**
+     * The friendly filename of every document. Names are unique by their short id; should two names still collide
+     * (case-insensitively, as on Windows), every colliding name uses the full document id instead.
+     */
+    static Map<String, String> exportFilenames(List<DocumentExportRecord> records) {
+        Map<String, List<DocumentExportRecord>> byName = new LinkedHashMap<>();
+        for (DocumentExportRecord record : records) {
+            byName.computeIfAbsent(record.filename().toLowerCase(java.util.Locale.ROOT), key -> new ArrayList<>())
+                    .add(record);
+        }
+        Map<String, String> names = new LinkedHashMap<>();
+        for (List<DocumentExportRecord> group : byName.values()) {
+            for (DocumentExportRecord record : group) {
+                names.put(record.id().toString(), group.size() == 1 ? record.filename() : withFullId(record));
+            }
+        }
+        return names;
+    }
+
+    private static String withFullId(DocumentExportRecord record) {
+        String full = record.id().toString().replace("-", "");
+        String shortSuffix = "_" + full.substring(0, 8) + ".";
+        int at = record.filename().lastIndexOf(shortSuffix);
+        return at < 0 ? full + "_" + record.filename()
+                : record.filename().substring(0, at) + "_" + full + "." + record.filename().substring(
+                        at + shortSuffix.length());
     }
 
     private static ClassificationEntry classification(DocumentExportRecord record) {
@@ -210,18 +237,22 @@ public class ExportService implements CreateExport, ExportQueries {
     private static String documentsCsv(List<DocumentEntry> entries, Map<String, String> memberNames) {
         List<List<String>> rows = new ArrayList<>();
         for (DocumentEntry d : entries) {
-            rows.add(List.of(d.id(), d.title(), d.originalFilename(), String.valueOf(d.sizeBytes()),
+            rows.add(List.of(d.id(), d.title(), d.originalFilename(), nz(d.filename()), String.valueOf(d.sizeBytes()),
                     d.checksumSha256(), memberNames.getOrDefault(d.uploadedBy(), d.uploadedBy()),
                     d.uploadedAt().toString(), d.subjects().stream().map(s -> s.memberId() == null ? s.kind()
                             : s.kind() + ":" + memberNames.getOrDefault(s.memberId(), s.memberId()))
                             .reduce((a, b) -> a + "; " + b).orElse(""),
                     d.processingState(), d.paperlessDocumentId() == null ? "" : d.paperlessDocumentId().toString(),
                     d.originalPath() == null ? "" : d.originalPath(), folder(d),
-                    labels(d, "DOCUMENT_TYPE"), labels(d, "ORGANIZATION"), labels(d, "TOPIC"), labels(d, "TAG")));
+                    labels(d, "DOCUMENT_TYPE"), labels(d, "ORGANIZATION"), labels(d, "TOPIC"), labels(d, "TAG"),
+                    d.analysis() == null || !"FOUND".equals(d.analysis().documentDateStatus()) ? ""
+                            : nz(d.analysis().documentDate()),
+                    d.analysis() == null ? "NOT_REQUESTED" : d.analysis().status()));
         }
-        return Csv.render(List.of("id", "title", "originalFilename", "sizeBytes", "checksumSha256", "uploadedBy",
-                "uploadedAt", "subjects", "processingState", "paperlessDocumentId", "originalPath", "folder",
-                "documentType", "organizations", "topics", "tags"), rows);
+        return Csv.render(List.of("id", "title", "originalFilename", "filename", "sizeBytes", "checksumSha256",
+                "uploadedBy", "uploadedAt", "subjects", "processingState", "paperlessDocumentId", "originalPath",
+                "folder", "documentType", "organizations", "topics", "tags", "documentDate", "analysisStatus"),
+                rows);
     }
 
     private static String labelsCsv(List<LabelEntry> labels, List<FolderEntry> folders) {

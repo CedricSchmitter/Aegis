@@ -101,6 +101,18 @@ public class PaperlessClient implements PaperlessArchive {
         };
     }
 
+    /** Paperless keeps the OCR text of a document in its {@code content} field. */
+    @Override
+    public String fetchContent(int paperlessDocumentId) {
+        try {
+            JsonNode document = getJson("/api/documents/{id}/?fields=id,content", paperlessDocumentId);
+            return document.path("content").asText("");
+        } catch (ArchiveRejectedException rejected) {
+            throw new ArchiveUnavailableException("Paperless did not return the text of document "
+                    + paperlessDocumentId);
+        }
+    }
+
     @Override
     public OriginalContent fetchOriginal(int paperlessDocumentId) {
         try {

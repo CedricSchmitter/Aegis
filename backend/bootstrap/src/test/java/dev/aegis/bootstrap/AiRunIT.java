@@ -89,8 +89,8 @@ class AiRunIT extends PostgresIT {
     }
 
     private RunView classify(String documentId, long version) {
-        return requests.request(actor(ANNA), new RunRequest("DOCUMENT_CLASSIFICATION",
-                "it-classification:" + documentId + ":" + version,
+        return requests.request(actor(ANNA), new RunRequest("DOCUMENT_REVIEW",
+                "it-review:" + documentId + ":" + version,
                 List.of(new SourceVersion("document", documentId, version)), Map.of(), false));
     }
 
@@ -107,7 +107,7 @@ class AiRunIT extends PostgresIT {
 
     private long ledgerRows(String documentId) {
         return jdbc.sql("SELECT count(*) FROM ai_run_effects WHERE effect_key LIKE ?")
-                .param("it-classification:" + documentId + ":%").query(Long.class).single();
+                .param("it-review:" + documentId + ":%").query(Long.class).single();
     }
 
     @Test
@@ -138,7 +138,7 @@ class AiRunIT extends PostgresIT {
         assertThat(overview.path("configured").asBoolean()).isTrue();
         assertThat(overview.path("spentToday").decimalValue()).isPositive();
         assertThat(overview.path("workloads")).anySatisfy(workload -> {
-            assertThat(workload.path("workload").asText()).isEqualTo("DOCUMENT_REVIEW");
+            assertThat(workload.path("workload").asText()).isEqualTo("CHAT");
             assertThat(workload.path("available").asBoolean()).isFalse();
         });
         JsonNode status = anna.json(anna.get("/api/status"));
@@ -254,6 +254,49 @@ class AiRunIT extends PostgresIT {
             assertThat(automaticLabels(anna, fixture[0])).isEmpty();
         } finally {
             anna.postJson("/api/ai/runs/" + requested.id() + "/cancel", null);
+        }
+    }
+
+    /** Regression for issue #59 against PostgreSQL: concurrent requests with one key never run different work. */
+    @Test
+    void concurrentRequestsReusingAKeyForDifferentWorkAreRejected() throws Exception {
+        ApiClient anna = loggedIn(ANNA);
+        String[] fixture = documentAndTag(anna, "AI Key Probe");
+        long version = Long.parseLong(fixture[1]);
+        String key = "it-review:key-conflict:" + UUID.randomUUID();
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(4);
+        CountDownLatch start = new CountDownLatch(1);
+        List<java.util.concurrent.Future<Object>> results = new java.util.ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            long analyzed = version + (i % 2);
+            String member = i % 2 == 0 ? ANNA : BEN;
+            results.add(pool.submit(() -> {
+                start.await();
+                try {
+                    return requests.request(actor(member), new RunRequest("DOCUMENT_REVIEW", key,
+                            List.of(new SourceVersion("document", fixture[0], analyzed)), Map.of(), false))
+                            .sources().getFirst().version() + ":" + "ok";
+                } catch (dev.aegis.shared.InvalidInputException rejected) {
+                    return rejected.code();
+                }
+            }));
+        }
+        start.countDown();
+        List<Object> outcomes = new java.util.ArrayList<>();
+        for (var result : results) {
+            outcomes.add(result.get(30, TimeUnit.SECONDS));
+        }
+        pool.shutdown();
+        try {
+            assertThat(outcomes).filteredOn(outcome -> outcome.toString().endsWith(":ok")).hasSize(2)
+                    .extracting(Object::toString).containsOnly(outcomes.stream().map(Object::toString)
+                            .filter(outcome -> outcome.endsWith(":ok")).findFirst().orElseThrow());
+            assertThat(outcomes).filteredOn("ai.run.keyConflict"::equals).hasSize(2);
+            assertThat(jdbc.sql("SELECT count(*) FROM ai_runs WHERE idempotency_key = ?").param(key)
+                    .query(Long.class).single()).isEqualTo(1);
+        } finally {
+            jdbc.sql("SELECT id FROM ai_runs WHERE idempotency_key = ?").param(key).query(UUID.class).list()
+                    .forEach(id -> anna.postJson("/api/ai/runs/" + id + "/cancel", null));
         }
     }
 }

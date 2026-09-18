@@ -106,4 +106,26 @@ class DocumentTest {
                 .isInstanceOf(InvalidInputException.class);
         assertThat(Subject.member(MemberId.random()).memberId()).isPresent();
     }
+
+    @Test
+    void generatedTitleReplacesOnlyTheUntouchedFilenameTitleAndOnlyOnce() {
+        Document document = received();
+        assertThat(document.titleOrigin()).isEqualTo(TitleOrigin.FILENAME);
+
+        assertThat(document.applyGeneratedTitle("Telekom Rechnung", "stale title")).isFalse();
+        assertThat(document.applyGeneratedTitle("Telekom Rechnung", "Contract")).isTrue();
+        assertThat(document.title()).isEqualTo("Telekom Rechnung");
+        assertThat(document.titleOrigin()).isEqualTo(TitleOrigin.AUTOMATIC);
+        assertThat(document.applyGeneratedTitle("Telekom Rechnung September", "Telekom Rechnung")).isFalse();
+    }
+
+    @Test
+    void aMembersTitleIsNeverReplacedAutomatically() {
+        Document document = received();
+        document.rename("Unser Internetvertrag");
+
+        assertThat(document.titleOrigin()).isEqualTo(TitleOrigin.MANUAL);
+        assertThat(document.applyGeneratedTitle("Telekom Rechnung", "Unser Internetvertrag")).isFalse();
+        assertThat(document.title()).isEqualTo("Unser Internetvertrag");
+    }
 }

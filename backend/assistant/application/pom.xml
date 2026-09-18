@@ -9,11 +9,19 @@
   </parent>
   <artifactId>aegis-assistant-application</artifactId>
   <name>Aegis Assistant application</name>
-  <description>Provider-neutral AI execution: run lifecycle, budgets, tool policy and model/tool ports. Plain Java only.</description>
+  <description>Provider-neutral AI execution (run lifecycle, budgets, tool policy, model/tool ports) and the workload handlers that use other contexts' public application contracts. Plain Java only.</description>
   <dependencies>
     <dependency>
       <groupId>dev.aegis</groupId>
       <artifactId>aegis-assistant-domain</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.aegis</groupId>
+      <artifactId>aegis-documents-application</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.aegis</groupId>
+      <artifactId>aegis-identity-application</artifactId>
     </dependency>
   </dependencies>
 </project>

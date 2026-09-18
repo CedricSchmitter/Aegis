@@ -108,13 +108,23 @@ Open Aegis > Status > Check connection as either member. All profiles share Sonn
 structured request, not three requests. A successful run proves authentication, model access and structured output;
 it does not test document extraction quality. The check has a 0.05 USD run budget and at most two attempts.
 
-Implemented: connection checks, persistent run status, token/cost accounting, bounded retries, cancellation and
-shared household access. Document classification (#23), scheduled review/task creation (#24), and document chat
-(#25) are **not connected**. They remain marked as missing workflows even after a successful connection check.
-Adding a key does not automatically upload or analyze household documents.
+Implemented: connection checks, persistent run status, token/cost accounting, bounded retries, cancellation,
+shared household access and automatic document classification (#23, [ADR-0004](../architecture/adr/ADR-0004-automatic-document-classification.md)).
+Scheduled review/task creation (#24) and document chat (#25) are **not connected** and remain marked as missing
+workflows even after a successful connection check.
+
+Classification runs automatically only for **new uploads**, after Paperless has archived them with OCR. Existing
+and restored documents are never analyzed in bulk: a member starts the analysis per document (document page,
+"Classify now") or for up to ten selected documents in the list. Without a key, uploads are marked "AI
+unavailable" and stay fully usable. To stop automatic runs for new uploads without removing the key, set
+`AEGIS_DOCUMENT_ANALYSIS_AUTOMATIC=false` in `/srv/aegis/deploy/.env` and recreate the application container;
+manual requests keep working. Filenames for downloads and exports use German names for built-in types and topics
+(`aegis.documents.analysis.filename-language`).
 
 The default household daily cost limit is **0.25 USD**, with one run at a time. Classification is limited to
-0.05 USD per run; review/chat profiles to 0.10 USD. These are application estimates from reported usage, not a
+0.05 USD per run (one structured Sonnet 5 call at low effort; at most 20,000 characters of OCR text are sent);
+review/chat profiles to 0.10 USD. When the daily limit is reached, further classifications fail visibly as
+"Budget exhausted" and can be started again the next day. These are application estimates from reported usage, not a
 provider balance or an exact billing ceiling: interrupted requests may be billed without recorded usage.
 The provider's billing controls remain authoritative. No automatic top-up or alternate-provider fallback exists.
 Models, prices and per-run budgets are in `aegis.ai` of `application.yml`.

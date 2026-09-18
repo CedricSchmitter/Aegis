@@ -7,6 +7,7 @@ import dev.aegis.documents.application.api.ImportCatalog.ClassificationOutcome;
 import dev.aegis.documents.application.api.ImportCatalog.FolderImport;
 import dev.aegis.documents.application.api.ImportCatalog.LabelImport;
 import dev.aegis.documents.application.api.ImportDocument;
+import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.identity.application.api.MemberDirectory;
@@ -60,19 +61,21 @@ public class RestoreService implements RestoreExport {
     private final ProvisionMembers provisioning;
     private final ImportDocument importDocument;
     private final ImportCatalog importCatalog;
+    private final ImportDocumentAnalysis importAnalysis;
     private final ImportTask importTask;
     private final HouseholdAccess access;
     private final SecureRandom random = new SecureRandom();
 
     public RestoreService(ExportSourceOpener opener, ExportSerializer serializer, MemberDirectory members,
             ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
-            ImportTask importTask, HouseholdAccess access) {
+            ImportDocumentAnalysis importAnalysis, ImportTask importTask, HouseholdAccess access) {
         this.opener = opener;
         this.serializer = serializer;
         this.members = members;
         this.provisioning = provisioning;
         this.importDocument = importDocument;
         this.importCatalog = importCatalog;
+        this.importAnalysis = importAnalysis;
         this.importTask = importTask;
         this.access = access;
     }
@@ -99,7 +102,7 @@ public class RestoreService implements RestoreExport {
                     memberMapping);
             return new RestoreReport(manifest.generation(), documentCounts[0], documentCounts[1], taskCounts[0],
                     taskCounts[1], catalog.labelsCreated(), catalog.foldersCreated(), documentCounts[2],
-                    documentCounts[3], memberMapping, warnings);
+                    documentCounts[3], documentCounts[4], memberMapping, warnings);
         } catch (IOException e) {
             throw new UncheckedIOException("restore from " + sourceLocation + " failed", e);
         }
@@ -166,7 +169,7 @@ public class RestoreService implements RestoreExport {
         return mapping;
     }
 
-    /** @return imported, already present, classifications applied, classifications kept */
+    /** @return imported, already present, classifications applied, classifications kept, analyses applied */
     private int[] restoreDocuments(Actor actor, ExportSource source, DocumentsFile file,
             Map<String, String> memberMapping, CatalogImportResult catalog, List<String> warnings)
             throws IOException {
@@ -174,6 +177,7 @@ public class RestoreService implements RestoreExport {
         int present = 0;
         int classificationsApplied = 0;
         int classificationsKept = 0;
+        int analysesApplied = 0;
         for (DocumentEntry entry : file.documents()) {
             if (entry.originalPath() == null || !source.exists(entry.originalPath())) {
                 warnings.add("document " + entry.id() + " skipped: original not included in export");
@@ -182,7 +186,7 @@ public class RestoreService implements RestoreExport {
             List<SubjectView> subjects = entry.subjects().stream().map(s -> new SubjectView(s.kind(),
                     s.memberId() == null ? null : mapMember(memberMapping, s.memberId()))).toList();
             var result = importDocument.importDocument(actor, new ImportDocumentCommand(DocumentId.of(entry.id()),
-                    entry.title(), entry.originalFilename(), entry.contentType(),
+                    entry.title(), entry.titleOrigin(), entry.originalFilename(), entry.contentType(),
                     mapMember(memberMapping, entry.uploadedBy()), entry.uploadedAt(), subjects,
                     entry.checksumSha256(), new ByteArrayInputStream(source.read(entry.originalPath()))));
             if (result.outcome() == ImportDocument.ImportOutcome.IMPORTED) {
@@ -197,8 +201,13 @@ public class RestoreService implements RestoreExport {
                     // nothing to restore for this document
                 }
             }
+            if (entry.analysis() != null && importAnalysis.importAnalysis(actor, DocumentId.of(entry.id()),
+                    ExportAnalysis.toRecord(entry.analysis(), memberMapping, catalog.labelIds()))
+                    == ImportDocumentAnalysis.Outcome.APPLIED) {
+                analysesApplied++;
+            }
         }
-        return new int[] {imported, present, classificationsApplied, classificationsKept};
+        return new int[] {imported, present, classificationsApplied, classificationsKept, analysesApplied};
     }
 
     private ClassificationOutcome restoreClassification(Actor actor, DocumentEntry entry,

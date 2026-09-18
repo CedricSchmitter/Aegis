@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import type { CategoryDto, DocumentDto, Facet, LabelChipDto, LabelDto, TaskDto } from "../api/types";
 import { useSession } from "../auth/SessionContext";
+import { AnalysisPanel } from "../components/AnalysisPanel";
 import { FolderSelect } from "../components/FolderSelect";
 import { LabelChips } from "../components/LabelChips";
 import { LabelEditor } from "../components/LabelEditor";
@@ -58,7 +59,10 @@ export function DocumentDetailPage() {
   }, [load]);
 
   useEffect(() => {
-    if (!document || (document.processing.state !== "RECEIVED" && document.processing.state !== "SUBMITTED")) return;
+    if (!document) return;
+    const archiving = document.processing.state === "RECEIVED" || document.processing.state === "SUBMITTED";
+    const analyzing = document.analysis.state === "PENDING" || document.analysis.state === "WAITING_FOR_ARCHIVE";
+    if (!archiving && !analyzing) return;
     const timer = window.setTimeout(() => void load(), 4000);
     return () => window.clearTimeout(timer);
   }, [document, load]);
@@ -257,6 +261,16 @@ export function DocumentDetailPage() {
           )}
         </div>
       </section>
+
+      {p.state !== "FAILED" && (
+        <AnalysisPanel
+          document={document}
+          onChange={setDocument}
+          onError={setError}
+          onMessage={setMessage}
+          reload={load}
+        />
+      )}
 
       <section className="card mb-4 flex flex-col gap-3" aria-label={t("documents.folder")}>
         <div className="flex flex-wrap items-center gap-2">

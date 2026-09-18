@@ -34,7 +34,7 @@ final class CatalogFixture {
     final CatalogLock lock = new NoOpCatalogLock();
 
     final ClassificationViews views = new ClassificationViews(classifications, categories, labels);
-    final DocumentPresenter presenter = new DocumentPresenter(scheduler, views);
+    final DocumentPresenter presenter = TestDoubles.presenter(scheduler, views);
     final TestDoubles.MembersOnly access = new TestDoubles.MembersOnly(lisa, cedric);
     final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 

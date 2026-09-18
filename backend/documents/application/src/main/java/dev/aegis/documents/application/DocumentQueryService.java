@@ -24,6 +24,9 @@ import dev.aegis.documents.application.ports.DocumentCatalog.ValueFilter;
 import dev.aegis.documents.application.ports.OriginalStore;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.domain.Document;
+import dev.aegis.documents.application.api.FilenameView;
+import dev.aegis.documents.domain.analysis.DocumentAnalysis;
+import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.ProcessingState;
 import dev.aegis.documents.domain.catalog.Category;
@@ -74,13 +77,16 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
     private final LabelRepository labels;
     private final ClassificationRepository classifications;
     private final ClassificationViews classificationViews;
+    private final DocumentAnalysisRepository analyses;
+    private final AnalysisSettings analysisSettings;
     private final HouseholdAccess access;
     private final Clock clock;
 
     public DocumentQueryService(DocumentRepository documents, PaperlessArchive archive, OriginalStore store,
             DocumentPresenter presenter, DocumentCatalog catalog, CategoryRepository categories,
             LabelRepository labels, ClassificationRepository classifications, ClassificationViews classificationViews,
-            HouseholdAccess access, Clock clock) {
+            DocumentAnalysisRepository analyses, AnalysisSettings analysisSettings, HouseholdAccess access,
+            Clock clock) {
         this.documents = documents;
         this.archive = archive;
         this.store = store;
@@ -90,6 +96,8 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         this.labels = labels;
         this.classifications = classifications;
         this.classificationViews = classificationViews;
+        this.analyses = analyses;
+        this.analysisSettings = analysisSettings;
         this.access = access;
         this.clock = clock;
     }
@@ -123,19 +131,18 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         DocumentCatalog.Page page = catalog.search(criteria, sort(request.sort()),
                 request.page() * request.size(), request.size());
         Map<DocumentId, ClassificationView> views = classificationViews.viewsOf(page.ids(), tree, vocabulary);
-        List<DocumentSummary> items = documents.findByIds(page.ids()).stream()
-                .map(document -> presenter.summarize(document,
-                        views.getOrDefault(document.id(), ClassificationView.UNSORTED)))
-                .toList();
+        List<DocumentSummary> items = presenter.summarizeAll(documents.findByIds(page.ids()), views);
         long notContentIndexed = text.isEmpty() ? 0 : catalog.countNotArchived(criteria.withoutText());
         return new DocumentSearchResult(items, contentSearch, catalog.countAll(), page.total(), request.page(),
                 request.size(), facetCounts(criteria), notContentIndexed);
     }
 
+    /** The unchanged original bytes, named with the friendly filename. */
     @Override
     public OriginalContent original(Actor actor, DocumentId id) {
         access.requireMember(actor);
-        return originalOf(load(id));
+        Document document = load(id);
+        return originalOf(document, friendlyFilename(document));
     }
 
     @Override
@@ -149,12 +156,18 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         List<Document> all = documents.findAll();
         CategoryTree tree = categories.load();
         LabelVocabulary vocabulary = labels.load();
-        Map<DocumentId, DocumentClassification> stored = classifications.findAll(all.stream().map(Document::id)
-                .toList());
+        List<DocumentId> ids = all.stream().map(Document::id).toList();
+        Map<DocumentId, DocumentClassification> stored = classifications.findAll(ids);
+        Map<DocumentId, ClassificationView> views = classificationViews.viewsOf(ids, tree, vocabulary);
+        Map<DocumentId, DocumentAnalysis> storedAnalyses = analyses.findAll(ids);
         List<DocumentExportRecord> records = new ArrayList<>();
         for (Document document : all) {
+            DocumentAnalysis analysis = storedAnalyses.get(document.id());
+            FilenameView filename = AnalysisViews.filename(document,
+                    views.getOrDefault(document.id(), ClassificationView.UNSORTED), analysis,
+                    analysisSettings.filenameLanguage());
             records.add(presenter.exportRecord(document, exportClassification(stored.get(document.id()), tree,
-                    vocabulary)));
+                    vocabulary), filename, analysis));
         }
         return records;
     }
@@ -312,14 +325,19 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
                 assignments);
     }
 
-    private OriginalContent originalOf(Document document) {
+    private String friendlyFilename(Document document) {
+        return AnalysisViews.filename(document, classificationViews.viewOf(document.id()),
+                analyses.findById(document.id()).orElse(null), analysisSettings.filenameLanguage()).filename();
+    }
+
+    private OriginalContent originalOf(Document document, String filename) {
         if (document.state() == ProcessingState.ARCHIVED) {
             try {
                 OriginalContent archived = archive.fetchOriginal(document.paperlessDocumentId().orElseThrow());
                 if (!document.checksum().matches(archived.bytes())) {
                     throw new ArchiveUnavailableException("Archive original checksum mismatch");
                 }
-                return new OriginalContent(document.originalFilename(), document.contentType(), archived.bytes(),
+                return new OriginalContent(filename, document.contentType(), archived.bytes(),
                         OriginalContent.SOURCE_ARCHIVE);
             } catch (ArchiveUnavailableException unavailable) {
                 if (!document.isStagingPresent()) {
@@ -335,8 +353,7 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
             if (!document.checksum().matches(bytes)) {
                 throw new OriginalUnavailableException("Staging original checksum mismatch");
             }
-            return new OriginalContent(document.originalFilename(), document.contentType(),
-                    bytes, OriginalContent.SOURCE_STAGING);
+            return new OriginalContent(filename, document.contentType(), bytes, OriginalContent.SOURCE_STAGING);
         } catch (IOException e) {
             throw new OriginalUnavailableException("staging copy could not be read: " + e.getMessage());
         }

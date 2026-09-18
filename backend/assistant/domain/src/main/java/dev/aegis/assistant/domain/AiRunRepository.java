@@ -21,6 +21,9 @@ public interface AiRunRepository {
     /** The most recently requested run with this key, in any state. */
     Optional<AiRun> findLatestByKey(String idempotencyKey);
 
+    /** The most recently requested run per key; keys without a run are absent. */
+    java.util.Map<String, AiRun> findLatestByKeys(java.util.Collection<String> idempotencyKeys);
+
     /** Runs in state {@code RUNNING}, for concurrency accounting. */
     List<AiRun> findRunning();
 

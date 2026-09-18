@@ -7,6 +7,9 @@ import { Badge } from "./common";
 import { LabelChips } from "./LabelChips";
 import { SubjectList } from "./SubjectList";
 
+/** Analysis states worth a badge in lists; finished or never-requested analyses stay quiet. */
+const VISIBLE_ANALYSIS = new Set(["WAITING_FOR_ARCHIVE", "PENDING", "NEEDS_REVIEW", "FAILED", "UNAVAILABLE"]);
+
 interface Props {
   document: DocumentDto;
   selected?: boolean;
@@ -39,7 +42,15 @@ export function DocumentCard({ document, selected, onSelectedChange, folderName 
             </Link>
           </h3>
         </div>
-        <Badge state={state} label={t(`documents.stateShort.${state}`)} />
+        <span className="flex flex-wrap gap-1">
+          <Badge state={state} label={t(`documents.stateShort.${state}`)} />
+          {VISIBLE_ANALYSIS.has(document.analysis.state) && (
+            <Badge
+              state={document.analysis.state}
+              label={t(`analysis.stateShort.${document.analysis.state}`)}
+            />
+          )}
+        </span>
       </div>
       <p className="text-sm text-stone-600 dark:text-stone-400">
         {t("documents.uploadedBy", {

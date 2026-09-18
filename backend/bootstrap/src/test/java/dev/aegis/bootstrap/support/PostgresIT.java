@@ -52,6 +52,8 @@ public abstract class PostgresIT {
         registry.add("aegis.members.file", () -> membersFile().toString());
         registry.add("db-scheduler.polling-interval", () -> "500ms");
         registry.add("aegis.archival.max-attempts", () -> "3");
+        // Automatic analysis of uploads is switched on only by the tests about it (AnalysisSettings#setAutomatic).
+        registry.add("aegis.documents.analysis.automatic", () -> "false");
         // AI: the real Anthropic adapter stays unconfigured (no key file); workloads use the controlled model.
         registry.add("aegis.ai.providers.anthropic.api-key-file", () -> DATA.resolve("no-anthropic-key").toString());
         registry.add("aegis.ai.daily-cost-limit", () -> "100.00");

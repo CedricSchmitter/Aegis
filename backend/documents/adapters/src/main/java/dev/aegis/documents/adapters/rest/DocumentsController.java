@@ -14,6 +14,7 @@ import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.application.api.UploadDocument;
 import dev.aegis.documents.application.api.UploadDocument.UploadCommand;
 import dev.aegis.documents.application.api.UploadDocument.UploadResult;
+import dev.aegis.documents.domain.naming.FriendlyFilename;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.InvalidInputException;
@@ -32,7 +33,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -159,14 +159,14 @@ public class DocumentsController {
         return DocumentDto.from(queries.get(actor, DocumentId.of(id)));
     }
 
-    @Operation(operationId = "downloadOriginal", summary = "Original bytes, unchanged")
+    @Operation(operationId = "downloadOriginal",
+            summary = "Original bytes, unchanged, named with the friendly filename")
     @GetMapping(value = "/{id}/original", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<byte[]> original(Actor actor, @PathVariable("id") String id,
             @RequestParam(name = "inline", defaultValue = "false") boolean inline) {
         OriginalContent content = queries.original(actor, DocumentId.of(id));
-        ContentDisposition disposition = (inline ? ContentDisposition.inline() : ContentDisposition.attachment())
-                .filename(content.filename(), java.nio.charset.StandardCharsets.UTF_8).build();
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(inline,
+                content.filename()))
                 .header("X-Aegis-Original-Source", content.source())
                 .contentType(MediaType.parseMediaType(content.contentType())).body(content.bytes());
     }
@@ -232,6 +232,18 @@ public class DocumentsController {
             @Valid @RequestBody LabelsController.VersionRequest body) {
         return DocumentDto.from(classification.rejectSuggestion(actor, DocumentId.of(id),
                 RestIds.required(labelId), body.expectedVersion()));
+    }
+
+    /**
+     * Content-Disposition with an ASCII {@code filename} fallback and the full UTF-8 name as RFC 5987
+     * {@code filename*}. The name is already sanitized; percent-encoding keeps quotes, separators and line breaks out
+     * of the header in any case.
+     */
+    static String contentDisposition(boolean inline, String filename) {
+        String encoded = java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8)
+                .replace("+", "%20");
+        return (inline ? "inline" : "attachment") + "; filename=\"" + FriendlyFilename.asciiFallback(filename)
+                + "\"; filename*=UTF-8''" + encoded;
     }
 
     private static boolean matchAll(String value) {
