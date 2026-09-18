@@ -116,8 +116,9 @@ unless reprocessing is requested explicitly.
 
 Capture, search, tasks and planning never call the AI context. Requests that cannot run (no credentials, no handler,
 no price) are refused with `ai.notConfigured`, `ai.workload.unavailable` or `ai.price.unknown` instead of queuing
-work. The status page shows the AI integration (not configured, unverified, connected or degraded by a provider
-failure), the workload profiles with their budgets, today's spending, the connection check and recent runs with
+work. The status page shows the AI integration, judged per configured model from its latest succeeded or failed
+run (not configured; degraded while a model is unverified or its latest run failed for a provider reason;
+otherwise connected), the workload profiles with their budgets, today's spending, the connection check and recent runs with
 cancel and retry. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`, `/api/ai/runs/{id}/cancel`,
 `/api/ai/runs/{id}/retry`, `/api/ai/connection-checks`.
 

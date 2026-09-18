@@ -7,8 +7,9 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
 ## Application
 
 - VM 102 serves `https://192.168.2.159` on the household LAN. On 2026-09-18 09:29 the VM was brought from
-  `364b322` to `96e177c` (main with the review corrections of `5759743` from PR #51); marker, running version and
-  HTTPS answer matched afterwards. HTTPS configuration commit `30554ee` is recorded separately. Check
+  `364b322` to `96e177c` (main with the review corrections of `5759743` from PR #51) and at 12:41 to `85404a9`
+  (PR #54, bounded AI execution); each time marker, running version and HTTPS answer matched afterwards.
+  HTTPS configuration commit `30554ee` is recorded separately. Check
   `/api/system/version`, `/srv/aegis/deploy/DEPLOYED_COMMIT` and `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT` before
   operating on it.
 - Both members share documents and tasks through individual accounts. The migration from test identities
@@ -64,13 +65,28 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   classification (#23), bounded AI execution (#21), assistant retrieval (#25) and the optional backfill of
   existing documents remain open parts of #46. The browser suite asserts the CI state of the external backup, so a LAN run against this VM
   reports that one integration expectation as failed while the backup is configured here.
-- Bounded AI execution (#21), verified on 2026-09-18 before review: `./mvnw verify` on the VM passed 217 unit
-  tests, 12 architecture tests (including the rules that confine the Anthropic SDK to its adapter and forbid process
-  execution) and 41 PostgreSQL integration tests; the separately enabled Claude API live test was skipped. The
-  controlled-adapter tests cover malformed, truncated and refused answers, timeouts, rate limits, rejected
-  credentials, cost, daily, time, model-call and tool-call budgets, restart and revived jobs, cancellation during a
-  model call, stale sources, repeated effects, prompt injection with ungranted tools, membership loss and model
-  outage while capture, search and tasks keep working. The frontend passed 24 tests including both locale catalogs.
+- [PR #54](https://github.com/CedricSchmitter/Aegis/pull/54) added the bounded AI execution boundary for #21
+  ([ADR-0003](../architecture/adr/ADR-0003-bounded-ai-execution.md)).
+  [CI run 35334952424](https://github.com/CedricSchmitter/Aegis/actions/runs/35334952424) passed all four jobs for
+  `b6d4b09`: 217 unit tests (the separately enabled Claude API live test skipped), 12 architecture tests (including
+  the rules that confine the Anthropic SDK to its adapter and forbid process execution), 42 PostgreSQL integration
+  tests, 24 frontend tests, the image build and 12 browser tests against real Paperless. The first CI run failed in
+  the catalog browser test because it navigated before the language preference was stored; the tests now wait for
+  that request. The controlled-adapter tests cover malformed, truncated and refused answers, timeouts, rate limits,
+  rejected credentials, cost, daily, time, model-call and tool-call budgets, restart and revived jobs, cancellation
+  during a model call, concurrent cancellation, stale sources, repeated effects, prompt injection with ungranted
+  tools, membership loss and a model outage while capture, search and tasks keep working.
+- Deployment of `85404a9`: a `pg_dump` of the Aegis database was taken first
+  (`/srv/aegis/backup-staging/aegis-before-85404a9.dump`, root-only); migration 5.1 (`ai_runs`, `ai_run_steps`,
+  `ai_run_effects`) applied; documents, tasks, members, folders and labels were unchanged (5, 3, 2, 1, 35); the AI
+  endpoints answer only authenticated requests and the empty key directory is mounted read-only.
+- The deployed image was exercised in an isolated QA instance on the VM (throwaway PostgreSQL, two QA-only
+  accounts, loopback-only ports, a controlled stand-in for the Messages API; no household data or container
+  involved; removed afterwards). Through the real SDK adapter the connection check succeeded for
+  `claude-haiku-4-5` (1 call, 0.0009 USD recorded) and reported a simulated unavailable `claude-opus-5` as
+  `MODEL_UNAVAILABLE`, in German at desktop width and in English at phone width without horizontal overflow. It also
+  showed that the integration status judged only the latest finished run and reported "connected" despite the
+  unavailable model; PR #55 judges each configured model instead.
 
 ## Recovery
 

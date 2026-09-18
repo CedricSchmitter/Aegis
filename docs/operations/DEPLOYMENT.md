@@ -95,8 +95,9 @@ tickets or chat. The deployment secrets, including this file, are part of the en
 
 ## Operations
 
-- Status page (in the app) and `GET /api/status`: database, Paperless, export, external backup, AI (not configured,
-  unverified, connected or degraded by a provider failure) and the deliberately unconnected integrations (calendar,
+- Status page (in the app) and `GET /api/status`: database, Paperless, export, external backup, AI (not configured;
+  degraded while a configured model is unverified or its latest run failed for a provider reason; otherwise
+  connected) and the deliberately unconnected integrations (calendar,
   mail, Web Push, Telegram). The AI section lists workload budgets, today's spending and recent runs with cancel and
   retry.
 - Logs: `sudo docker compose --env-file /srv/aegis/deploy/.env -f /srv/aegis/deploy/compose.yaml logs -f aegis`.

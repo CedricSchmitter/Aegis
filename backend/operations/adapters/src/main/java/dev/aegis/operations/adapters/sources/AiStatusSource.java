@@ -6,13 +6,15 @@ import dev.aegis.operations.application.api.IntegrationStatus;
 import dev.aegis.operations.application.ports.IntegrationStatusSource;
 import dev.aegis.shared.Actor;
 import java.time.Clock;
+import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
- * AI provider status from the recorded runs. Without credentials the integration is reported as not configured;
- * with credentials it is connected only after a successful run, and degraded while the latest finished run failed
- * for a provider reason. Budget, output or permission failures of a single run do not degrade the integration.
+ * AI provider status from the recorded runs, judged per configured model. Without credentials the integration is not
+ * configured. With credentials it is connected only when every configured model's latest outcome is a success or a
+ * failure that is not the provider's fault; a model whose latest run failed for a provider reason, or that was never
+ * verified, degrades it. Budget, output or permission failures of a single run do not degrade the integration.
  */
 @Component
 public class AiStatusSource implements IntegrationStatusSource {
@@ -39,15 +41,22 @@ public class AiStatusSource implements IntegrationStatusSource {
             return IntegrationStatus.notConfigured("ai",
                     "no AI provider credentials; capture, search and planning work without AI");
         }
-        if ("FAILED".equals(ai.lastFinishedState()) && PROVIDER_FAILURES.contains(ai.lastFailureCategory())) {
-            return new IntegrationStatus("ai", IntegrationStatus.DEGRADED,
-                    "latest run failed: " + ai.lastFailureCategory(), ai.lastSuccessAt(), clock.instant());
+        List<String> failing = ai.models().stream()
+                .filter(model -> model.lastFailureCategory() != null
+                        && PROVIDER_FAILURES.contains(model.lastFailureCategory()))
+                .map(model -> model.model() + ": " + model.lastFailureCategory()).toList();
+        if (!failing.isEmpty()) {
+            return new IntegrationStatus("ai", IntegrationStatus.DEGRADED, "latest run failed for "
+                    + String.join(", ", failing), ai.lastSuccessAt(), clock.instant());
         }
-        if (ai.lastSuccessAt() == null) {
+        List<String> unverified = ai.models().stream().filter(model -> model.lastState() == null)
+                .map(AiHealth.ModelHealth::model).toList();
+        if (!unverified.isEmpty() || ai.lastSuccessAt() == null) {
             return new IntegrationStatus("ai", IntegrationStatus.DEGRADED,
-                    "credentials present but not verified; run the connection check", null, clock.instant());
+                    "credentials present; not verified yet for " + String.join(", ", unverified)
+                            + "; run the connection check", ai.lastSuccessAt(), clock.instant());
         }
-        return new IntegrationStatus("ai", IntegrationStatus.CONNECTED, "provider answered the latest verified run",
-                ai.lastSuccessAt(), clock.instant());
+        return new IntegrationStatus("ai", IntegrationStatus.CONNECTED,
+                "every configured model answered its latest run", ai.lastSuccessAt(), clock.instant());
     }
 }

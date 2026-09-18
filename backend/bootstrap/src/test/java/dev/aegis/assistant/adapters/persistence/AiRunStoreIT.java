@@ -158,6 +158,34 @@ class AiRunStoreIT extends PostgresIT {
     }
 
     @Test
+    void latestOutcomeIsReportedPerModel() {
+        String modelA = "store-a-" + UUID.randomUUID();
+        String modelB = "store-b-" + UUID.randomUUID();
+        finish(modelA, FailureCategory.AUTHENTICATION, AT.plusSeconds(10));
+        finish(modelA, null, AT.plusSeconds(20));
+        finish(modelB, FailureCategory.MODEL_UNAVAILABLE, AT.plusSeconds(30));
+
+        List<AiRun> latest = runs.findLatestOutcomePerModel().stream()
+                .filter(run -> run.model().model().equals(modelA) || run.model().model().equals(modelB)).toList();
+
+        assertThat(latest).extracting(run -> run.model().model() + "=" + run.state())
+                .containsExactlyInAnyOrder(modelA + "=SUCCEEDED", modelB + "=FAILED");
+    }
+
+    private void finish(String model, FailureCategory failure, Instant at) {
+        AiRun run = AiRun.request(RunId.random(), Workload.CONNECTION_CHECK, "store:" + UUID.randomUUID(), null,
+                MemberId.random(), AT, new ModelSelection("anthropic", model),
+                new RunBudget(Duration.ofMinutes(2), Money.of("0.05", "USD"), 1, 0, 256, 1), List.of(), Map.of());
+        run.start(at);
+        if (failure == null) {
+            run.succeed(1, "{}", false, at);
+        } else {
+            run.fail(1, failure, "provider.x", "x", null, at);
+        }
+        runs.save(run);
+    }
+
+    @Test
     void effectKeyCanBeClaimedOnce() {
         AiRun run = newRun("store:" + UUID.randomUUID());
         runs.save(run);
