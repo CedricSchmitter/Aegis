@@ -76,7 +76,7 @@ Use optimistic concurrency and explicit conflict responses. Inject `Clock` for t
 | Notifications | Delivery attempts and preferences | Delivery provider |
 | Operations/portability | Job status and export/import coordination | Scheduler and storage |
 
-Identity, documents, planning, notifications, operations and portability exist as modules. Inbox, contracts and assistant describe boundaries for issue-driven extensions, not implemented modules. Add modules only for concrete use cases and capture substantial boundary changes in ADRs.
+Identity, documents, planning, notifications, operations, portability and assistant exist as modules. The assistant module currently provides the bounded AI execution boundary of [ADR-0003](adr/ADR-0003-bounded-ai-execution.md) (runs, budgets, model gateway, tool policy, connection check); classification, review and chat workflows are issue-driven extensions of it. Inbox and contracts describe boundaries for issue-driven extensions, not implemented modules. Add modules only for concrete use cases and capture substantial boundary changes in ADRs.
 
 ## Localization contract
 
@@ -124,7 +124,9 @@ Do not infer private document areas from person associations. Continue enforcing
 The in-app notification inbox is durable. Delivery adapters reuse notification identity and application
 commands; notification delivery, read status and task completion are distinct states. Calendar integration
 uses the application-owned port; the selected external provider owns its events. AI/model adapters reuse
-authorized application tools and cannot become a prerequisite for capture or deterministic planning.
+authorized application tools and cannot become a prerequisite for capture or deterministic planning. All AI work runs
+through the one bounded execution boundary of ADR-0003: per-workload provider, model and budgets; tools granted per
+workload and executed with the requesting member's authorization; results applied once through the owning context.
 
 ## Data ownership and portability
 

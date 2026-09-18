@@ -98,7 +98,7 @@ jobs:
       - name: Prepare CI secrets and data directories (synthetic only)
         run: |
           set -eu
-          mkdir -p "$RUNNER_TEMP/aegis/data/ingress" "$RUNNER_TEMP/aegis/data/backup-state" "$RUNNER_TEMP/aegis/exports" deploy/secrets
+          mkdir -p "$RUNNER_TEMP/aegis/data/ingress" "$RUNNER_TEMP/aegis/data/backup-state" "$RUNNER_TEMP/aegis/exports" deploy/secrets deploy/secrets/ai
           sudo chown -R 10001:10001 "$RUNNER_TEMP/aegis/data/ingress" "$RUNNER_TEMP/aegis/data/backup-state" "$RUNNER_TEMP/aegis/exports"
           for d in postgres valkey caddy/data caddy/config paperless/data paperless/media paperless/export paperless/consume; do mkdir -p "$RUNNER_TEMP/aegis/data/$d"; done
           sudo chown -R 1000:1000 "$RUNNER_TEMP/aegis/data/paperless"

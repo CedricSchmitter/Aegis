@@ -6,9 +6,11 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
 
 ## Application
 
-- VM 102 serves `https://192.168.2.159` on the household LAN. The last verified application release is
-  `e65a1b6`; HTTPS configuration commit `30554ee` is recorded separately. Check `/api/system/version`,
-  `/srv/aegis/deploy/DEPLOYED_COMMIT` and `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT` before operating on it.
+- VM 102 serves `https://192.168.2.159` on the household LAN. On 2026-09-18 09:29 the VM was brought from
+  `364b322` to `96e177c` (main with the review corrections of `5759743` from PR #51); marker, running version and
+  HTTPS answer matched afterwards. HTTPS configuration commit `30554ee` is recorded separately. Check
+  `/api/system/version`, `/srv/aegis/deploy/DEPLOYED_COMMIT` and `/srv/aegis/deploy/HTTPS_CONFIG_COMMIT` before
+  operating on it.
 - Both members share documents and tasks through individual accounts. The migration from test identities
   to `lisa` and `cedric` preserved IDs, ownership and sessions. The owner confirmed individual passwords
   and successful fresh logins; those later credential changes were not independently agent-verified.
@@ -17,10 +19,14 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   organization, topic, tags) with folder-implied labels and faceted search, source-linked tasks, deterministic
   Today, in-app notifications, integration status, portable exports and isolated recovery. Folders, labels and
   search work without AI; automatic classification is not connected.
+- Bounded AI execution ([ADR-0003](../architecture/adr/ADR-0003-bounded-ai-execution.md), issue #21): durable runs
+  with per-workload provider, model and budgets, visible state, cancellation, retry, audit steps, a connection
+  check and a Claude API adapter. No provider key is configured, so AI is reported as not configured and no model
+  has been called from the VM; classification, review and chat workflows (#23, #24, #25) are not connected.
 - Trusted TLS, redirects, session-cookie settings, authorization and original checksums were independently
   checked. The owner confirmed upload, original access, task assignment, notification and completion on
   both Android phones. Real household data is present and must be preserved.
-- Mail, calendar, AI, MCP, messenger delivery, Web Push and Android share-target integration are not connected.
+- Mail, calendar, MCP, messenger delivery, Web Push and Android share-target integration are not connected.
   Public access and local DNS are not configured.
 
 ## Verification evidence
@@ -58,12 +64,20 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   classification (#23), bounded AI execution (#21), assistant retrieval (#25) and the optional backfill of
   existing documents remain open parts of #46. The browser suite asserts the CI state of the external backup, so a LAN run against this VM
   reports that one integration expectation as failed while the backup is configured here.
+- Bounded AI execution (#21), verified on 2026-09-18 before review: `./mvnw verify` on the VM passed 217 unit
+  tests, 12 architecture tests (including the rules that confine the Anthropic SDK to its adapter and forbid process
+  execution) and 41 PostgreSQL integration tests; the separately enabled Claude API live test was skipped. The
+  controlled-adapter tests cover malformed, truncated and refused answers, timeouts, rate limits, rejected
+  credentials, cost, daily, time, model-call and tool-call budgets, restart and revived jobs, cancellation during a
+  model call, stale sources, repeated effects, prompt injection with ungranted tools, membership loss and model
+  outage while capture, search and tasks keep working. The frontend passed 24 tests including both locale catalogs.
 
 ## Recovery
 
 The encrypted external Restic snapshot passed a full read check and isolated recovery of both databases,
 originals, members and task links. A second snapshot succeeded through the systemd service. Daily backup
-is enabled at 03:30 Europe/Berlin; the first scheduled run had not yet been observed at this verification date.
+is enabled at 03:30 Europe/Berlin; the first scheduled run started at 03:30:03 on 2026-09-18 and completed
+successfully at 03:31:30 (systemd journal of `aegis-backup.service`).
 Failure or a last success older than 26 hours produces a degraded backup status.
 See [BACKUP.md](BACKUP.md) for destination identity, snapshot evidence and recovery commands.
 

@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions) and [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search).
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions) , [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search) and [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Operational status](docs/operations/STATUS.md): verified capabilities, release evidence and current limitations.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
@@ -17,7 +17,7 @@ AGENTS.md and CLAUDE.md reference AGENT.md to avoid competing instruction sets.
 
 ```text
 backend/        Maven multimodule Spring Boot backend (Java 21): shared-kernel, identity, documents, planning,
-                notifications, operations, portability, bootstrap, architecture-tests
+                notifications, operations, portability, assistant (AI runs), bootstrap, architecture-tests
 frontend/       React/TypeScript/Vite web app (German/English), served by the backend from one origin
 api/            Committed OpenAPI contract; the TypeScript client is generated from it
 e2e/            Playwright browser smoke tests of core household workflows
@@ -36,6 +36,14 @@ cd backend
 ./mvnw verify                 # unit, architecture and PostgreSQL/Testcontainers integration tests (Docker needed)
 ./mvnw -DskipITs verify       # without Docker: unit and architecture tests only
 ./mvnw -Daegis.openapi.export=true -pl bootstrap -am verify   # refresh api/openapi.json from the running backend
+```
+
+The Claude API live test is skipped unless enabled explicitly. It costs a few cents and reads the key from a file
+outside the repository (ADR-0003):
+
+```bash
+AEGIS_AI_LIVE_TEST=true AEGIS_ANTHROPIC_API_KEY_FILE=/path/to/anthropic-api-key \
+  ./mvnw -pl assistant/adapters -am -DskipITs test -Dtest=AnthropicGatewayLiveTest -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
 Frontend (Node 24):
@@ -72,10 +80,15 @@ inbox, structured labels (document type, organization, topic, tags) with faceted
 tasks, deterministic Today, in-app notifications, integration status, portable exports and isolated
 recovery. Folders, labels and search work without AI; automatic classification is not connected.
 
+A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
+visible state, cancellation and retry, a connection check and a Claude API adapter. No provider key is configured
+yet, so the status page reports AI as not configured; classification, scheduled review and chat workflows (#23, #24,
+#25) are not connected.
+
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
-passed isolated recovery and its daily timer is enabled. The last recorded verification has not yet observed
-the first scheduled run. Mail, calendar, AI, MCP, messenger delivery, Web Push and Android share-target
-integration are not connected. See [operational status](docs/operations/STATUS.md) for dated evidence.
+passed isolated recovery and its daily timer is enabled; the first scheduled run succeeded on 2026-09-18.
+Mail, calendar, MCP, messenger delivery, Web Push and Android share-target integration are not connected.
+See [operational status](docs/operations/STATUS.md) for dated evidence.
 
 Source is maintained in this repository; the Aegis VM is the deployment environment. Private keys,
 tokens, household documents and service data must not be committed.
