@@ -12,6 +12,7 @@ deploy/secrets/
 target/
 node_modules/
 dist/
+tsconfig.tsbuildinfo
 .idea/
 .vscode/
 .DS_Store
