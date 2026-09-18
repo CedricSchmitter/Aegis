@@ -268,13 +268,16 @@ public class CatalogImportService implements ImportCatalog {
     }
 
     private void adoptUnmodifiedBuiltin(Label local, LabelImport imported, LabelVocabulary vocabulary, Instant now) {
-        if (!local.isBuiltin() || local.version() != 0 || local.name().isPresent() || imported.name() == null) {
+        if (!local.isBuiltin() || local.version() != 0 || local.name().isPresent()) {
             return;
         }
-        local.rename(imported.name(), now);
-        local.replaceAliases(aliases(imported), now);
-        vocabulary.requireUniqueKeys(local);
-        labels.save(local);
+        // Validate a separate candidate so a conflict cannot pollute the vocabulary used by later imports.
+        Label candidate = Label.rehydrate(local.id(), local.facet(), local.builtinKey().orElseThrow(),
+                imported.name(), aliases(imported), status(imported.status()), null,
+                local.createdBy().orElse(null), local.createdAt(), now, local.version());
+        vocabulary.requireUniqueKeys(candidate);
+        labels.save(candidate);
+        vocabulary.put(candidate);
     }
 
     private static Optional<Label> keyMatch(LabelVocabulary vocabulary, Facet facet, LabelImport imported) {

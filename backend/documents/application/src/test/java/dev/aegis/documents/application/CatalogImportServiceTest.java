@@ -10,12 +10,89 @@ import dev.aegis.documents.application.api.LabelChip;
 import dev.aegis.documents.application.api.LabelView;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.domain.Document;
+import dev.aegis.documents.domain.catalog.Facet;
+import dev.aegis.documents.domain.catalog.Label;
+import dev.aegis.documents.domain.catalog.LabelId;
+import dev.aegis.documents.domain.catalog.LabelStatus;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class CatalogImportServiceTest {
     private final CatalogFixture fixture = new CatalogFixture();
+
+    @Test
+    void untouchedBuiltinRestoresAliasesAndRetirementWithoutACustomName() {
+        LabelId id = seedBuiltin();
+        var imported = new LabelImport(id.value(), "DOCUMENT_TYPE", "invoice", null,
+                List.of("Bill"), "RETIRED", null);
+
+        var result = fixture.importService.importCatalog(fixture.actor, List.of(imported), List.of());
+
+        Label restored = fixture.labels.findById(id).orElseThrow();
+        assertThat(restored.name()).isEmpty();
+        assertThat(restored.status()).isEqualTo(LabelStatus.RETIRED);
+        assertThat(restored.aliases()).containsExactly("Bill");
+        assertThat(result.warnings()).isEmpty();
+        fixture.importService.importCatalog(fixture.actor, List.of(imported), List.of());
+        assertThat(fixture.labels.findById(id).orElseThrow().version()).isEqualTo(restored.version());
+    }
+
+    @Test
+    void untouchedBuiltinRestoresCustomNameAliasesAndStatusTogether() {
+        LabelId id = seedBuiltin();
+
+        fixture.importService.importCatalog(fixture.actor, List.of(new LabelImport(id.value(),
+                "DOCUMENT_TYPE", "invoice", "Receipt", List.of("Bill"), "RETIRED", null)), List.of());
+
+        Label restored = fixture.labels.findById(id).orElseThrow();
+        assertThat(restored.name()).contains("Receipt");
+        assertThat(restored.aliases()).containsExactly("Bill");
+        assertThat(restored.status()).isEqualTo(LabelStatus.RETIRED);
+    }
+
+    @Test
+    void locallyEditedBuiltinKeepsItsNameAliasesAndStatus() {
+        LabelId id = seedBuiltin();
+        fixture.labelService.replaceAliases(fixture.actor, id.value(), List.of("Local alias"), 0);
+        long version = fixture.labelVersion(id.value());
+
+        fixture.importService.importCatalog(fixture.actor, List.of(new LabelImport(id.value(),
+                "DOCUMENT_TYPE", "invoice", "Receipt", List.of("Bill"), "RETIRED", null)), List.of());
+
+        Label local = fixture.labels.findById(id).orElseThrow();
+        assertThat(local.name()).isEmpty();
+        assertThat(local.aliases()).containsExactly("Local alias");
+        assertThat(local.status()).isEqualTo(LabelStatus.ACTIVE);
+        assertThat(local.version()).isEqualTo(version);
+    }
+
+    @Test
+    void conflictingBuiltinDoesNotPolluteNameMatchingForLaterImports() {
+        LabelId id = seedBuiltin();
+        LabelView local = fixture.label("DOCUMENT_TYPE", "Receipt");
+        UUID other = UUID.randomUUID();
+
+        var result = fixture.importService.importCatalog(fixture.actor, List.of(
+                new LabelImport(id.value(), "DOCUMENT_TYPE", "invoice", "Receipt", List.of(), "RETIRED", null),
+                new LabelImport(other, "DOCUMENT_TYPE", null, "Receipt", List.of(), "ACTIVE", null)), List.of());
+
+        assertThat(result.warnings()).hasSize(2);
+        assertThat(result.labelIds()).containsEntry(other, local.id());
+        Label retained = fixture.labels.findById(id).orElseThrow();
+        assertThat(retained.name()).isEmpty();
+        assertThat(retained.aliases()).containsExactly("Invoice", "Rechnung");
+        assertThat(retained.status()).isEqualTo(LabelStatus.ACTIVE);
+        assertThat(retained.version()).isZero();
+    }
+
+    private LabelId seedBuiltin() {
+        LabelId id = LabelId.random();
+        fixture.labels.seed(Label.rehydrate(id, Facet.DOCUMENT_TYPE, "invoice", null,
+                List.of("Invoice", "Rechnung"), LabelStatus.ACTIVE, null, null,
+                CatalogFixture.NOW, CatalogFixture.NOW, 0));
+        return id;
+    }
 
     @Test
     void restoreCreatesMissingEntriesKeepsLocalOnesAndIsIdempotent() {

@@ -28,11 +28,13 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class JdbcClassificationRepository implements ClassificationRepository {
-    private static final String SELECT_ASSIGNMENTS = """
-            SELECT dl.document_id, dl.label_id, l.facet, dl.origin, dl.review_state, dl.confidence, dl.source_ref,
+    private static final String SELECT_CLASSIFICATIONS = """
+            SELECT dc.document_id, dc.category_id, dc.updated_by, dc.updated_at, dc.version,
+                   dl.label_id, l.facet, dl.origin, dl.review_state, dl.confidence, dl.source_ref,
                    dl.decided_by, dl.decided_at
-              FROM document_labels dl
-              JOIN labels l ON l.id = dl.label_id""";
+              FROM document_classifications dc
+              LEFT JOIN document_labels dl ON dl.document_id = dc.document_id
+              LEFT JOIN labels l ON l.id = dl.label_id""";
 
     private final JdbcClient jdbc;
 
@@ -52,13 +54,30 @@ public class JdbcClassificationRepository implements ClassificationRepository {
         }
         List<UUID> values = ids.stream().map(DocumentId::value).toList();
         Map<UUID, List<LabelAssignment>> assignments = new LinkedHashMap<>();
-        jdbc.sql(SELECT_ASSIGNMENTS + " WHERE dl.document_id IN (:ids) ORDER BY dl.decided_at, dl.label_id")
+        Map<DocumentId, DocumentClassification> roots = new LinkedHashMap<>();
+        // One statement keeps assignments and their optimistic version in the same PostgreSQL snapshot,
+        // including reads outside a transaction and documents that currently have no labels.
+        jdbc.sql(SELECT_CLASSIFICATIONS + " WHERE dc.document_id IN (:ids) ORDER BY dl.decided_at, dl.label_id")
                 .param("ids", values).query((rs, row) -> {
                     UUID document = rs.getObject("document_id", UUID.class);
+                    DocumentId id = new DocumentId(document);
+                    if (!roots.containsKey(id)) {
+                        UUID category = rs.getObject("category_id", UUID.class);
+                        UUID updatedBy = rs.getObject("updated_by", UUID.class);
+                        var updatedAt = rs.getTimestamp("updated_at");
+                        roots.put(id, DocumentClassification.rehydrate(id,
+                                category == null ? null : new CategoryId(category), List.of(),
+                                updatedBy == null ? null : new MemberId(updatedBy),
+                                updatedAt == null ? null : updatedAt.toInstant(), rs.getLong("version")));
+                    }
+                    UUID label = rs.getObject("label_id", UUID.class);
+                    if (label == null) {
+                        return Boolean.TRUE;
+                    }
                     UUID decidedBy = rs.getObject("decided_by", UUID.class);
                     java.math.BigDecimal confidence = rs.getBigDecimal("confidence");
                     assignments.computeIfAbsent(document, key -> new ArrayList<>()).add(new LabelAssignment(
-                            new LabelId(rs.getObject("label_id", UUID.class)),
+                            new LabelId(label),
                             Facet.valueOf(rs.getString("facet")),
                             AssignmentOrigin.valueOf(rs.getString("origin")),
                             ReviewState.valueOf(rs.getString("review_state")),
@@ -68,21 +87,9 @@ public class JdbcClassificationRepository implements ClassificationRepository {
                     return Boolean.TRUE;
                 }).list();
         Map<DocumentId, DocumentClassification> result = new LinkedHashMap<>();
-        jdbc.sql("""
-                SELECT document_id, category_id, updated_by, updated_at, version
-                  FROM document_classifications WHERE document_id IN (:ids)""")
-                .param("ids", values).query((rs, row) -> {
-                    UUID document = rs.getObject("document_id", UUID.class);
-                    UUID category = rs.getObject("category_id", UUID.class);
-                    UUID updatedBy = rs.getObject("updated_by", UUID.class);
-                    var updatedAt = rs.getTimestamp("updated_at");
-                    result.put(new DocumentId(document), DocumentClassification.rehydrate(new DocumentId(document),
-                            category == null ? null : new CategoryId(category),
-                            assignments.getOrDefault(document, List.of()),
-                            updatedBy == null ? null : new MemberId(updatedBy),
-                            updatedAt == null ? null : updatedAt.toInstant(), rs.getLong("version")));
-                    return Boolean.TRUE;
-                }).list();
+        roots.forEach((id, root) -> result.put(id, DocumentClassification.rehydrate(id,
+                root.categoryId().orElse(null), assignments.getOrDefault(id.value(), List.of()),
+                root.updatedBy().orElse(null), root.updatedAt().orElse(null), root.version())));
         return result;
     }
 

@@ -140,6 +140,8 @@ exports gain folder paths and label columns and a folder-grouped README section.
 It keeps existing local entities with the same ID, maps equal label keys and sibling folder names to existing
 entities with a warning, applies an exported classification only to a still-unclassified document and is
 idempotent. Stable Aegis IDs keep folder and label relationships intact when Paperless IDs change.
+Untouched built-in vocabulary seeds adopt exported names, aliases and active/retired status; locally edited
+entries keep their state. A conflicting restored name or alias keeps the local seed unchanged with a warning.
 
 ## Consequences
 

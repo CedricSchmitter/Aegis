@@ -14,6 +14,11 @@ import java.util.Optional;
 public class InMemoryLabelRepository implements LabelRepository {
     private final Map<LabelId, Label> store = new LinkedHashMap<>();
 
+    /** Models migration seeds, which start at version zero instead of going through a user write. */
+    void seed(Label label) {
+        store.put(label.id(), copy(label));
+    }
+
     @Override
     public LabelVocabulary load() {
         return new LabelVocabulary(store.values().stream().map(InMemoryLabelRepository::copy).toList());
