@@ -250,6 +250,58 @@
     "backupWarning": "The external backup is unavailable or out of date. Check the backup status below.",
     "version": "Running version: {{commit}} (build {{time}})"
   },
+  "ai": {
+    "title": "AI execution",
+    "checkConnection": "Check connection",
+    "checkStarted": "The connection check has started.",
+    "cancelRequested": "Cancellation was requested.",
+    "retryStarted": "A new run was started.",
+    "configured": "An AI provider is set up on the server. Every run is limited by time, cost, tool calls and retries.",
+    "notConfigured": "No AI provider is set up. Upload, search and tasks work without AI.",
+    "spentToday": "Spent today: {{spent}} of the {{limit}} daily limit",
+    "budgetLine": "up to {{cost}} per run, {{attempts}} attempts, {{seconds}} s per attempt",
+    "available": "ready",
+    "noWorkflow": "no workflow yet",
+    "unavailable": "not set up",
+    "noRuns": "No AI runs yet.",
+    "runLine": "{{date}} · attempt {{attempt}} of {{maxAttempts}} · {{cost}} of {{limit}} · model calls: {{calls}}, tool calls: {{tools}}",
+    "cancelPending": "Cancellation requested: the run stops at its next checkpoint and applies no result.",
+    "nextAttempt": "next attempt {{date}}",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "workload": {
+      "CONNECTION_CHECK": "Connection check",
+      "DOCUMENT_CLASSIFICATION": "Document classification",
+      "DOCUMENT_REVIEW": "Document review",
+      "CHAT": "Questions and answers"
+    },
+    "state": {
+      "QUEUED": "Queued",
+      "RUNNING": "Running",
+      "WAITING_RETRY": "Waiting to retry",
+      "SUCCEEDED": "Succeeded",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled"
+    },
+    "failure": {
+      "NOT_CONFIGURED": "Not set up",
+      "AUTHENTICATION": "Credentials rejected",
+      "MODEL_UNAVAILABLE": "Model not available",
+      "INVALID_REQUEST": "Request rejected",
+      "RATE_LIMITED": "Provider rate limit",
+      "PROVIDER_UNAVAILABLE": "Provider unavailable",
+      "TIMEOUT": "Timed out",
+      "INVALID_OUTPUT": "Invalid answer",
+      "REFUSED": "Declined by the model",
+      "BUDGET_EXHAUSTED": "Budget exhausted",
+      "TOOL_DENIED": "Asked for tools that are not allowed",
+      "NOT_AUTHORIZED": "Not authorized",
+      "STALE_SOURCE": "Source changed",
+      "SOURCE_UNAVAILABLE": "Source unavailable",
+      "INTERRUPTED": "Interrupted",
+      "INTERNAL": "Internal error"
+    }
+  },
   "settings": {
     "title": "Settings",
     "account": "Account",
@@ -335,7 +387,13 @@
     "search.sort.invalid": "Unknown sort order.",
     "search.missing.invalid": "Unknown filter group.",
     "search.facet.mismatch": "The label does not match the filter group.",
-    "export.schema.unsupported": "This export version is not supported."
+    "export.schema.unsupported": "This export version is not supported.",
+    "ai.notConfigured": "No AI provider is set up.",
+    "ai.workload.unavailable": "There is no workflow for this AI task yet.",
+    "ai.workload.unknown": "Unknown AI task.",
+    "ai.price.unknown": "No price is configured for this model, so its cost budget cannot be enforced.",
+    "ai.run.notRetryable": "Only failed or cancelled runs can be retried.",
+    "aiRun.notFound": "AI run not found."
   },
   "format": {
     "bytes": "{{value}} B",

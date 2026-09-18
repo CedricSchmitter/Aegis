@@ -162,6 +162,10 @@ test.describe("first runnable test", () => {
     await expect(page.getByTestId("integration-paperless")).toContainText(/Verbunden/);
     await expect(page.getByTestId("integration-externalBackup")).toContainText(/Nicht eingerichtet/);
     await expect(page.getByTestId("integration-calendar")).toContainText(/Nicht eingerichtet/);
+    // Without provider credentials the AI boundary says so and capture, search and tasks above still worked.
+    await expect(page.getByTestId("integration-ai")).toContainText(/Nicht eingerichtet/);
+    await expect(page.getByTestId("ai-section")).toContainText("Kein KI-Anbieter eingerichtet");
+    await expect(page.getByTestId("ai-check")).toBeDisabled();
     await logout(page);
   });
 
