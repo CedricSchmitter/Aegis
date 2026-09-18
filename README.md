@@ -81,9 +81,10 @@ tasks, deterministic Today, in-app notifications, integration status, portable e
 recovery. Folders, labels and search work without AI; automatic classification is not connected.
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
-visible state, cancellation and retry, a connection check and a Claude API adapter. No provider key is configured
-yet, so the status page reports AI as not configured; classification, scheduled review and chat workflows (#23, #24,
-#25) are not connected.
+visible state, cancellation and retry, a connection check, a Claude API adapter and a locked-down Claude Code adapter
+for the owner's own subscription (default provider, limited to the members listed in `AEGIS_AI_SUBSCRIPTION_MEMBERS`).
+Until the owner stores his subscription token the status page reports AI as not configured; classification, scheduled
+review and chat workflows (#23, #24, #25) are not connected.
 
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
 passed isolated recovery and its daily timer is enabled; the first scheduled run succeeded on 2026-09-18.

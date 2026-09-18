@@ -443,6 +443,18 @@ class RunExecutorTest {
     }
 
     @Test
+    void personalProviderRefusedAfterTheRequestIsNotCalled() {
+        RunId id = kit.classify("Rechnung");
+        kit.gateway.allowedMembers = java.util.Set.of(AiTestKit.CEDRIC);
+
+        execute(id);
+
+        assertThat(failure(id)).isEqualTo(FailureCategory.NOT_AUTHORIZED);
+        assertThat(stored(id).failure()).get().extracting(RunFailure::code).isEqualTo("ai.provider.memberNotAllowed");
+        assertThat(kit.gateway.requests).isEmpty();
+    }
+
+    @Test
     void toolsEnforceMembershipOfTheRequestingMember() {
         RunId id = kit.classify("Rechnung");
         kit.gateway.answer(request -> {

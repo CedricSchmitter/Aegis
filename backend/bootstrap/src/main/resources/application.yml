@@ -99,8 +99,9 @@ aegis:
   import:
     path: ${AEGIS_IMPORT_PATH:}
     actor-username: ${AEGIS_IMPORT_ACTOR:}
-  # Bounded AI execution (ADR-0003). Without a readable API key file every workload is NOT_CONFIGURED and
-  # capture, search and tasks work unchanged. Models are preferences per workload, not code.
+  # Bounded AI execution (ADR-0003). Without provider credentials every workload is NOT_CONFIGURED and
+  # capture, search and tasks work unchanged. Provider (AEGIS_AI_PROVIDER: claude-code or anthropic) and models are
+  # configuration per workload, not code.
   ai:
     currency: USD
     # Sum of all model calls per household day (aegis.household.zone).
@@ -108,10 +109,18 @@ aegis:
     max-concurrent-runs: 2
     call-timeout: 120s
     providers:
+      # Claude API with a Console key, billed per token to the key owner.
       anthropic:
         api-key-file: ${AEGIS_ANTHROPIC_API_KEY_FILE:/run/secrets/ai/anthropic-api-key}
         base-url: https://api.anthropic.com
         connect-timeout: 10s
+      # The owner's Claude subscription through the official Claude Code CLI (`claude setup-token`). Personal:
+      # only the listed usernames' own runs may use it; costs below are API-equivalent estimates, not charges.
+      claude-code:
+        command: ${AEGIS_CLAUDE_CODE_COMMAND:/opt/claude/claude}
+        token-file: ${AEGIS_CLAUDE_CODE_TOKEN_FILE:/run/secrets/ai/claude-code-oauth-token}
+        allowed-members: ${AEGIS_AI_SUBSCRIPTION_MEMBERS:}
+        max-turns: 3
     # Claude API list prices per million tokens, checked on platform.claude.com on 2026-09-18.
     # A model without a price cannot run, because its cost budget could not be enforced.
     prices:
@@ -129,7 +138,7 @@ aegis:
         max-attempts: 2
         max-concurrent: 2
       classification:
-        provider: anthropic
+        provider: ${AEGIS_AI_PROVIDER:claude-code}
         model: claude-haiku-4-5
         max-cost: 0.05
         max-duration: 2m
@@ -139,7 +148,7 @@ aegis:
         max-attempts: 3
         max-concurrent: 2
       review:
-        provider: anthropic
+        provider: ${AEGIS_AI_PROVIDER:claude-code}
         model: claude-opus-5
         max-cost: 1.00
         max-duration: 10m
@@ -149,7 +158,7 @@ aegis:
         max-attempts: 3
         max-concurrent: 1
       chat:
-        provider: anthropic
+        provider: ${AEGIS_AI_PROVIDER:claude-code}
         model: claude-opus-5
         max-cost: 0.50
         max-duration: 5m

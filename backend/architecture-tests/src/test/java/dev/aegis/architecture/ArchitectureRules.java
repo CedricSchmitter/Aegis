@@ -51,11 +51,12 @@ final class ArchitectureRules {
     }
 
     /**
-     * Aegis never starts processes: no shell, no CLI subprocess and no command the model could influence. AI work
-     * goes through model gateways and application tools only.
+     * Aegis starts no processes except the official Claude Code CLI in its own adapter (ADR-0003): no shell and no
+     * command the model could influence. AI work goes through model gateways and application tools only.
      */
     static ArchRule noProcessExecution(String base) {
         return noClasses().that().resideInAPackage(base + "..")
+                .and().resideOutsideOfPackage(base + ".assistant.adapters.claudecode..")
                 .should().dependOnClassesThat().areAssignableTo(ProcessBuilder.class)
                 .orShould().callMethod(Runtime.class, "exec", String.class)
                 .orShould().callMethod(Runtime.class, "exec", String[].class)
@@ -63,7 +64,7 @@ final class ArchitectureRules {
                 .orShould().callMethod(Runtime.class, "exec", String[].class, String[].class)
                 .orShould().callMethod(Runtime.class, "exec", String.class, String[].class, java.io.File.class)
                 .orShould().callMethod(Runtime.class, "exec", String[].class, String[].class, java.io.File.class)
-                .as("Aegis code must not start operating-system processes");
+                .as("only the Claude Code adapter may start an operating-system process");
     }
 
     /**

@@ -42,7 +42,11 @@ services:
       AEGIS_MEMBERS_FILE: /run/secrets/initial-members.json
       AEGIS_BACKUP_STATE_FILE: /srv/aegis/backup-state/state.json
       AEGIS_COOKIE_SECURE: "false"
-      # Optional AI provider key (ADR-0003); without a key file every AI workload is reported as not configured.
+      # Optional AI provider (ADR-0003): claude-code (owner's subscription token) or anthropic (Console API key).
+      # Without the credential file of the chosen provider every AI workload is reported as not configured.
+      AEGIS_AI_PROVIDER: ${AEGIS_AI_PROVIDER:-claude-code}
+      AEGIS_AI_SUBSCRIPTION_MEMBERS: ${AEGIS_AI_SUBSCRIPTION_MEMBERS:-}
+      AEGIS_CLAUDE_CODE_TOKEN_FILE: /run/secrets/ai/claude-code-oauth-token
       AEGIS_ANTHROPIC_API_KEY_FILE: /run/secrets/ai/anthropic-api-key
       AEGIS_AI_DAILY_COST_LIMIT: ${AEGIS_AI_DAILY_COST_LIMIT:-2.00}
       TZ: Europe/Berlin

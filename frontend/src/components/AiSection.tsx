@@ -73,7 +73,7 @@ export function AiSection() {
         <h2 id="ai" className="text-lg font-semibold">
           {t("ai.title")}
         </h2>
-        <button type="button" className="btn-secondary" onClick={checkConnection} disabled={busy || !overview?.configured} data-testid="ai-check">
+        <button type="button" className="btn-secondary" onClick={checkConnection} disabled={busy || !overview?.configured || !overview.memberAllowed} data-testid="ai-check">
           {t("ai.checkConnection")}
         </button>
       </div>
@@ -82,6 +82,7 @@ export function AiSection() {
       {overview && (
         <div className="card mb-2 flex flex-col gap-2 text-sm">
           <p>{overview.configured ? t("ai.configured") : t("ai.notConfigured")}</p>
+          {overview.configured && !overview.memberAllowed && <p data-testid="ai-member-not-allowed">{t("ai.memberNotAllowed")}</p>}
           <p>{t("ai.spentToday", { spent: money(overview.spentToday), limit: money(overview.dailyCostLimit) })}</p>
           <ul className="flex flex-col gap-1">
             {overview.workloads.map((workload) => (

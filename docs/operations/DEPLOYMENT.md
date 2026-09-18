@@ -70,28 +70,45 @@ The JSON file only seeds accounts that do not exist yet. After onboarding/passwo
 plaintext values by replacing its content with `{"members": []}`; keep the bind-mounted file in place so
 later container recreation does not encounter a missing file or create a directory in its place.
 
-## AI provider key (optional)
+## AI provider (optional)
 
 AI runs through the bounded execution boundary of [ADR-0003](../architecture/adr/ADR-0003-bounded-ai-execution.md).
-Without a key file every AI workload is reported as not configured; capture, search and tasks are unaffected.
-`remote-deploy.sh` prepares `/srv/aegis/deploy/secrets/ai` (mode 0750, group 10001), which the application
-container mounts read-only at `/run/secrets/ai`.
+Without the credential file of the selected provider every AI workload is reported as not configured; capture, search
+and tasks are unaffected. `remote-deploy.sh` prepares `/srv/aegis/deploy/secrets/ai` (mode 0750, group 10001),
+which the application container mounts read-only at `/run/secrets/ai`. Credential files are read again when they
+change, so no restart is needed; deleting a file disconnects that provider. Never put a token or key into `.env`, Git,
+tickets or chat. The deployment secrets, including these files, are part of the encrypted external backup.
 
-To connect the Claude API, the owner creates an API key in the Claude Console (billed to that account) and stores it
-on the VM without echoing it into the shell history:
+### Owner's Claude subscription (default, `AEGIS_AI_PROVIDER=claude-code`)
+
+The owner's subscription may only serve his own runs, so `.env` lists the members it serves
+(`AEGIS_AI_SUBSCRIPTION_MEMBERS=cedric`); other members see that AI is not enabled for them. The token is a personal
+credential; storing it on the VM is the owner's explicit decision, and only he generates and stores it:
 
 ```bash
-# on the VM; paste the key, press Enter, then Ctrl-D
-sudo sh -c 'umask 027; cat > /srv/aegis/deploy/secrets/ai/anthropic-api-key'
-sudo chown aegis-agent:10001 /srv/aegis/deploy/secrets/ai/anthropic-api-key
-sudo chmod 0640 /srv/aegis/deploy/secrets/ai/anthropic-api-key
+# on the owner's PC with Claude Code signed in to the subscription: prints a one-year token
+claude setup-token
+# on the VM; paste the token, press Enter, then Ctrl-D
+sudo sh -c 'umask 027; cat > /srv/aegis/deploy/secrets/ai/claude-code-oauth-token'
+sudo chown aegis-agent:10001 /srv/aegis/deploy/secrets/ai/claude-code-oauth-token
+sudo chmod 0640 /srv/aegis/deploy/secrets/ai/claude-code-oauth-token
 ```
 
-The file is read again when it changes, so no restart is needed; deleting it disconnects AI. Then use
-"Check connection" on the Status page: it runs one structured call per configured model and shows the result, cost
-and any failure category. The household daily limit defaults to 2.00 USD (`AEGIS_AI_DAILY_COST_LIMIT` in `.env`);
-models, prices and per-run budgets are in `aegis.ai` of `application.yml`. Never put the key into `.env`, Git,
-tickets or chat. The deployment secrets, including this file, are part of the encrypted external backup.
+The application image contains the unmodified Claude Code CLI (pinned version); Aegis starts it per call with every
+tool removed, no MCP servers, an empty temporary home and only the token in its environment. Revoke the token in the
+Claude account and delete the file to disconnect.
+
+### Claude API key (`AEGIS_AI_PROVIDER=anthropic`)
+
+For household-wide or tool-using workloads, the owner creates an API key in the Claude Console (billed per token to
+that account) and stores it the same way as `/srv/aegis/deploy/secrets/ai/anthropic-api-key`.
+
+### Verify
+
+Use "Check connection" on the Status page (as a member the provider serves): it runs one structured call per
+configured model and shows the result, the (API-equivalent) cost and any failure category. The household daily limit
+defaults to 2.00 USD (`AEGIS_AI_DAILY_COST_LIMIT` in `.env`); models, prices and per-run budgets are in `aegis.ai` of
+`application.yml`. Changing `.env` needs `docker compose ... up -d aegis` to take effect.
 
 ## Operations
 

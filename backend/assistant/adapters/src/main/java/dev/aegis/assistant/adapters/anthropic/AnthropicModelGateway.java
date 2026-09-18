@@ -14,6 +14,7 @@ import dev.aegis.assistant.application.ports.ModelCallException;
 import dev.aegis.assistant.application.ports.ModelGateway;
 import dev.aegis.assistant.application.ports.ModelRequest;
 import dev.aegis.assistant.application.ports.ModelTurn;
+import dev.aegis.assistant.adapters.secrets.SecretFile;
 import dev.aegis.assistant.domain.FailureCategory;
 import java.io.InterruptedIOException;
 import java.net.InetAddress;
@@ -39,7 +40,7 @@ import tools.jackson.databind.ObjectMapper;
 public class AnthropicModelGateway implements ModelGateway, DisposableBean {
     public static final String PROVIDER = "anthropic";
 
-    private final ApiKeyFile keyFile;
+    private final SecretFile keyFile;
     private final String baseUrl;
     private final Duration connectTimeout;
     private final ObjectMapper json;
@@ -48,7 +49,7 @@ public class AnthropicModelGateway implements ModelGateway, DisposableBean {
     private AnthropicClient client;
 
     public AnthropicModelGateway(AnthropicProperties properties, ObjectMapper json) {
-        this.keyFile = new ApiKeyFile(Path.of(properties.apiKeyFile()));
+        this.keyFile = new SecretFile(Path.of(properties.apiKeyFile()));
         this.baseUrl = requireSafeBaseUrl(properties.baseUrl());
         this.connectTimeout = properties.connectTimeout();
         this.json = json;
