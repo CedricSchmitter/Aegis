@@ -27,8 +27,8 @@ public interface AiRunRepository {
     /** Most recently requested runs first. */
     List<AiRun> findRecent(int limit);
 
-    /** Most recently finished run, if any. */
-    Optional<AiRun> findLatestFinished();
+    /** For every provider and model, its most recently finished run that succeeded or failed. */
+    List<AiRun> findLatestOutcomePerModel();
 
     Optional<Instant> lastSucceededAt();
 

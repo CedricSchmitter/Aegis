@@ -220,15 +220,31 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         return view(load(runId));
     }
 
+    /**
+     * Health per currently configured model: its latest succeeded or failed run of any workload. Models that are no
+     * longer configured do not affect the status.
+     */
     @Override
     public AiHealth health(Actor actor) {
         access.requireMember(actor);
-        Optional<AiRun> latest = runs.findLatestFinished();
-        return new AiHealth(anyProviderConfigured(), runs.lastSucceededAt().orElse(null),
-                latest.map(run -> run.state().name()).orElse(null),
-                latest.flatMap(AiRun::failure).filter(failure -> latest.get().state() == RunState.FAILED)
-                        .map(failure -> failure.category().name()).orElse(null),
-                latest.flatMap(AiRun::finishedAt).orElse(null));
+        Map<ModelSelection, AiRun> latest = new LinkedHashMap<>();
+        for (AiRun run : runs.findLatestOutcomePerModel()) {
+            latest.put(run.model(), run);
+        }
+        Set<ModelSelection> configured = new LinkedHashSet<>();
+        for (Workload workload : Workload.values()) {
+            settings.profile(workload).flatMap(WorkloadProfile::modelSelection).ifPresent(configured::add);
+        }
+        List<AiHealth.ModelHealth> models = new ArrayList<>();
+        for (ModelSelection model : configured) {
+            AiRun run = latest.get(model);
+            models.add(new AiHealth.ModelHealth(model.provider(), model.model(),
+                    run == null ? null : run.state().name(),
+                    run == null || run.state() != RunState.FAILED ? null
+                            : run.failure().map(failure -> failure.category().name()).orElse(null),
+                    run == null ? null : run.finishedAt().orElse(null)));
+        }
+        return new AiHealth(anyProviderConfigured(), runs.lastSucceededAt().orElse(null), models);
     }
 
     private boolean anyProviderConfigured() {

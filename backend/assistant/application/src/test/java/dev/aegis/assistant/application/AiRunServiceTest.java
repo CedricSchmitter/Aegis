@@ -176,16 +176,29 @@ class AiRunServiceTest {
     }
 
     @Test
-    void healthReportsTheLatestFinishedRun() {
-        assertThat(kit.service().health(AS_LISA)).isEqualTo(new AiHealth(true, null, null, null, null));
+    void healthReportsTheLatestOutcomeOfEveryConfiguredModel() {
+        AiHealth.ModelHealth unverified = new AiHealth.ModelHealth(ScriptedGateway.PROVIDER, AiTestKit.MODEL, null,
+                null, null);
+        assertThat(kit.service().health(AS_LISA)).isEqualTo(new AiHealth(true, null, List.of(unverified)));
         kit.gateway.fail(FailureCategory.AUTHENTICATION, "provider.authentication", null);
         kit.executor().execute(new RunId(kit.classify("doc-1", 3, "Rechnung", false).id()));
 
-        AiHealth health = kit.service().health(AS_LISA);
+        AiHealth failed = kit.service().health(AS_LISA);
+        kit.gateway.answer(json(Map.of("label", "invoice")));
+        kit.clock.advance(java.time.Duration.ofMinutes(1));
+        kit.executor().execute(new RunId(kit.classify("doc-2", 1, "Rechnung", false).id()));
+        AiHealth recovered = kit.service().health(AS_LISA);
 
-        assertThat(health.lastFinishedState()).isEqualTo("FAILED");
-        assertThat(health.lastFailureCategory()).isEqualTo("AUTHENTICATION");
-        assertThat(health.lastSuccessAt()).isNull();
+        assertThat(failed.models()).singleElement().satisfies(model -> {
+            assertThat(model.lastState()).isEqualTo("FAILED");
+            assertThat(model.lastFailureCategory()).isEqualTo("AUTHENTICATION");
+        });
+        assertThat(failed.lastSuccessAt()).isNull();
+        assertThat(recovered.models()).singleElement().satisfies(model -> {
+            assertThat(model.lastState()).isEqualTo("SUCCEEDED");
+            assertThat(model.lastFailureCategory()).isNull();
+        });
+        assertThat(recovered.lastSuccessAt()).isNotNull();
     }
 
     @Test

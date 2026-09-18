@@ -2,6 +2,7 @@ package dev.aegis.assistant.application;
 
 import dev.aegis.assistant.domain.AiRun;
 import dev.aegis.assistant.domain.AiRunRepository;
+import dev.aegis.assistant.domain.ModelSelection;
 import dev.aegis.assistant.domain.Money;
 import dev.aegis.assistant.domain.RunId;
 import dev.aegis.assistant.domain.RunState;
@@ -60,9 +61,13 @@ class InMemoryAiRunRepository implements AiRunRepository {
     }
 
     @Override
-    public synchronized Optional<AiRun> findLatestFinished() {
-        return runs.values().stream().filter(run -> run.finishedAt().isPresent())
-                .max(Comparator.comparing(run -> run.finishedAt().get())).map(InMemoryAiRunRepository::copy);
+    public synchronized List<AiRun> findLatestOutcomePerModel() {
+        Map<ModelSelection, AiRun> latest = new LinkedHashMap<>();
+        runs.values().stream()
+                .filter(run -> run.state() == RunState.SUCCEEDED || run.state() == RunState.FAILED)
+                .sorted(Comparator.comparing(run -> run.finishedAt().get()))
+                .forEach(run -> latest.put(run.model(), run));
+        return latest.values().stream().map(InMemoryAiRunRepository::copy).toList();
     }
 
     @Override

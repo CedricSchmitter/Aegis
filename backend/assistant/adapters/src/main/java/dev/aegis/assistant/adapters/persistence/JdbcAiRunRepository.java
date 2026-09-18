@@ -95,9 +95,10 @@ public class JdbcAiRunRepository implements AiRunRepository {
     }
 
     @Override
-    public Optional<AiRun> findLatestFinished() {
-        return jdbc.sql(SELECT_RUNS + "WHERE finished_at IS NOT NULL ORDER BY finished_at DESC, id LIMIT 1")
-                .query(this::map).optional();
+    public List<AiRun> findLatestOutcomePerModel() {
+        return jdbc.sql("SELECT DISTINCT ON (provider, model) " + COLUMNS
+                + " FROM ai_runs WHERE state IN ('SUCCEEDED', 'FAILED') AND finished_at IS NOT NULL"
+                + " ORDER BY provider, model, finished_at DESC, id").query(this::map).list();
     }
 
     @Override
