@@ -9,7 +9,7 @@
   </parent>
   <artifactId>aegis-assistant-adapters</artifactId>
   <name>Aegis Assistant adapters</name>
-  <description>Model gateways (Claude API, Claude Code subscription CLI), PostgreSQL run store, db-scheduler job, REST and read-only tools over other contexts' public contracts.</description>
+  <description>Model gateways (Claude API), PostgreSQL run store, db-scheduler job, REST and read-only tools over other contexts' public contracts.</description>
   <dependencies>
     <dependency>
       <groupId>dev.aegis</groupId>

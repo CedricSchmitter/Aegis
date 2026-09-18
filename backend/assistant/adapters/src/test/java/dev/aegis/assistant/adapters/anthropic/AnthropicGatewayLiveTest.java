@@ -35,7 +35,7 @@ class AnthropicGatewayLiveTest {
 
     private static List<String> models() {
         String configured = System.getenv("AEGIS_AI_LIVE_MODELS");
-        return List.of((configured == null || configured.isBlank() ? "claude-haiku-4-5,claude-opus-5" : configured)
+        return List.of((configured == null || configured.isBlank() ? "claude-sonnet-5" : configured)
                 .split(","));
     }
 

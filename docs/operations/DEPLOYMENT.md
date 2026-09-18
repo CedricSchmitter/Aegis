@@ -79,36 +79,49 @@ which the application container mounts read-only at `/run/secrets/ai`. Credentia
 change, so no restart is needed; deleting a file disconnects that provider. Never put a token or key into `.env`, Git,
 tickets or chat. The deployment secrets, including these files, are part of the encrypted external backup.
 
-### Owner's Claude subscription (default, `AEGIS_AI_PROVIDER=claude-code`)
+### Claude API with Sonnet 5
 
-The owner supplies the Claude credential for the shared household AI connection. All active household members can
-request runs through the same application authorization and budgets. The token is a personal credential; storing it
-on the VM is the owner's explicit decision, and only he generates and stores it:
+The only bundled provider is the direct Claude Messages API through the Java SDK. All three future workload
+profiles select `claude-sonnet-5`; no Claude Code installation, subscription login or CLI process is needed.
+Both household members use their own Aegis login with the server-side API connection.
+
+1. In [Claude Console](https://platform.claude.com/), open Billing and manually buy a small prepaid credit balance.
+   API credits are separate from a Claude subscription. Check the displayed currency, minimum and taxes before
+   purchase; the API prices and Aegis cost display use USD, not EUR.
+2. Leave **auto-reload disabled** in Console. Aegis cannot configure billing, purchase credits, or enable reload.
+   See [API billing](https://support.claude.com/en/articles/8977456-how-do-i-pay-for-my-claude-api-usage).
+3. Create a dedicated Aegis API key in Console. Never paste it into chat, a shell command, Git or an issue.
+4. Connect to the VM using the verified SSH command in [VM-ACCESS.md](../VM-ACCESS.md), then run:
 
 ```bash
-# on the owner's PC with Claude Code signed in to the subscription: prints a one-year token
-claude setup-token
-# on the VM; paste the token, press Enter, then Ctrl-D
-sudo sh -c 'umask 027; cat > /srv/aegis/deploy/secrets/ai/claude-code-oauth-token'
-sudo chown aegis-agent:10001 /srv/aegis/deploy/secrets/ai/claude-code-oauth-token
-sudo chmod 0640 /srv/aegis/deploy/secrets/ai/claude-code-oauth-token
+sudo python3 /srv/aegis/source/current/ops/deploy/set-anthropic-key.py
 ```
 
-The application image contains the unmodified Claude Code CLI (pinned version); Aegis starts it per call with every
-tool removed, no MCP servers, an empty temporary home and only the token in its environment. Revoke the token in the
-Claude account and delete the file to disconnect.
+Paste the key at the hidden prompt and press Enter. The script validates the basic format, writes a temporary file,
+sets root:10001 ownership and mode 0640, then replaces `/srv/aegis/deploy/secrets/ai/anthropic-api-key` atomically.
+The directory is mounted into the container, so the new key is readable without a restart. The script makes no API
+request and never prints the key. Run it again to rotate the key; revoke the old key in Console separately.
 
-### Claude API key (`AEGIS_AI_PROVIDER=anthropic`)
+### Verify and understand availability
 
-For household-wide or tool-using workloads, the owner creates an API key in the Claude Console (billed per token to
-that account) and stores it the same way as `/srv/aegis/deploy/secrets/ai/anthropic-api-key`.
+Open Aegis > Status > Check connection as either member. All profiles share Sonnet 5, so one check makes one small
+structured request, not three requests. A successful run proves authentication, model access and structured output;
+it does not test document extraction quality. The check has a 0.05 USD run budget and at most two attempts.
 
-### Verify
+Implemented: connection checks, persistent run status, token/cost accounting, bounded retries, cancellation and
+shared household access. Document classification (#23), scheduled review/task creation (#24), and document chat
+(#25) are **not connected**. They remain marked as missing workflows even after a successful connection check.
+Adding a key does not automatically upload or analyze household documents.
 
-Use "Check connection" on the Status page as any active household member: it runs one structured call per
-configured model and shows the result, the (API-equivalent) cost and any failure category. The household daily limit
-defaults to 2.00 USD (`AEGIS_AI_DAILY_COST_LIMIT` in `.env`); models, prices and per-run budgets are in `aegis.ai` of
-`application.yml`. Changing `.env` needs `docker compose ... up -d aegis` to take effect.
+The default household daily cost limit is **0.25 USD**, with one run at a time. Classification is limited to
+0.05 USD per run; review/chat profiles to 0.10 USD. These are application estimates from reported usage, not a
+provider balance or an exact billing ceiling: interrupted requests may be billed without recorded usage.
+The provider's billing controls remain authoritative. No automatic top-up or alternate-provider fallback exists.
+Models, prices and per-run budgets are in `aegis.ai` of `application.yml`.
+
+Deployment defaults: `AEGIS_AI_PROVIDER=anthropic`, `AEGIS_AI_DAILY_COST_LIMIT=0.25`. Existing `.env` overrides
+must match these settings; changing environment settings requires recreating the application container.
+Deleting the key file disables new calls; calls already in flight may finish.
 
 ## Operations
 

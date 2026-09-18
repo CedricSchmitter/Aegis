@@ -30,6 +30,8 @@ jobs:
         run: ./mvnw -B -ntp verify
       - name: Backup safety regression tests
         run: python3 -m unittest discover -s ops/backup -p 'test_*.py'
+      - name: API credential installation safety tests
+        run: python3 -m unittest discover -s ops/deploy -p 'test_set_anthropic_key.py'
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4

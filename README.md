@@ -80,10 +80,11 @@ tasks, deterministic Today, in-app notifications, integration status, portable e
 recovery. Folders, labels and search work without AI; automatic classification is not connected.
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
-visible state, cancellation and retry, a connection check, a Claude API adapter and a locked-down Claude Code adapter
-for the owner's subscription (default provider, available to authenticated household members).
-Until the owner stores his subscription token the status page reports AI as not configured; classification, scheduled
-review and chat workflows (#23, #24, #25) are not connected.
+visible state, cancellation and retry, a connection check, and the direct Claude API adapter.
+All workload profiles default to Sonnet 5 with a 0.25 USD household daily budget and one concurrent run.
+Both members can use the shared server-side API connection. Until the owner installs the API key, AI is not
+configured. Follow [API setup](docs/operations/DEPLOYMENT.md#claude-api-with-sonnet-5); no subscription login is needed.
+Classification, scheduled review and chat workflows (#23, #24, #25) are not connected.
 
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
 passed isolated recovery and its daily timer is enabled; the first scheduled run succeeded on 2026-09-18.
