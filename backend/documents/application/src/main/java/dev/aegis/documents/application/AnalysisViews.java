@@ -119,7 +119,10 @@ public class AnalysisViews {
                 }
                 yield "SUCCEEDED".equals(run.state()) ? AnalysisView.CLASSIFIED : AnalysisView.FAILED;
             }
+            // A doubtful result that left the document without any effective label also needs a member's look.
             case COMPLETED -> analysis.hasPendingSuggestions() || pendingLabels(classification)
+                    || !analysis.flags().isEmpty() && classification.labels().stream().noneMatch(
+                            AnalysisViews::effective)
                     ? AnalysisView.NEEDS_REVIEW : AnalysisView.CLASSIFIED;
         };
     }

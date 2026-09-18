@@ -33,7 +33,8 @@ generation is requested, the view reads the latest run for the key `document-cla
 through `AiRunStatusQuery` (a port implemented in the composition root), so a failed, cancelled or waiting run is
 shown truthfully. `PENDING` covers queued, running and waiting-for-retry runs; `FAILED` shows the run's failure
 category (for example `BUDGET_EXHAUSTED`, `PROVIDER_UNAVAILABLE`, `STALE_SOURCE`). `NEEDS_REVIEW` means a finished
-result left suggestions (labels, title, new names or subjects) for a member.
+result left suggestions (labels, title, new names or subjects) for a member, or a result with doubt flags left the
+document without any effective label (for example an unreadable scan) until a member labels it.
 
 ### Trigger and durability
 

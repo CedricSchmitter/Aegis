@@ -247,6 +247,21 @@ class DocumentAnalysisServiceTest {
     }
 
     @Test
+    void anUnreadableDocumentWithoutLabelsNeedsReviewUntilAMemberLabelsIt() {
+        Document scan = archived("Scan 0015", "xq#7 ... ### unleserl1ch");
+        int generation = request(scan);
+        assessAndApply(scan, new Proposal(generation, 0, null, null, null, null, false, null, null, List.of(), null,
+                List.of(), List.of("POOR_OCR")));
+
+        DocumentSummary unreadable = view(scan);
+        assertThat(unreadable.classification().labels()).isEmpty();
+        assertThat(unreadable.analysis().state()).isEqualTo(AnalysisView.NEEDS_REVIEW);
+        f.classificationService.setLabels(f.actor, scan.id(), List.of(invoice.id()),
+                unreadable.classification().version());
+        assertThat(view(scan).analysis().state()).isEqualTo(AnalysisView.CLASSIFIED);
+    }
+
+    @Test
     void claimsWithoutVerbatimEvidenceOrForTheWrongFacetAreNotApplied() {
         Document document = archived("Scan 0007", TELEKOM_TEXT);
         int generation = request(document);
