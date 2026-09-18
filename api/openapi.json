@@ -16,6 +16,10 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "memberAllowed" : {
+            "description" : "Whether the asking member may use at least one configured model",
+            "type" : "boolean"
+          },
           "spentToday" : {
             "type" : "number"
           },
@@ -26,7 +30,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "configured", "currency", "dailyCostLimit", "maxConcurrentRuns", "spentToday", "workloads" ],
+        "required" : [ "configured", "currency", "dailyCostLimit", "maxConcurrentRuns", "memberAllowed", "spentToday", "workloads" ],
         "type" : "object"
       },
       "AliasesRequest" : {

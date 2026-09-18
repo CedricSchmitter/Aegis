@@ -22,8 +22,10 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   search work without AI; automatic classification is not connected.
 - Bounded AI execution ([ADR-0003](../architecture/adr/ADR-0003-bounded-ai-execution.md), issue #21): durable runs
   with per-workload provider, model and budgets, visible state, cancellation, retry, audit steps, a connection
-  check and a Claude API adapter. No provider key is configured, so AI is reported as not configured and no model
-  has been called from the VM; classification, review and chat workflows (#23, #24, #25) are not connected.
+  check, a Claude API adapter and a Claude Code adapter for the owner's subscription. The owner chose his
+  subscription on 2026-09-18; it serves only the members listed in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Until he stores
+  his `claude setup-token` token on the VM, AI is reported as not configured and no model has been called from the
+  VM with real credentials; classification, review and chat workflows (#23, #24, #25) are not connected.
 - Trusted TLS, redirects, session-cookie settings, authorization and original checksums were independently
   checked. The owner confirmed upload, original access, task assignment, notification and completion on
   both Android phones. Real household data is present and must be preserved.
@@ -87,6 +89,18 @@ Future work is tracked in [GitHub Issues](https://github.com/CedricSchmitter/Aeg
   `MODEL_UNAVAILABLE`, in German at desktop width and in English at phone width without horizontal overflow. It also
   showed that the integration status judged only the latest finished run and reported "connected" despite the
   unavailable model; PR #55 judges each configured model instead.
+- [PR #55](https://github.com/CedricSchmitter/Aegis/pull/55):
+  [CI run 35336667265](https://github.com/CedricSchmitter/Aegis/actions/runs/35336667265) passed all four jobs;
+  `efc86f9` was deployed at 13:00 after another `pg_dump` (`aegis-before-efc86f9.dump`) with unchanged household
+  counts. A second isolated QA instance of that image reported AI as degraded while both models were unverified and,
+  after the check, as degraded for `claude-opus-5: MODEL_UNAVAILABLE` although `claude-haiku-4-5` succeeded.
+- PR #56 adds the owner-chosen subscription provider: the unmodified Claude Code CLI 2.1.276 (musl build) in the
+  image, started per call with every tool removed, no MCP servers, an empty temporary home and only the token in its
+  environment, and limited to the listed members. In the built image the CLI ran as uid 10001, accepted these flags
+  and answered without a token with "Not logged in" and with an invalid token with "401 OAuth access token is
+  invalid", both classified as `AUTHENTICATION`. `./mvnw verify` on the VM passed with 43 PostgreSQL integration
+  tests; a stand-in executable covers the CLI's lock-down, environment isolation, token masking, timeout kill and
+  failure classification.
 
 ## Recovery
 

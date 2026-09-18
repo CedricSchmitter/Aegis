@@ -9,7 +9,7 @@
   </parent>
   <artifactId>aegis-assistant-adapters</artifactId>
   <name>Aegis Assistant adapters</name>
-  <description>Anthropic model gateway, PostgreSQL run store, db-scheduler job, REST and read-only tools over other contexts' public contracts.</description>
+  <description>Model gateways (Claude API, Claude Code subscription CLI), PostgreSQL run store, db-scheduler job, REST and read-only tools over other contexts' public contracts.</description>
   <dependencies>
     <dependency>
       <groupId>dev.aegis</groupId>
@@ -18,6 +18,10 @@
     <dependency>
       <groupId>dev.aegis</groupId>
       <artifactId>aegis-documents-application</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.aegis</groupId>
+      <artifactId>aegis-identity-application</artifactId>
     </dependency>
     <dependency>
       <groupId>com.anthropic</groupId>

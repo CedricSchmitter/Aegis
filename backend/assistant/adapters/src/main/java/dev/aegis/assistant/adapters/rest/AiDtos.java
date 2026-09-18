@@ -69,11 +69,13 @@ public final class AiDtos {
         }
     }
 
-    public record AiOverviewDto(boolean configured, BigDecimal dailyCostLimit, BigDecimal spentToday, String currency,
-            int maxConcurrentRuns, List<WorkloadDto> workloads) {
+    public record AiOverviewDto(boolean configured,
+            @Schema(description = "Whether the asking member may use at least one configured model") boolean memberAllowed,
+            BigDecimal dailyCostLimit, BigDecimal spentToday, String currency, int maxConcurrentRuns,
+            List<WorkloadDto> workloads) {
         static AiOverviewDto from(AiOverview overview) {
-            return new AiOverviewDto(overview.configured(), overview.dailyCostLimit(), overview.spentToday(),
-                    overview.currency(), overview.maxConcurrentRuns(),
+            return new AiOverviewDto(overview.configured(), overview.memberAllowed(), overview.dailyCostLimit(),
+                    overview.spentToday(), overview.currency(), overview.maxConcurrentRuns(),
                     overview.workloads().stream().map(WorkloadDto::from).toList());
         }
     }

@@ -1,4 +1,4 @@
-package dev.aegis.assistant.adapters.anthropic;
+package dev.aegis.assistant.adapters.secrets;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -8,21 +8,21 @@ import java.nio.file.attribute.FileTime;
 import java.util.Optional;
 
 /**
- * Reads the API key from its file and re-reads it when the file changes, so the owner can add or rotate the key
- * without a restart. The key value is never logged or returned in an error.
+ * Reads a single-line secret (API key or token) from its file and re-reads it when the file changes, so the owner
+ * can add or rotate it without a restart. The value is never logged or returned in an error.
  */
-final class ApiKeyFile {
+public final class SecretFile {
     private final Path path;
     private volatile Cached cached;
 
     private record Cached(FileTime modified, long size, Optional<String> key) {
     }
 
-    ApiKeyFile(Path path) {
+    public SecretFile(Path path) {
         this.path = path;
     }
 
-    Optional<String> read() {
+    public Optional<String> read() {
         try {
             if (!Files.isRegularFile(path) || !Files.isReadable(path)) {
                 return Optional.empty();
@@ -43,7 +43,7 @@ final class ApiKeyFile {
         }
     }
 
-    Path path() {
+    public Path path() {
         return path;
     }
 }

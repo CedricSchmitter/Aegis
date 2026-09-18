@@ -19,9 +19,19 @@ RUN --mount=type=cache,target=/root/.m2 chmod +x mvnw && ./mvnw -B -q -Pfrontend
     -Daegis.build.commit=${AEGIS_COMMIT} -DskipTests -DskipITs package \
     && cp bootstrap/target/aegis-bootstrap-*.jar /build/aegis.jar
 
+# Unmodified official Claude Code CLI (musl build) for the optional subscription provider (ADR-0003). The version is
+# pinned; npm verifies the package integrity from the registry. It only runs when the owner provides a token.
+FROM node:24-alpine AS claude-cli
+ARG CLAUDE_CODE_VERSION=2.1.276
+RUN --mount=type=cache,target=/root/.npm npm install -g --no-audit --no-fund \
+        "@anthropic-ai/claude-code-linux-x64-musl@${CLAUDE_CODE_VERSION}" \
+    && install -D -m 0755 /usr/local/lib/node_modules/@anthropic-ai/claude-code-linux-x64-musl/claude /opt/claude/claude
+
 FROM eclipse-temurin:21-jre-alpine AS runtime
-RUN addgroup -S -g 10001 aegis && adduser -S -G aegis -u 10001 aegis \
+RUN apk add --no-cache libgcc libstdc++ \
+    && addgroup -S -g 10001 aegis && adduser -S -G aegis -u 10001 aegis \
     && mkdir -p /srv/aegis/ingress /srv/aegis/exports && chown -R aegis:aegis /srv/aegis
+COPY --from=claude-cli /opt/claude/claude /opt/claude/claude
 USER aegis
 WORKDIR /srv/aegis
 COPY --from=backend /build/aegis.jar /srv/aegis/aegis.jar

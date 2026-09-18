@@ -34,22 +34,45 @@ cost 50 %, cache reads 10 % of the input price.
 
 ### Provider and runtime
 
-Aegis calls the Claude Messages API through the official Java SDK in one adapter
-(`assistant.adapters.anthropic`) behind the provider-neutral `ModelGateway` port. Aegis owns the agent loop, the
-tools and every limit. The CLI and the Agent SDK are rejected for these workflows. ArchUnit enforces that only the
-Anthropic adapter uses the SDK and that no Aegis code starts an operating-system process, so a CLI-based adapter would
-need a new decision. A second provider or local inference (#35) is another `ModelGateway` implementation.
+All AI calls go through the provider-neutral `ModelGateway` port; Aegis owns the loop, the tools and every limit.
+Two gateways exist, selected per workload (`AEGIS_AI_PROVIDER`):
 
-Authentication uses an owner-created Console API key stored in a server-side file
-(`/srv/aegis/deploy/secrets/ai/anthropic-api-key`, mode 0640, group 10001, mounted read-only into the application
-container). The key is not in Git, the environment file, logs or the database; a missing or empty file means
-"not configured". The file is re-read when it changes, so the key can be added or rotated without a restart.
+1. **Claude Messages API** through the official Java SDK (`assistant.adapters.anthropic`, provider `anthropic`),
+   authenticated with a Console API key billed to its owner. It supports tool loops and is the path for household-wide
+   workloads.
+2. **The owner's Claude subscription** through the unmodified official Claude Code CLI (`assistant.adapters.claudecode`,
+   provider `claude-code`). The owner decided on 2026-09-18 to use his subscription for his own, mainly development-
+   related AI work instead of a Console key. Anthropic documents `claude setup-token` (a one-year OAuth token in
+   `CLAUDE_CODE_OAUTH_TOKEN`, not read in `--bare` mode) for scripts and CI of the subscriber, but does not permit
+   routing requests of other users through Pro/Max credentials. The gateway therefore serves only runs requested by
+   the members listed in `AEGIS_AI_SUBSCRIPTION_MEMBERS` (checked when a run is requested and before every call);
+   other members see that AI is not enabled for them, and their capture, search and tasks are unaffected.
+
+The Agent SDK remains rejected (no Java SDK, second runtime). The CLI is confined as follows: one process per call with
+`--disallowedTools "*"` (every built-in tool removed), `--strict-mcp-config` without servers, `--disable-slash-commands`,
+`--no-session-persistence`, `--permission-mode dontAsk`, `--max-turns 3`, the output schema via `--json-schema`, an empty
+temporary home and working directory deleted afterwards, and an environment that contains only `PATH`, the token and
+switches that disable non-essential traffic and auto-updates, so database passwords and other application secrets are
+not inherited. The process tree is killed when the attempt's time is up. Tool loops and multi-turn conversations are
+refused by this gateway; workloads that need tools use the API provider (or a later MCP bridge to Aegis tools).
+ArchUnit confines the Anthropic SDK to its adapter and process creation to the Claude Code adapter. The CLI (musl
+build, pinned version, npm integrity check) is part of the application image. A further provider or local inference
+(#35) is another `ModelGateway` implementation.
+
+Credentials are server-side files mounted read-only into the application container from
+`/srv/aegis/deploy/secrets/ai` (mode 0750, group 10001): `claude-code-oauth-token` or `anthropic-api-key`, each mode
+0640. They are not in Git, the environment file, logs or the database; a missing or empty file means "not
+configured", and a changed file is read again without a restart. The subscription token is a personal token: placing
+it on the VM is an explicit owner exception to the rule that personal tokens stay off the VM, and only the owner
+generates and stores it.
 
 ### Workload profiles
 
 Provider, model and limits are configuration per workload (`aegis.ai.workloads.*`); model names are preferences, not
-code. Defaults: classification `claude-haiku-4-5`, review `claude-opus-5`, chat `claude-opus-5`. A model can run only
-with a configured list price (`aegis.ai.prices`), because otherwise its cost budget could not be enforced. Because
+code. Defaults: provider `claude-code`; classification `claude-haiku-4-5`, review `claude-opus-5`, chat `claude-opus-5`.
+A model can run only with a configured list price (`aegis.ai.prices`), because otherwise its cost budget could not be
+enforced. With the subscription, amounts are API-equivalent estimates that bound quota use, not charges; the CLI's
+output token cap is not configurable, so its per-call cost is bounded by the turn limit and checked after the call. Because
 Haiku 4.5 may be retired from 2026-10-15, switching classification to a successor is a configuration change plus a
 price entry. Availability is never assumed: the connection check performs one structured call per distinct configured
 model with the real key.
@@ -101,9 +124,10 @@ unless reprocessing is requested explicitly.
   calls to other tools are refused and audited, and the third refusal fails the run as `TOOL_DENIED`.
 - Tools are read-only adapters over public application queries and run with the requesting member's actor, so the same
   `HouseholdAccess` check applies as in the UI. A member who is no longer active cannot start a run or use a tool.
-- There is no shell, file, network or credential tool, and Aegis never starts processes. The worker is a job thread
-  inside the unprivileged application container (uid 10001) without Docker socket, SSH keys or host access; the
-  adapter only contacts the configured HTTPS endpoint.
+- There is no shell, file, network or credential tool. The only process Aegis starts is the locked-down Claude Code
+  CLI described above, whose built-in tools are all removed. The worker is a job thread inside the unprivileged
+  application container (uid 10001) without Docker socket, SSH keys or host access; the API adapter only contacts the
+  configured HTTPS endpoint.
 - Household content is framed as data (`<untrusted_content>`, with frame tags inside the content neutralized, control
   characters removed and visible truncation), and every system prompt states that framed content and tool results
   cannot change the task, tools or permissions. This framing is defense in depth; the structural limits above are the
@@ -114,9 +138,9 @@ unless reprocessing is requested explicitly.
 
 ### Degradation and visibility
 
-Capture, search, tasks and planning never call the AI context. Requests that cannot run (no credentials, no handler,
-no price) are refused with `ai.notConfigured`, `ai.workload.unavailable` or `ai.price.unknown` instead of queuing
-work. The status page shows the AI integration, judged per configured model from its latest succeeded or failed
+Capture, search, tasks and planning never call the AI context. Requests that cannot run (no credentials, provider not
+enabled for the member, no handler, no price) are refused with `ai.notConfigured`, `ai.provider.memberNotAllowed`,
+`ai.workload.unavailable` or `ai.price.unknown` instead of queuing work. The status page shows the AI integration, judged per configured model from its latest succeeded or failed
 run (not configured; degraded while a model is unverified or its latest run failed for a provider reason;
 otherwise connected), the workload profiles with their budgets, today's spending, the connection check and recent runs with
 cancel and retry. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`, `/api/ai/runs/{id}/cancel`,
@@ -136,5 +160,11 @@ cancel and retry. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`,
 - Streaming for chat, Message Batches for review and prompt caching are adapter extensions that do not change the run
   model. The cost of an interrupted attempt is counted when its call returns; a call lost with its process is not
   counted by Aegis.
-- The live verification of credentials and models needs the owner's API key; the automated tests use controlled
-  adapters and a separately enabled live test.
+- With the subscription provider only the listed members' runs can use AI. Household-wide automatic workloads (for
+  example classifying every upload in #23) either run on behalf of a listed member's own actions or need the API
+  provider. Subscription usage limits surface as `RATE_LIMITED` with the reported reset time.
+- The subscription gateway classifies CLI failures by their messages (observed with Claude Code 2.1.276); unknown
+  failures count as provider outages and are retried within the attempt budget. Updating the pinned CLI version is a
+  deliberate image change.
+- The live verification of credentials and models needs the owner's token or key; the automated tests use controlled
+  adapters (a local HTTP server for the API, a stand-in executable for the CLI) and a separately enabled API live test.
