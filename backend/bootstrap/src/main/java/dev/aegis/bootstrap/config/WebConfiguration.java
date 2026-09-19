@@ -3,11 +3,14 @@ package dev.aegis.bootstrap.config;
 import dev.aegis.identity.adapters.security.ActorArgumentResolver;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import org.springframework.boot.web.server.MimeMappings;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.server.servlet.ConfigurableServletWebServerFactory;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
@@ -26,10 +29,10 @@ public class WebConfiguration implements WebMvcConfigurer {
         resolvers.add(actorArgumentResolver);
     }
 
-    /** Static resources take their type from these mappings; the web app manifest is unknown to the defaults. */
-    @Override
-    public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
-        configurer.mediaType("webmanifest", MediaType.parseMediaType("application/manifest+json"));
+    /** Static resources take their type from the container; the web app manifest is unknown to its defaults. */
+    @Bean
+    WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> webManifestMimeType() {
+        return factory -> factory.addMimeMappings(new MimeMappings(Map.of("webmanifest", "application/manifest+json")));
     }
 
     @Override
