@@ -13,9 +13,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -34,22 +34,23 @@ class HostRunnerClientTest {
     @TempDir
     Path dir;
     private final JsonMapper json = JsonMapper.builder().build();
-    private ServerSocketChannel server;
+    private final List<ServerSocketChannel> servers = new ArrayList<>();
     private final CompletableFuture<String> received = new CompletableFuture<>();
 
     @AfterEach
     void stop() throws IOException {
-        if (server != null) {
+        for (ServerSocketChannel server : servers) {
             server.close();
         }
     }
 
     /** Accepts one connection, reads the request line and answers with {@code respond(request)}, or never. */
     private Path runner(Function<String, String> respond) throws IOException {
-        Path socket = dir.resolve("runner.sock");
-        server = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+        Path socket = dir.resolve("runner-" + servers.size() + ".sock");
+        ServerSocketChannel server = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+        servers.add(server);
         server.bind(UnixDomainSocketAddress.of(socket));
-        Thread.ofVirtual().start(() -> {
+        Thread.ofPlatform().daemon().start(() -> {
             try (SocketChannel connection = server.accept()) {
                 String request = readLine(connection);
                 received.complete(request);
@@ -116,7 +117,6 @@ class HostRunnerClientTest {
                 List.of("rejected", FailureCategory.INVALID_REQUEST, "provider.invalidRequest"),
                 List.of("cli_unavailable", FailureCategory.NOT_CONFIGURED, "provider.cliUnavailable"),
                 List.of("failed", FailureCategory.PROVIDER_UNAVAILABLE, "provider.unavailable"))) {
-            stop();
             Path socket = runner(request -> "{\"protocol\":1,\"status\":\"" + expected.get(0)
                     + "\",\"message\":\"why\"}");
             assertThatThrownBy(() -> new HostRunnerClient(socket, json, GRACE).run(call(Duration.ofSeconds(5))))
@@ -124,7 +124,6 @@ class HostRunnerClientTest {
                         assertThat(failure.category()).isEqualTo(expected.get(1));
                         assertThat(failure.code()).isEqualTo(expected.get(2));
                     });
-            Files.deleteIfExists(socket);
         }
     }
 

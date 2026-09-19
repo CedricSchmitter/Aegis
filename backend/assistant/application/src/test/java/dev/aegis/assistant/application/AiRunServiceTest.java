@@ -373,6 +373,12 @@ class AiRunServiceTest {
         List<RunView> checks = kit.service().checkConnection(AS_CEDRIC);
 
         assertThat(cedrics.memberAllowed()).isTrue();
+        assertThat(cedrics.limitProvider()).isEqualTo(AiTestKit.SUBSCRIPTION);
+        assertThat(cedrics.dailyCostLimit()).isEqualByComparingTo("50.00");
+        assertThat(cedrics.workloads()).filteredOn(view -> AiTestKit.SUBSCRIPTION.equals(view.provider()))
+                .isNotEmpty().allSatisfy(view -> assertThat(view.maxCost()).isEqualByComparingTo("0.50"));
+        assertThat(checks.getFirst().maxCost()).isEqualByComparingTo("0.50");
+        assertThat(lisas.limitProvider()).isEqualTo(AiTestKit.SUBSCRIPTION);
         assertThat(cedrics.workloads()).filteredOn(view -> view.workload().equals("DOCUMENT_CLASSIFICATION"))
                 .singleElement().satisfies(view -> {
                     assertThat(view.provider()).isEqualTo(AiTestKit.SUBSCRIPTION);

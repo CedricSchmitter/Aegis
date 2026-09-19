@@ -37,8 +37,8 @@ public interface AiRunRepository {
 
     List<RunStep> steps(RunId id);
 
-    /** Cost of all model calls recorded at or after {@code since}, across runs. */
-    Money costSince(Instant since, Currency currency);
+    /** Cost of all model calls recorded at or after {@code since} by runs on {@code provider}. */
+    Money costSince(Instant since, String provider, Currency currency);
 
     /**
      * Inserts a new run or updates an existing one if its stored version still matches, then appends the pending

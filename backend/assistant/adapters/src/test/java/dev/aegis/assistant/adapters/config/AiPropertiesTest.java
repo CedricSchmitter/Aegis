@@ -17,7 +17,7 @@ class AiPropertiesTest {
     private static List<ModelSelection> models(String provider, List<String> providers) {
         AiProperties.Profile profile = new AiProperties.Profile(provider, providers, "claude-sonnet-5",
                 new BigDecimal("0.05"), Duration.ofMinutes(2), 4, 0, 2048, 3, 1, null);
-        return new AiProperties(null, null, null, null, Map.of(), Map.of("classification", profile))
+        return new AiProperties(null, null, null, null, Map.of(), Map.of("classification", profile), null)
                 .toSettings(ZoneId.of("Europe/Berlin")).profile(Workload.DOCUMENT_CLASSIFICATION).orElseThrow()
                 .models();
     }

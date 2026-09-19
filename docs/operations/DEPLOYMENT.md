@@ -138,8 +138,12 @@ journalctl -u aegis-claude-runner.service -n 20
 the socket disappears and the provider is reported as not configured. If the CLI login expires, runs fail as
 `AUTHENTICATION`; log in again as `aegis-agent` with `claude`.
 
-Costs recorded for subscription runs are API-equivalent estimates from the reported usage, so the same daily and
-per-run budgets apply; they are not charges. Subscription usage limits appear as `RATE_LIMITED` with the reset time.
+Costs recorded for subscription runs are API-equivalent estimates from the reported usage, not charges. The
+subscription has its own limits (`aegis.ai.provider-limits.claude-code`): a daily limit of **50 USD**
+(`AEGIS_AI_SUBSCRIPTION_DAILY_COST_LIMIT`) and a budget of **0.50 USD per run** (`AEGIS_AI_SUBSCRIPTION_MAX_RUN_COST`)
+for every workload. Daily limits count each provider separately, so subscription runs never use up the API's
+0.25 USD and vice versa. The status page shows the limit and today's spending of the provider the member's runs use.
+Subscription usage limits appear as `RATE_LIMITED` with the reset time.
 
 ### Verify and understand availability
 

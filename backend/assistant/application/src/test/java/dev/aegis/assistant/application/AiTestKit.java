@@ -71,6 +71,9 @@ class AiTestKit {
 
     RunBudget budget = new RunBudget(Duration.ofMinutes(2), Money.of("0.05", "USD"), 4, 3, 1024, 3);
     Money dailyLimit = Money.of("2.00", "USD");
+    /** The subscription has its own limits, like the owner's Claude subscription in production. */
+    Map<String, ProviderLimits> providerLimits = new LinkedHashMap<>(Map.of(SUBSCRIPTION,
+            new ProviderLimits(Money.of("50.00", "USD"), Money.of("0.50", "USD"))));
     int maxConcurrentRuns = 2;
     int workloadConcurrency = 2;
     Map<String, ModelPrice> prices = new LinkedHashMap<>(Map.of(MODEL,
@@ -93,7 +96,7 @@ class AiTestKit {
             profiles.put(Workload.CONNECTION_CHECK, new WorkloadProfile(Workload.CONNECTION_CHECK, List.of(),
                     new RunBudget(Duration.ofSeconds(90), Money.of("0.05", "USD"), 1, 0, 256, 2), 2, null));
             settings = new AiSettings(profiles, dailyLimit, maxConcurrentRuns, Duration.ofSeconds(60),
-                    ZoneId.of("Europe/Berlin"), new PriceBook(prices));
+                    ZoneId.of("Europe/Berlin"), new PriceBook(prices), providerLimits);
         }
         return settings;
     }

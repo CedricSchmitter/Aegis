@@ -29,6 +29,7 @@ import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotFoundException;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -97,7 +98,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
                 throw new InvalidInputException("validation.failed", "Invalid run source");
             }
         }
-        return view(create(actor, workload, request.idempotencyKey(), null, model, profile.budget(), sources,
+        return view(create(actor, workload, request.idempotencyKey(), null, model, settings.budget(profile, model.provider()), sources,
                 request.parameters(), request.reprocess()));
     }
 
@@ -146,7 +147,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         List<RunView> started = new ArrayList<>();
         targets.forEach((model, workloads) -> started.add(view(create(actor, Workload.CONNECTION_CHECK,
                 "connection-check:" + model.provider() + ":" + model.model() + ":" + String.join(",", workloads), null,
-                model, check.budget(), List.of(),
+                model, settings.budget(check, model.provider()), List.of(),
                 Map.of("workloads", String.join(",", workloads)), true))));
         return started;
     }
@@ -160,7 +161,8 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         ModelSelection model = requireRunnable(actor, previous.workload(), retryCandidates(previous));
         return view(create(actor, previous.workload(), previous.idempotencyKey(), previous.id(), model,
-                previous.budget(), previous.sources(), previous.parameters(), true));
+                settings.profile(previous.workload()).map(profile -> settings.budget(profile, model.provider()))
+                        .orElse(previous.budget()), previous.sources(), previous.parameters(), true));
     }
 
     @Override
@@ -268,16 +270,27 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         Instant now = clock.instant();
         boolean configured = anyProviderConfigured();
         List<WorkloadView> workloads = new ArrayList<>();
-        boolean memberAllowed = false;
+        // Limits and spending are shown for the provider this member's runs use now, otherwise the first shown one.
+        String usableProvider = null;
+        String shownProvider = null;
         for (Workload workload : Workload.values()) {
             Optional<WorkloadProfile> profile = settings.profile(workload);
             if (profile.isPresent()) {
-                workloads.add(workloadView(profile.get(), actor));
-                memberAllowed |= profile.get().first(model -> usable(model, actor)).isPresent();
+                WorkloadView view = workloadView(profile.get(), actor);
+                workloads.add(view);
+                shownProvider = shownProvider == null ? view.provider() : shownProvider;
+                Optional<ModelSelection> usable = profile.get().first(model -> usable(model, actor));
+                if (usableProvider == null && usable.isPresent()) {
+                    usableProvider = usable.get().provider();
+                }
             }
         }
-        return new AiOverview(configured, memberAllowed, settings.dailyCostLimit().amount(),
-                runs.costSince(settings.startOfDay(now), settings.currency()).amount(),
+        boolean memberAllowed = usableProvider != null;
+        String limitProvider = memberAllowed ? usableProvider : shownProvider;
+        return new AiOverview(configured, memberAllowed, limitProvider,
+                settings.dailyCostLimit(limitProvider).amount(),
+                limitProvider == null ? BigDecimal.ZERO
+                        : runs.costSince(settings.startOfDay(now), limitProvider, settings.currency()).amount(),
                 settings.currency().getCurrencyCode(), settings.maxConcurrentRuns(), workloads);
     }
 
@@ -292,7 +305,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
                         && gateway.allows(actor.memberId()))
                 : usable(model, actor);
         boolean priced = model == null || priced(model);
-        RunBudget budget = profile.budget();
+        RunBudget budget = model == null ? profile.budget() : settings.budget(profile, model.provider());
         return new WorkloadView(profile.workload().name(), model == null ? null : model.provider(),
                 model == null ? null : model.model(), provider, handler, handler && provider && allowed && priced,
                 budget.maxCost().amount(), budget.maxDuration().toSeconds(), budget.maxModelCalls(),

@@ -1,6 +1,7 @@
 package dev.aegis.assistant.application;
 
 import dev.aegis.assistant.domain.Money;
+import dev.aegis.assistant.domain.RunBudget;
 import dev.aegis.assistant.domain.Workload;
 import java.time.Duration;
 import java.time.Instant;
@@ -12,17 +13,19 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Household-wide AI limits and the per-workload profiles. The daily cost limit counts every model call of the
- * household day in {@code zone}; all amounts share one currency.
+ * Household-wide AI limits and the per-workload profiles. Daily cost limits count the model calls of one provider
+ * per household day in {@code zone}: {@code dailyCostLimit} is the default, {@code providerLimits} can set a
+ * provider's own daily limit and run budget. All amounts share one currency.
  */
 public record AiSettings(Map<Workload, WorkloadProfile> profiles, Money dailyCostLimit, int maxConcurrentRuns,
-        Duration callTimeout, ZoneId zone, PriceBook prices) {
+        Duration callTimeout, ZoneId zone, PriceBook prices, Map<String, ProviderLimits> providerLimits) {
     public AiSettings {
         Objects.requireNonNull(dailyCostLimit, "daily cost limit");
         Objects.requireNonNull(callTimeout, "call timeout");
         Objects.requireNonNull(zone, "zone");
         Objects.requireNonNull(prices, "prices");
         profiles = profiles.isEmpty() ? Map.of() : Map.copyOf(new EnumMap<>(profiles));
+        providerLimits = providerLimits == null ? Map.of() : Map.copyOf(providerLimits);
         if (maxConcurrentRuns < 1) {
             throw new IllegalArgumentException("max concurrent runs must be positive");
         }
@@ -30,6 +33,13 @@ public record AiSettings(Map<Workload, WorkloadProfile> profiles, Money dailyCos
         for (WorkloadProfile profile : profiles.values()) {
             if (!profile.budget().maxCost().currency().equals(currency)) {
                 throw new IllegalArgumentException("all AI budgets must use " + currency);
+            }
+        }
+        for (ProviderLimits limits : providerLimits.values()) {
+            for (Money amount : new Money[] {limits.dailyCostLimit(), limits.maxRunCost()}) {
+                if (amount != null && !amount.currency().equals(currency)) {
+                    throw new IllegalArgumentException("all AI limits must use " + currency);
+                }
             }
         }
         for (ModelPrice price : prices.prices().values()) {
@@ -41,6 +51,23 @@ public record AiSettings(Map<Workload, WorkloadProfile> profiles, Money dailyCos
 
     public Optional<WorkloadProfile> profile(Workload workload) {
         return Optional.ofNullable(profiles.get(workload));
+    }
+
+    /** Daily cost limit of {@code provider}: its own limit if configured, otherwise the household default. */
+    public Money dailyCostLimit(String provider) {
+        ProviderLimits limits = provider == null ? null : providerLimits.get(provider);
+        return limits != null && limits.dailyCostLimit() != null ? limits.dailyCostLimit() : dailyCostLimit;
+    }
+
+    /** Budget of a run of {@code profile} on {@code provider}: the profile's, with the provider's run cost if set. */
+    public RunBudget budget(WorkloadProfile profile, String provider) {
+        RunBudget budget = profile.budget();
+        ProviderLimits limits = providerLimits.get(provider);
+        if (limits == null || limits.maxRunCost() == null) {
+            return budget;
+        }
+        return new RunBudget(budget.maxDuration(), limits.maxRunCost(), budget.maxModelCalls(), budget.maxToolCalls(),
+                budget.maxOutputTokens(), budget.maxAttempts());
     }
 
     public Currency currency() {

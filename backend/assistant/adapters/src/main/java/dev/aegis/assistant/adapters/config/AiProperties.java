@@ -3,6 +3,7 @@ package dev.aegis.assistant.adapters.config;
 import dev.aegis.assistant.application.AiSettings;
 import dev.aegis.assistant.application.ModelPrice;
 import dev.aegis.assistant.application.PriceBook;
+import dev.aegis.assistant.application.ProviderLimits;
 import dev.aegis.assistant.application.WorkloadProfile;
 import dev.aegis.assistant.domain.ModelSelection;
 import dev.aegis.assistant.domain.Money;
@@ -27,7 +28,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "aegis.ai")
 public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer maxConcurrentRuns,
-        Duration callTimeout, Map<String, Price> prices, Map<String, Profile> workloads) {
+        Duration callTimeout, Map<String, Price> prices, Map<String, Profile> workloads,
+        Map<String, Limits> providerLimits) {
+
+    /** Own limits of a provider (keys are provider names); unset values keep the household defaults. */
+    public record Limits(BigDecimal dailyCostLimit, BigDecimal maxRunCost) {
+    }
 
     /** List prices per million tokens in the configured currency. */
     public record Price(BigDecimal input, BigDecimal output, BigDecimal cacheRead, BigDecimal cacheWrite) {
@@ -45,6 +51,7 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         callTimeout = callTimeout == null ? Duration.ofSeconds(120) : callTimeout;
         prices = prices == null ? Map.of() : Map.copyOf(prices);
         workloads = workloads == null ? Map.of() : Map.copyOf(workloads);
+        providerLimits = providerLimits == null ? Map.of() : Map.copyOf(providerLimits);
     }
 
     public AiSettings toSettings(ZoneId zone) {
@@ -68,8 +75,11 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
             profiles.put(workload, new WorkloadProfile(workload, models, budget,
                     profile.maxConcurrent() == null ? 1 : profile.maxConcurrent(), profile.effort()));
         });
+        Map<String, ProviderLimits> limits = new LinkedHashMap<>();
+        providerLimits.forEach((provider, limit) -> limits.put(provider,
+                new ProviderLimits(money(limit.dailyCostLimit(), unit), money(limit.maxRunCost(), unit))));
         return new AiSettings(profiles, new Money(dailyCostLimit, unit), maxConcurrentRuns, callTimeout, zone,
-                new PriceBook(modelPrices));
+                new PriceBook(modelPrices), limits);
     }
 
     private static List<String> providers(String workload, Profile profile) {

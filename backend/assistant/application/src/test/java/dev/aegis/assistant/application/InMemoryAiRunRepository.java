@@ -91,10 +91,13 @@ class InMemoryAiRunRepository implements AiRunRepository {
     }
 
     @Override
-    public synchronized Money costSince(Instant since, Currency currency) {
+    public synchronized Money costSince(Instant since, String provider, Currency currency) {
         Money total = Money.zero(currency);
-        for (List<RunStep> list : steps.values()) {
-            for (RunStep step : list) {
+        for (Map.Entry<RunId, List<RunStep>> entry : steps.entrySet()) {
+            if (!runs.get(entry.getKey()).model().provider().equals(provider)) {
+                continue;
+            }
+            for (RunStep step : entry.getValue()) {
                 if (step.kind() == StepKind.MODEL_CALL && !step.at().isBefore(since) && step.cost() != null) {
                     total = total.plus(step.cost());
                 }

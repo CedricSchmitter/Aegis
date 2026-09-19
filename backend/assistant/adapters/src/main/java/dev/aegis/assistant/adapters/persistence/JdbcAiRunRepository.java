@@ -137,11 +137,12 @@ public class JdbcAiRunRepository implements AiRunRepository {
     }
 
     @Override
-    public Money costSince(Instant since, Currency currency) {
+    public Money costSince(Instant since, String provider, Currency currency) {
         BigDecimal total = jdbc.sql("""
-                SELECT coalesce(sum(cost), 0) FROM ai_run_steps
-                 WHERE kind = 'MODEL_CALL' AND at >= ? AND currency = ?""")
-                .params(Timestamp.from(since), currency.getCurrencyCode()).query(BigDecimal.class).single();
+                SELECT coalesce(sum(s.cost), 0) FROM ai_run_steps s JOIN ai_runs r ON r.id = s.run_id
+                 WHERE s.kind = 'MODEL_CALL' AND s.at >= ? AND s.currency = ? AND r.provider = ?""")
+                .params(Timestamp.from(since), currency.getCurrencyCode(), provider).query(BigDecimal.class)
+                .single();
         return new Money(total, currency);
     }
 

@@ -93,7 +93,8 @@ analyzed when a member selects them.
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a
 fallback to the owner's Claude subscription through headless `claude -p` on the VM.
-All workload profiles default to Sonnet 5 with a 0.25 USD household daily budget and one concurrent run.
+All workload profiles default to Sonnet 5 with a 0.25 USD household daily budget for the API (50 USD per day and
+0.50 USD per run on the subscription) and one concurrent run.
 Both members can use the shared server-side API connection; the subscription fallback serves only the members listed
 in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Without either, AI is not configured. See
 [API setup](docs/operations/DEPLOYMENT.md#claude-api-with-sonnet-5) and

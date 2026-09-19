@@ -71,11 +71,13 @@ public final class AiDtos {
 
     public record AiOverviewDto(boolean configured,
             @Schema(description = "Whether the authenticated household member may use a configured provider") boolean memberAllowed,
+            @Schema(description = "Provider whose daily limit and spending today are shown: the one this member's "
+                    + "runs use now (anthropic or claude-code)", nullable = true) String limitProvider,
             BigDecimal dailyCostLimit, BigDecimal spentToday, String currency, int maxConcurrentRuns,
             List<WorkloadDto> workloads) {
         static AiOverviewDto from(AiOverview overview) {
-            return new AiOverviewDto(overview.configured(), overview.memberAllowed(), overview.dailyCostLimit(),
-                    overview.spentToday(), overview.currency(), overview.maxConcurrentRuns(),
+            return new AiOverviewDto(overview.configured(), overview.memberAllowed(), overview.limitProvider(),
+                    overview.dailyCostLimit(), overview.spentToday(), overview.currency(), overview.maxConcurrentRuns(),
                     overview.workloads().stream().map(WorkloadDto::from).toList());
         }
     }
