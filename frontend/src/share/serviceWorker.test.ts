@@ -76,6 +76,17 @@ describe("service worker share target", () => {
     expect(await (await readSharedFile(inbox, listed[1]))?.text()).toBe("%PDF-1.7 two");
   });
 
+  it("accepts shared files under any field name", async () => {
+    const worker = loadServiceWorker();
+    const form = new FormData();
+    form.append("file", new File(["%PDF x"], "x.pdf", { type: "application/pdf" }));
+
+    const response = await dispatch(worker.fetch, new Request(`${ORIGIN}/share-target`, { method: "POST", body: form }));
+
+    expect(response?.headers.get("Location")).toBe(`${ORIGIN}/share?received=1`);
+    expect((await listSharedFiles(await worker.inbox())).map((file) => file.name)).toEqual(["x.pdf"]);
+  });
+
   it("gives each share its own entries so a second share never replaces the first", async () => {
     const worker = loadServiceWorker();
     await dispatch(worker.fetch, share([new File(["%PDF a"], "a.pdf", { type: "application/pdf" })]));
@@ -88,7 +99,9 @@ describe("service worker share target", () => {
     const worker = loadServiceWorker();
 
     const empty = await dispatch(worker.fetch, share([]));
-    expect(empty?.headers.get("Location")).toBe(`${ORIGIN}/share?received=0`);
+    const location = new URL(empty!.headers.get("Location")!);
+    expect(location.pathname + "?received=" + location.searchParams.get("received")).toBe("/share?received=0");
+    expect(location.searchParams.get("details")).toBe("multipart/form-data; title=text(7)");
 
     expect(dispatch(worker.fetch, new Request(`${ORIGIN}/share-target`))).toBeUndefined();
     expect(dispatch(worker.fetch, new Request(`${ORIGIN}/api/documents`, { method: "POST", body: "x" }))).toBeUndefined();

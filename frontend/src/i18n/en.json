@@ -651,6 +651,7 @@
       "rejected": "Not possible"
     },
     "unknownType": "unknown type",
-    "inspected": "Received: {{size}}, starts with {{head}}"
+    "inspected": "Received: {{size}}, starts with {{head}}",
+    "receivedDetails": "Received: {{details}}"
   }
 }

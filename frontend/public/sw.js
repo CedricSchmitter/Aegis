@@ -25,7 +25,8 @@ self.addEventListener("fetch", (event) => {
 async function receiveShare(request) {
   try {
     const form = await request.formData();
-    const files = form.getAll("files").filter((entry) => typeof entry !== "string");
+    // The manifest names the field "files", but any file part is accepted: what Chrome sends differs by app.
+    const files = [...form.values()].filter((entry) => typeof entry !== "string");
     const shareId = self.crypto.randomUUID();
     const receivedAt = new Date().toISOString();
     const inbox = await caches.open(INBOX_CACHE);
@@ -48,8 +49,19 @@ async function receiveShare(request) {
       ),
     );
     // 303 turns the share POST into a GET, so reloading or going back never re-submits the share.
-    return Response.redirect(new URL(`/share?received=${files.length}`, self.location.origin).href, 303);
+    const target = new URL(`/share?received=${files.length}`, self.location.origin);
+    if (files.length === 0) target.searchParams.set("details", describeForm(request, form));
+    return Response.redirect(target.href, 303);
   } catch {
     return Response.redirect(new URL("/share?error=receive", self.location.origin).href, 303);
   }
+}
+
+// Shape of a share without files, shown on the share page for diagnosis: field names and sizes, never content.
+function describeForm(request, form) {
+  const type = (request.headers.get("Content-Type") || "none").split(";")[0];
+  const fields = [...form.entries()].map(([name, value]) =>
+    typeof value === "string" ? `${name}=text(${value.length})` : `${name}=file(${value.type || "?"},${value.size})`,
+  );
+  return [type, ...fields].join("; ").slice(0, 300);
 }

@@ -651,6 +651,7 @@
       "rejected": "Nicht möglich"
     },
     "unknownType": "unbekannter Typ",
-    "inspected": "Empfangen: {{size}}, beginnt mit {{head}}"
+    "inspected": "Empfangen: {{size}}, beginnt mit {{head}}",
+    "receivedDetails": "Empfangen: {{details}}"
   }
 }
