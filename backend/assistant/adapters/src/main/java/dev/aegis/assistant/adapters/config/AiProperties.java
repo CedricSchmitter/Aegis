@@ -22,7 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * AI configuration under {@code aegis.ai}: household limits, list prices per model and one profile per workload
  * (keys {@code connection-check}, {@code classification}, {@code review}, {@code chat}). Model names are
  * configuration, not code: a model can be replaced without a release. {@code providers} lists the providers of a
- * profile in order of preference; each run uses the first one that is usable for its requester.
+ * profile in order of preference; each run uses the first one that is usable for its requester. A single
+ * {@code provider} is accepted as shorthand for a one-element list; setting both is rejected.
  */
 @ConfigurationProperties(prefix = "aegis.ai")
 public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer maxConcurrentRuns,
@@ -32,7 +33,7 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
     public record Price(BigDecimal input, BigDecimal output, BigDecimal cacheRead, BigDecimal cacheWrite) {
     }
 
-    public record Profile(List<String> providers, String model, BigDecimal maxCost, Duration maxDuration,
+    public record Profile(String provider, List<String> providers, String model, BigDecimal maxCost, Duration maxDuration,
             Integer maxModelCalls, Integer maxToolCalls, Integer maxOutputTokens, Integer maxAttempts,
             Integer maxConcurrent, String effort) {
     }
@@ -54,8 +55,7 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         Map<Workload, WorkloadProfile> profiles = new EnumMap<>(Workload.class);
         workloads.forEach((key, profile) -> {
             Workload workload = Workload.fromConfigKey(key);
-            List<String> providers = profile.providers() == null || profile.providers().isEmpty()
-                    ? List.of("anthropic") : profile.providers();
+            List<String> providers = providers(key, profile);
             List<ModelSelection> models = profile.model() == null || profile.model().isBlank() ? List.of()
                     : providers.stream().map(String::strip).filter(provider -> !provider.isEmpty()).distinct()
                             .map(provider -> new ModelSelection(provider, profile.model())).toList();
@@ -70,6 +70,16 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         });
         return new AiSettings(profiles, new Money(dailyCostLimit, unit), maxConcurrentRuns, callTimeout, zone,
                 new PriceBook(modelPrices));
+    }
+
+    private static List<String> providers(String workload, Profile profile) {
+        boolean single = profile.provider() != null && !profile.provider().isBlank();
+        boolean list = profile.providers() != null && !profile.providers().isEmpty();
+        if (single && list) {
+            throw new IllegalStateException("aegis.ai.workloads." + workload
+                    + " sets both provider and providers; use providers only");
+        }
+        return single ? List.of(profile.provider()) : list ? profile.providers() : List.of("anthropic");
     }
 
     private static Money money(BigDecimal amount, Currency unit) {

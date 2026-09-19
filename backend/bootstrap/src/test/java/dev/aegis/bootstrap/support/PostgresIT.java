@@ -56,11 +56,12 @@ public abstract class PostgresIT {
         registry.add("aegis.documents.analysis.automatic", () -> "false");
         // AI: the real Anthropic adapter stays unconfigured (no key file); workloads use the controlled model.
         registry.add("aegis.ai.providers.anthropic.api-key-file", () -> DATA.resolve("no-anthropic-key").toString());
+        registry.add("aegis.ai.providers.claude-code.runner-socket", () -> DATA.resolve("no-runner.sock").toString());
         registry.add("aegis.ai.daily-cost-limit", () -> "100.00");
         registry.add("aegis.ai.prices[" + ControlledModelGateway.MODEL + "].input", () -> "1.00");
         registry.add("aegis.ai.prices[" + ControlledModelGateway.MODEL + "].output", () -> "5.00");
         for (String workload : new String[] {"classification", "review", "chat"}) {
-            registry.add("aegis.ai.workloads." + workload + ".provider", () -> ControlledModelGateway.PROVIDER);
+            registry.add("aegis.ai.workloads." + workload + ".providers", () -> ControlledModelGateway.PROVIDER);
             registry.add("aegis.ai.workloads." + workload + ".model", () -> ControlledModelGateway.MODEL);
         }
     }
