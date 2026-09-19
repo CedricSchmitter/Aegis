@@ -205,6 +205,15 @@ and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint,
   over immediately (`skipWaiting`, `clients.claim`), so after a deployment the next app start or page load uses the
   new version. A deployment can therefore not be masked by stale cached code. Keep the inbox format of `sw.js` and
   `src/share/inbox.ts` compatible or bump the cache name together with a migration.
+- **Known Chrome regression (as of 2026-09-19):** Chrome 153 on Android hands installed web apps (WebAPK) the
+  share's title and text but strips every file, so the share page receives an empty multipart body. This is a false
+  positive of the URI-permission check added in `[M153] Verify caller URI permissions before Web Share Target in
+  TWA`; WebAPKs launch through `WebappLauncherActivity`, which did not stash verified share data. It affects any
+  PWA, independent of the manifest's `accept` list (reported for Squoosh on Pixel devices:
+  https://github.com/GoogleChromeLabs/squoosh/issues/1503). Until the phones run a Chrome version with the fix
+  (Chrome 154 is the first candidate), sharing PDFs into Aegis cannot work and the upload form is the way in. The
+  share page names this case explicitly. A second reported variant, where the body does contain the file but
+  `formData()` returns nothing, is handled by the worker's own multipart reader.
 - Share target and installation are Chrome features for installed apps (WebAPK). If an installation ends up as a
   plain home-screen shortcut, Aegis does not appear in the Share menu; uninstall and install again through Chrome's
   menu. Real-device verification on both phones is tracked in issue #33.

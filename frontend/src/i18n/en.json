@@ -636,6 +636,7 @@
     "fallbackName": "Shared document {{date}}",
     "empty": "No shared files are waiting to be saved.",
     "nothingReceived": "No PDF file was received. Aegis accepts PDF files only.",
+    "browserDroppedFiles": "Known Chrome bug: Chrome 153 on Android hands installed web apps no files, only the title. Until Chrome is updated, upload the file on the Documents page.",
     "receiveFailed": "The shared file could not be received. Please share it again.",
     "notReady": "Aegis was not ready to receive the file. It is ready now: please share the file again.",
     "unsupported": "This browser cannot keep shared files. Please upload the file on the Documents page.",

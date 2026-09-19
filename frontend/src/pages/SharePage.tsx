@@ -185,6 +185,11 @@ export function SharePage() {
           <Link className="underline" to="/documents">
             {t("share.toDocuments")}
           </Link>
+          {params.get("received") === "0" && (
+            <span className="mt-2 block text-sm" data-testid="share-browser-hint">
+              {t("share.browserDroppedFiles")}
+            </span>
+          )}
           {params.get("details") && (
             <span className="mt-2 block break-words text-xs text-stone-500" data-testid="share-details">
               {t("share.receivedDetails", { details: params.get("details") })}
