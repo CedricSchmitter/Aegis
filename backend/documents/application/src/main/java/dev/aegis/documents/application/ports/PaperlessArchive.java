@@ -44,6 +44,9 @@ public interface PaperlessArchive {
 
     OriginalContent fetchOriginal(int paperlessDocumentId);
 
+    /** OCR text of an archived document as extracted by the archive; empty when it found no text. */
+    String fetchContent(int paperlessDocumentId);
+
     boolean exists(int paperlessDocumentId);
 
     /** Paperless ids matching the query in title or content. */

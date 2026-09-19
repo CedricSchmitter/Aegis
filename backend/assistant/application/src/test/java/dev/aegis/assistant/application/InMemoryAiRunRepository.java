@@ -49,6 +49,15 @@ class InMemoryAiRunRepository implements AiRunRepository {
     }
 
     @Override
+    public synchronized java.util.Map<String, AiRun> findLatestByKeys(java.util.Collection<String> keys) {
+        java.util.Map<String, AiRun> latest = new java.util.LinkedHashMap<>();
+        for (String key : keys) {
+            findLatestByKey(key).ifPresent(run -> latest.put(key, run));
+        }
+        return latest;
+    }
+
+    @Override
     public synchronized List<AiRun> findRunning() {
         return runs.values().stream().filter(run -> run.state() == RunState.RUNNING)
                 .map(InMemoryAiRunRepository::copy).toList();

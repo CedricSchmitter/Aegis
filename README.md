@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions) , [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search) and [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution).
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions) , [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution) and [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
@@ -77,14 +77,18 @@ Aegis supports two individual logins into one shared household, German/English U
 with Paperless archival, document list/search/original access, a browsable folder tree with an Unsorted
 inbox, structured labels (document type, organization, topic, tags) with faceted search, source-linked
 tasks, deterministic Today, in-app notifications, integration status, portable exports and isolated
-recovery. Folders, labels and search work without AI; automatic classification is not connected.
+recovery. Folders, labels and search work without AI. New uploads are classified automatically once archived
+(title, type, organization, topics, evidenced issue date; conservative policy with reviewable suggestions), and
+downloads and exports use readable filenames such as `2026-09-17_Telekom_Rechnung_Internet_a1b2c3d4.pdf`
+([ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md)). Existing documents are only
+analyzed when a member selects them.
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, and the direct Claude API adapter.
 All workload profiles default to Sonnet 5 with a 0.25 USD household daily budget and one concurrent run.
 Both members can use the shared server-side API connection. Until the owner installs the API key, AI is not
 configured. Follow [API setup](docs/operations/DEPLOYMENT.md#claude-api-with-sonnet-5); no subscription login is needed.
-Classification, scheduled review and chat workflows (#23, #24, #25) are not connected.
+Scheduled review and chat workflows (#24, #25) are not connected.
 
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
 passed isolated recovery and its daily timer is enabled; the first scheduled run succeeded on 2026-09-18.

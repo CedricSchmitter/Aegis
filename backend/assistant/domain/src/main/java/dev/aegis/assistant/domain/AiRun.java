@@ -502,6 +502,16 @@ public final class AiRun {
         return id;
     }
 
+    /**
+     * Whether this run is the same unit of work as a request: same workload, same analyzed sources and versions and
+     * same parameters. The requesting member is deliberately not part of it, so both household members asking for
+     * the same work share one run.
+     */
+    public boolean sameWork(Workload otherWorkload, List<SourceRef> otherSources, Map<String, String> otherParameters) {
+        return workload == otherWorkload && sources.equals(List.copyOf(otherSources == null ? List.of() : otherSources))
+                && parameters.equals(Map.copyOf(otherParameters == null ? Map.of() : otherParameters));
+    }
+
     public Workload workload() {
         return workload;
     }

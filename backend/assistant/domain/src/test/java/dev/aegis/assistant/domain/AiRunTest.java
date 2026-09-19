@@ -291,4 +291,18 @@ class AiRunTest {
 
         assertThat(run.version()).isEqualTo(1);
     }
+
+    @Test
+    void theIdempotencyIdentityIsWorkloadSourcesAndParametersButNotTheRequester() {
+        AiRun run = run(3);
+
+        assertThat(run.sameWork(Workload.DOCUMENT_CLASSIFICATION, List.of(new SourceRef("document", "1", 3)),
+                Map.of())).isTrue();
+        assertThat(run.sameWork(Workload.DOCUMENT_REVIEW, List.of(new SourceRef("document", "1", 3)), Map.of()))
+                .isFalse();
+        assertThat(run.sameWork(Workload.DOCUMENT_CLASSIFICATION, List.of(new SourceRef("document", "1", 4)),
+                Map.of())).isFalse();
+        assertThat(run.sameWork(Workload.DOCUMENT_CLASSIFICATION, List.of(new SourceRef("document", "1", 3)),
+                Map.of("mode", "full"))).isFalse();
+    }
 }

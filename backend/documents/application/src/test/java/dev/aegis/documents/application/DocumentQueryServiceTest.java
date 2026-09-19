@@ -41,9 +41,10 @@ class DocumentQueryServiceTest {
         var categories = new InMemoryCategoryRepository();
         var labels = new InMemoryLabelRepository();
         var views = new ClassificationViews(classifications, categories, labels);
-        service = new DocumentQueryService(repository, archive, store, new DocumentPresenter(scheduler, views),
+        service = new DocumentQueryService(repository, archive, store, TestDoubles.presenter(scheduler, views),
                 new InMemoryDocumentCatalog(repository, classifications, categories, labels), categories, labels,
-                classifications, views, new TestDoubles.MembersOnly(anna, ben), Clock.fixed(NOW, ZoneOffset.UTC));
+                classifications, views, new InMemoryDocumentAnalysisRepository(), TestDoubles.analysisSettings(),
+                new TestDoubles.MembersOnly(anna, ben), Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private Document stored(String title, MemberId uploader, Instant at, byte[] bytes) throws Exception {
@@ -97,7 +98,9 @@ class DocumentQueryServiceTest {
         OriginalContent fromArchive = service.original(new Actor(ben), document.id());
         assertThat(fromArchive.source()).isEqualTo(OriginalContent.SOURCE_ARCHIVE);
         assertThat(fromArchive.bytes()).isEqualTo(bytes);
-        assertThat(fromArchive.filename()).isEqualTo("Original.pdf");
+        // Without analysis values the friendly name falls back to the title plus the stable id; bytes stay unchanged.
+        assertThat(fromArchive.filename()).isEqualTo("Original_" + document.id().toString().substring(0, 8) + ".pdf");
+        assertThat(document.checksum().matches(fromArchive.bytes())).isTrue();
 
         archive.available = false;
         assertThat(service.original(new Actor(ben), document.id()).source()).isEqualTo(OriginalContent.SOURCE_STAGING);

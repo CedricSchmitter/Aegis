@@ -1,6 +1,11 @@
 package dev.aegis.bootstrap.config;
 
+import dev.aegis.documents.application.AnalysisSettings;
+import dev.aegis.documents.application.AnalysisTrigger;
+import dev.aegis.documents.application.AnalysisViews;
 import dev.aegis.documents.application.ArchivalService;
+import dev.aegis.documents.application.api.ImportDocumentAnalysis;
+import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
 import dev.aegis.documents.application.ArchivalSettings;
 import dev.aegis.documents.application.ArchivalUseCases;
 import dev.aegis.documents.application.DocumentCaptureService;
@@ -144,16 +149,17 @@ public class UseCaseConfiguration {
     }
 
     @Bean
-    DocumentPresenter documentPresenter(ProcessingScheduler scheduler, ClassificationViews classifications) {
-        return new DocumentPresenter(scheduler, classifications);
+    DocumentPresenter documentPresenter(ProcessingScheduler scheduler, ClassificationViews classifications,
+            AnalysisViews analyses) {
+        return new DocumentPresenter(scheduler, classifications, analyses);
     }
 
     @Bean
     RegisterReceivedDocument registerReceivedDocument(DocumentRepository documents,
             ClassificationRepository classifications, CategoryRepository categories, CatalogLock lock,
-            ProcessingScheduler scheduler, PlatformTransactionManager tm) {
+            ProcessingScheduler scheduler, DocumentAnalysisRepository analyses, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(RegisterReceivedDocument.class,
-                new DocumentRegistrar(documents, classifications, categories, lock, scheduler), tm);
+                new DocumentRegistrar(documents, classifications, categories, lock, scheduler, analyses), tm);
     }
 
     record DocumentServices(DocumentCaptureService capture, DocumentQueryService queries) {
@@ -164,11 +170,12 @@ public class UseCaseConfiguration {
             DocumentPresenter presenter, HouseholdAccess access, ArchivalSettings settings, Clock clock,
             DocumentRepository documents, PaperlessArchive archive, DocumentCatalog catalog,
             CategoryRepository categories, LabelRepository labels, ClassificationRepository classifications,
-            ClassificationViews views) {
+            ClassificationViews views, DocumentAnalysisRepository analyses, AnalysisSettings analysisSettings) {
         return new DocumentServices(
-                new DocumentCaptureService(store, registrar, presenter, categories, access, settings, clock),
+                new DocumentCaptureService(store, registrar, presenter, categories, access, settings,
+                        analysisSettings, clock),
                 new DocumentQueryService(documents, archive, store, presenter, catalog, categories, labels,
-                        classifications, views, access, clock));
+                        classifications, views, analyses, analysisSettings, access, clock));
     }
 
     @Bean
@@ -211,7 +218,7 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ClassificationCommands.class, services.classification(), tm);
     }
 
-    /** Entry point for automatic classification (issue #23); no inbound adapter uses it yet. */
+    /** Label proposals of automatic classification (issue #23), used through the document analysis service. */
     @Bean
     ProposeClassification proposeClassification(ClassificationServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ProposeClassification.class, services.classification(), tm);
@@ -263,10 +270,10 @@ public class UseCaseConfiguration {
     }
 
     @Bean
-    ArchivalUseCases archivalUseCases(DocumentRepository documents, DocumentEvents events,
+    ArchivalUseCases archivalUseCases(DocumentRepository documents, DocumentEvents events, AnalysisTrigger analysis,
             ArchivalSettings settings, Clock clock, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(ArchivalUseCases.class, new ArchivalService(documents, events, settings,
-                clock), tm);
+        return TransactionalProxy.wrap(ArchivalUseCases.class, new ArchivalService(documents, events, analysis,
+                settings, clock), tm);
     }
 
     @Bean
@@ -367,8 +374,8 @@ public class UseCaseConfiguration {
     @Bean
     RestoreExport restoreExport(ExportSourceOpener opener, ExportSerializer serializer, MemberDirectory members,
             ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
-            ImportTask importTask, HouseholdAccess access) {
+            ImportDocumentAnalysis importAnalysis, ImportTask importTask, HouseholdAccess access) {
         return new RestoreService(opener, serializer, members, provisioning, importDocument, importCatalog,
-                importTask, access);
+                importAnalysis, importTask, access);
     }
 }

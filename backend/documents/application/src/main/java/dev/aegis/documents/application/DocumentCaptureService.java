@@ -8,6 +8,7 @@ import dev.aegis.documents.domain.catalog.CategoryRepository;
 import dev.aegis.documents.application.ports.OriginalStore.StoredOriginal;
 import dev.aegis.documents.domain.Checksum;
 import dev.aegis.documents.domain.Subject;
+import dev.aegis.documents.domain.TitleOrigin;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
@@ -33,17 +34,19 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
     private final CategoryRepository categories;
     private final HouseholdAccess access;
     private final ArchivalSettings settings;
+    private final AnalysisSettings analysis;
     private final Clock clock;
 
     public DocumentCaptureService(OriginalStore store, RegisterReceivedDocument registrar,
             DocumentPresenter presenter, CategoryRepository categories, HouseholdAccess access,
-            ArchivalSettings settings, Clock clock) {
+            ArchivalSettings settings, AnalysisSettings analysis, Clock clock) {
         this.store = store;
         this.registrar = registrar;
         this.presenter = presenter;
         this.categories = categories;
         this.access = access;
         this.settings = settings;
+        this.analysis = analysis;
         this.clock = clock;
     }
 
@@ -62,8 +65,9 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
         StoredOriginal stored = storeValidated(id, command.content());
         Set<Subject> subjects = Subjects.fromViews(command.subjects());
         var registration = registrar.register(new RegisterReceivedDocument.RegistrationCommand(id, titleFrom(filename),
-                filename, PDF_CONTENT_TYPE, stored.sizeBytes(), stored.checksum(), actor.memberId(), clock.instant(),
-                subjects, stored.stagingPath(), command.categoryId()));
+                TitleOrigin.FILENAME, filename, PDF_CONTENT_TYPE, stored.sizeBytes(), stored.checksum(),
+                actor.memberId(), clock.instant(), subjects, stored.stagingPath(), command.categoryId(),
+                analysis.automatic()));
         if (registration.duplicate()) {
             deleteQuietly(stored.stagingPath());
         }
@@ -83,10 +87,11 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
                     "Imported content does not match the exported checksum for " + command.id());
         }
         Instant uploadedAt = command.uploadedAt() == null ? clock.instant() : command.uploadedAt();
+        // Restored documents are never analyzed automatically; the export carries their earlier results.
         var registration = registrar.register(new RegisterReceivedDocument.RegistrationCommand(command.id(),
-                command.title(), safeFilename(command.originalFilename()), PDF_CONTENT_TYPE, stored.sizeBytes(),
-                stored.checksum(), command.uploadedBy(), uploadedAt, Subjects.fromViews(command.subjects()),
-                stored.stagingPath(), null));
+                command.title(), titleOrigin(command.titleOrigin()), safeFilename(command.originalFilename()),
+                PDF_CONTENT_TYPE, stored.sizeBytes(), stored.checksum(), command.uploadedBy(), uploadedAt,
+                Subjects.fromViews(command.subjects()), stored.stagingPath(), null, false));
         if (registration.duplicate()) {
             deleteQuietly(stored.stagingPath());
             if (!registration.document().id().equals(command.id())) {
@@ -142,6 +147,18 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
             throw new InvalidInputException("document.notPdf", "Only PDF files are accepted");
         }
         return name.length() > 180 ? name.substring(name.length() - 180) : name;
+    }
+
+    /** Exports before schema 3 carry no title origin; such titles are treated as chosen by a member. */
+    static TitleOrigin titleOrigin(String exported) {
+        if (exported == null) {
+            return TitleOrigin.MANUAL;
+        }
+        try {
+            return TitleOrigin.valueOf(exported);
+        } catch (IllegalArgumentException unknown) {
+            return TitleOrigin.MANUAL;
+        }
     }
 
     static String titleFrom(String filename) {

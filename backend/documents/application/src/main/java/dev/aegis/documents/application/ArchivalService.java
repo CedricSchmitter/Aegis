@@ -13,13 +13,15 @@ import java.util.Optional;
 public class ArchivalService implements ArchivalUseCases {
     private final DocumentRepository documents;
     private final DocumentEvents events;
+    private final AnalysisTrigger analysis;
     private final ArchivalSettings settings;
     private final Clock clock;
 
-    public ArchivalService(DocumentRepository documents, DocumentEvents events, ArchivalSettings settings,
-            Clock clock) {
+    public ArchivalService(DocumentRepository documents, DocumentEvents events, AnalysisTrigger analysis,
+            ArchivalSettings settings, Clock clock) {
         this.documents = documents;
         this.events = events;
+        this.analysis = analysis;
         this.settings = settings;
         this.clock = clock;
     }
@@ -58,6 +60,7 @@ public class ArchivalService implements ArchivalUseCases {
         documents.save(document);
         if (!alreadyArchived) {
             events.documentArchived(id, document.title(), document.uploadedBy());
+            analysis.archived(document);
         }
     }
 

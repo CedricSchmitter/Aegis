@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Primary;
 
 /**
  * Replaces external integrations for integration tests: the HTTP Paperless adapter by an in-process fake, and the
- * model provider by a controlled gateway with a test classification workload. All integration tests share this one
+ * model provider by a controlled gateway with a test review workload. All integration tests share this one
  * Spring context, so only one scheduler polls the test database.
  */
 @TestConfiguration
@@ -25,8 +25,7 @@ public class TestArchiveConfiguration {
     }
 
     @Bean
-    TestClassificationWorkload testClassificationWorkload(DocumentQueries documents,
-            ProposeClassification proposals) {
-        return new TestClassificationWorkload(documents, proposals);
+    TestReviewWorkload testReviewWorkload(DocumentQueries documents, ProposeClassification proposals) {
+        return new TestReviewWorkload(documents, proposals);
     }
 }

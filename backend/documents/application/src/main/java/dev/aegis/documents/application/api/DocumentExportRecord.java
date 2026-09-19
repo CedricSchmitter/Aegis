@@ -6,10 +6,15 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Versioned export view of a document record; the original bytes are exported separately. */
-public record DocumentExportRecord(DocumentId id, String title, String originalFilename, String contentType,
-        long sizeBytes, String checksumSha256, MemberId uploadedBy, Instant uploadedAt, List<SubjectView> subjects,
-        String processingState, Integer paperlessDocumentId, Instant archivedAt, Classification classification) {
+/**
+ * Versioned export view of a document record; the original bytes are exported separately. {@code filename} is the
+ * friendly name the original is exported under; {@code originalFilename} stays the immutable upload name.
+ * {@code analysis} is null when the document was never analyzed and has no filename override.
+ */
+public record DocumentExportRecord(DocumentId id, String title, String titleOrigin, String originalFilename,
+        String filename, String contentType, long sizeBytes, String checksumSha256, MemberId uploadedBy,
+        Instant uploadedAt, List<SubjectView> subjects, String processingState, Integer paperlessDocumentId,
+        Instant archivedAt, Classification classification, AnalysisRecord analysis) {
 
     /** Folder placement ({@code categoryId} null = Unsorted) and own label assignments with provenance. */
     public record Classification(UUID categoryId, List<String> categoryPath, List<Assignment> assignments) {

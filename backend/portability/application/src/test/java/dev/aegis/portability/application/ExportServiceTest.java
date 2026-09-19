@@ -94,19 +94,23 @@ class ExportServiceTest {
     @Test
     void writesOriginalsDataReadableFilesAndManifestWithRelativeLinks() {
         byte[] pdf = "%PDF-contract".getBytes(StandardCharsets.US_ASCII);
+        String contractName = "2026-09-13_Mieter-Verein_Vertrag_Miete_" + contract.toString().substring(0, 8)
+                + ".pdf";
         DocumentExportQuery documents = new DocumentExportQuery() {
             @Override
             public List<DocumentExportRecord> exportAll(Actor actor) {
-                return List.of(new DocumentExportRecord(contract, "Mietvertrag Müller", "vertrag.pdf",
-                        "application/pdf", pdf.length, ExportService.sha256(pdf), anna, NOW,
+                return List.of(new DocumentExportRecord(contract, "Mietvertrag Müller", "MANUAL", "vertrag.pdf",
+                        contractName, "application/pdf", pdf.length, ExportService.sha256(pdf), anna, NOW,
                         List.of(new SubjectView("HOUSE", null)), "ARCHIVED", 7, NOW,
                         new DocumentExportRecord.Classification(house, List.of("Haus", "Rechnungen"),
                                 List.of(new DocumentExportRecord.Assignment(telekomLabel, "ORGANIZATION", "Telekom",
                                         "MANUAL", "CONFIRMED", null, null, anna, NOW),
                                         new DocumentExportRecord.Assignment(invoiceLabel, "DOCUMENT_TYPE",
-                                                "Invoice", "AUTOMATIC", "SUGGESTED", 0.4, "run:1", null, NOW)))),
-                        new DocumentExportRecord(lost, "Verloren", "lost.pdf", "application/pdf", 3,
-                                "a".repeat(64), anna, NOW, List.of(), "FAILED", null, null, null));
+                                                "Invoice", "AUTOMATIC", "SUGGESTED", 0.4, "run:1", null, NOW))),
+                        null),
+                        new DocumentExportRecord(lost, "Verloren", "FILENAME", "lost.pdf", "Verloren_"
+                                + lost.toString().substring(0, 8) + ".pdf", "application/pdf", 3, "a".repeat(64),
+                                anna, NOW, List.of(), "FAILED", null, null, null, null));
             }
 
             @Override
@@ -147,8 +151,8 @@ class ExportServiceTest {
         ExportSummary summary = service.export(new Actor(anna));
         assertThat(service.export(new Actor(anna)).generation()).isNotEqualTo(summary.generation());
 
-        String originalPath = ExportFormat.ORIGINALS_DIR + "2026-09-13_mietvertrag-mueller_"
-                + contract.toString().substring(0, 8) + ".pdf";
+        // The original is exported unchanged under the friendly filename; the upload name stays in the metadata.
+        String originalPath = ExportFormat.ORIGINALS_DIR + contractName;
         assertThat(store.published).isTrue();
         assertThat(store.staged).containsKeys(originalPath, ExportFormat.DOCUMENTS_JSON, ExportFormat.TASKS_JSON,
                 ExportFormat.MEMBERS_JSON, ExportFormat.CATALOG_JSON, ExportFormat.DOCUMENTS_CSV,
@@ -163,7 +167,9 @@ class ExportServiceTest {
                 .contains("Verloren (original not included)").contains("### Haus / Rechnungen")
                 .contains("### (unsorted)").contains("labels Telekom");
         String documentsCsv = new String(store.staged.get(ExportFormat.DOCUMENTS_CSV), StandardCharsets.UTF_8);
-        assertThat(documentsCsv).contains("folder,documentType,organizations,topics,tags")
+        assertThat(documentsCsv).contains("id,title,originalFilename,filename,")
+                .contains("vertrag.pdf," + contractName)
+                .contains("folder,documentType,organizations,topics,tags,documentDate,analysisStatus")
                 .contains("Haus / Rechnungen,,Telekom,,");
         String labelsCsv = new String(store.staged.get(ExportFormat.LABELS_CSV), StandardCharsets.UTF_8);
         assertThat(labelsCsv).contains("DOCUMENT_TYPE,Invoice,invoice,Rechnung; Invoice,ACTIVE,,0")
@@ -216,10 +222,29 @@ class ExportServiceTest {
     }
 
     @Test
-    void csvQuotingAndSlugsAreStable() {
+    void csvQuotingIsStable() {
         assertThat(Csv.quote("a,b")).isEqualTo("\"a,b\"");
         assertThat(Csv.quote("say \"hi\"")).isEqualTo("\"say \"\"hi\"\"\"");
-        assertThat(Slugs.slug("Straße & Öl / Über 2026!", 60)).isEqualTo("strasse-oel-ueber-2026");
-        assertThat(Slugs.slug("   ", 10)).isEqualTo("document");
+    }
+
+    @Test
+    void collidingFriendlyFilenamesUseTheFullIdSoNoOriginalOverwritesAnother() {
+        DocumentId first = DocumentId.of("aaaaaaaa-0000-4000-8000-000000000001");
+        DocumentId second = DocumentId.of("aaaaaaaa-0000-4000-8000-000000000002");
+        DocumentId third = DocumentId.of("bbbbbbbb-0000-4000-8000-000000000003");
+        List<DocumentExportRecord> records = List.of(record(first, "Rechnung_aaaaaaaa.pdf"),
+                record(second, "RECHNUNG_aaaaaaaa.pdf"), record(third, "Rechnung_bbbbbbbb.pdf"));
+
+        Map<String, String> names = ExportService.exportFilenames(records);
+
+        assertThat(names.get(first.toString())).isEqualTo("Rechnung_aaaaaaaa000040008000000000000001.pdf");
+        assertThat(names.get(second.toString())).isEqualTo("RECHNUNG_aaaaaaaa000040008000000000000002.pdf");
+        assertThat(names.get(third.toString())).isEqualTo("Rechnung_bbbbbbbb.pdf");
+        assertThat(names.values()).doesNotHaveDuplicates();
+    }
+
+    private static DocumentExportRecord record(DocumentId id, String filename) {
+        return new DocumentExportRecord(id, "Rechnung", "FILENAME", "scan.pdf", filename, "application/pdf", 1,
+                "b".repeat(64), MemberId.random(), NOW, List.of(), "ARCHIVED", 1, NOW, null, null);
     }
 }

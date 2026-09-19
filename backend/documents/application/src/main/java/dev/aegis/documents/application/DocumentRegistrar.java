@@ -3,6 +3,8 @@ package dev.aegis.documents.application;
 import dev.aegis.documents.application.ports.CatalogLock;
 import dev.aegis.documents.application.ports.ProcessingScheduler;
 import dev.aegis.documents.domain.Document;
+import dev.aegis.documents.domain.analysis.DocumentAnalysis;
+import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.catalog.CategoryId;
 import dev.aegis.documents.domain.catalog.CategoryRepository;
@@ -21,14 +23,17 @@ public class DocumentRegistrar implements RegisterReceivedDocument {
     private final CategoryRepository categories;
     private final CatalogLock lock;
     private final ProcessingScheduler scheduler;
+    private final DocumentAnalysisRepository analyses;
 
     public DocumentRegistrar(DocumentRepository documents, ClassificationRepository classifications,
-            CategoryRepository categories, CatalogLock lock, ProcessingScheduler scheduler) {
+            CategoryRepository categories, CatalogLock lock, ProcessingScheduler scheduler,
+            DocumentAnalysisRepository analyses) {
         this.documents = documents;
         this.classifications = classifications;
         this.categories = categories;
         this.lock = lock;
         this.scheduler = scheduler;
+        this.analyses = analyses;
     }
 
     @Override
@@ -45,9 +50,9 @@ public class DocumentRegistrar implements RegisterReceivedDocument {
         if (existing.isPresent()) {
             return new RegistrationResult(existing.get(), true);
         }
-        Document document = Document.received(command.id(), command.title(), command.originalFilename(),
-                command.contentType(), command.sizeBytes(), command.checksum(), command.uploadedBy(),
-                command.uploadedAt(), command.subjects(), command.stagingPath());
+        Document document = Document.received(command.id(), command.title(), command.titleOrigin(),
+                command.originalFilename(), command.contentType(), command.sizeBytes(), command.checksum(),
+                command.uploadedBy(), command.uploadedAt(), command.subjects(), command.stagingPath());
         documents.save(document);
         DocumentClassification classification = DocumentClassification.unsorted(document.id());
         if (command.categoryId() != null) {
@@ -58,6 +63,10 @@ public class DocumentRegistrar implements RegisterReceivedDocument {
             }
         }
         classifications.save(classification);
+        if (command.analyzeWhenArchived()) {
+            analyses.save(DocumentAnalysis.awaitingArchive(document.id(), command.uploadedBy(),
+                    command.uploadedAt()));
+        }
         scheduler.scheduleArchival(document.id());
         return new RegistrationResult(document, false);
     }

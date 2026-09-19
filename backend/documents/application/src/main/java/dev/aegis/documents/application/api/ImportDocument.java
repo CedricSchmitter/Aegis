@@ -13,9 +13,10 @@ import java.util.List;
  */
 public interface ImportDocument {
 
-    record ImportDocumentCommand(DocumentId id, String title, String originalFilename, String contentType,
-            MemberId uploadedBy, Instant uploadedAt, List<SubjectView> subjects, String expectedChecksumSha256,
-            InputStream content) {
+    /** {@code titleOrigin} is null for exports before schema 3; the title then counts as chosen by a member. */
+    record ImportDocumentCommand(DocumentId id, String title, String titleOrigin, String originalFilename,
+            String contentType, MemberId uploadedBy, Instant uploadedAt, List<SubjectView> subjects,
+            String expectedChecksumSha256, InputStream content) {
     }
 
     enum ImportOutcome {

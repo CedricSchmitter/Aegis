@@ -23,6 +23,7 @@ class ArchivalServiceTest {
     private static final Instant NOW = Instant.parse("2026-09-13T10:00:00Z");
     private InMemoryDocumentRepository repository;
     private TestDoubles.RecordingEvents events;
+    private final java.util.List<DocumentId> triggered = new java.util.ArrayList<>();
     private ArchivalService service;
     private Document document;
 
@@ -30,8 +31,9 @@ class ArchivalServiceTest {
     void setUp() {
         repository = new InMemoryDocumentRepository();
         events = new TestDoubles.RecordingEvents();
-        service = new ArchivalService(repository, events, new ArchivalSettings(2, Duration.ofMinutes(5),
-                Duration.ofDays(7), 1024), Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new ArchivalService(repository, events, archived -> triggered.add(archived.id()),
+                new ArchivalSettings(2, Duration.ofMinutes(5), Duration.ofDays(7), 1024),
+                Clock.fixed(NOW, ZoneOffset.UTC));
         document = Document.received(DocumentId.random(), "Rechnung", "rechnung.pdf", "application/pdf", 10,
                 new Checksum("b".repeat(64)), MemberId.random(), NOW, Set.of(Subject.household()), "x.pdf");
         repository.save(document);

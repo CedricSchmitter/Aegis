@@ -33,6 +33,17 @@ public class FakePaperlessArchive implements PaperlessArchive {
     private final Map<Integer, Stored> documents = new ConcurrentHashMap<>();
     private final Map<String, TaskOutcome> tasks = new ConcurrentHashMap<>();
     private final Map<String, Integer> pollsRemaining = new ConcurrentHashMap<>();
+    private final Map<String, String> textsByChecksum = new ConcurrentHashMap<>();
+    private final Map<Integer, String> texts = new ConcurrentHashMap<>();
+    public final AtomicInteger contentReads = new AtomicInteger();
+
+    /**
+     * OCR text the fake reports once a file with these bytes is archived. Without it, the text is the file's bytes
+     * read as ISO-8859-1, which suits the synthetic text "PDFs" of the tests.
+     */
+    public void ocrText(byte[] bytes, String text) {
+        textsByChecksum.put(sha256(bytes), text);
+    }
 
     @Override
     public SubmissionOutcome submit(Path file, String title, String originalFilename) {
@@ -53,6 +64,8 @@ public class FakePaperlessArchive implements PaperlessArchive {
         } else {
             int id = nextId.getAndIncrement();
             documents.put(id, new Stored(id, title, bytes, checksum));
+            texts.put(id, textsByChecksum.getOrDefault(checksum,
+                    new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)));
             tasks.put(taskId, new Completed(id));
         }
         pollsRemaining.put(taskId, 1);
@@ -92,6 +105,16 @@ public class FakePaperlessArchive implements PaperlessArchive {
     }
 
     @Override
+    public String fetchContent(int paperlessDocumentId) {
+        requireAvailable();
+        contentReads.incrementAndGet();
+        if (!documents.containsKey(paperlessDocumentId)) {
+            throw new ArchiveUnavailableException("no document " + paperlessDocumentId);
+        }
+        return texts.getOrDefault(paperlessDocumentId, "");
+    }
+
+    @Override
     public boolean exists(int paperlessDocumentId) {
         requireAvailable();
         return documents.containsKey(paperlessDocumentId);
@@ -119,6 +142,7 @@ public class FakePaperlessArchive implements PaperlessArchive {
 
     public void clear() {
         documents.clear();
+        texts.clear();
         tasks.clear();
         pollsRemaining.clear();
     }

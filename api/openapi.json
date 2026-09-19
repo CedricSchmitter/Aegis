@@ -49,6 +49,112 @@
         "required" : [ "aliases", "expectedVersion" ],
         "type" : "object"
       },
+      "AnalysisDto" : {
+        "properties" : {
+          "candidates" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CandidateDto"
+            },
+            "type" : "array"
+          },
+          "completedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "correspondentLabelId" : {
+            "type" : [ "string", "null" ]
+          },
+          "documentDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "documentDateEvidence" : {
+            "type" : [ "string", "null" ]
+          },
+          "documentDateStatus" : {
+            "type" : "string"
+          },
+          "failureCategory" : {
+            "type" : [ "string", "null" ]
+          },
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "flags" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "generation" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "history" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GeneratedDto"
+            },
+            "type" : "array"
+          },
+          "model" : {
+            "type" : [ "string", "null" ]
+          },
+          "nextAttemptAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "requestedBy" : {
+            "type" : [ "string", "null" ]
+          },
+          "runId" : {
+            "type" : [ "string", "null" ]
+          },
+          "runState" : {
+            "type" : [ "string", "null" ]
+          },
+          "shortTopic" : {
+            "type" : [ "string", "null" ]
+          },
+          "state" : {
+            "type" : "string"
+          },
+          "subjects" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SubjectSuggestionDto"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "titleDecision" : {
+            "type" : [ "string", "null" ]
+          },
+          "trigger" : {
+            "type" : [ "string", "null" ]
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "candidates", "documentDateStatus", "flags", "generation", "history", "state", "subjects", "version" ],
+        "type" : "object"
+      },
+      "AnalysisVersionRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
       "AssignRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -60,6 +166,36 @@
           }
         },
         "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "BulkAnalysisRequest" : {
+        "properties" : {
+          "documentIds" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "documentIds" ],
+        "type" : "object"
+      },
+      "BulkAnalysisResponse" : {
+        "properties" : {
+          "requested" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "skipped" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SkippedDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "requested", "skipped" ],
         "type" : "object"
       },
       "CalendarStatusDto" : {
@@ -78,6 +214,51 @@
           }
         },
         "required" : [ "connected", "readSupported", "writeSupported" ],
+        "type" : "object"
+      },
+      "CandidateDecisionRequest" : {
+        "properties" : {
+          "accept" : {
+            "type" : "boolean"
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "key" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "accept", "expectedVersion", "key" ],
+        "type" : "object"
+      },
+      "CandidateDto" : {
+        "properties" : {
+          "confidence" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "decision" : {
+            "type" : "string"
+          },
+          "evidence" : {
+            "type" : [ "string", "null" ]
+          },
+          "facet" : {
+            "type" : "string"
+          },
+          "key" : {
+            "type" : "string"
+          },
+          "labelId" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "decision", "facet", "key", "name" ],
         "type" : "object"
       },
       "CategoryDto" : {
@@ -251,6 +432,19 @@
         "required" : [ "title" ],
         "type" : "object"
       },
+      "DecisionRequest" : {
+        "properties" : {
+          "accept" : {
+            "type" : "boolean"
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "accept", "expectedVersion" ],
+        "type" : "object"
+      },
       "DeletionResponse" : {
         "properties" : {
           "contentsMovedTo" : {
@@ -281,6 +475,9 @@
       },
       "DocumentDto" : {
         "properties" : {
+          "analysis" : {
+            "$ref" : "#/components/schemas/AnalysisDto"
+          },
           "checksumSha256" : {
             "type" : "string"
           },
@@ -289,6 +486,9 @@
           },
           "contentType" : {
             "type" : "string"
+          },
+          "filename" : {
+            "$ref" : "#/components/schemas/FilenameDto"
           },
           "id" : {
             "type" : "string"
@@ -315,6 +515,9 @@
           "title" : {
             "type" : "string"
           },
+          "titleOrigin" : {
+            "type" : "string"
+          },
           "uploadedAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -327,7 +530,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "checksumSha256", "classification", "contentType", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "title", "uploadedAt", "uploadedBy", "version" ],
+        "required" : [ "analysis", "checksumSha256", "classification", "contentType", "filename", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "title", "titleOrigin", "uploadedAt", "uploadedBy", "version" ],
         "type" : "object"
       },
       "DocumentListResponse" : {
@@ -469,6 +672,64 @@
           }
         },
         "required" : [ "expectedVersion", "facet" ],
+        "type" : "object"
+      },
+      "FilenameDto" : {
+        "properties" : {
+          "filename" : {
+            "type" : "string"
+          },
+          "override" : {
+            "type" : [ "string", "null" ]
+          },
+          "source" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "filename", "source" ],
+        "type" : "object"
+      },
+      "FilenameRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stem" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "GeneratedDto" : {
+        "properties" : {
+          "completedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "documentDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "generation" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "model" : {
+            "type" : [ "string", "null" ]
+          },
+          "runRef" : {
+            "type" : [ "string", "null" ]
+          },
+          "shortTopic" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "generation" ],
         "type" : "object"
       },
       "ImplicationsRequest" : {
@@ -1013,6 +1274,18 @@
         "required" : [ "member" ],
         "type" : "object"
       },
+      "SkippedDto" : {
+        "properties" : {
+          "documentId" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentId", "reason" ],
+        "type" : "object"
+      },
       "SourceDto" : {
         "properties" : {
           "documentId" : {
@@ -1064,6 +1337,22 @@
         "required" : [ "at", "attempt", "inputTokens", "kind", "outputTokens", "seq" ],
         "type" : "object"
       },
+      "SubjectDecisionRequest" : {
+        "properties" : {
+          "accept" : {
+            "type" : "boolean"
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subject" : {
+            "$ref" : "#/components/schemas/SubjectDto"
+          }
+        },
+        "required" : [ "accept", "expectedVersion", "subject" ],
+        "type" : "object"
+      },
       "SubjectDto" : {
         "properties" : {
           "kind" : {
@@ -1074,6 +1363,25 @@
           }
         },
         "required" : [ "kind" ],
+        "type" : "object"
+      },
+      "SubjectSuggestionDto" : {
+        "properties" : {
+          "confidence" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "decision" : {
+            "type" : "string"
+          },
+          "evidence" : {
+            "type" : [ "string", "null" ]
+          },
+          "subject" : {
+            "$ref" : "#/components/schemas/SubjectDto"
+          }
+        },
+        "required" : [ "decision", "subject" ],
         "type" : "object"
       },
       "SubjectsRequest" : {
@@ -1923,6 +2231,35 @@
         "tags" : [ "documents" ]
       }
     },
+    "/api/documents/analysis" : {
+      "post" : {
+        "operationId" : "requestDocumentAnalyses",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BulkAnalysisRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BulkAnalysisResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Analyze a bounded selection of archived documents; never the whole collection",
+        "tags" : [ "documents" ]
+      }
+    },
     "/api/documents/placement" : {
       "post" : {
         "operationId" : "placeDocuments",
@@ -1979,6 +2316,154 @@
         "tags" : [ "documents" ]
       }
     },
+    "/api/documents/{id}/analysis" : {
+      "post" : {
+        "operationId" : "requestDocumentAnalysis",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AnalysisVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Analyze an archived document now (first time, again or after a failure)",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/analysis/candidates" : {
+      "post" : {
+        "operationId" : "decideLabelCandidate",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CandidateDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Accept (create or reuse and assign) or reject a new organization or topic name",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/analysis/subjects" : {
+      "post" : {
+        "operationId" : "decideSubjectSuggestion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SubjectDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Accept or reject a subject suggestion",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/analysis/title" : {
+      "post" : {
+        "operationId" : "decideGeneratedTitle",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Accept or reject/revert the generated title",
+        "tags" : [ "documents" ]
+      }
+    },
     "/api/documents/{id}/category" : {
       "put" : {
         "operationId" : "placeDocument",
@@ -2013,6 +2498,43 @@
           }
         },
         "summary" : "File a document into a folder; empty means Unsorted",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/filename" : {
+      "put" : {
+        "operationId" : "setDocumentFilename",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FilenameRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Set the friendly filename stem; the stable id and verified extension are always added",
         "tags" : [ "documents" ]
       }
     },
@@ -2173,7 +2695,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Original bytes, unchanged",
+        "summary" : "Original bytes, unchanged, named with the friendly filename",
         "tags" : [ "documents" ]
       }
     },

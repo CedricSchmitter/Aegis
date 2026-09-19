@@ -393,7 +393,14 @@
     "ai.workload.unknown": "Unknown AI task.",
     "ai.price.unknown": "No price is configured for this model, so its cost budget cannot be enforced.",
     "ai.run.notRetryable": "Only failed or cancelled runs can be retried.",
-    "aiRun.notFound": "AI run not found."
+    "aiRun.notFound": "AI run not found.",
+    "analysis.pending": "A classification is already running for this document.",
+    "analysis.bulk.size": "Please select 1 to {{max}} documents.",
+    "analysis.title.noSuggestion": "There is no open title suggestion anymore.",
+    "analysis.candidate.missing": "This name suggestion is no longer open.",
+    "analysis.subject.missing": "This association suggestion is no longer open.",
+    "document.notArchived": "The document is not archived yet.",
+    "ai.run.keyConflict": "This request does not match an AI run that already exists."
   },
   "format": {
     "bytes": "{{value}} B",
@@ -526,5 +533,78 @@
       "water": "Water",
       "insurance": "Insurance"
     }
+  },
+  "analysis": {
+    "title": "Automatic classification",
+    "state": {
+      "NOT_REQUESTED": "This document has not been classified automatically yet.",
+      "WAITING_FOR_ARCHIVE": "Classification starts as soon as the archive has recognized the text.",
+      "PENDING": "Classification is running.",
+      "CLASSIFIED": "Classified. You can change automatically set values at any time.",
+      "NEEDS_REVIEW": "Classified. Some suggestions are waiting for your review.",
+      "FAILED": "Classification failed. The document itself is saved and archived.",
+      "UNAVAILABLE": "AI was not available. The document itself is saved."
+    },
+    "stateShort": {
+      "NOT_REQUESTED": "Not classified",
+      "WAITING_FOR_ARCHIVE": "Waiting for archive",
+      "PENDING": "Classifying",
+      "CLASSIFIED": "Classified",
+      "NEEDS_REVIEW": "Review",
+      "FAILED": "Classification failed",
+      "UNAVAILABLE": "AI unavailable"
+    },
+    "completed": "Last classified on {{date}} with {{model}}, started by {{name}}.",
+    "flag": {
+      "POOR_OCR": "The recognized text is hard to read. Nothing was applied automatically.",
+      "NO_TEXT": "No text was recognized in the document. Nothing was applied automatically.",
+      "CONFLICTING_INFORMATION": "The document contradicts itself. Nothing was applied automatically.",
+      "EMBEDDED_INSTRUCTIONS": "The document contains instructions aimed at an AI. They were ignored; nothing was applied automatically.",
+      "MULTIPLE_DOCUMENTS": "The file seems to contain several documents. Nothing was applied automatically."
+    },
+    "titleApplied": "Title set automatically: “{{title}}”",
+    "titleSuggested": "Suggested title: “{{title}}”",
+    "keepTitle": "Keep title",
+    "revertTitle": "Restore previous title",
+    "useTitle": "Use title",
+    "rejectTitle": "Reject",
+    "dateFound": "Document date: {{date}}",
+    "date": {
+      "FOUND": "Document date found.",
+      "CONFLICTING": "Several conflicting document dates – not used.",
+      "UNVERIFIED": "The reported date could not be confirmed in the text – not used.",
+      "UNKNOWN": "No document date recognized."
+    },
+    "evidence": "Evidence: “{{text}}”",
+    "newNames": "New names that are not in the vocabulary yet:",
+    "modelEstimate": "estimated by the model at {{value}}",
+    "createAndAssign": "Create and assign",
+    "subjectSuggestions": "Suggested association (about):",
+    "accept": "Accept",
+    "reject": "Reject",
+    "filename": "File name for downloads and exports",
+    "filenameSource": {
+      "GENERATED": "Generated from evidenced details",
+      "FALLBACK": "Generated from title and id",
+      "MANUAL": "Chosen by a member"
+    },
+    "originalFilename": "Original file name: {{name}}",
+    "filenameEdit": "Change file name",
+    "filenameReset": "Name automatically again",
+    "filenameSaved": "The file name was saved.",
+    "filenameHint": "The id at the end and the extension are always added. The original file stays unchanged.",
+    "start": "Classify now",
+    "retry": "Try again",
+    "reprocess": "Classify again",
+    "requested": "Classification has started.",
+    "costHint": "Uses the shared daily AI budget.",
+    "policyHint": "Only what the text evidences and the vocabulary already knows is applied. Everything else stays a suggestion. Your decisions are not overwritten by later runs.",
+    "history": "Earlier results ({{count}})",
+    "analyzeSelected": "Classify selection",
+    "selectionLimit": "At most {{max}} documents can be classified at once.",
+    "bulkStarted": "Classification started for {{count}} documents.",
+    "bulkStarted_one": "Classification started for {{count}} document.",
+    "bulkPartly": "Classification started for {{count}} documents, {{skipped}} skipped (not archived, already in progress or AI unavailable).",
+    "bulkPartly_one": "Classification started for {{count}} document, {{skipped}} skipped (not archived, already in progress or AI unavailable)."
   }
 }

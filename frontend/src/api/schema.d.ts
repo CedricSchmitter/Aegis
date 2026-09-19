@@ -261,6 +261,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Analyze a bounded selection of archived documents; never the whole collection */
+        post: operations["requestDocumentAnalyses"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/placement": {
         parameters: {
             query?: never;
@@ -295,6 +312,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/{id}/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Analyze an archived document now (first time, again or after a failure) */
+        post: operations["requestDocumentAnalysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/analysis/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept (create or reuse and assign) or reject a new organization or topic name */
+        post: operations["decideLabelCandidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/analysis/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept or reject a subject suggestion */
+        post: operations["decideSubjectSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/analysis/title": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept or reject/revert the generated title */
+        post: operations["decideGeneratedTitle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{id}/category": {
         parameters: {
             query?: never;
@@ -305,6 +390,23 @@ export interface paths {
         get?: never;
         /** File a document into a folder; empty means Unsorted */
         put: operations["placeDocument"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/filename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set the friendly filename stem; the stable id and verified extension are always added */
+        put: operations["setDocumentFilename"];
         post?: never;
         delete?: never;
         options?: never;
@@ -370,7 +472,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Original bytes, unchanged */
+        /** Original bytes, unchanged, named with the friendly filename */
         get: operations["downloadOriginal"];
         put?: never;
         post?: never;
@@ -914,16 +1016,75 @@ export interface components {
             /** Format: int64 */
             expectedVersion: number;
         };
+        AnalysisDto: {
+            candidates: components["schemas"]["CandidateDto"][];
+            /** Format: date-time */
+            completedAt?: string | null;
+            correspondentLabelId?: string | null;
+            /** Format: date */
+            documentDate?: string | null;
+            documentDateEvidence?: string | null;
+            documentDateStatus: string;
+            failureCategory?: string | null;
+            failureCode?: string | null;
+            flags: string[];
+            /** Format: int32 */
+            generation: number;
+            history: components["schemas"]["GeneratedDto"][];
+            model?: string | null;
+            /** Format: date-time */
+            nextAttemptAt?: string | null;
+            /** Format: date-time */
+            requestedAt?: string | null;
+            requestedBy?: string | null;
+            runId?: string | null;
+            runState?: string | null;
+            shortTopic?: string | null;
+            state: string;
+            subjects: components["schemas"]["SubjectSuggestionDto"][];
+            title?: string | null;
+            titleDecision?: string | null;
+            trigger?: string | null;
+            /** Format: int64 */
+            version: number;
+        };
+        AnalysisVersionRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+        };
         AssignRequest: {
             /** Format: int64 */
             expectedVersion: number;
             ownerId?: string | null;
+        };
+        BulkAnalysisRequest: {
+            documentIds: string[];
+        };
+        BulkAnalysisResponse: {
+            requested: string[];
+            skipped: components["schemas"]["SkippedDto"][];
         };
         CalendarStatusDto: {
             connected: boolean;
             provider?: string | null;
             readSupported: boolean;
             writeSupported: boolean;
+        };
+        CandidateDecisionRequest: {
+            accept: boolean;
+            /** Format: int64 */
+            expectedVersion: number;
+            key: string;
+        };
+        CandidateDto: {
+            /** Format: double */
+            confidence?: number | null;
+            decision: string;
+            evidence?: string | null;
+            facet: string;
+            key: string;
+            labelId?: string | null;
+            name: string;
         };
         CategoryDto: {
             /** Format: int64 */
@@ -980,6 +1141,11 @@ export interface components {
             sourceDocumentId?: string | null;
             title: string;
         };
+        DecisionRequest: {
+            accept: boolean;
+            /** Format: int64 */
+            expectedVersion: number;
+        };
         DeletionResponse: {
             contentsMovedTo?: string | null;
             deletedId: string;
@@ -993,9 +1159,11 @@ export interface components {
             subjectsKept: number;
         };
         DocumentDto: {
+            analysis: components["schemas"]["AnalysisDto"];
             checksumSha256: string;
             classification: components["schemas"]["ClassificationDto"];
             contentType: string;
+            filename: components["schemas"]["FilenameDto"];
             id: string;
             originalAvailable: boolean;
             originalFilename: string;
@@ -1004,6 +1172,7 @@ export interface components {
             sizeBytes: number;
             subjects: components["schemas"]["SubjectDto"][];
             title: string;
+            titleOrigin: string;
             /** Format: date-time */
             uploadedAt: string;
             uploadedBy: string;
@@ -1065,6 +1234,28 @@ export interface components {
             /** Format: int64 */
             expectedVersion: number;
             facet: string;
+        };
+        FilenameDto: {
+            filename: string;
+            override?: string | null;
+            source: string;
+        };
+        FilenameRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            stem?: string | null;
+        };
+        GeneratedDto: {
+            /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: date */
+            documentDate?: string | null;
+            /** Format: int32 */
+            generation: number;
+            model?: string | null;
+            runRef?: string | null;
+            shortTopic?: string | null;
+            title?: string | null;
         };
         ImplicationsRequest: {
             /** Format: int64 */
@@ -1269,6 +1460,10 @@ export interface components {
         SessionResponse: {
             member: components["schemas"]["MemberDto"];
         };
+        SkippedDto: {
+            documentId: string;
+            reason: string;
+        };
         SourceDto: {
             documentId: string;
             documentTitle?: string | null;
@@ -1290,9 +1485,22 @@ export interface components {
             /** Format: int32 */
             seq: number;
         };
+        SubjectDecisionRequest: {
+            accept: boolean;
+            /** Format: int64 */
+            expectedVersion: number;
+            subject: components["schemas"]["SubjectDto"];
+        };
         SubjectDto: {
             kind: string;
             memberId?: string | null;
+        };
+        SubjectSuggestionDto: {
+            /** Format: double */
+            confidence?: number | null;
+            decision: string;
+            evidence?: string | null;
+            subject: components["schemas"]["SubjectDto"];
         };
         SubjectsRequest: {
             /** Format: int64 */
@@ -1787,6 +1995,30 @@ export interface operations {
             };
         };
     };
+    requestDocumentAnalyses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkAnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkAnalysisResponse"];
+                };
+            };
+        };
+    };
     placeDocuments: {
         parameters: {
             query?: never;
@@ -1833,6 +2065,110 @@ export interface operations {
             };
         };
     };
+    requestDocumentAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    decideLabelCandidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    decideSubjectSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    decideGeneratedTitle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
     placeDocument: {
         parameters: {
             query?: never;
@@ -1845,6 +2181,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    setDocumentFilename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FilenameRequest"];
             };
         };
         responses: {
