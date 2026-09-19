@@ -81,6 +81,7 @@ describe("locale catalogs", () => {
       ...["ACTIVE", "RETIRED", "MERGED"].map((status) => `labels.status.${status}`),
       ...["house", "invoices", "internet", "water", "insurance"].map((key) => `folders.structure.${key}`),
       ...["HOUSE", "HOUSEHOLD", "MEMBER"].map((kind) => `subjects.${kind}`),
+      ...["pending", "uploading", "saved", "duplicate", "failed", "rejected"].map((s) => `share.status.${s}`),
       ...["CONNECTION_CHECK", "DOCUMENT_CLASSIFICATION", "DOCUMENT_REVIEW", "CHAT"].map((w) => `ai.workload.${w}`),
       ...["QUEUED", "RUNNING", "WAITING_RETRY", "SUCCEEDED", "FAILED", "CANCELLED"].map((s) => `ai.state.${s}`),
       ...["NOT_CONFIGURED", "AUTHENTICATION", "MODEL_UNAVAILABLE", "INVALID_REQUEST", "RATE_LIMITED",

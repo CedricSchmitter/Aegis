@@ -13,6 +13,7 @@ import { TaskDetailPage } from "./pages/TaskDetailPage";
 import { NoticesPage } from "./pages/NoticesPage";
 import { StatusPage } from "./pages/StatusPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SharePage } from "./pages/SharePage";
 
 export function App() {
   const { member, loading } = useSession();
@@ -30,7 +31,7 @@ export function App() {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<Navigate to="/login" replace state={{ from: location.pathname }} />} />
+        <Route path="*" element={<Navigate to="/login" replace state={{ from: location.pathname + location.search }} />} />
       </Routes>
     );
   }
@@ -49,6 +50,9 @@ export function App() {
         <Route path="/notices" element={<NoticesPage />} />
         <Route path="/status" element={<StatusPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/share" element={<SharePage />} />
+        {/* Shares arrive as POST and are answered by the service worker; a plain visit lands on the share page. */}
+        <Route path="/share-target" element={<Navigate to="/share" replace />} />
         <Route path="*" element={<Navigate to="/today" replace />} />
       </Routes>
     </Layout>

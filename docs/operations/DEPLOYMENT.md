@@ -178,6 +178,49 @@ use the subscription), `AEGIS_AI_DAILY_COST_LIMIT=0.25`. Existing `.env` overrid
 must match these settings; changing environment settings requires recreating the application container.
 Deleting the key file disables new calls; calls already in flight may finish.
 
+## Installable app and Android share target
+
+The frontend ships a web app manifest (`frontend/public/manifest.webmanifest`), app icons (`frontend/public/icons/`)
+and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint, Chrome on Android offers
+"Install app"; the installed Aegis then appears in Android's Share menu for PDF files.
+
+- A share is a multipart POST to `/share-target`. The service worker answers it without contacting the server: it
+  keeps the shared files in a local inbox on the phone (Cache Storage, `aegis-share-inbox-v1`) and redirects to
+  `/share`. The share page uploads them through the normal authenticated `POST /api/documents` with CSRF protection,
+  so there is no second upload path. A file leaves the inbox only after the server confirmed durable storage (or
+  recognized an identical existing file); a login in between, an interrupted connection or a reload loses nothing
+  and uploads nothing twice. Unsaved shared files are dropped from the phone after seven days.
+- If no service worker is active (e.g. after clearing Chrome's site data), the share reaches the server. The backend
+  stores nothing and redirects to `/share?error=unavailable`; that page registers the worker again and asks the
+  member to share once more. This redirect is the only endpoint exempt from CSRF protection.
+- The share target accepts **any** file type. Chrome silently drops files whose type does not match the manifest's
+  `accept` list, and Android apps often report a PDF as `application/octet-stream` or without an extension, which
+  ended in an empty share. The share page decides instead: it identifies a PDF by its `%PDF-` signature, like the
+  server, and rejects everything else with a localized message. Aegis therefore also appears in the Share menu for
+  images and other files, which are then refused.
+- Changing `share_target` or `accept` only takes effect after Chrome updates the installed app (WebAPK). Reinstall
+  Aegis on the phone to apply such a change immediately; a service worker or page change needs no reinstall.
+- The service worker caches no app assets or data and handles no other request; the app itself works without it.
+  **Updates:** browsers check `sw.js` on navigation, bypassing the HTTP cache. A changed worker installs and takes
+  over immediately (`skipWaiting`, `clients.claim`), so after a deployment the next app start or page load uses the
+  new version. A deployment can therefore not be masked by stale cached code. Keep the inbox format of `sw.js` and
+  `src/share/inbox.ts` compatible or bump the cache name together with a migration.
+- **Known Chrome regression (as of 2026-09-19):** Chrome 153 on Android hands installed web apps (WebAPK) the
+  share's title and text but strips every file, so the share page receives an empty multipart body. This is a false
+  positive of the URI-permission check added in `[M153] Verify caller URI permissions before Web Share Target in
+  TWA`; WebAPKs launch through `WebappLauncherActivity`, which did not stash verified share data. It affects any
+  PWA, independent of the manifest's `accept` list (reported for Squoosh on Pixel devices:
+  https://github.com/GoogleChromeLabs/squoosh/issues/1503). Until the phones run a Chrome version with the fix
+  (Chrome 154 is the first candidate), sharing PDFs into Aegis cannot work and the upload form is the way in. The
+  share page names this case explicitly. A second reported variant, where the body does contain the file but
+  `formData()` returns nothing, is handled by the worker's own multipart reader.
+- Share target and installation are Chrome features for installed apps (WebAPK). If an installation ends up as a
+  plain home-screen shortcut, Aegis does not appear in the Share menu; uninstall and install again through Chrome's
+  menu. Real-device verification on both phones is tracked in issue #33.
+- Icons are derived from `frontend/icons/aegis-icon-source.webp` with `python scripts/generate-icons.py` (in
+  `frontend/`, needs Pillow). To change the icon, replace that file and run the script again. Installed apps pick up
+  a new icon only when Chrome updates the installed app, which can take up to a day.
+
 ## Operations
 
 - Status page (in the app) and `GET /api/status`: database, Paperless, export, external backup, AI (not configured;
