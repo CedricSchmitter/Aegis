@@ -649,6 +649,7 @@
       "duplicate": "Already stored",
       "failed": "Not saved",
       "rejected": "Not possible"
-    }
+    },
+    "unknownType": "unknown type"
   }
 }

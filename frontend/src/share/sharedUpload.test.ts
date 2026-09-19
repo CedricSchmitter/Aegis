@@ -3,6 +3,7 @@ import { ApiError } from "../api/client";
 import type { UploadResponse } from "../api/types";
 import {
   MAX_UPLOAD_BYTES,
+  hasPdfSignature,
   initialStatus,
   isStored,
   isUnauthenticated,
@@ -15,17 +16,30 @@ import {
 const shared = (name: string, type: string, size: number) => ({ key: "s/0", name, type, size, receivedAt: "" });
 
 describe("shared upload rules", () => {
-  it("accepts PDFs by type or extension and rejects other, empty or oversized files locally", () => {
-    expect(initialStatus(shared("scan.pdf", "application/pdf", 10))).toEqual({ kind: "pending" });
-    expect(initialStatus(shared("download", "application/pdf", 10))).toEqual({ kind: "pending" });
-    expect(initialStatus(shared("Scan.PDF", "application/octet-stream", 10))).toEqual({ kind: "pending" });
-    expect(initialStatus(shared("photo.jpg", "image/jpeg", 10))).toEqual({ kind: "rejected", code: "document.notPdf" });
-    expect(initialStatus(shared("empty.pdf", "application/pdf", 0))).toEqual({ kind: "rejected", code: "document.empty" });
-    expect(initialStatus(shared("big.pdf", "application/pdf", MAX_UPLOAD_BYTES + 1))).toEqual({
+  it("recognizes PDFs by their content, whatever name and type the sharing app reports", async () => {
+    expect(await hasPdfSignature(new Blob(["%PDF-1.7 ..."]))).toBe(true);
+    expect(await hasPdfSignature(new Blob(["ÿØÿ JPEG"]))).toBe(false);
+    expect(await hasPdfSignature(new Blob(["%PD"]))).toBe(false);
+    expect(await hasPdfSignature(new Blob([]))).toBe(false);
+  });
+
+  it("accepts PDF content under any name or type and rejects other, empty or oversized files locally", () => {
+    expect(initialStatus(shared("scan.pdf", "application/pdf", 10), true)).toEqual({ kind: "pending" });
+    expect(initialStatus(shared("1000012345", "application/octet-stream", 10), true)).toEqual({ kind: "pending" });
+    expect(initialStatus(shared("", "", 10), true)).toEqual({ kind: "pending" });
+    expect(initialStatus(shared("fake.pdf", "application/pdf", 10), false)).toEqual({
+      kind: "rejected",
+      code: "document.notPdf",
+    });
+    expect(initialStatus(shared("empty.pdf", "application/pdf", 0), false)).toEqual({
+      kind: "rejected",
+      code: "document.empty",
+    });
+    expect(initialStatus(shared("big.pdf", "application/pdf", MAX_UPLOAD_BYTES + 1), true)).toEqual({
       kind: "rejected",
       code: "document.tooLarge",
     });
-    expect(initialStatus(shared("max.pdf", "application/pdf", MAX_UPLOAD_BYTES))).toEqual({ kind: "pending" });
+    expect(initialStatus(shared("max.pdf", "application/pdf", MAX_UPLOAD_BYTES), true)).toEqual({ kind: "pending" });
   });
 
   it("gives the server a PDF filename even when the source app sent none", () => {

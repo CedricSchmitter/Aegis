@@ -17,20 +17,27 @@ export type ShareStatus =
   | { kind: "failed"; code: string }
   | { kind: "rejected"; code: string };
 
-export function isPdf(file: Pick<SharedFile, "name" | "type">): boolean {
-  return file.type === "application/pdf" || file.name.trim().toLowerCase().endsWith(".pdf");
+const PDF_SIGNATURE = "%PDF-";
+
+/**
+ * Whether the content starts like a PDF, the same check the server makes. Name and type are not reliable: Android
+ * apps often share PDFs as `application/octet-stream` or under a name without extension.
+ */
+export async function hasPdfSignature(content: Blob): Promise<boolean> {
+  const head = new Uint8Array(await content.slice(0, PDF_SIGNATURE.length).arrayBuffer());
+  return String.fromCharCode(...head) === PDF_SIGNATURE;
 }
 
 /** Local check before anything is sent; returns the same error codes the server uses. */
-export function localRejection(file: Pick<SharedFile, "name" | "type" | "size">): string | null {
-  if (!isPdf(file)) return "document.notPdf";
+export function localRejection(file: Pick<SharedFile, "size">, pdfContent: boolean): string | null {
   if (file.size === 0) return "document.empty";
+  if (!pdfContent) return "document.notPdf";
   if (file.size > MAX_UPLOAD_BYTES) return "document.tooLarge";
   return null;
 }
 
-export function initialStatus(file: SharedFile): ShareStatus {
-  const code = localRejection(file);
+export function initialStatus(file: SharedFile, pdfContent: boolean): ShareStatus {
+  const code = localRejection(file, pdfContent);
   return code ? { kind: "rejected", code } : { kind: "pending" };
 }
 

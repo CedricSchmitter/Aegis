@@ -649,6 +649,7 @@
       "duplicate": "Schon gespeichert",
       "failed": "Nicht gespeichert",
       "rejected": "Nicht möglich"
-    }
+    },
+    "unknownType": "unbekannter Typ"
   }
 }

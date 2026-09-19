@@ -18,6 +18,7 @@ import {
   type SharedFile,
 } from "../share/inbox";
 import {
+  hasPdfSignature,
   initialStatus,
   isStored,
   isUnauthenticated,
@@ -68,7 +69,13 @@ export function SharePage() {
       if (!opened) return;
       try {
         const files = await listSharedFiles(opened);
-        if (active) setItems(files.map((file) => ({ file, status: initialStatus(file) })));
+        const checked = await Promise.all(
+          files.map(async (file) => {
+            const content = await readSharedFile(opened, file);
+            return { file, status: initialStatus(file, content !== null && (await hasPdfSignature(content))) };
+          }),
+        );
+        if (active) setItems(checked);
       } catch {
         if (active) setItems([]);
       }
@@ -188,7 +195,7 @@ export function SharePage() {
                     <Badge state={BADGE_STATE[item.status.kind]} label={t(`share.status.${item.status.kind}`)} />
                   </div>
                   <span className="text-sm text-stone-600 dark:text-stone-400">
-                    {formatBytes(item.file.size, t, i18n.language)}
+                    {formatBytes(item.file.size, t, i18n.language)} · {item.file.type || t("share.unknownType")}
                   </span>
                   {detail && (
                     <p
