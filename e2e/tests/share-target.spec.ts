@@ -51,6 +51,7 @@ test.describe("Android share target", () => {
   test("the app is installable: manifest, share target and icons are served", async ({ request }) => {
     const manifest = await request.get("/manifest.webmanifest");
     expect(manifest.ok()).toBeTruthy();
+    expect(manifest.headers()["content-type"]).toContain("application/manifest+json");
     const body = await manifest.json();
     expect(body.share_target).toMatchObject({ action: "/share-target", method: "POST", enctype: "multipart/form-data" });
     for (const icon of body.icons as { src: string }[]) {

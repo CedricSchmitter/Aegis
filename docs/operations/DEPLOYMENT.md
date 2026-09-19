@@ -190,6 +190,9 @@ and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint,
   so there is no second upload path. A file leaves the inbox only after the server confirmed durable storage (or
   recognized an identical existing file); a login in between, an interrupted connection or a reload loses nothing
   and uploads nothing twice. Unsaved shared files are dropped from the phone after seven days.
+- If no service worker is active (e.g. after clearing Chrome's site data), the share reaches the server. The backend
+  stores nothing and redirects to `/share?error=unavailable`; that page registers the worker again and asks the
+  member to share once more. This redirect is the only endpoint exempt from CSRF protection.
 - Only PDFs are accepted, as in the upload form. Other files are rejected with a localized message.
 - The service worker caches no app assets or data and handles no other request; the app itself works without it.
   **Updates:** browsers check `sw.js` on navigation, bypassing the HTTP cache. A changed worker installs and takes

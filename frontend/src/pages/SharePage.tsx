@@ -162,6 +162,7 @@ export function SharePage() {
     <>
       <PageTitle>{t("share.title")}</PageTitle>
       {params.get("error") === "receive" && <ErrorBox message={t("share.receiveFailed")} />}
+      {params.get("error") === "unavailable" && <ErrorBox message={t("share.notReady")} />}
       {inbox === null && <ErrorBox message={t("share.unsupported")} />}
       <ErrorBox message={error} />
       {inbox && items === null && <Loading />}

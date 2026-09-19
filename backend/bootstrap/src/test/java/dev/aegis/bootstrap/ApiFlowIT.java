@@ -71,6 +71,14 @@ class ApiFlowIT extends PostgresIT {
     }
 
     @Test
+    @Order(1)
+    void aShareThatMissesTheServiceWorkerIsSentToTheSharePageWithoutBeingProcessed() {
+        ApiClient.Response share = client().postWithoutCsrf("/share-target", "{}");
+        assertThat(share.status()).isEqualTo(303);
+        assertThat(share.header("Location")).isEqualTo("/share?error=unavailable");
+    }
+
+    @Test
     @Order(2)
     void bothMembersCanLogInAndSeeEachOther() {
         ApiClient anna = loggedIn(ANNA);

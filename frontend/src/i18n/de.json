@@ -637,6 +637,7 @@
     "empty": "Es warten keine geteilten Dateien auf das Speichern.",
     "nothingReceived": "Es wurde keine PDF-Datei empfangen. Aegis nimmt nur PDF-Dateien an.",
     "receiveFailed": "Die geteilte Datei konnte nicht empfangen werden. Bitte teile sie noch einmal.",
+    "notReady": "Aegis war noch nicht bereit, die Datei zu empfangen. Jetzt ist es bereit: Bitte teile die Datei noch einmal.",
     "unsupported": "Dieser Browser kann geteilte Dateien nicht zwischenspeichern. Bitte lade die Datei auf der Seite Dokumente hoch.",
     "pending": "{{count}} geteilte Dateien warten auf das Speichern.",
     "pending_one": "Eine geteilte Datei wartet auf das Speichern.",
