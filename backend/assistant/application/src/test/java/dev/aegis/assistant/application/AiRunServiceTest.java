@@ -280,4 +280,118 @@ class AiRunServiceTest {
         assertThat(Workload.fromConfigKey(" Connection-Check ")).isEqualTo(Workload.CONNECTION_CHECK);
         assertThatThrownBy(() -> Workload.fromConfigKey("shell")).isInstanceOf(IllegalArgumentException.class);
     }
+    // Provider preference ---------------------------------------------------------------------------------------------
+
+    private RunView classifyAs(Actor actor, String documentId) {
+        return kit.service().request(actor, new RunRequest("DOCUMENT_CLASSIFICATION", "classification:" + documentId,
+                List.of(new dev.aegis.assistant.application.api.SourceVersion("document", documentId, 1)),
+                Map.of("content", "Rechnung"), false));
+    }
+
+    @Test
+    void thePreferredProviderIsUsedWhileItHasCredentials() {
+        kit.subscription.configured = true;
+
+        assertThat(classifyAs(AS_CEDRIC, "doc-1").provider()).isEqualTo(ScriptedGateway.PROVIDER);
+    }
+
+    @Test
+    void withoutThePreferredCredentialsTheSubscriptionServesOnlyItsOwner() {
+        kit.gateway.configured = false;
+        kit.subscription.configured = true;
+        RunRequest lisas = new RunRequest("DOCUMENT_CLASSIFICATION", "classification:doc-2",
+                List.of(new dev.aegis.assistant.application.api.SourceVersion("document", "doc-2", 1)), Map.of(),
+                false);
+
+        assertThat(classifyAs(AS_CEDRIC, "doc-1").provider()).isEqualTo(AiTestKit.SUBSCRIPTION);
+        assertThatThrownBy(() -> kit.service().request(AS_LISA, lisas)).isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "ai.provider.memberNotAllowed");
+        assertThat(kit.service().tryRequest(AS_LISA, lisas)).isEqualTo(
+                new dev.aegis.assistant.application.api.RequestOutcome.Refused("ai.provider.memberNotAllowed"));
+        assertThat(kit.scheduled).hasSize(1);
+    }
+
+    @Test
+    void theSubscriptionReceivesTheSameCallAsThePreferredProvider() {
+        kit.gateway.answer(json(Map.of("label", "invoice")));
+        kit.executor().execute(new RunId(classifyAs(AS_CEDRIC, "doc-1").id()));
+        kit.gateway.configured = false;
+        kit.subscription.configured = true;
+        kit.subscription.answer(json(Map.of("label", "invoice")));
+
+        RunView run = classifyAs(AS_CEDRIC, "doc-2");
+        kit.executor().execute(new RunId(run.id()));
+
+        assertThat(kit.service().get(AS_CEDRIC, run.id()).state()).isEqualTo("SUCCEEDED");
+        var viaKey = kit.gateway.requests.getFirst();
+        var viaSubscription = kit.subscription.requests.getFirst();
+        assertThat(viaSubscription.model()).isEqualTo(viaKey.model());
+        assertThat(viaSubscription.system()).isEqualTo(viaKey.system());
+        assertThat(viaSubscription.outputSchema()).isEqualTo(viaKey.outputSchema());
+        assertThat(viaSubscription.maxOutputTokens()).isEqualTo(viaKey.maxOutputTokens());
+        assertThat(viaSubscription.effort()).isEqualTo(viaKey.effort());
+    }
+
+    @Test
+    void aQueuedSubscriptionRunIsNotExecutedForAMemberWhoLostAccess() {
+        kit.gateway.configured = false;
+        kit.subscription.configured = true;
+        RunView run = classifyAs(AS_CEDRIC, "doc-1");
+        kit.subscription.allowed = java.util.Set.of();
+
+        kit.executor().execute(new RunId(run.id()));
+
+        RunView failed = kit.service().get(AS_CEDRIC, run.id());
+        assertThat(failed.state()).isEqualTo("FAILED");
+        assertThat(failed.failureCategory()).isEqualTo(FailureCategory.NOT_AUTHORIZED.name());
+        assertThat(kit.subscription.requests).isEmpty();
+    }
+
+    @Test
+    void aRetryChoosesTheProviderAgainByTheCurrentPreference() {
+        kit.gateway.configured = false;
+        kit.subscription.configured = true;
+        kit.subscription.fail(FailureCategory.AUTHENTICATION, "provider.authentication", null);
+        RunView failed = classifyAs(AS_CEDRIC, "doc-1");
+        kit.executor().execute(new RunId(failed.id()));
+        assertThat(kit.service().get(AS_CEDRIC, failed.id()).state()).isEqualTo("FAILED");
+
+        kit.gateway.configured = true;
+        RunView retried = kit.service().retry(AS_LISA, failed.id());
+
+        assertThat(retried.provider()).isEqualTo(ScriptedGateway.PROVIDER);
+        assertThat(retried.model()).isEqualTo(AiTestKit.MODEL);
+    }
+
+    @Test
+    void statusAndConnectionCheckFollowTheProviderEachMemberWouldUse() {
+        kit.gateway.configured = false;
+        kit.subscription.configured = true;
+
+        AiOverview cedrics = kit.service().overview(AS_CEDRIC);
+        AiOverview lisas = kit.service().overview(AS_LISA);
+        List<RunView> checks = kit.service().checkConnection(AS_CEDRIC);
+
+        assertThat(cedrics.memberAllowed()).isTrue();
+        assertThat(cedrics.limitProvider()).isEqualTo(AiTestKit.SUBSCRIPTION);
+        assertThat(cedrics.dailyCostLimit()).isEqualByComparingTo("50.00");
+        assertThat(cedrics.workloads()).filteredOn(view -> AiTestKit.SUBSCRIPTION.equals(view.provider()))
+                .isNotEmpty().allSatisfy(view -> assertThat(view.maxCost()).isEqualByComparingTo("0.50"));
+        assertThat(checks.getFirst().maxCost()).isEqualByComparingTo("0.50");
+        assertThat(lisas.limitProvider()).isEqualTo(AiTestKit.SUBSCRIPTION);
+        assertThat(cedrics.workloads()).filteredOn(view -> view.workload().equals("DOCUMENT_CLASSIFICATION"))
+                .singleElement().satisfies(view -> {
+                    assertThat(view.provider()).isEqualTo(AiTestKit.SUBSCRIPTION);
+                    assertThat(view.available()).isTrue();
+                });
+        assertThat(lisas.configured()).isTrue();
+        assertThat(lisas.memberAllowed()).isFalse();
+        assertThat(lisas.workloads()).allSatisfy(view -> assertThat(view.available()).isFalse());
+        assertThat(checks).singleElement().satisfies(check ->
+                assertThat(check.provider()).isEqualTo(AiTestKit.SUBSCRIPTION));
+        assertThatThrownBy(() -> kit.service().checkConnection(AS_LISA)).isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "ai.provider.memberNotAllowed");
+        assertThat(kit.service().health(AS_LISA).models()).extracting(AiHealth.ModelHealth::provider)
+                .containsOnly(AiTestKit.SUBSCRIPTION);
+    }
 }

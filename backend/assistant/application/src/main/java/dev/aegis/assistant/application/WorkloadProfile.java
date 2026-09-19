@@ -3,19 +3,24 @@ package dev.aegis.assistant.application;
 import dev.aegis.assistant.domain.ModelSelection;
 import dev.aegis.assistant.domain.RunBudget;
 import dev.aegis.assistant.domain.Workload;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
- * Configured provider, model and limits of one workload. The connection check has no model of its own: it checks
+ * Configured model candidates and limits of one workload. {@code models} lists provider and model in order of
+ * preference; a run uses the first candidate whose provider is usable when it is requested (for example the API key
+ * first and the owner's subscription only without a key). The connection check has no models of its own: it checks
  * the models of the other profiles. {@code effort} is sent only when set, because not every model accepts it.
  */
-public record WorkloadProfile(Workload workload, ModelSelection model, RunBudget budget, int maxConcurrent,
+public record WorkloadProfile(Workload workload, List<ModelSelection> models, RunBudget budget, int maxConcurrent,
         String effort) {
     public WorkloadProfile {
         Objects.requireNonNull(workload, "workload");
         Objects.requireNonNull(budget, "budget");
-        if (model == null && workload != Workload.CONNECTION_CHECK) {
+        models = models == null ? List.of() : List.copyOf(models);
+        if (models.isEmpty() && workload != Workload.CONNECTION_CHECK) {
             throw new IllegalArgumentException("workload " + workload + " needs a provider and model");
         }
         if (maxConcurrent < 1) {
@@ -24,7 +29,13 @@ public record WorkloadProfile(Workload workload, ModelSelection model, RunBudget
         effort = effort == null || effort.isBlank() ? null : effort.strip();
     }
 
-    public Optional<ModelSelection> modelSelection() {
-        return Optional.ofNullable(model);
+    /** The most preferred candidate, shown when no candidate is usable. */
+    public Optional<ModelSelection> preferred() {
+        return models.stream().findFirst();
+    }
+
+    /** The first candidate in order of preference that {@code usable} accepts. */
+    public Optional<ModelSelection> first(Predicate<ModelSelection> usable) {
+        return models.stream().filter(usable).findFirst();
     }
 }

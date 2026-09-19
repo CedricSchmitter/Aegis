@@ -7,31 +7,51 @@ import dev.aegis.assistant.application.ports.ModelRequest;
 import dev.aegis.assistant.application.ports.ModelTurn;
 import dev.aegis.assistant.domain.FailureCategory;
 import dev.aegis.assistant.domain.TokenUsage;
+import dev.aegis.shared.MemberId;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
-/** Controlled model: answers from a script and records every request it received. */
+/**
+ * Controlled model: answers from a script and records every request it received. {@code allowed}, when set, limits
+ * the provider to these members like a personal subscription.
+ */
 class ScriptedGateway implements ModelGateway {
     static final String PROVIDER = "scripted";
     static final TokenUsage USAGE = new TokenUsage(1_000, 100, 0, 0);
 
     final List<ModelRequest> requests = new ArrayList<>();
     private final Deque<Function<ModelRequest, ModelTurn>> script = new ArrayDeque<>();
+    private final String provider;
     boolean configured = true;
+    Set<MemberId> allowed;
+
+    ScriptedGateway() {
+        this(PROVIDER);
+    }
+
+    ScriptedGateway(String provider) {
+        this.provider = provider;
+    }
 
     @Override
     public String provider() {
-        return PROVIDER;
+        return provider;
     }
 
     @Override
     public boolean configured() {
         return configured;
+    }
+
+    @Override
+    public boolean allows(MemberId member) {
+        return allowed == null || allowed.contains(member);
     }
 
     @Override

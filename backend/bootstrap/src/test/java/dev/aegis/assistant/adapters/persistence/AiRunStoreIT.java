@@ -87,8 +87,10 @@ class AiRunStoreIT extends PostgresIT {
         assertThat(loaded.version()).isEqualTo(1);
         assertThat(runs.steps(run.id())).extracting(RunStep::kind).containsExactly(StepKind.ATTEMPT_STARTED,
                 StepKind.MODEL_CALL, StepKind.ATTEMPT_FAILED);
-        assertThat(runs.costSince(AT, Currency.getInstance("USD")).amount())
+        assertThat(runs.costSince(AT, "anthropic", Currency.getInstance("USD")).amount())
                 .isGreaterThanOrEqualTo(Money.of("0.0016", "USD").amount());
+        assertThat(runs.costSince(AT, "other-provider", Currency.getInstance("USD")).amount())
+                .as("daily limits count only the provider's own calls").isZero();
         assertThat(runs.findActiveByKey(run.idempotencyKey())).get().extracting(AiRun::id).isEqualTo(run.id());
     }
 

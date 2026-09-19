@@ -4,6 +4,7 @@ import dev.aegis.assistant.application.api.RunRequest;
 import dev.aegis.assistant.application.api.RunView;
 import dev.aegis.assistant.application.api.SourceVersion;
 import dev.aegis.assistant.application.ports.AiTool;
+import dev.aegis.assistant.application.ports.ModelGateway;
 import dev.aegis.assistant.application.ports.ModelMessage;
 import dev.aegis.assistant.application.ports.ModelTurn;
 import dev.aegis.assistant.application.ports.RunScheduler;
@@ -43,10 +44,18 @@ class AiTestKit {
     static final Actor AS_LISA = new Actor(LISA);
     static final Actor AS_CEDRIC = new Actor(CEDRIC);
     static final String MODEL = "scripted-model";
+    static final String SUBSCRIPTION = "subscription";
 
     final MutableClock clock = new MutableClock(T0);
     final InMemoryAiRunRepository runs = new InMemoryAiRunRepository();
     final ScriptedGateway gateway = new ScriptedGateway();
+    /** Second choice of every profile, like the owner's subscription: not configured and limited to Cedric. */
+    final ScriptedGateway subscription = new ScriptedGateway(SUBSCRIPTION);
+
+    {
+        subscription.configured = false;
+        subscription.allowed = Set.of(CEDRIC);
+    }
     final Set<MemberId> members = new HashSet<>(Set.of(LISA, CEDRIC));
     final HouseholdAccess access = actor -> {
         if (actor == null || !members.contains(actor.memberId())) {
@@ -62,6 +71,9 @@ class AiTestKit {
 
     RunBudget budget = new RunBudget(Duration.ofMinutes(2), Money.of("0.05", "USD"), 4, 3, 1024, 3);
     Money dailyLimit = Money.of("2.00", "USD");
+    /** The subscription has its own limits, like the owner's Claude subscription in production. */
+    Map<String, ProviderLimits> providerLimits = new LinkedHashMap<>(Map.of(SUBSCRIPTION,
+            new ProviderLimits(Money.of("50.00", "USD"), Money.of("0.50", "USD"))));
     int maxConcurrentRuns = 2;
     int workloadConcurrency = 2;
     Map<String, ModelPrice> prices = new LinkedHashMap<>(Map.of(MODEL,
@@ -75,15 +87,16 @@ class AiTestKit {
     AiSettings settings() {
         if (settings == null) {
             Map<Workload, WorkloadProfile> profiles = new EnumMap<>(Workload.class);
-            ModelSelection model = new ModelSelection(ScriptedGateway.PROVIDER, MODEL);
+            List<ModelSelection> models = List.of(new ModelSelection(ScriptedGateway.PROVIDER, MODEL),
+                    new ModelSelection(SUBSCRIPTION, MODEL));
             profiles.put(Workload.DOCUMENT_CLASSIFICATION,
-                    new WorkloadProfile(Workload.DOCUMENT_CLASSIFICATION, model, budget, workloadConcurrency, null));
+                    new WorkloadProfile(Workload.DOCUMENT_CLASSIFICATION, models, budget, workloadConcurrency, null));
             profiles.put(Workload.DOCUMENT_REVIEW,
-                    new WorkloadProfile(Workload.DOCUMENT_REVIEW, model, budget, 1, "high"));
-            profiles.put(Workload.CONNECTION_CHECK, new WorkloadProfile(Workload.CONNECTION_CHECK, null,
+                    new WorkloadProfile(Workload.DOCUMENT_REVIEW, models, budget, 1, "high"));
+            profiles.put(Workload.CONNECTION_CHECK, new WorkloadProfile(Workload.CONNECTION_CHECK, List.of(),
                     new RunBudget(Duration.ofSeconds(90), Money.of("0.05", "USD"), 1, 0, 256, 2), 2, null));
             settings = new AiSettings(profiles, dailyLimit, maxConcurrentRuns, Duration.ofSeconds(60),
-                    ZoneId.of("Europe/Berlin"), new PriceBook(prices));
+                    ZoneId.of("Europe/Berlin"), new PriceBook(prices), providerLimits);
         }
         return settings;
     }
@@ -105,16 +118,20 @@ class AiTestKit {
 
     RunExecutor executor() {
         if (executor == null) {
-            executor = new RunExecutor(execution(), handlers(), Map.of(ScriptedGateway.PROVIDER, gateway),
+            executor = new RunExecutor(execution(), handlers(), gateways(),
                     Map.of(lookup.spec().name(), lookup, forbidden.spec().name(), forbidden), settings());
         }
         return executor;
     }
 
+    Map<String, ModelGateway> gateways() {
+        return Map.of(ScriptedGateway.PROVIDER, gateway, SUBSCRIPTION, subscription);
+    }
+
     AiRunService service() {
         if (service == null) {
             service = new AiRunService(runs, scheduler, () -> {
-            }, handlers(), Map.of(ScriptedGateway.PROVIDER, gateway), settings(), access, clock);
+            }, handlers(), gateways(), settings(), access, clock);
         }
         return service;
     }

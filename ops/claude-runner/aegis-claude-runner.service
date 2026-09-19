@@ -1,0 +1,43 @@
+[Unit]
+Description=Aegis Claude Code host runner (headless claude -p with the owner's own CLI login)
+Documentation=file:///srv/aegis/source/current/docs/operations/DEPLOYMENT.md
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+# The user who logged in to Claude Code with `claude`; the login stays in its home directory.
+User=aegis-agent
+Group=aegis-agent
+UMask=0077
+Environment=HOME=/home/aegis-agent
+# The socket directory is shared with the application container (group 10001 = aegis-app).
+ExecStart=/usr/bin/python3 /srv/aegis/source/current/ops/claude-runner/aegis_claude_runner.py \
+    --socket /srv/aegis/claude-runner/runner.sock --socket-group aegis-app \
+    --cli /home/aegis-agent/.local/bin/claude --max-concurrent 2
+Restart=on-failure
+RestartSec=5
+
+# The CLI runs without tools; this confinement is the second line of defense: no sudo, read-only system and
+# home except the CLI's own state, private /tmp.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/srv/aegis/claude-runner -/home/aegis-agent/.claude -/home/aegis-agent/.claude.json
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=1G
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target

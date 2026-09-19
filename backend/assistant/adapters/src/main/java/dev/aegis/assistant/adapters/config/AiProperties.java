@@ -3,6 +3,7 @@ package dev.aegis.assistant.adapters.config;
 import dev.aegis.assistant.application.AiSettings;
 import dev.aegis.assistant.application.ModelPrice;
 import dev.aegis.assistant.application.PriceBook;
+import dev.aegis.assistant.application.ProviderLimits;
 import dev.aegis.assistant.application.WorkloadProfile;
 import dev.aegis.assistant.domain.ModelSelection;
 import dev.aegis.assistant.domain.Money;
@@ -14,23 +15,31 @@ import java.time.ZoneId;
 import java.util.Currency;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * AI configuration under {@code aegis.ai}: household limits, list prices per model and one profile per workload
  * (keys {@code connection-check}, {@code classification}, {@code review}, {@code chat}). Model names are
- * configuration, not code: a model can be replaced without a release.
+ * configuration, not code: a model can be replaced without a release. {@code providers} lists the providers of a
+ * profile in order of preference; each run uses the first one that is usable for its requester. A single
+ * {@code provider} is accepted as shorthand for a one-element list; setting both is rejected.
  */
 @ConfigurationProperties(prefix = "aegis.ai")
 public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer maxConcurrentRuns,
-        Duration callTimeout, Map<String, Price> prices, Map<String, Profile> workloads) {
+        Duration callTimeout, Map<String, Price> prices, Map<String, Profile> workloads,
+        Map<String, Limits> providerLimits) {
+
+    /** Own limits of a provider (keys are provider names); unset values keep the household defaults. */
+    public record Limits(BigDecimal dailyCostLimit, BigDecimal maxRunCost) {
+    }
 
     /** List prices per million tokens in the configured currency. */
     public record Price(BigDecimal input, BigDecimal output, BigDecimal cacheRead, BigDecimal cacheWrite) {
     }
 
-    public record Profile(String provider, String model, BigDecimal maxCost, Duration maxDuration,
+    public record Profile(String provider, List<String> providers, String model, BigDecimal maxCost, Duration maxDuration,
             Integer maxModelCalls, Integer maxToolCalls, Integer maxOutputTokens, Integer maxAttempts,
             Integer maxConcurrent, String effort) {
     }
@@ -42,6 +51,7 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         callTimeout = callTimeout == null ? Duration.ofSeconds(120) : callTimeout;
         prices = prices == null ? Map.of() : Map.copyOf(prices);
         workloads = workloads == null ? Map.of() : Map.copyOf(workloads);
+        providerLimits = providerLimits == null ? Map.of() : Map.copyOf(providerLimits);
     }
 
     public AiSettings toSettings(ZoneId zone) {
@@ -52,20 +62,34 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         Map<Workload, WorkloadProfile> profiles = new EnumMap<>(Workload.class);
         workloads.forEach((key, profile) -> {
             Workload workload = Workload.fromConfigKey(key);
-            String provider = profile.provider() == null ? "anthropic" : profile.provider();
-            ModelSelection model = profile.model() == null || profile.model().isBlank() ? null
-                    : new ModelSelection(provider, profile.model());
+            List<String> providers = providers(key, profile);
+            List<ModelSelection> models = profile.model() == null || profile.model().isBlank() ? List.of()
+                    : providers.stream().map(String::strip).filter(provider -> !provider.isEmpty()).distinct()
+                            .map(provider -> new ModelSelection(provider, profile.model())).toList();
             RunBudget budget = new RunBudget(require(profile.maxDuration(), key, "max-duration"),
                     new Money(require(profile.maxCost(), key, "max-cost"), unit),
                     require(profile.maxModelCalls(), key, "max-model-calls"),
                     profile.maxToolCalls() == null ? 0 : profile.maxToolCalls(),
                     require(profile.maxOutputTokens(), key, "max-output-tokens"),
                     require(profile.maxAttempts(), key, "max-attempts"));
-            profiles.put(workload, new WorkloadProfile(workload, model, budget,
+            profiles.put(workload, new WorkloadProfile(workload, models, budget,
                     profile.maxConcurrent() == null ? 1 : profile.maxConcurrent(), profile.effort()));
         });
+        Map<String, ProviderLimits> limits = new LinkedHashMap<>();
+        providerLimits.forEach((provider, limit) -> limits.put(provider,
+                new ProviderLimits(money(limit.dailyCostLimit(), unit), money(limit.maxRunCost(), unit))));
         return new AiSettings(profiles, new Money(dailyCostLimit, unit), maxConcurrentRuns, callTimeout, zone,
-                new PriceBook(modelPrices));
+                new PriceBook(modelPrices), limits);
+    }
+
+    private static List<String> providers(String workload, Profile profile) {
+        boolean single = profile.provider() != null && !profile.provider().isBlank();
+        boolean list = profile.providers() != null && !profile.providers().isEmpty();
+        if (single && list) {
+            throw new IllegalStateException("aegis.ai.workloads." + workload
+                    + " sets both provider and providers; use providers only");
+        }
+        return single ? List.of(profile.provider()) : list ? profile.providers() : List.of("anthropic");
     }
 
     private static Money money(BigDecimal amount, Currency unit) {

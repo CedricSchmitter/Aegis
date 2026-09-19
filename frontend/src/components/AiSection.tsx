@@ -82,13 +82,23 @@ export function AiSection() {
       {overview && (
         <div className="card mb-2 flex flex-col gap-2 text-sm">
           <p>{overview.configured ? t("ai.configured") : t("ai.notConfigured")}</p>
-          <p>{t("ai.spentToday", { spent: money(overview.spentToday), limit: money(overview.dailyCostLimit) })}</p>
+          {overview.configured && !overview.memberAllowed && <p data-testid="ai-member-not-allowed">{t("ai.memberNotAllowed")}</p>}
+          <p>
+            {t("ai.spentToday", { spent: money(overview.spentToday), limit: money(overview.dailyCostLimit) })}
+            {overview.limitProvider && ` (${t(`ai.provider.${overview.limitProvider}`, { defaultValue: overview.limitProvider })})`}
+          </p>
           <ul className="flex flex-col gap-1">
             {overview.workloads.map((workload) => (
               <li key={workload.workload} className="flex flex-wrap items-center justify-between gap-2">
                 <span>
                   <span className="font-medium">{t(`ai.workload.${workload.workload}`)}</span>
-                  {workload.model && <span className="text-stone-600 dark:text-stone-400"> · {workload.model}</span>}
+                  {workload.model && (
+                    <span className="text-stone-600 dark:text-stone-400">
+                      {" "}
+                      · {workload.model}
+                      {workload.provider && ` · ${t(`ai.provider.${workload.provider}`, { defaultValue: workload.provider })}`}
+                    </span>
+                  )}
                   <span className="text-stone-600 dark:text-stone-400">
                     {" "}
                     · {t("ai.budgetLine", { cost: money(workload.maxCost), attempts: workload.maxAttempts, seconds: workload.maxDurationSeconds })}

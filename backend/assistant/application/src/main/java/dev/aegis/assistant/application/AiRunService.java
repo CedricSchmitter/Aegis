@@ -29,6 +29,7 @@ import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotFoundException;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,14 +43,17 @@ import java.util.UUID;
 
 /**
  * Member-facing AI use cases: requesting, inspecting, cancelling and retrying runs, and the connection check. Every
- * entry point checks household membership. Requests that cannot run (no credentials, no handler, unknown price) are
- * refused instead of queued. Wrapped in a transaction by the composition root; no call waits on a model.
+ * entry point checks household membership. A run uses the first model candidate of its workload profile whose
+ * provider has credentials and serves the requesting member; the chosen provider is recorded with the run. Requests
+ * that cannot run (no credentials, provider not available to the member, no handler, unknown price) are refused
+ * instead of queued. Wrapped in a transaction by the composition root; no call waits on a model.
  */
 public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, AiHealthQuery, AiRunStatusQuery {
     public static final int MAX_LIST = 100;
     /** Codes of requests that cannot run with the current configuration or membership. */
+    static final String MEMBER_NOT_ALLOWED = "ai.provider.memberNotAllowed";
     static final Set<String> UNAVAILABLE_CODES = Set.of("ai.notConfigured", "ai.workload.unavailable",
-            "ai.price.unknown");
+            "ai.price.unknown", MEMBER_NOT_ALLOWED);
 
     private final AiRunRepository runs;
     private final RunScheduler scheduler;
@@ -85,8 +89,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         WorkloadProfile profile = settings.profile(workload).orElseThrow(() -> new InvalidInputException(
                 "ai.workload.unavailable", "Workload " + workload + " has no configured profile"));
-        ModelSelection model = profile.model();
-        requireRunnable(actor, workload, model);
+        ModelSelection model = requireRunnable(actor, workload, profile.models());
         List<SourceRef> sources = new ArrayList<>();
         for (SourceVersion source : request.sources()) {
             try {
@@ -95,7 +98,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
                 throw new InvalidInputException("validation.failed", "Invalid run source");
             }
         }
-        return view(create(actor, workload, request.idempotencyKey(), null, model, profile.budget(), sources,
+        return view(create(actor, workload, request.idempotencyKey(), null, model, settings.budget(profile, model.provider()), sources,
                 request.parameters(), request.reprocess()));
     }
 
@@ -122,20 +125,29 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         WorkloadProfile check = settings.profile(Workload.CONNECTION_CHECK).orElseThrow(() ->
                 new InvalidInputException("ai.notConfigured", "No connection check profile is configured"));
         Map<ModelSelection, Set<String>> targets = new LinkedHashMap<>();
+        boolean refusedForMember = false;
         for (Workload workload : Workload.values()) {
-            settings.profile(workload).flatMap(WorkloadProfile::modelSelection)
-                    .filter(model -> providerConfigured(model) && settings.prices().find(model.model()).isPresent())
-                    .ifPresent(model -> targets.computeIfAbsent(model, key -> new LinkedHashSet<>())
-                            .add(workload.name()));
+            Optional<WorkloadProfile> profile = settings.profile(workload);
+            if (profile.isEmpty()) {
+                continue;
+            }
+            Optional<ModelSelection> target = profile.get().first(model -> usable(model, actor) && priced(model));
+            target.ifPresent(model -> targets.computeIfAbsent(model, key -> new LinkedHashSet<>())
+                    .add(workload.name()));
+            refusedForMember |= target.isEmpty()
+                    && profile.get().first(model -> providerConfigured(model) && priced(model)).isPresent();
         }
-        if (targets.isEmpty() || !handlers.containsKey(Workload.CONNECTION_CHECK)) {
+        if (!handlers.containsKey(Workload.CONNECTION_CHECK) || targets.isEmpty() && !refusedForMember) {
             throw new InvalidInputException("ai.notConfigured",
                     "No AI provider with credentials and a priced model is configured");
+        }
+        if (targets.isEmpty()) {
+            throw memberNotAllowed();
         }
         List<RunView> started = new ArrayList<>();
         targets.forEach((model, workloads) -> started.add(view(create(actor, Workload.CONNECTION_CHECK,
                 "connection-check:" + model.provider() + ":" + model.model() + ":" + String.join(",", workloads), null,
-                model, check.budget(), List.of(),
+                model, settings.budget(check, model.provider()), List.of(),
                 Map.of("workloads", String.join(",", workloads)), true))));
         return started;
     }
@@ -147,9 +159,10 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         if (!previous.retryable()) {
             throw new InvalidInputException("ai.run.notRetryable", "Only failed or cancelled runs can be retried");
         }
-        requireRunnable(actor, previous.workload(), previous.model());
-        return view(create(actor, previous.workload(), previous.idempotencyKey(), previous.id(), previous.model(),
-                previous.budget(), previous.sources(), previous.parameters(), true));
+        ModelSelection model = requireRunnable(actor, previous.workload(), retryCandidates(previous));
+        return view(create(actor, previous.workload(), previous.idempotencyKey(), previous.id(), model,
+                settings.profile(previous.workload()).map(profile -> settings.budget(profile, model.provider()))
+                        .orElse(previous.budget()), previous.sources(), previous.parameters(), true));
     }
 
     @Override
@@ -193,23 +206,60 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         return run;
     }
 
-    private void requireRunnable(Actor actor, Workload workload, ModelSelection model) {
+    /** Chooses the first candidate the member may use now, or explains why none can run. */
+    private ModelSelection requireRunnable(Actor actor, Workload workload, List<ModelSelection> candidates) {
         if (!handlers.containsKey(workload)) {
             throw new InvalidInputException("ai.workload.unavailable",
                     "Workload " + workload + " has no implemented workflow yet");
         }
-        if (!providerConfigured(model)) {
+        Optional<ModelSelection> chosen = candidates.stream().filter(model -> usable(model, actor)).findFirst();
+        if (chosen.isEmpty()) {
+            if (candidates.stream().anyMatch(this::providerConfigured)) {
+                throw memberNotAllowed();
+            }
             throw new InvalidInputException("ai.notConfigured",
-                    "Provider " + model.provider() + " has no server-side credentials");
+                    "No provider of " + workload + " has server-side credentials");
         }
-        if (settings.prices().find(model.model()).isEmpty()) {
+        ModelSelection model = chosen.get();
+        if (!priced(model)) {
             throw new InvalidInputException("ai.price.unknown", "No price is configured for " + model.model());
         }
+        return model;
+    }
+
+    /**
+     * A retry keeps the model of the previous run and chooses its provider again by the current preference, so a
+     * run that failed without an API key can be retried on the key once it is installed, and vice versa. A connection
+     * check keeps its provider because it checks exactly that provider.
+     */
+    private List<ModelSelection> retryCandidates(AiRun previous) {
+        ModelSelection model = previous.model();
+        if (previous.workload() == Workload.CONNECTION_CHECK) {
+            return List.of(model);
+        }
+        List<ModelSelection> candidates = settings.profile(previous.workload()).map(WorkloadProfile::models)
+                .orElse(List.of()).stream().map(candidate -> new ModelSelection(candidate.provider(), model.model()))
+                .distinct().toList();
+        return candidates.isEmpty() ? List.of(model) : candidates;
+    }
+
+    private static InvalidInputException memberNotAllowed() {
+        return new InvalidInputException(MEMBER_NOT_ALLOWED,
+                "The configured AI provider is not available for this member");
+    }
+
+    private boolean usable(ModelSelection model, Actor actor) {
+        ModelGateway gateway = gateways.get(model.provider());
+        return gateway != null && gateway.configured() && gateway.allows(actor.memberId());
     }
 
     private boolean providerConfigured(ModelSelection model) {
         ModelGateway gateway = gateways.get(model.provider());
         return gateway != null && gateway.configured();
+    }
+
+    private boolean priced(ModelSelection model) {
+        return settings.prices().find(model.model()).isPresent();
     }
 
     // Queries -------------------------------------------------------------------------------------------------------
@@ -220,25 +270,44 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         Instant now = clock.instant();
         boolean configured = anyProviderConfigured();
         List<WorkloadView> workloads = new ArrayList<>();
+        // Limits and spending are shown for the provider this member's runs use now, otherwise the first shown one.
+        String usableProvider = null;
+        String shownProvider = null;
         for (Workload workload : Workload.values()) {
             Optional<WorkloadProfile> profile = settings.profile(workload);
             if (profile.isPresent()) {
-                workloads.add(workloadView(profile.get()));
+                WorkloadView view = workloadView(profile.get(), actor);
+                workloads.add(view);
+                shownProvider = shownProvider == null ? view.provider() : shownProvider;
+                Optional<ModelSelection> usable = profile.get().first(model -> usable(model, actor));
+                if (usableProvider == null && usable.isPresent()) {
+                    usableProvider = usable.get().provider();
+                }
             }
         }
-        return new AiOverview(configured, configured, settings.dailyCostLimit().amount(),
-                runs.costSince(settings.startOfDay(now), settings.currency()).amount(),
+        boolean memberAllowed = usableProvider != null;
+        String limitProvider = memberAllowed ? usableProvider : shownProvider;
+        return new AiOverview(configured, memberAllowed, limitProvider,
+                settings.dailyCostLimit(limitProvider).amount(),
+                limitProvider == null ? BigDecimal.ZERO
+                        : runs.costSince(settings.startOfDay(now), limitProvider, settings.currency()).amount(),
                 settings.currency().getCurrencyCode(), settings.maxConcurrentRuns(), workloads);
     }
 
-    private WorkloadView workloadView(WorkloadProfile profile) {
-        ModelSelection model = profile.model();
+    /** Shows the candidate a run of this member would use now, otherwise the configured or most preferred one. */
+    private WorkloadView workloadView(WorkloadProfile profile, Actor actor) {
+        ModelSelection model = profile.first(candidate -> usable(candidate, actor))
+                .or(() -> profile.first(this::providerConfigured)).or(profile::preferred).orElse(null);
         boolean handler = handlers.containsKey(profile.workload());
         boolean provider = model == null ? anyProviderConfigured() : providerConfigured(model);
-        boolean priced = model == null || settings.prices().find(model.model()).isPresent();
-        RunBudget budget = profile.budget();
+        boolean allowed = model == null
+                ? gateways.values().stream().anyMatch(gateway -> gateway.configured()
+                        && gateway.allows(actor.memberId()))
+                : usable(model, actor);
+        boolean priced = model == null || priced(model);
+        RunBudget budget = model == null ? profile.budget() : settings.budget(profile, model.provider());
         return new WorkloadView(profile.workload().name(), model == null ? null : model.provider(),
-                model == null ? null : model.model(), provider, handler, handler && provider && priced,
+                model == null ? null : model.model(), provider, handler, handler && provider && allowed && priced,
                 budget.maxCost().amount(), budget.maxDuration().toSeconds(), budget.maxModelCalls(),
                 budget.maxToolCalls(), budget.maxOutputTokens(), budget.maxAttempts(), profile.maxConcurrent());
     }
@@ -267,8 +336,9 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
     }
 
     /**
-     * Health per currently configured model: its latest succeeded or failed run of any workload. Models that are no
-     * longer configured do not affect the status.
+     * Health per model currently in use: for each profile the first candidate with credentials (otherwise the most
+     * preferred one) with its latest succeeded or failed run of any workload. Models no longer in use do not affect
+     * the status.
      */
     @Override
     public AiHealth health(Actor actor) {
@@ -279,7 +349,8 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         Set<ModelSelection> configured = new LinkedHashSet<>();
         for (Workload workload : Workload.values()) {
-            settings.profile(workload).flatMap(WorkloadProfile::modelSelection).ifPresent(configured::add);
+            settings.profile(workload).flatMap(profile -> profile.first(this::providerConfigured)
+                    .or(profile::preferred)).ifPresent(configured::add);
         }
         List<AiHealth.ModelHealth> models = new ArrayList<>();
         for (ModelSelection model : configured) {

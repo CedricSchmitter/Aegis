@@ -1,5 +1,6 @@
 package dev.aegis.assistant.application.ports;
 
+import dev.aegis.shared.MemberId;
 
 /**
  * Provider-neutral access to a language model. Implementations translate the request into the provider protocol,
@@ -12,6 +13,15 @@ public interface ModelGateway {
 
     /** Whether server-side credentials are present; checked before every run and call. */
     boolean configured();
+
+    /**
+     * Whether runs requested by {@code member} may use this provider. A personal credential, such as the owner's
+     * Claude subscription, serves only its owner; a household API key serves every member. Checked before every run
+     * and call, in addition to the household membership check.
+     */
+    default boolean allows(MemberId member) {
+        return true;
+    }
 
     /**
      * Performs one model call.

@@ -42,11 +42,16 @@ services:
       AEGIS_MEMBERS_FILE: /run/secrets/initial-members.json
       AEGIS_BACKUP_STATE_FILE: /srv/aegis/backup-state/state.json
       AEGIS_COOKIE_SECURE: "false"
-      # Optional AI provider (ADR-0003): anthropic (Console API key).
-      # Without the credential file of the chosen provider every AI workload is reported as not configured.
-      AEGIS_AI_PROVIDER: ${AEGIS_AI_PROVIDER:-anthropic}
+      # Optional AI providers in order of preference (ADR-0003): anthropic (Console API key), then claude-code (the
+      # owner's subscription through the host runner socket, only for AEGIS_AI_SUBSCRIPTION_MEMBERS). Without a
+      # usable provider every AI workload is reported as not configured.
+      AEGIS_AI_PROVIDERS: ${AEGIS_AI_PROVIDERS:-anthropic,claude-code}
       AEGIS_ANTHROPIC_API_KEY_FILE: /run/secrets/ai/anthropic-api-key
+      AEGIS_CLAUDE_RUNNER_SOCKET: /run/aegis-claude/runner.sock
+      AEGIS_AI_SUBSCRIPTION_MEMBERS: ${AEGIS_AI_SUBSCRIPTION_MEMBERS:-}
       AEGIS_AI_DAILY_COST_LIMIT: ${AEGIS_AI_DAILY_COST_LIMIT:-0.25}
+      AEGIS_AI_SUBSCRIPTION_DAILY_COST_LIMIT: ${AEGIS_AI_SUBSCRIPTION_DAILY_COST_LIMIT:-50.00}
+      AEGIS_AI_SUBSCRIPTION_MAX_RUN_COST: ${AEGIS_AI_SUBSCRIPTION_MAX_RUN_COST:-0.50}
       TZ: Europe/Berlin
     volumes:
       - ${AEGIS_DATA_DIR}/ingress:/srv/aegis/ingress
@@ -54,6 +59,8 @@ services:
       - ${AEGIS_DATA_DIR}/backup-state:/srv/aegis/backup-state:ro
       - ./secrets/initial-members.json:/run/secrets/initial-members.json:ro
       - ./secrets/ai:/run/secrets/ai:ro
+      # Socket directory of the Claude Code host runner; contains only the socket, never the CLI login.
+      - ${AEGIS_CLAUDE_RUNNER_DIR:-/srv/aegis/claude-runner}:/run/aegis-claude
     depends_on:
       postgres:
         condition: service_healthy

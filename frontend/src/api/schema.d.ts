@@ -1004,6 +1004,8 @@ export interface components {
             configured: boolean;
             currency: string;
             dailyCostLimit: number;
+            /** @description Provider whose daily limit and spending today are shown: the one this member's runs use now (anthropic or claude-code) */
+            limitProvider?: string | null;
             /** Format: int32 */
             maxConcurrentRuns: number;
             /** @description Whether the authenticated household member may use a configured provider */

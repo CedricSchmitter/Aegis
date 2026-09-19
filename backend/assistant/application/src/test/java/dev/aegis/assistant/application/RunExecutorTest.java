@@ -7,6 +7,8 @@ import static dev.aegis.assistant.application.ScriptedGateway.json;
 import static dev.aegis.assistant.application.ScriptedGateway.toolCalls;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.aegis.assistant.application.api.RunRequest;
+import dev.aegis.assistant.application.api.SourceVersion;
 import dev.aegis.assistant.application.ports.ContentPart;
 import dev.aegis.assistant.application.ports.ModelMessage;
 import dev.aegis.assistant.application.ports.ModelRequest;
@@ -264,6 +266,29 @@ class RunExecutorTest {
         assertThat(stored(first).state()).isEqualTo(RunState.SUCCEEDED);
         assertThat(stored(second).failure()).get().extracting(RunFailure::code).isEqualTo("budget.daily");
         assertThat(kit.gateway.requests).hasSize(1);
+    }
+
+    @Test
+    void theSubscriptionHasItsOwnDailyLimitAndRunBudget() {
+        kit.dailyLimit = Money.of("0.0020", "USD");
+        kit.gateway.answer(json(Map.of("label", "invoice")));
+        RunId viaKey = new RunId(kit.classify("doc-a", 1, "Rechnung", false).id());
+        execute(viaKey);
+        kit.gateway.configured = false;
+        kit.subscription.configured = true;
+        kit.subscription.answer(json(Map.of("label", "invoice")));
+        RunId viaSubscription = new RunId(kit.service().request(AiTestKit.AS_CEDRIC, new RunRequest(
+                "DOCUMENT_CLASSIFICATION", "classification:doc-b:1", List.of(new SourceVersion("document", "doc-b", 1)),
+                Map.of("content", "Rechnung"), false)).id());
+
+        execute(viaSubscription);
+
+        assertThat(stored(viaKey).budget().maxCost()).isEqualTo(Money.of("0.05", "USD"));
+        assertThat(stored(viaSubscription).budget().maxCost()).isEqualTo(Money.of("0.50", "USD"));
+        assertThat(stored(viaSubscription).state()).as("the API spending does not count against the subscription")
+                .isEqualTo(RunState.SUCCEEDED);
+        assertThat(kit.settings().dailyCostLimit(AiTestKit.SUBSCRIPTION)).isEqualTo(Money.of("50.00", "USD"));
+        assertThat(kit.settings().dailyCostLimit(ScriptedGateway.PROVIDER)).isEqualTo(Money.of("0.0020", "USD"));
     }
 
     @Test
