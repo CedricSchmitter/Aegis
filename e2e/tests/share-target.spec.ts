@@ -54,6 +54,8 @@ test.describe("Android share target", () => {
     expect(manifest.headers()["content-type"]).toContain("application/manifest+json");
     const body = await manifest.json();
     expect(body.share_target).toMatchObject({ action: "/share-target", method: "POST", enctype: "multipart/form-data" });
+    // Chrome drops files that do not match; Aegis takes any file and sorts it out on the share page.
+    expect(body.share_target.params.files[0].accept).toContain("*/*");
     for (const icon of body.icons as { src: string }[]) {
       const response = await request.get(icon.src);
       expect(response.headers()["content-type"], icon.src).toContain("image/png");

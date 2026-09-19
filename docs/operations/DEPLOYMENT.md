@@ -193,7 +193,13 @@ and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint,
 - If no service worker is active (e.g. after clearing Chrome's site data), the share reaches the server. The backend
   stores nothing and redirects to `/share?error=unavailable`; that page registers the worker again and asks the
   member to share once more. This redirect is the only endpoint exempt from CSRF protection.
-- Only PDFs are accepted, as in the upload form. Other files are rejected with a localized message.
+- The share target accepts **any** file type. Chrome silently drops files whose type does not match the manifest's
+  `accept` list, and Android apps often report a PDF as `application/octet-stream` or without an extension, which
+  ended in an empty share. The share page decides instead: it identifies a PDF by its `%PDF-` signature, like the
+  server, and rejects everything else with a localized message. Aegis therefore also appears in the Share menu for
+  images and other files, which are then refused.
+- Changing `share_target` or `accept` only takes effect after Chrome updates the installed app (WebAPK). Reinstall
+  Aegis on the phone to apply such a change immediately; a service worker or page change needs no reinstall.
 - The service worker caches no app assets or data and handles no other request; the app itself works without it.
   **Updates:** browsers check `sw.js` on navigation, bypassing the HTTP cache. A changed worker installs and takes
   over immediately (`skipWaiting`, `clients.claim`), so after a deployment the next app start or page load uses the
