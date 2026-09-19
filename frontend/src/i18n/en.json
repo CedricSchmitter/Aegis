@@ -258,6 +258,11 @@
     "retryStarted": "A new run was started.",
     "configured": "An AI provider is set up on the server. Every run is limited by time, cost, tool calls and retries.",
     "notConfigured": "No AI provider is set up. Upload, search and tasks work without AI.",
+    "memberNotAllowed": "Without an API key, AI uses a personal Claude subscription that is not enabled for your account. Upload, search and tasks work as usual.",
+    "provider": {
+      "anthropic": "Claude API",
+      "claude-code": "Claude subscription"
+    },
     "spentToday": "Spent today: {{spent}} of the {{limit}} daily limit",
     "budgetLine": "up to {{cost}} per run, {{attempts}} attempts, {{seconds}} s per attempt",
     "available": "ready",
@@ -389,6 +394,7 @@
     "search.facet.mismatch": "The label does not match the filter group.",
     "export.schema.unsupported": "This export version is not supported.",
     "ai.notConfigured": "No AI provider is set up.",
+    "ai.provider.memberNotAllowed": "The AI connection currently uses a personal subscription that is not enabled for your account.",
     "ai.workload.unavailable": "There is no workflow for this AI task yet.",
     "ai.workload.unknown": "Unknown AI task.",
     "ai.price.unknown": "No price is configured for this model, so its cost budget cannot be enforced.",

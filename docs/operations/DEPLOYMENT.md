@@ -73,16 +73,17 @@ later container recreation does not encounter a missing file or create a directo
 ## AI provider (optional)
 
 AI runs through the bounded execution boundary of [ADR-0003](../architecture/adr/ADR-0003-bounded-ai-execution.md).
-Without the credential file of the selected provider every AI workload is reported as not configured; capture, search
-and tasks are unaffected. `remote-deploy.sh` prepares `/srv/aegis/deploy/secrets/ai` (mode 0750, group 10001),
+Each run uses the first usable provider in `AEGIS_AI_PROVIDERS` (default `anthropic,claude-code`): the Claude API
+when its key file exists, otherwise the owner's subscription through `claude -p` for the members allowed to use it.
+Without a usable provider every AI workload is reported as not configured; capture, search and tasks are unaffected. `remote-deploy.sh` prepares `/srv/aegis/deploy/secrets/ai` (mode 0750, group 10001),
 which the application container mounts read-only at `/run/secrets/ai`. Credential files are read again when they
 change, so no restart is needed; deleting a file disconnects that provider. Never put a token or key into `.env`, Git,
 tickets or chat. The deployment secrets, including these files, are part of the encrypted external backup.
 
 ### Claude API with Sonnet 5
 
-The only bundled provider is the direct Claude Messages API through the Java SDK. All three future workload
-profiles select `claude-sonnet-5`; no Claude Code installation, subscription login or CLI process is needed.
+The preferred provider is the direct Claude Messages API through the Java SDK. All three workload profiles select
+`claude-sonnet-5`; the API needs no Claude Code installation, subscription login or CLI process.
 Both household members use their own Aegis login with the server-side API connection.
 
 1. In [Claude Console](https://platform.claude.com/), open Billing and manually buy a small prepaid credit balance.
@@ -101,6 +102,44 @@ Paste the key at the hidden prompt and press Enter. The script validates the bas
 sets root:10001 ownership and mode 0640, then replaces `/srv/aegis/deploy/secrets/ai/anthropic-api-key` atomically.
 The directory is mounted into the container, so the new key is readable without a restart. The script makes no API
 request and never prints the key. Run it again to rotate the key; revoke the old key in Console separately.
+
+### Subscription fallback through `claude -p`
+
+Without an API key file, runs requested by the members in `AEGIS_AI_SUBSCRIPTION_MEMBERS` (in
+`/srv/aegis/deploy/.env`, currently `cedric`) use the owner's Claude subscription. The subscription is personal, so
+runs of other members, including automatic classification of their uploads, are refused as
+`ai.provider.memberNotAllowed` and shown as "AI unavailable". Installing an API key switches all new runs back to the
+API without a restart.
+
+The application container never sees the subscription login. The **host runner**
+(`ops/claude-runner/aegis_claude_runner.py`, systemd unit `aegis-claude-runner.service`) runs as `aegis-agent`, the
+VM user who logged in with `claude`, and listens on `/srv/aegis/claude-runner/runner.sock` (group 10001, mode 0660);
+the container mounts that directory at `/run/aegis-claude`. Per call the application sends model, system prompt,
+prompt, JSON schema, effort, output-token allowance and timeout; the runner starts one headless `claude -p` with a
+fixed command line (`--tools ""`, `--restricted`, `--safe-mode`, `--strict-mcp-config`, `--disable-slash-commands`,
+`--no-session-persistence`, `--permission-mode dontAsk`, `--max-turns 3`), an empty working directory and a minimal
+environment without application secrets or `ANTHROPIC_API_KEY`. It stops the CLI on timeout or when the application
+closes the connection, runs at most two calls at once and logs only model, status, exit code and duration. The unit
+additionally forbids privilege escalation and keeps the system and home directory read-only except the CLI's own
+state. Tools and multi-turn conversations are not supported through this provider; classification needs neither.
+
+One-time setup on the VM (the CLI login stays as it is; never copy `~/.claude` or its credentials anywhere):
+
+```bash
+sudo install -m 0644 /srv/aegis/source/current/ops/claude-runner/aegis-claude-runner.service /etc/systemd/system/
+sudo systemd-analyze verify /etc/systemd/system/aegis-claude-runner.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now aegis-claude-runner.service
+journalctl -u aegis-claude-runner.service -n 20
+```
+
+`remote-deploy.sh` creates `/srv/aegis/claude-runner`. After a deployment that changes the runner, restart it with
+`sudo systemctl restart aegis-claude-runner.service`. To stop using the subscription, stop and disable the unit;
+the socket disappears and the provider is reported as not configured. If the CLI login expires, runs fail as
+`AUTHENTICATION`; log in again as `aegis-agent` with `claude`.
+
+Costs recorded for subscription runs are API-equivalent estimates from the reported usage, so the same daily and
+per-run budgets apply; they are not charges. Subscription usage limits appear as `RATE_LIMITED` with the reset time.
 
 ### Verify and understand availability
 
@@ -126,10 +165,12 @@ The default household daily cost limit is **0.25 USD**, with one run at a time. 
 review/chat profiles to 0.10 USD. When the daily limit is reached, further classifications fail visibly as
 "Budget exhausted" and can be started again the next day. These are application estimates from reported usage, not a
 provider balance or an exact billing ceiling: interrupted requests may be billed without recorded usage.
-The provider's billing controls remain authoritative. No automatic top-up or alternate-provider fallback exists.
+The provider's billing controls remain authoritative. No automatic top-up exists. The only provider fallback is the
+choice at request time described above; a failing API call is never repeated on the subscription.
 Models, prices and per-run budgets are in `aegis.ai` of `application.yml`.
 
-Deployment defaults: `AEGIS_AI_PROVIDER=anthropic`, `AEGIS_AI_DAILY_COST_LIMIT=0.25`. Existing `.env` overrides
+Deployment defaults: `AEGIS_AI_PROVIDERS=anthropic,claude-code`, `AEGIS_AI_SUBSCRIPTION_MEMBERS=` (empty: nobody may
+use the subscription), `AEGIS_AI_DAILY_COST_LIMIT=0.25`. Existing `.env` overrides
 must match these settings; changing environment settings requires recreating the application container.
 Deleting the key file disables new calls; calls already in flight may finish.
 

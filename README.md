@@ -45,6 +45,13 @@ AEGIS_AI_LIVE_TEST=true AEGIS_ANTHROPIC_API_KEY_FILE=/path/to/anthropic-api-key 
   ./mvnw -pl assistant/adapters -am -DskipITs test -Dtest=AnthropicGatewayLiveTest -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
+The Claude Code host runner (subscription fallback) has hermetic tests with a stand-in CLI; process and socket tests
+run only on Linux:
+
+```bash
+python3 -m unittest discover -s ops/claude-runner -p 'test_*.py'
+```
+
 Frontend (Node 24):
 
 ```bash
@@ -84,10 +91,13 @@ downloads and exports use readable filenames such as `2026-09-17_Telekom_Rechnun
 analyzed when a member selects them.
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
-visible state, cancellation and retry, a connection check, and the direct Claude API adapter.
+visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a
+fallback to the owner's Claude subscription through headless `claude -p` on the VM.
 All workload profiles default to Sonnet 5 with a 0.25 USD household daily budget and one concurrent run.
-Both members can use the shared server-side API connection. Until the owner installs the API key, AI is not
-configured. Follow [API setup](docs/operations/DEPLOYMENT.md#claude-api-with-sonnet-5); no subscription login is needed.
+Both members can use the shared server-side API connection; the subscription fallback serves only the members listed
+in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Without either, AI is not configured. See
+[API setup](docs/operations/DEPLOYMENT.md#claude-api-with-sonnet-5) and
+[subscription fallback](docs/operations/DEPLOYMENT.md#subscription-fallback-through-claude--p).
 Scheduled review and chat workflows (#24, #25) are not connected.
 
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup

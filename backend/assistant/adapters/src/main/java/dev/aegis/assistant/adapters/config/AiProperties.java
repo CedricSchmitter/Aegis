@@ -14,13 +14,15 @@ import java.time.ZoneId;
 import java.util.Currency;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * AI configuration under {@code aegis.ai}: household limits, list prices per model and one profile per workload
  * (keys {@code connection-check}, {@code classification}, {@code review}, {@code chat}). Model names are
- * configuration, not code: a model can be replaced without a release.
+ * configuration, not code: a model can be replaced without a release. {@code providers} lists the providers of a
+ * profile in order of preference; each run uses the first one that is usable for its requester.
  */
 @ConfigurationProperties(prefix = "aegis.ai")
 public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer maxConcurrentRuns,
@@ -30,7 +32,7 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
     public record Price(BigDecimal input, BigDecimal output, BigDecimal cacheRead, BigDecimal cacheWrite) {
     }
 
-    public record Profile(String provider, String model, BigDecimal maxCost, Duration maxDuration,
+    public record Profile(List<String> providers, String model, BigDecimal maxCost, Duration maxDuration,
             Integer maxModelCalls, Integer maxToolCalls, Integer maxOutputTokens, Integer maxAttempts,
             Integer maxConcurrent, String effort) {
     }
@@ -52,16 +54,18 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         Map<Workload, WorkloadProfile> profiles = new EnumMap<>(Workload.class);
         workloads.forEach((key, profile) -> {
             Workload workload = Workload.fromConfigKey(key);
-            String provider = profile.provider() == null ? "anthropic" : profile.provider();
-            ModelSelection model = profile.model() == null || profile.model().isBlank() ? null
-                    : new ModelSelection(provider, profile.model());
+            List<String> providers = profile.providers() == null || profile.providers().isEmpty()
+                    ? List.of("anthropic") : profile.providers();
+            List<ModelSelection> models = profile.model() == null || profile.model().isBlank() ? List.of()
+                    : providers.stream().map(String::strip).filter(provider -> !provider.isEmpty()).distinct()
+                            .map(provider -> new ModelSelection(provider, profile.model())).toList();
             RunBudget budget = new RunBudget(require(profile.maxDuration(), key, "max-duration"),
                     new Money(require(profile.maxCost(), key, "max-cost"), unit),
                     require(profile.maxModelCalls(), key, "max-model-calls"),
                     profile.maxToolCalls() == null ? 0 : profile.maxToolCalls(),
                     require(profile.maxOutputTokens(), key, "max-output-tokens"),
                     require(profile.maxAttempts(), key, "max-attempts"));
-            profiles.put(workload, new WorkloadProfile(workload, model, budget,
+            profiles.put(workload, new WorkloadProfile(workload, models, budget,
                     profile.maxConcurrent() == null ? 1 : profile.maxConcurrent(), profile.effort()));
         });
         return new AiSettings(profiles, new Money(dailyCostLimit, unit), maxConcurrentRuns, callTimeout, zone,

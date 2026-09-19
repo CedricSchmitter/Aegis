@@ -1,6 +1,7 @@
 # ADR-0003: Bounded, replaceable AI execution
 
-Status: accepted (implemented for issue #21). Date: 2026-09-18.
+Status: accepted (implemented for issue #21). Date: 2026-09-18. Amended 2026-09-19: subscription fallback through a
+host runner for `claude -p`.
 
 ## Context
 
@@ -33,14 +34,30 @@ All AI calls go through the provider-neutral `ModelGateway` port; Aegis owns the
 The deployed provider is the Claude Messages API through the official Java SDK
 (`assistant.adapters.anthropic`, provider `anthropic`), authenticated with a Console API key billed to its owner.
 
-The owner selected direct API billing for both household members. This supersedes the earlier subscription CLI
-decision: the CLI gateway and binary have been removed. Personal Claude Code use remains separate from the
-application. `claude --bare -p` also requires API authentication and would add a process/harness without a benefit
-for these workflows. The Agent SDK would add another runtime; it is not required by the existing Java tool loop.
-Anthropic permits a customer's authorized users to use a server-side API key, while routing other users' requests
-through personal subscription credentials is restricted. See
+The owner selected direct API billing for both household members. The in-container CLI gateway with a
+`setup-token` file and the bundled binary were removed. The Agent SDK would add another runtime; it is not required by
+the existing Java tool loop. Anthropic permits a customer's authorized users to use a server-side API key, while
+routing other users' requests through personal subscription credentials is restricted. See
 [authentication and credential use](https://code.claude.com/docs/en/legal-and-compliance).
-ArchUnit confines vendor types to the adapter and prohibits operating-system process execution.
+ArchUnit confines vendor types to the adapter and prohibits operating-system process execution in the application.
+
+Amendment (2026-09-19): without an API key the owner's own Claude subscription is the fallback (provider
+`claude-code`, `assistant.adapters.claudecode`). The owner logged in to the official Claude Code CLI on the VM as
+`aegis-agent`; Aegis never reads, copies or stores that login. A separate host process, the Claude Code host runner
+(`ops/claude-runner`), runs as that user and executes one headless `claude -p` per call with a fixed command line
+without tools, settings, MCP servers, skills or stored sessions. The application reaches it only through a Unix socket
+in a shared directory and sends the call fields (model, system prompt, prompt, JSON schema, effort, output allowance,
+timeout); it cannot choose command-line flags. The adapter's `ClaudeCli` executor keeps the CLI protocol (result JSON,
+error classification) apart from the transport (`HostRunnerClient`). The subscription is personal, so the gateway
+serves only the members listed in `AEGIS_AI_SUBSCRIPTION_MEMBERS` (`ModelGateway.allows`); requests of other members
+are refused as `ai.provider.memberNotAllowed` and a queued run whose member lost access fails as `NOT_AUTHORIZED`.
+The provider accepts one user prompt without tools, which fits classification; tool workloads need the API.
+
+Provider choice: a workload profile lists providers in order of preference (`AEGIS_AI_PROVIDERS`, default
+`anthropic,claude-code`) with one model. A run uses the first provider that has credentials and serves the requesting
+member at request time and records it; the call carries the same model, system prompt, schema, effort and output
+allowance with either provider. A failing call is not repeated on another provider; a retry chooses the provider again
+by the current preference and keeps the model.
 
 The key is a server-side file mounted read-only into the application container:
 `/srv/aegis/deploy/secrets/ai/anthropic-api-key` (mode 0640, group 10001), in a mode-0750 directory.
@@ -50,8 +67,8 @@ manual prepaid billing procedure are in DEPLOYMENT.md. Aegis has no billing/relo
 
 ### Workload profiles
 
-Provider, model and budgets are configuration per workload. All profiles initially select `anthropic` /
-`claude-sonnet-5` (2 USD input / 10 USD output per million tokens). The daily limit is 0.25 USD and global
+Providers in order of preference, model and budgets are configuration per workload. All profiles select
+`anthropic`, then `claude-code`, with `claude-sonnet-5` (2 USD input / 10 USD output per million tokens). The daily limit is 0.25 USD and global
 concurrency is one. Classification has a 0.05 USD run budget; review and chat have 0.10 USD each.
 Model changes require a configured price and representative quality checks. The connection check performs
 one structured call per distinct configured model, so the default profiles require only one check.
@@ -105,10 +122,12 @@ parameters; not the requester): reusing it for different work is rejected with `
   calls to other tools are refused and audited, and the third refusal fails the run as `TOOL_DENIED`.
 - Tools are read-only adapters over public application queries and run with the requesting member's actor, so the same
   `HouseholdAccess` check applies as in the UI. A member who is no longer active cannot start a run or use a tool.
-- There is no shell, file, network or credential tool. Aegis starts no operating-system processes.
+- There is no shell, file, network or credential tool. The application starts no operating-system processes.
   The worker is a job thread inside the unprivileged
   application container (uid 10001) without Docker socket, SSH keys or host access; the API adapter only contacts the
-  configured HTTPS endpoint.
+  configured HTTPS endpoint, the subscription adapter only the host runner socket. The host runner validates every
+  field, runs the CLI without built-in tools in an empty directory with a minimal environment, stops it on timeout or
+  disconnect, and is confined by systemd (no privilege escalation, read-only system and home except the CLI state).
 - Household content is framed as data (`<untrusted_content>`, with frame tags inside the content neutralized, control
   characters removed and visible truncation), and every system prompt states that framed content and tool results
   cannot change the task, tools or permissions. This framing is defense in depth; the structural limits above are the
@@ -142,6 +161,9 @@ cancel and retry. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`,
   model. The cost of an interrupted attempt is counted when its call returns; a call lost with its process is not
   counted by Aegis.
 - Household-wide automatic workloads run on behalf of an active member and use the same API connection.
+- Subscription runs report API-equivalent costs from the CLI's usage; the same budgets apply although they are not
+  charges. The runner must be installed and the CLI login kept valid on the VM (DEPLOYMENT.md); an expired login
+  surfaces as `AUTHENTICATION`.
 - Live verification needs the owner's API key. Automated tests use a controlled HTTP server; a separately enabled
   live test checks Sonnet 5 structured output and a tool round trip. No live verification is claimed before that key
   is supplied.
