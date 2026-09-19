@@ -650,6 +650,7 @@
       "failed": "Not saved",
       "rejected": "Not possible"
     },
-    "unknownType": "unknown type"
+    "unknownType": "unknown type",
+    "inspected": "Received: {{size}}, starts with {{head}}"
   }
 }

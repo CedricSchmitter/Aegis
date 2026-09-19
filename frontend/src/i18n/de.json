@@ -650,6 +650,7 @@
       "failed": "Nicht gespeichert",
       "rejected": "Nicht möglich"
     },
-    "unknownType": "unbekannter Typ"
+    "unknownType": "unbekannter Typ",
+    "inspected": "Empfangen: {{size}}, beginnt mit {{head}}"
   }
 }

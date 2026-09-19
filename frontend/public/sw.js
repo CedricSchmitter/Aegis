@@ -29,15 +29,18 @@ async function receiveShare(request) {
     const shareId = self.crypto.randomUUID();
     const receivedAt = new Date().toISOString();
     const inbox = await caches.open(INBOX_CACHE);
+    // Read the bytes now: the shared file can be backed by the sending app's content URI, which may no longer be
+    // readable once the share has been handed over.
+    const contents = await Promise.all(files.map((file) => file.arrayBuffer()));
     await Promise.all(
       files.map((file, index) =>
         inbox.put(
           new Request(new URL(`${INBOX_PREFIX}${shareId}/${index}`, self.location.origin).href),
-          new Response(file, {
+          new Response(contents[index], {
             headers: {
               "Content-Type": file.type || "application/octet-stream",
               "X-Aegis-Filename": encodeURIComponent(file.name || ""),
-              "X-Aegis-Size": String(file.size),
+              "X-Aegis-Size": String(contents[index].byteLength),
               "X-Aegis-Received-At": receivedAt,
             },
           }),

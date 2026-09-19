@@ -28,6 +28,12 @@ export async function hasPdfSignature(content: Blob): Promise<boolean> {
   return String.fromCharCode(...head) === PDF_SIGNATURE;
 }
 
+/** First bytes as hex, shown with a rejected file so an unexpected format can be identified. */
+export async function contentHead(content: Blob, length = 8): Promise<string> {
+  const head = new Uint8Array(await content.slice(0, length).arrayBuffer());
+  return [...head].map((byte) => byte.toString(16).padStart(2, "0")).join(" ");
+}
+
 /** Local check before anything is sent; returns the same error codes the server uses. */
 export function localRejection(file: Pick<SharedFile, "size">, pdfContent: boolean): string | null {
   if (file.size === 0) return "document.empty";

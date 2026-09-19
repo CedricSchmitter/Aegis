@@ -3,6 +3,7 @@ import { ApiError } from "../api/client";
 import type { UploadResponse } from "../api/types";
 import {
   MAX_UPLOAD_BYTES,
+  contentHead,
   hasPdfSignature,
   initialStatus,
   isStored,
@@ -21,6 +22,8 @@ describe("shared upload rules", () => {
     expect(await hasPdfSignature(new Blob(["ÿØÿ JPEG"]))).toBe(false);
     expect(await hasPdfSignature(new Blob(["%PD"]))).toBe(false);
     expect(await hasPdfSignature(new Blob([]))).toBe(false);
+    expect(await contentHead(new Blob(["%PDF-1.7 ..."]))).toBe("25 50 44 46 2d 31 2e 37");
+    expect(await contentHead(new Blob([]))).toBe("");
   });
 
   it("accepts PDF content under any name or type and rejects other, empty or oversized files locally", () => {

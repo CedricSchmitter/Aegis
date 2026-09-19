@@ -18,6 +18,7 @@ import {
   type SharedFile,
 } from "../share/inbox";
 import {
+  contentHead,
   hasPdfSignature,
   initialStatus,
   isStored,
@@ -32,6 +33,8 @@ import {
 interface Item {
   file: SharedFile;
   status: ShareStatus;
+  /** What was actually read from the inbox; shown with a rejected file. */
+  inspected?: { bytes: number; head: string };
 }
 
 const BADGE_STATE: Record<ShareStatus["kind"], string> = {
@@ -72,7 +75,9 @@ export function SharePage() {
         const checked = await Promise.all(
           files.map(async (file) => {
             const content = await readSharedFile(opened, file);
-            return { file, status: initialStatus(file, content !== null && (await hasPdfSignature(content))) };
+            const pdf = content !== null && (await hasPdfSignature(content));
+            const inspected = { bytes: content?.size ?? 0, head: content ? await contentHead(content) : "" };
+            return { file, status: initialStatus(file, pdf), inspected };
           }),
         );
         if (active) setItems(checked);
@@ -203,6 +208,14 @@ export function SharePage() {
                       role={item.status.kind === "failed" || item.status.kind === "rejected" ? "alert" : undefined}
                     >
                       {detail}
+                    </p>
+                  )}
+                  {item.status.kind === "rejected" && item.inspected && (
+                    <p className="text-xs text-stone-500" data-testid="share-inspected">
+                      {t("share.inspected", {
+                        size: formatBytes(item.inspected.bytes, t, i18n.language),
+                        head: item.inspected.head || "–",
+                      })}
                     </p>
                   )}
                   <div className="flex flex-wrap gap-2">
