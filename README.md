@@ -61,6 +61,7 @@ npm run generate:api          # regenerate src/api/schema.d.ts from ../api/opena
 npm run check                 # types, lint, locale catalog and helper tests
 npm run build                 # production bundle in frontend/dist
 npm run dev                   # dev server with API proxy to http://localhost:8080
+python scripts/generate-icons.py   # regenerate public/icons from icons/aegis-icon-source.webp (needs Pillow)
 ```
 
 Run the backend locally against a PostgreSQL and Paperless of your own by setting `AEGIS_DB_URL`,
@@ -103,7 +104,9 @@ Scheduled review and chat workflows (#24, #25) are not connected.
 
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
 passed isolated recovery and its daily timer is enabled; the first scheduled run succeeded on 2026-09-18.
-Mail, calendar, MCP, messenger delivery, Web Push and Android share-target integration are not connected.
+Aegis can be installed from Chrome on Android and receives PDFs from Android's Share menu into the normal durable
+upload flow ([details](docs/operations/DEPLOYMENT.md#installable-app-and-android-share-target)); real-device
+verification is tracked in #33. Mail, calendar, MCP, messenger delivery and Web Push are not connected.
 For dated verification, use the relevant issues, pull requests and CI runs.
 
 Source is maintained in this repository; the Aegis VM is the deployment environment. Private keys,

@@ -39,7 +39,8 @@ Recorded public-root fingerprint:
 Investigate any difference through verified SSH; a changed fingerprint is not automatically trustworthy.
 
 HTTP redirects preserve the requested host. Caddy's `default_sni` selects the IP certificate for clients
-that omit SNI when connecting by IP. HTTPS alone does not implement PWA installation or Web Push.
+that omit SNI when connecting by IP. The installable app and the Android share target rely on this trusted HTTPS
+endpoint (see [DEPLOYMENT.md](DEPLOYMENT.md#installable-app-and-android-share-target)); Web Push is not configured.
 Router/resolver changes are outside the standing VM-only infrastructure scope.
 
 References: [Caddy local HTTPS](https://caddyserver.com/docs/automatic-https#local-https),

@@ -33,7 +33,11 @@ export function onUnauthenticated(handler: () => void): () => void {
   return () => window.removeEventListener(UNAUTHENTICATED_EVENT, handler);
 }
 
-function readCookie(name: string): string | null {
+export function notifyUnauthenticated() {
+  window.dispatchEvent(new Event(UNAUTHENTICATED_EVENT));
+}
+
+export function readCookie(name: string): string | null {
   const match = document.cookie.split("; ").find((c) => c.startsWith(name + "="));
   return match ? decodeURIComponent(match.substring(name.length + 1)) : null;
 }
@@ -49,7 +53,7 @@ const csrfAndSession: Middleware = {
   },
   onResponse({ response, request }) {
     if (response.status === 401 && !request.url.endsWith("/api/auth/login")) {
-      window.dispatchEvent(new Event(UNAUTHENTICATED_EVENT));
+      notifyUnauthenticated();
     }
     return response;
   },

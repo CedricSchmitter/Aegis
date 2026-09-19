@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
+import { uploadDocument } from "../api/upload";
 import type { CategoryListResponse, DocumentListResponse, LabelDto } from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { Breadcrumbs } from "../components/Breadcrumbs";
@@ -9,6 +10,7 @@ import { DocumentCard } from "../components/DocumentCard";
 import { FacetFilters } from "../components/FacetFilters";
 import { FolderSelect } from "../components/FolderSelect";
 import { FolderTree } from "../components/FolderTree";
+import { UploadSubjects } from "../components/UploadSubjects";
 import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import {
   UNSORTED,
@@ -95,11 +97,6 @@ export function DocumentsPage() {
   const folderName = (folderId: string) =>
     categories.find((category) => category.id === folderId)?.name ?? "";
 
-  const toggleSubject = (value: string) =>
-    setUploadSubjects((current) =>
-      current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value],
-    );
-
   const onUpload = async (event: FormEvent) => {
     event.preventDefault();
     if (!file) return;
@@ -107,29 +104,7 @@ export function DocumentsPage() {
     setUploadError(null);
     setMessage(null);
     try {
-      const form = new FormData();
-      form.append("file", file, file.name);
-      uploadSubjects.forEach((subject) => form.append("subjects", subject));
-      const target = uploadFolder ? `?categoryId=${encodeURIComponent(uploadFolder)}` : "";
-      const response = await fetch(`/api/documents${target}`, {
-        method: "POST",
-        body: form,
-        credentials: "same-origin",
-        headers: {
-          "X-XSRF-TOKEN": decodeURIComponent(
-            document.cookie
-              .split("; ")
-              .find((cookie) => cookie.startsWith("XSRF-TOKEN="))
-              ?.substring(11) ?? "",
-          ),
-        },
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const { ApiError } = await import("../api/client");
-        throw new ApiError(response.status, body);
-      }
-      const result = body as { document: { title: string }; duplicate: boolean };
+      const result = await uploadDocument(file, { subjects: uploadSubjects, categoryId: uploadFolder });
       setMessage(
         result.duplicate
           ? t("documents.duplicate", { title: result.document.title })
@@ -224,32 +199,7 @@ export function DocumentsPage() {
             label={t("documents.uploadFolder")}
             id="upload-folder"
           />
-          <fieldset>
-            <legend className="label">{t("documents.subjects")}</legend>
-            <div className="flex flex-wrap gap-3">
-              {["HOUSEHOLD", "HOUSE"].map((kind) => (
-                <label key={kind} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={uploadSubjects.includes(kind)}
-                    onChange={() => toggleSubject(kind)}
-                  />
-                  {t(`subjects.${kind}`)}
-                </label>
-              ))}
-              {members.map((member) => (
-                <label key={member.id} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={uploadSubjects.includes(`MEMBER:${member.id}`)}
-                    onChange={() => toggleSubject(`MEMBER:${member.id}`)}
-                  />
-                  {member.displayName}
-                </label>
-              ))}
-            </div>
-            <p className="mt-1 text-xs text-stone-500">{t("subjects.hint")}</p>
-          </fieldset>
+          <UploadSubjects value={uploadSubjects} onChange={setUploadSubjects} />
           <ErrorBox message={uploadError} />
           <div>
             <button type="submit" className="btn-primary" disabled={!file || uploading} data-testid="upload-submit">

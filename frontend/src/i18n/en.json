@@ -612,5 +612,42 @@
     "bulkStarted_one": "Classification started for {{count}} document.",
     "bulkPartly": "Classification started for {{count}} documents, {{skipped}} skipped (not archived, already in progress or AI unavailable).",
     "bulkPartly_one": "Classification started for {{count}} document, {{skipped}} skipped (not archived, already in progress or AI unavailable)."
+  },
+  "share": {
+    "title": "Save shared files",
+    "files": "Shared files",
+    "hint": "Shared files wait on this phone until the server confirms that they are stored durably. If the upload is interrupted, nothing is lost: try again.",
+    "save": "Save {{count}} files",
+    "save_one": "Save file",
+    "retry": "Try again with {{count}} files",
+    "retry_one": "Try again",
+    "discard": "Discard",
+    "discardAll": "Discard",
+    "discardAllConfirm": "Discard {{count}} shared files without saving them? The originals stay in the app you shared from.",
+    "discardAllConfirm_one": "Discard the shared file without saving it? The original stays in the app you shared from.",
+    "done": "{{count}} files are stored durably. Archival runs in the background.",
+    "done_one": "The file is stored durably. Archival runs in the background.",
+    "returnHint": "Use your phone's back button to return to the app you shared from.",
+    "toDocuments": "Show documents",
+    "openDocument": "Open document",
+    "savedAs": "Stored as “{{title}}”.",
+    "duplicateOf": "Already in Aegis as “{{title}}”. No duplicate was created.",
+    "unnamed": "Unnamed file",
+    "fallbackName": "Shared document {{date}}",
+    "empty": "No shared files are waiting to be saved.",
+    "nothingReceived": "No PDF file was received. Aegis accepts PDF files only.",
+    "receiveFailed": "The shared file could not be received. Please share it again.",
+    "unsupported": "This browser cannot keep shared files. Please upload the file on the Documents page.",
+    "pending": "{{count}} shared files are waiting to be saved.",
+    "pending_one": "A shared file is waiting to be saved.",
+    "loginFirst": "Sign in to save the files you shared. They stay on this phone until then.",
+    "status": {
+      "pending": "Ready",
+      "uploading": "Saving …",
+      "saved": "Stored",
+      "duplicate": "Already stored",
+      "failed": "Not saved",
+      "rejected": "Not possible"
+    }
   }
 }

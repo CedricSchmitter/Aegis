@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
 import { useSession } from "../auth/SessionContext";
 import { LanguageSwitch } from "../components/LanguageSwitch";
-import { ErrorBox } from "../components/common";
+import { ErrorBox, InfoBox } from "../components/common";
 import { problemMessage } from "../lib/problem";
 
 export function LoginPage() {
@@ -17,6 +17,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [version, setVersion] = useState("");
+  const from = (location.state as { from?: string } | null)?.from;
 
   useEffect(() => {
     void api.GET("/api/system/version").then((r) => setVersion(r.data?.commit ?? ""));
@@ -28,7 +29,6 @@ export function LoginPage() {
     setError(null);
     try {
       await login(username, password);
-      const from = (location.state as { from?: string } | null)?.from;
       navigate(from && from !== "/login" ? from : "/today", { replace: true });
     } catch (failure) {
       setError(problemMessage(t, failure));
@@ -54,6 +54,7 @@ export function LoginPage() {
           {t("login.title")}
         </h2>
         <p className="text-sm text-stone-600 dark:text-stone-400">{t("login.intro")}</p>
+        {from?.startsWith("/share") && <InfoBox>{t("share.loginFirst")}</InfoBox>}
         <div>
           <label className="label" htmlFor="username">
             {t("login.username")}

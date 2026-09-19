@@ -612,5 +612,42 @@
     "bulkStarted_one": "Einordnung für {{count}} Dokument gestartet.",
     "bulkPartly": "Einordnung für {{count}} Dokumente gestartet, {{skipped}} übersprungen (nicht archiviert, schon in Arbeit oder KI nicht verfügbar).",
     "bulkPartly_one": "Einordnung für {{count}} Dokument gestartet, {{skipped}} übersprungen (nicht archiviert, schon in Arbeit oder KI nicht verfügbar)."
+  },
+  "share": {
+    "title": "Geteilte Dateien speichern",
+    "files": "Geteilte Dateien",
+    "hint": "Geteilte Dateien bleiben auf diesem Handy, bis der Server bestätigt, dass sie dauerhaft gespeichert sind. Bricht das Hochladen ab, geht nichts verloren: einfach erneut versuchen.",
+    "save": "{{count}} Dateien speichern",
+    "save_one": "Datei speichern",
+    "retry": "{{count}} Dateien erneut versuchen",
+    "retry_one": "Erneut versuchen",
+    "discard": "Verwerfen",
+    "discardAll": "Verwerfen",
+    "discardAllConfirm": "{{count}} geteilte Dateien verwerfen, ohne sie zu speichern? Die Originale bleiben in der App, aus der du geteilt hast.",
+    "discardAllConfirm_one": "Geteilte Datei verwerfen, ohne sie zu speichern? Das Original bleibt in der App, aus der du geteilt hast.",
+    "done": "{{count}} Dateien sind dauerhaft gespeichert. Die Archivierung läuft im Hintergrund.",
+    "done_one": "Die Datei ist dauerhaft gespeichert. Die Archivierung läuft im Hintergrund.",
+    "returnHint": "Mit der Zurück-Taste des Handys kommst du zur App, aus der du geteilt hast.",
+    "toDocuments": "Dokumente anzeigen",
+    "openDocument": "Dokument öffnen",
+    "savedAs": "Gespeichert als „{{title}}“.",
+    "duplicateOf": "Schon in Aegis als „{{title}}“. Es wurde kein Duplikat angelegt.",
+    "unnamed": "Datei ohne Namen",
+    "fallbackName": "Geteiltes Dokument {{date}}",
+    "empty": "Es warten keine geteilten Dateien auf das Speichern.",
+    "nothingReceived": "Es wurde keine PDF-Datei empfangen. Aegis nimmt nur PDF-Dateien an.",
+    "receiveFailed": "Die geteilte Datei konnte nicht empfangen werden. Bitte teile sie noch einmal.",
+    "unsupported": "Dieser Browser kann geteilte Dateien nicht zwischenspeichern. Bitte lade die Datei auf der Seite Dokumente hoch.",
+    "pending": "{{count}} geteilte Dateien warten auf das Speichern.",
+    "pending_one": "Eine geteilte Datei wartet auf das Speichern.",
+    "loginFirst": "Melde dich an, um die geteilten Dateien zu speichern. Bis dahin bleiben sie auf diesem Handy.",
+    "status": {
+      "pending": "Bereit",
+      "uploading": "Wird gespeichert …",
+      "saved": "Gespeichert",
+      "duplicate": "Schon gespeichert",
+      "failed": "Nicht gespeichert",
+      "rejected": "Nicht möglich"
+    }
   }
 }

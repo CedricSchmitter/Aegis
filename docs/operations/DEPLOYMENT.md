@@ -178,6 +178,31 @@ use the subscription), `AEGIS_AI_DAILY_COST_LIMIT=0.25`. Existing `.env` overrid
 must match these settings; changing environment settings requires recreating the application container.
 Deleting the key file disables new calls; calls already in flight may finish.
 
+## Installable app and Android share target
+
+The frontend ships a web app manifest (`frontend/public/manifest.webmanifest`), app icons (`frontend/public/icons/`)
+and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint, Chrome on Android offers
+"Install app"; the installed Aegis then appears in Android's Share menu for PDF files.
+
+- A share is a multipart POST to `/share-target`. The service worker answers it without contacting the server: it
+  keeps the shared files in a local inbox on the phone (Cache Storage, `aegis-share-inbox-v1`) and redirects to
+  `/share`. The share page uploads them through the normal authenticated `POST /api/documents` with CSRF protection,
+  so there is no second upload path. A file leaves the inbox only after the server confirmed durable storage (or
+  recognized an identical existing file); a login in between, an interrupted connection or a reload loses nothing
+  and uploads nothing twice. Unsaved shared files are dropped from the phone after seven days.
+- Only PDFs are accepted, as in the upload form. Other files are rejected with a localized message.
+- The service worker caches no app assets or data and handles no other request; the app itself works without it.
+  **Updates:** browsers check `sw.js` on navigation, bypassing the HTTP cache. A changed worker installs and takes
+  over immediately (`skipWaiting`, `clients.claim`), so after a deployment the next app start or page load uses the
+  new version. A deployment can therefore not be masked by stale cached code. Keep the inbox format of `sw.js` and
+  `src/share/inbox.ts` compatible or bump the cache name together with a migration.
+- Share target and installation are Chrome features for installed apps (WebAPK). If an installation ends up as a
+  plain home-screen shortcut, Aegis does not appear in the Share menu; uninstall and install again through Chrome's
+  menu. Real-device verification on both phones is tracked in issue #33.
+- Icons are derived from `frontend/icons/aegis-icon-source.webp` with `python scripts/generate-icons.py` (in
+  `frontend/`, needs Pillow). To change the icon, replace that file and run the script again. Installed apps pick up
+  a new icon only when Chrome updates the installed app, which can take up to a day.
+
 ## Operations
 
 - Status page (in the app) and `GET /api/status`: database, Paperless, export, external backup, AI (not configured;

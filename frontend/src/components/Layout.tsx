@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
 import { useSession } from "../auth/SessionContext";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { PendingShares } from "./PendingShares";
 
 const NAV = [
   { to: "/today", key: "nav.today" },
@@ -55,7 +56,10 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2">
           <div className="flex items-center gap-3">
-            <span className="text-lg font-semibold tracking-tight">{t("app.name")}</span>
+            <span className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+              <img src="/icons/favicon.svg" alt="" width={28} height={28} className="h-7 w-7" />
+              {t("app.name")}
+            </span>
             <nav aria-label={t("nav.menu")} className="hidden gap-1 md:flex">
               {NAV.map((item) => (
                 <NavLink key={item.to} to={item.to} className={linkClass}>
@@ -88,10 +92,11 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-5xl px-4 pt-3">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 pt-3">
         <p className="alert-warn" role="note">
           {t(window.location.protocol === "https:" ? "app.pilotNotice" : "app.previewNotice")}
         </p>
+        <PendingShares />
       </div>
       <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-4 pb-24 md:pb-8">
         {children}
@@ -101,7 +106,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </footer>
       <nav
         aria-label={t("nav.menu")}
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-stone-800 dark:bg-stone-900 md:hidden"
       >
         {NAV.map((item) => (
           <NavLink
