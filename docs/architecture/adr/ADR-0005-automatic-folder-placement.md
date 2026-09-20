@@ -75,6 +75,16 @@ the list is incomplete.
 The backend validates the placement independently of the labels: unusable names, more than three new folders, a
 path that would exceed the tree depth of 8 and quotes that are not in the text are rejected.
 
+**`null` is for unreadable documents, not for a tree without a match.** The first wording offered the model
+`placement: null` whenever it was "unsure where the document belongs". Checked live on the household's own tree
+(2026-09-20, a rental contract against Haus, Haus / Rechnungen, Haus / Rechnungen / Internet,
+Haus / Rechnungen / Wasser, Haus / Versicherungen and Test), Sonnet 5 answered `null` in two consecutive runs: no
+listed folder fitted, and giving up was the cheapest allowed answer. The instruction therefore states that a
+proposal is the expected answer when no listed folder fits, allows a new top-level folder when no listed folder is
+a sensible parent, and reserves `null` for a document whose text does not show what it is. With that wording the
+same document proposed `Haus / Mietvertrag` anchored at the existing `Haus`. Nothing about the apply policy
+changed: a proposed path is still only a suggestion.
+
 ### Resolution
 
 Proposals are resolved in the documents context, inside the completion transaction, against the tree of that
