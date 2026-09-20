@@ -59,4 +59,14 @@ class ArchitectureRulesDetectViolationsTest {
         assertThat(result.hasViolation()).isTrue();
         assertThat(result.getFailureReport().toString()).contains("UpwardDependency");
     }
+
+    @Test
+    void twoRestPayloadsClaimingOneSchemaNameAreRejected() {
+        var collisions = ArchitectureRules.restPayloadNameCollisions(fixtures, FIXTURE_BASE);
+
+        assertThat(collisions).containsOnlyKeys("ClashingDto");
+        assertThat(collisions.get("ClashingDto"))
+                .contains("dev.aegis.archfixture.badctx.adapters.rest.BadCtxPayloads$ClashingDto",
+                        "dev.aegis.archfixture.otherctx.adapters.rest.OtherCtxPayloads$ClashingDto");
+    }
 }

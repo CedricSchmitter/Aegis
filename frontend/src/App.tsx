@@ -8,6 +8,8 @@ import { DocumentsPage } from "./pages/DocumentsPage";
 import { DocumentDetailPage } from "./pages/DocumentDetailPage";
 import { FoldersPage } from "./pages/FoldersPage";
 import { LabelsPage } from "./pages/LabelsPage";
+import { ContractsPage } from "./pages/ContractsPage";
+import { ContractDetailPage } from "./pages/ContractDetailPage";
 import { TasksPage } from "./pages/TasksPage";
 import { TaskDetailPage } from "./pages/TaskDetailPage";
 import { NoticesPage } from "./pages/NoticesPage";
@@ -45,6 +47,8 @@ export function App() {
         <Route path="/documents/folders" element={<FoldersPage />} />
         <Route path="/documents/labels" element={<LabelsPage />} />
         <Route path="/documents/:id" element={<DocumentDetailPage />} />
+        <Route path="/contracts" element={<ContractsPage />} />
+        <Route path="/contracts/:id" element={<ContractDetailPage />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/tasks/:id" element={<TaskDetailPage />} />
         <Route path="/notices" element={<NoticesPage />} />

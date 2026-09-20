@@ -92,6 +92,22 @@
         "required" : [ "configured", "currency", "dailyCostLimit", "maxConcurrentRuns", "memberAllowed", "spentToday", "workloads" ],
         "type" : "object"
       },
+      "AiSourceDto" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "id", "kind", "version" ],
+        "type" : "object"
+      },
       "AliasesRequest" : {
         "properties" : {
           "aliases" : {
@@ -498,7 +514,7 @@
           },
           "sources" : {
             "items" : {
-              "$ref" : "#/components/schemas/SourceDto"
+              "$ref" : "#/components/schemas/ContractSourceDto"
             },
             "type" : "array"
           },
@@ -515,6 +531,35 @@
           }
         },
         "required" : [ "conflicts", "createdAt", "createdBy", "deadline", "evaluatedOn", "facts", "id", "name", "sources", "status", "updatedAt", "version" ],
+        "type" : "object"
+      },
+      "ContractSourceDto" : {
+        "properties" : {
+          "documentId" : {
+            "type" : "string"
+          },
+          "documentTitle" : {
+            "type" : [ "string", "null" ]
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "quote" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "documentId" ],
+        "type" : "object"
+      },
+      "ContractVersionRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "expectedVersion" ],
         "type" : "object"
       },
       "CorrectFactRequest" : {
@@ -1025,7 +1070,7 @@
             "type" : [ "string", "null" ]
           },
           "source" : {
-            "$ref" : "#/components/schemas/SourceDto",
+            "$ref" : "#/components/schemas/ContractSourceDto",
             "type" : "null"
           },
           "supersededBy" : {
@@ -1236,6 +1281,16 @@
           }
         },
         "required" : [ "aliases", "assignmentCount", "facet", "folderCount", "id", "status", "suggestionCount", "version" ],
+        "type" : "object"
+      },
+      "LabelVersionRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "expectedVersion" ],
         "type" : "object"
       },
       "LabelsRequest" : {
@@ -1605,6 +1660,20 @@
         "required" : [ "expectedVersion", "name" ],
         "type" : "object"
       },
+      "RenameContractRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "expectedVersion", "name" ],
+        "type" : "object"
+      },
       "RenameLabelRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -1716,7 +1785,7 @@
           },
           "sources" : {
             "items" : {
-              "$ref" : "#/components/schemas/SourceDto"
+              "$ref" : "#/components/schemas/AiSourceDto"
             },
             "type" : "array"
           },
@@ -2014,6 +2083,16 @@
         "required" : [ "createdAt", "createdBy", "id", "note", "status", "title", "updatedAt", "version" ],
         "type" : "object"
       },
+      "TaskVersionRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
       "TodayResponse" : {
         "properties" : {
           "calendar" : {
@@ -2077,16 +2156,6 @@
           }
         },
         "required" : [ "document", "duplicate" ],
-        "type" : "object"
-      },
-      "VersionRequest" : {
-        "properties" : {
-          "expectedVersion" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "expectedVersion" ],
         "type" : "object"
       },
       "VersionResponse" : {
@@ -2700,7 +2769,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/RenameRequest"
+                "$ref" : "#/components/schemas/RenameContractRequest"
               }
             }
           },
@@ -2781,7 +2850,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VersionRequest"
+                "$ref" : "#/components/schemas/ContractVersionRequest"
               }
             }
           },
@@ -2869,7 +2938,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VersionRequest"
+                "$ref" : "#/components/schemas/ContractVersionRequest"
               }
             }
           },
@@ -3600,7 +3669,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VersionRequest"
+                "$ref" : "#/components/schemas/LabelVersionRequest"
               }
             }
           },
@@ -3644,7 +3713,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VersionRequest"
+                "$ref" : "#/components/schemas/LabelVersionRequest"
               }
             }
           },
@@ -4116,7 +4185,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VersionRequest"
+                "$ref" : "#/components/schemas/LabelVersionRequest"
               }
             }
           },
@@ -4153,7 +4222,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VersionRequest"
+                "$ref" : "#/components/schemas/LabelVersionRequest"
               }
             }
           },
@@ -4561,7 +4630,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VersionRequest"
+                "$ref" : "#/components/schemas/TaskVersionRequest"
               }
             }
           },
@@ -4672,7 +4741,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VersionRequest"
+                "$ref" : "#/components/schemas/TaskVersionRequest"
               }
             }
           },

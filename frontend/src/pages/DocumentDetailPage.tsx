@@ -2,7 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
-import type { CategoryDto, DocumentDto, Facet, LabelChipDto, LabelDto, TaskDto } from "../api/types";
+import type {
+  CategoryDto,
+  ContractSummaryDto,
+  DocumentDto,
+  Facet,
+  LabelChipDto,
+  LabelDto,
+  TaskDto,
+} from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { AnalysisPanel } from "../components/AnalysisPanel";
 import { FolderSelect } from "../components/FolderSelect";
@@ -23,6 +31,7 @@ export function DocumentDetailPage() {
   const { members, memberName } = useSession();
   const [document, setDocument] = useState<DocumentDto | null>(null);
   const [tasks, setTasks] = useState<TaskDto[]>([]);
+  const [contracts, setContracts] = useState<ContractSummaryDto[]>([]);
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [labels, setLabels] = useState<LabelDto[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +46,10 @@ export function DocumentDetailPage() {
 
   const load = useCallback(async () => {
     try {
-      const [doc, linked, tree, vocabulary] = await Promise.all([
+      const [doc, linked, related, tree, vocabulary] = await Promise.all([
         api.GET("/api/documents/{id}", { params: { path: { id } } }),
         api.GET("/api/tasks", { params: { query: { documentId: id } } }),
+        api.GET("/api/contracts", { params: { query: { documentId: id } } }),
         api.GET("/api/categories"),
         api.GET("/api/labels"),
       ]);
@@ -47,6 +57,7 @@ export function DocumentDetailPage() {
       setDocument(loaded);
       setFolderDraft(loaded.classification.categoryId ?? null);
       setTasks(unwrap(linked));
+      setContracts(unwrap(related));
       setCategories(unwrap(tree).categories);
       setLabels(unwrap(vocabulary));
       setError(null);
@@ -428,6 +439,33 @@ export function DocumentDetailPage() {
           </div>
         )}
       </section>
+
+      {contracts.length > 0 && (
+        <section className="mb-4" aria-labelledby="linked-contracts">
+          <h2 id="linked-contracts" className="mb-2 text-lg font-semibold">
+            {t("documents.linkedContracts")}
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {contracts.map((contract) => (
+              <li key={contract.id} className="card flex flex-wrap items-center justify-between gap-2">
+                <Link
+                  to={`/contracts/${contract.id}`}
+                  className="font-medium text-sky-800 hover:underline dark:text-sky-300"
+                >
+                  {contract.name}
+                </Link>
+                <span className="text-sm">
+                  {contract.deadline.determined && contract.deadline.deadline
+                    ? t("contracts.deadline.cancelBy", {
+                        date: formatDate(contract.deadline.deadline, i18n.language),
+                      })
+                    : t("contracts.deadline.none")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby="linked-tasks">
         <div className="mb-2 flex items-center justify-between">

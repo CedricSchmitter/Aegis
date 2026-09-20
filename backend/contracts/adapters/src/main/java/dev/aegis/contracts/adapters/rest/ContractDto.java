@@ -19,7 +19,11 @@ public record ContractDto(String id, String name, @Schema(nullable = true) Strin
         String createdBy, Instant createdAt, Instant updatedAt, long version, LocalDate evaluatedOn,
         DeadlineDto deadline, List<FactDto> facts, List<ConflictDto> conflicts, List<SourceDto> sources) {
 
-    /** Where a fact was read. The title is null when the document is no longer available. */
+    /**
+     * Where a fact was read. The title is null when the document is no longer available. The schema name is
+     * explicit because planning and the assistant publish their own {@code SourceDto}.
+     */
+    @Schema(name = "ContractSourceDto")
     public record SourceDto(String documentId, @Schema(nullable = true) String documentTitle,
             @Schema(nullable = true) Integer page, @Schema(nullable = true) String quote) {
     }

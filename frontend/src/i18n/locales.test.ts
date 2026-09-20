@@ -87,6 +87,7 @@ describe("locale catalogs", () => {
       ...["NOT_CONFIGURED", "AUTHENTICATION", "MODEL_UNAVAILABLE", "INVALID_REQUEST", "RATE_LIMITED",
         "PROVIDER_UNAVAILABLE", "TIMEOUT", "INVALID_OUTPUT", "REFUSED", "BUDGET_EXHAUSTED", "TOOL_DENIED",
         "NOT_AUTHORIZED", "STALE_SOURCE", "SOURCE_UNAVAILABLE", "INTERRUPTED", "INTERNAL"].map((c) => `ai.failure.${c}`),
+      ...["Y", "M", "D"].map((unit) => `contracts.periodUnit.${unit}`),
     ];
 
     for (const key of families) {
@@ -108,6 +109,37 @@ describe("locale catalogs", () => {
     for (const key of keys) {
       expect(german.has(`labels.builtin.${key}`), key).toBe(true);
       expect(english.has(`labels.builtin.${key}`), key).toBe(true);
+    }
+  });
+
+  it("translate every contract enumeration the backend publishes", () => {
+    const enumConstants = (file: string) =>
+      [...readFileSync(path.resolve(import.meta.dirname, "../../../backend/contracts/domain/src/main/java/dev/aegis",
+        "contracts/domain", file), "utf8").matchAll(/^ {4,8}([A-Z][A-Z_]+) *(?:\(|,|;|$)/gm)].map((match) => match[1]);
+
+    const factTypes = enumConstants("FactType.java");
+    const reviewStates = enumConstants("ReviewState.java");
+    const statuses = enumConstants("ContractStatus.java");
+    const conflictKinds = enumConstants("FactConflict.java");
+    const bases = enumConstants("deadline/DeadlineBasis.java");
+
+    expect(factTypes.length).toBe(11);
+    expect(reviewStates.length).toBe(4);
+    expect(statuses.length).toBe(3);
+    expect(conflictKinds.length).toBe(2);
+    expect(bases.length).toBe(2);
+
+    const keys = [
+      ...factTypes.map((type) => `contracts.factType.${type}`),
+      ...reviewStates.flatMap((state) => [`contracts.reviewState.${state}`, `contracts.fact.decided.${state}`]),
+      ...statuses.map((status) => `contracts.status.${status}`),
+      ...conflictKinds.map((kind) => `contracts.conflicts.kind.${kind}`),
+      ...bases.map((basis) => `contracts.deadline.basis.${basis}`),
+    ];
+
+    for (const key of keys) {
+      expect(german.has(key), key).toBe(true);
+      expect(english.has(key), key).toBe(true);
     }
   });
 

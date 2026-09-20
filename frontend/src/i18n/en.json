@@ -19,6 +19,7 @@
   "nav": {
     "today": "Today",
     "documents": "Documents",
+    "contracts": "Contracts",
     "tasks": "Tasks",
     "notices": "Notices",
     "status": "Status",
@@ -154,7 +155,8 @@
     "removeLabel": "Remove label “{{name}}”",
     "renameTitle": "Change title",
     "renamed": "Title changed.",
-    "inheritedFromFolder": "Inherited from the folder; it changes when the document moves."
+    "inheritedFromFolder": "Inherited from the folder; it changes when the document moves.",
+    "linkedContracts": "Contracts from this document"
   },
   "subjects": {
     "HOUSE": "House",
@@ -197,6 +199,167 @@
     "status": {
       "OPEN": "Open",
       "DONE": "Done"
+    }
+  },
+  "contracts": {
+    "title": "Contracts",
+    "new": "New contract",
+    "newLabel": "New contract",
+    "nameField": "Name",
+    "nameRequired": "Please enter a name for the contract.",
+    "counterpartyField": "Counterparty (optional)",
+    "counterpartyLabel": "Counterparty: {{name}}",
+    "counterpartyUnknown": "No counterparty recorded",
+    "create": "Create contract",
+    "empty": "No contracts yet. Create the first one and enter what the document states.",
+    "updatedAt": "Created by {{name}}, last change {{date}}",
+    "stale": "Someone else changed this contract in the meantime. The current version has been reloaded; please review it and repeat your decision.",
+    "reload": "Reload now",
+    "pendingFacts": "{{count}} statements awaiting a decision",
+    "pendingFacts_one": "{{count}} statement awaiting a decision",
+    "conflictCount": "{{count}} conflicts",
+    "conflictCount_one": "{{count}} conflict",
+    "status": {
+      "ACTIVE": "Active",
+      "CANCELLED": "Cancelled",
+      "ENDED": "Ended"
+    },
+    "reviewState": {
+      "EXTRACTED": "Proposed",
+      "CONFIRMED": "Confirmed",
+      "REJECTED": "Rejected",
+      "SUPERSEDED": "Superseded"
+    },
+    "factType": {
+      "COUNTERPARTY": "Counterparty",
+      "CONTRACT_NUMBER": "Contract number",
+      "START_DATE": "Start date",
+      "END_DATE": "End date",
+      "MINIMUM_TERM": "Minimum term",
+      "RENEWAL_TERM": "Renewal term",
+      "NOTICE_PERIOD": "Notice period",
+      "AUTOMATIC_RENEWAL": "Renews automatically",
+      "CANCELLATION_DEADLINE": "Cancellation deadline",
+      "AMOUNT": "Amount",
+      "BILLING_PERIOD": "Billing period"
+    },
+    "periodUnit": {
+      "Y": "Years",
+      "M": "Months",
+      "D": "Days"
+    },
+    "period": {
+      "years": "{{count}} years",
+      "years_one": "{{count}} year",
+      "months": "{{count}} months",
+      "months_one": "{{count}} month",
+      "days": "{{count}} days",
+      "days_one": "{{count}} day"
+    },
+    "validity": {
+      "always": "Applies for the whole contract",
+      "from": "Applies from {{from}}",
+      "until": "Applies until {{until}}",
+      "between": "Applies from {{from}} until {{until}}"
+    },
+    "deadline": {
+      "title": "Cancellation deadline",
+      "upcoming": "Confirmed cancellation deadlines",
+      "cancelBy": "Cancel by {{date}}",
+      "none": "No cancellation deadline can be calculated yet",
+      "basedOn": "Calculated from these confirmed statements:",
+      "contractualHint": "This is the contractual deadline. Planned work and reminders are separate and never move it.",
+      "evaluatedOn": "Calculated for {{date}}",
+      "insufficient": "No cancellation deadline can be calculated.",
+      "insufficientHint": "Aegis calculates only from confirmed rules and never estimates a deadline.",
+      "insufficientUnspecified": "The confirmed statements do not establish a deadline.",
+      "missing": "Missing: {{types}}",
+      "contradicting": "Confirmed statements contradict each other and need a decision first: {{types}}",
+      "basis": {
+        "STATED_DEADLINE": "A document states this date itself.",
+        "NOTICE_PERIOD_BEFORE_END": "Calculated as the contract end on {{end}} minus the confirmed notice period."
+      },
+      "basisUnknown": "Calculated from the confirmed statements listed below."
+    },
+    "conflicts": {
+      "title": "Conflicts",
+      "hint": "Aegis reports contradictions and does not choose between them. As long as a conflict stands, no value counts as effective for those days.",
+      "established": "Confirmed so far:",
+      "against": "Contradicted by:",
+      "kind": {
+        "CONFIRMED_AGAINST_CONFIRMED": "Two confirmed statements about {{type}} describe the same day differently.",
+        "EXTRACTED_AGAINST_CONFIRMED": "A proposal about {{type}} contradicts what the household confirmed."
+      }
+    },
+    "facts": {
+      "title": "Statements",
+      "empty": "Nothing recorded about this contract yet.",
+      "showHistory": "Show {{count}} superseded and rejected statements",
+      "showHistory_one": "Show {{count}} superseded or rejected statement"
+    },
+    "fact": {
+      "new": "Enter a statement",
+      "newLabel": "Enter a statement about the contract",
+      "enter": "Save statement",
+      "enterHint": "What you enter counts as confirmed, because a member states it.",
+      "type": "What does the document state?",
+      "summary": "{{type}}: {{value}}",
+      "valueText": "Value",
+      "valueDate": "Date",
+      "valueAmount": "Amount",
+      "valueCurrency": "Currency",
+      "valuePeriod": "Length",
+      "valuePeriodUnit": "Unit",
+      "valueFlag": "Applies",
+      "valueRequired": "Please enter a value.",
+      "validFrom": "Applies from (optional)",
+      "validUntil": "Applies until (optional)",
+      "validityHint": "Leave both empty when the statement applies for the whole contract. A statement that starts later amends the contract instead of replacing the earlier value.",
+      "source": "Source document",
+      "sourceNone": "No source document",
+      "sourceSearch": "Find another document",
+      "sourceNoMatches": "No document matches that search.",
+      "sourceUnnamed": "Untitled document",
+      "sourceRequiredForPage": "A page or a quote can only be stored together with the document it was read in.",
+      "page": "Page",
+      "quote": "Quote",
+      "provenanceHint": "Only give a page or a quote when the document really states it there.",
+      "note": "Note (optional)",
+      "noteLabel": "Note:",
+      "usedForDeadline": "Used for the calculated deadline",
+      "observedLabel": "Stated:",
+      "observedManual": "by {{name}} on {{date}}",
+      "observedAutomatic": "by an extraction run on {{date}}",
+      "confidence": "(reported confidence {{percent}}%)",
+      "runRef": "(run {{run}})",
+      "sourceLabel": "Read in:",
+      "sourceMissing": "No source document recorded",
+      "sourceGone": "(document no longer available)",
+      "pageLabel": "page {{page}}",
+      "decidedLabel": "Decided:",
+      "decided": {
+        "EXTRACTED": "awaiting a decision since {{date}}",
+        "CONFIRMED": "confirmed by {{name}} on {{date}}",
+        "REJECTED": "rejected by {{name}} on {{date}}",
+        "SUPERSEDED": "replaced on {{date}} after {{name}} decided"
+      },
+      "correctsLabel": "Corrects:",
+      "supersededByLabel": "Replaced by:",
+      "supersededByUnknown": "a newer statement",
+      "supersededHint": "Kept as history: this is the value a member saw when they decided.",
+      "confirm": "Confirm",
+      "reject": "Reject",
+      "correct": "Correct",
+      "correctLabel": "Correct this statement",
+      "correctHint": "The corrected statement stays readable as history; the new value counts as confirmed.",
+      "saveCorrection": "Save correction"
+    },
+    "manage": {
+      "title": "Contract",
+      "rename": "Rename",
+      "renameLabel": "Rename the contract",
+      "status": "Status",
+      "statusHint": "The status records what the household did with the contract. It does not change any statement or deadline."
     }
   },
   "notices": {
@@ -409,7 +572,33 @@
     "analysis.candidate.missing": "This name suggestion is no longer open.",
     "analysis.subject.missing": "This association suggestion is no longer open.",
     "document.notArchived": "The document is not archived yet.",
-    "ai.run.keyConflict": "This request does not match an AI run that already exists."
+    "ai.run.keyConflict": "This request does not match an AI run that already exists.",
+    "contract.notFound": "Contract not found.",
+    "contract.fact.notFound": "This statement no longer exists. Please reload the contract.",
+    "contract.name.missing": "The contract name is missing.",
+    "contract.name.tooLong": "The contract name is too long.",
+    "contract.status.unknown": "Unknown contract status.",
+    "contract.validity.invalid": "The validity ends before it starts.",
+    "contract.fact.type.unknown": "Unknown kind of statement.",
+    "contract.fact.state.unknown": "Unknown review state.",
+    "contract.fact.origin.unknown": "Unknown origin of the statement.",
+    "contract.fact.value.missing": "Please enter a value.",
+    "contract.fact.value.invalid": "The value does not match this kind of statement.",
+    "contract.fact.value.kind": "The value does not match this kind of statement.",
+    "contract.fact.value.tooLong": "The value is too long.",
+    "contract.fact.period.invalid": "The length must be greater than zero.",
+    "contract.fact.note.tooLong": "The note is too long.",
+    "contract.fact.alreadyConfirmed": "This statement is already confirmed.",
+    "contract.fact.alreadyRejected": "This statement is already rejected.",
+    "contract.fact.superseded": "A superseded statement can no longer be changed.",
+    "contract.amount.invalid": "Please enter an amount and a currency code, for example 29.90 EUR.",
+    "contract.amount.precision": "An amount may have at most four decimal places.",
+    "contract.confidence.invalid": "The reported confidence is outside the valid range.",
+    "contract.provenance.invalid": "The statement is missing who made it.",
+    "contract.source.missing": "A page or a quote needs the document it was read in.",
+    "contract.source.page.invalid": "Page numbers start at 1.",
+    "contract.source.quote.tooLong": "The quote is too long.",
+    "contract.reminder.lead.invalid": "The lead time must not be negative."
   },
   "format": {
     "bytes": "{{value}} B",

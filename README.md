@@ -103,9 +103,10 @@ period it is valid for and its review state, a member entering or confirming a v
 it effective, and an amendment takes over from its own start date while the original stays readable
 ([ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md)). Cancellation deadlines are
 calculated from confirmed rules only - a stated deadline, or the contract end minus the confirmed notice period -
-and are published for other contexts through the contracts application contract. Entering, correcting and
-confirming facts works through the REST API today; the web UI for reviewing them, automatic extraction (#23/#24)
-and the resulting tasks and reminders (#63) are separate issues.
+and are published for other contexts through the contracts application contract. The contracts screen shows each
+observation with its provenance, the superseded history of a corrected value, reported conflicts and either the
+deadline with the rule it rests on or what is missing to calculate one; automatic extraction (#23/#24) and the
+resulting tasks and reminders (#63) are separate issues.
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a

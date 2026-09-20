@@ -6,9 +6,16 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchRule;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Architecture rules parameterized by base package so the same rules can be verified against the production code
@@ -91,5 +98,48 @@ final class ArchitectureRules {
                     .as("context '" + context + "' may only use other contexts through their application.api"));
         }
         return rules;
+    }
+
+    private static final String SCHEMA_ANNOTATION = "io.swagger.v3.oas.annotations.media.Schema";
+    private static final String[] PAYLOAD_SUFFIXES = {"Dto", "Request", "Response"};
+
+    /**
+     * REST payload types of all contexts share one flat OpenAPI schema namespace, and springdoc silently keeps
+     * only one class per name. A collision publishes another context's fields, so the generated TypeScript client
+     * describes the wrong payload. Returns every schema name claimed by more than one class, so the rule reports
+     * the collision instead of letting it reach the contract.
+     */
+    static SortedMap<String, List<String>> restPayloadNameCollisions(JavaClasses classes, String base) {
+        Map<String, List<String>> byName = new LinkedHashMap<>();
+        for (JavaClass type : classes) {
+            if (!type.getPackageName().startsWith(base) || !type.getPackageName().contains(".adapters.rest")
+                    || !type.getModifiers().contains(JavaModifier.PUBLIC)) {
+                continue;
+            }
+            String simple = type.getSimpleName();
+            boolean payload = false;
+            for (String suffix : PAYLOAD_SUFFIXES) {
+                payload |= simple.endsWith(suffix);
+            }
+            if (!payload) {
+                continue;
+            }
+            byName.computeIfAbsent(schemaName(type), key -> new ArrayList<>()).add(type.getName());
+        }
+        SortedMap<String, List<String>> collisions = new TreeMap<>();
+        byName.forEach((name, owners) -> {
+            if (owners.size() > 1) {
+                collisions.put(name, owners);
+            }
+        });
+        return collisions;
+    }
+
+    /** The name springdoc publishes: an explicit {@code @Schema(name = ...)}, otherwise the simple class name. */
+    private static String schemaName(JavaClass type) {
+        Optional<Object> explicit = type.getAnnotations().stream()
+                .filter(annotation -> annotation.getRawType().getName().equals(SCHEMA_ANNOTATION))
+                .findFirst().flatMap(annotation -> annotation.get("name"));
+        return explicit.map(Object::toString).filter(name -> !name.isBlank()).orElse(type.getSimpleName());
     }
 }

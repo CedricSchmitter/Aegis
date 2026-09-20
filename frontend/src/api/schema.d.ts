@@ -1221,6 +1221,12 @@ export interface components {
             spentToday: number;
             workloads: components["schemas"]["WorkloadDto"][];
         };
+        AiSourceDto: {
+            id: string;
+            kind: string;
+            /** Format: int64 */
+            version: number;
+        };
         AliasesRequest: {
             aliases: string[];
             /** Format: int64 */
@@ -1351,12 +1357,23 @@ export interface components {
             facts: components["schemas"]["FactDto"][];
             id: string;
             name: string;
-            sources: components["schemas"]["SourceDto"][];
+            sources: components["schemas"]["ContractSourceDto"][];
             status: string;
             /** Format: date-time */
             updatedAt: string;
             /** Format: int64 */
             version: number;
+        };
+        ContractSourceDto: {
+            documentId: string;
+            documentTitle?: string | null;
+            /** Format: int32 */
+            page?: number | null;
+            quote?: string | null;
+        };
+        ContractVersionRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
         };
         CorrectFactRequest: {
             /** Format: int64 */
@@ -1546,7 +1563,7 @@ export interface components {
             origin: string;
             reviewState: string;
             runRef?: string | null;
-            source?: components["schemas"]["SourceDto"];
+            source?: components["schemas"]["ContractSourceDto"];
             supersededBy?: string | null;
             type: string;
             /** Format: date */
@@ -1622,6 +1639,10 @@ export interface components {
             suggestionCount: number;
             /** Format: int64 */
             version: number;
+        };
+        LabelVersionRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
         };
         LabelsRequest: {
             /** Format: int64 */
@@ -1756,6 +1777,11 @@ export interface components {
             expectedVersion: number;
             name: string;
         };
+        RenameContractRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            name: string;
+        };
         RenameLabelRequest: {
             /** Format: int64 */
             expectedVersion: number;
@@ -1802,7 +1828,7 @@ export interface components {
             requestedBy: string;
             /** Format: uuid */
             retryOf?: string | null;
-            sources: components["schemas"]["SourceDto"][];
+            sources: components["schemas"]["AiSourceDto"][];
             /** @enum {string} */
             state: "QUEUED" | "RUNNING" | "WAITING_RETRY" | "SUCCEEDED" | "FAILED" | "CANCELLED";
             steps: components["schemas"]["StepDto"][];
@@ -1915,6 +1941,10 @@ export interface components {
             /** Format: int64 */
             version: number;
         };
+        TaskVersionRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+        };
         TodayResponse: {
             calendar: components["schemas"]["CalendarStatusDto"];
             /** Format: date */
@@ -1932,10 +1962,6 @@ export interface components {
         UploadResponse: {
             document: components["schemas"]["DocumentDto"];
             duplicate: boolean;
-        };
-        VersionRequest: {
-            /** Format: int64 */
-            expectedVersion: number;
         };
         VersionResponse: {
             application: string;
@@ -2409,7 +2435,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RenameRequest"];
+                "application/json": components["schemas"]["RenameContractRequest"];
             };
         };
         responses: {
@@ -2462,7 +2488,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VersionRequest"];
+                "application/json": components["schemas"]["ContractVersionRequest"];
             };
         };
         responses: {
@@ -2516,7 +2542,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VersionRequest"];
+                "application/json": components["schemas"]["ContractVersionRequest"];
             };
         };
         responses: {
@@ -2964,7 +2990,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VersionRequest"];
+                "application/json": components["schemas"]["LabelVersionRequest"];
             };
         };
         responses: {
@@ -2991,7 +3017,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VersionRequest"];
+                "application/json": components["schemas"]["LabelVersionRequest"];
             };
         };
         responses: {
@@ -3348,7 +3374,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VersionRequest"];
+                "application/json": components["schemas"]["LabelVersionRequest"];
             };
         };
         responses: {
@@ -3374,7 +3400,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VersionRequest"];
+                "application/json": components["schemas"]["LabelVersionRequest"];
             };
         };
         responses: {
@@ -3711,7 +3737,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VersionRequest"];
+                "application/json": components["schemas"]["TaskVersionRequest"];
             };
         };
         responses: {
@@ -3789,7 +3815,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VersionRequest"];
+                "application/json": components["schemas"]["TaskVersionRequest"];
             };
         };
         responses: {

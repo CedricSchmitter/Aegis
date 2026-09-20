@@ -46,6 +46,8 @@ public class LabelsController {
     public record AliasesRequest(@NotNull List<String> aliases, long expectedVersion) {
     }
 
+    /** Named explicitly because planning and contracts publish their own {@code VersionRequest}. */
+    @Schema(name = "LabelVersionRequest")
     public record VersionRequest(long expectedVersion) {
     }
 
