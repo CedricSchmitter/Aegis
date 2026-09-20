@@ -29,7 +29,7 @@ class FilesystemExportStoreTest {
         var good = store.beginGeneration("20260913T100000Z");
         good.write("documents/originals/a.pdf", new byte[] {1, 2, 3});
         good.write(ExportFormat.MANIFEST, serializer.toJson(new Manifest(1, "20260913T100000Z",
-                Instant.parse("2026-09-13T10:00:00Z"), "test", 1, 0, 2, List.of(), Map.of())));
+                Instant.parse("2026-09-13T10:00:00Z"), "test", 1, 0, 2, 1, List.of(), Map.of())));
         String location = good.publish();
 
         var bad = store.beginGeneration("20260913T110000Z");
@@ -57,8 +57,8 @@ class FilesystemExportStoreTest {
 
     @Test
     void manifestRoundTripsThroughJson() {
-        Manifest manifest = new Manifest(1, "g", Instant.parse("2026-09-13T10:00:00Z"), "p", 1, 2, 3, List.of("x"),
-                Map.of("a", "b"));
+        Manifest manifest = new Manifest(1, "g", Instant.parse("2026-09-13T10:00:00Z"), "p", 1, 2, 3, 4,
+                List.of("x"), Map.of("a", "b"));
 
         Manifest parsed = serializer.fromJson(serializer.toJson(manifest), Manifest.class);
 

@@ -23,6 +23,7 @@ spring:
       - classpath:db/migration/platform
       - classpath:db/migration/identity
       - classpath:db/migration/documents
+      - classpath:db/migration/contracts
       - classpath:db/migration/planning
       - classpath:db/migration/notifications
       - classpath:db/migration/assistant

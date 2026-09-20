@@ -10,20 +10,23 @@ import java.util.Set;
  * readable and migratable without Aegis. Schema 2 adds the shared catalog (folders and label vocabulary) and the
  * classification of each document; schema 3 adds the title origin, the friendly filename the original is exported
  * under and the automatic analysis (generated values, member decisions, filename override and history); schema 4
- * adds where a folder placement came from and a placement a run proposed that nobody has decided on. Older
- * files restore without the newer parts.
+ * adds where a folder placement came from and a placement a run proposed that nobody has decided on; schema 5
+ * adds the contracts with every observed fact, its provenance, validity period and review state. Older files
+ * restore without the newer parts.
  */
 public final class ExportFormat {
-    public static final int SCHEMA_VERSION = 4;
-    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4);
+    public static final int SCHEMA_VERSION = 5;
+    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5);
     public static final String MANIFEST = "manifest.json";
     public static final String DOCUMENTS_JSON = "data/documents.json";
     public static final String TASKS_JSON = "data/tasks.json";
     public static final String MEMBERS_JSON = "data/members.json";
     public static final String CATALOG_JSON = "data/catalog.json";
+    public static final String CONTRACTS_JSON = "data/contracts.json";
     public static final String DOCUMENTS_CSV = "readable/documents.csv";
     public static final String TASKS_CSV = "readable/tasks.csv";
     public static final String LABELS_CSV = "readable/labels.csv";
+    public static final String CONTRACTS_CSV = "readable/contracts.csv";
     public static final String INDEX_MD = "README.md";
     public static final String ORIGINALS_DIR = "documents/originals/";
 
@@ -126,13 +129,32 @@ public final class ExportFormat {
     public record MembersFile(int schemaVersion, Instant exportedAt, List<MemberEntry> members) {
     }
 
+    /**
+     * One observation about a contract with its provenance and review state. {@code value} is the canonical form
+     * of {@code valueKind}: an ISO date, an ISO period, an amount with its currency, {@code true}/{@code false}
+     * or free text. {@code supersededBy} and {@code corrects} preserve which observation replaced which.
+     */
+    public record ContractFactEntry(String id, String type, String valueKind, String value, String validFrom,
+            String validUntil, String reviewState, String origin, Double confidence, String sourceDocumentId,
+            Integer sourcePage, String sourceQuote, String runRef, String observedBy, Instant observedAt,
+            String decidedBy, Instant decidedAt, String supersededBy, String corrects, String note) {
+    }
+
+    /** A contract with its complete fact history; absent before schema 5. */
+    public record ContractEntry(String id, String name, String status, String createdBy, Instant createdAt,
+            Instant updatedAt, List<ContractFactEntry> facts) {
+    }
+
+    public record ContractsFile(int schemaVersion, Instant exportedAt, List<ContractEntry> contracts) {
+    }
+
     public record CatalogFile(int schemaVersion, Instant exportedAt, List<LabelEntry> labels,
             List<FolderEntry> folders) {
     }
 
     /** Checksums of every file in the generation plus completeness information. */
     public record Manifest(int schemaVersion, String generation, Instant exportedAt, String producer,
-            int documentCount, int taskCount, int memberCount, List<String> missingOriginals,
+            int documentCount, int taskCount, int memberCount, int contractCount, List<String> missingOriginals,
             Map<String, String> fileChecksumsSha256) {
     }
 }

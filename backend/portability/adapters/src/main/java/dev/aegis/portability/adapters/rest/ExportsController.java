@@ -30,10 +30,11 @@ public class ExportsController {
     }
 
     public record ExportSummaryDto(String generation, Instant createdAt, int documentCount, int taskCount,
-            int memberCount, List<String> missingOriginals, @Schema(nullable = true) String location) {
+            int memberCount, int contractCount, List<String> missingOriginals,
+            @Schema(nullable = true) String location) {
         static ExportSummaryDto from(ExportSummary s) {
             return new ExportSummaryDto(s.generation(), s.createdAt(), s.documentCount(), s.taskCount(),
-                    s.memberCount(), s.missingOriginals(), s.location());
+                    s.memberCount(), s.contractCount(), s.missingOriginals(), s.location());
         }
     }
 

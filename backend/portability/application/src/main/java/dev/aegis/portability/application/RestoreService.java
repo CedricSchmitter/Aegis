@@ -1,5 +1,8 @@
 package dev.aegis.portability.application;
 
+import dev.aegis.contracts.application.api.ContractExportRecord;
+import dev.aegis.contracts.application.api.ContractExportRecord.FactExportRecord;
+import dev.aegis.contracts.application.api.ImportContract;
 import dev.aegis.documents.application.api.ImportCatalog;
 import dev.aegis.documents.application.api.ImportCatalog.AssignmentImport;
 import dev.aegis.documents.application.api.ImportCatalog.CatalogImportResult;
@@ -20,6 +23,8 @@ import dev.aegis.planning.application.api.ImportTask;
 import dev.aegis.planning.application.api.TaskExportRecord;
 import dev.aegis.portability.application.ExportFormat.CatalogFile;
 import dev.aegis.portability.application.ExportFormat.ClassificationEntry;
+import dev.aegis.portability.application.ExportFormat.ContractEntry;
+import dev.aegis.portability.application.ExportFormat.ContractsFile;
 import dev.aegis.portability.application.ExportFormat.DocumentEntry;
 import dev.aegis.portability.application.ExportFormat.DocumentsFile;
 import dev.aegis.portability.application.ExportFormat.Manifest;
@@ -32,6 +37,7 @@ import dev.aegis.portability.application.ports.ExportSerializer;
 import dev.aegis.portability.application.ports.ExportSource;
 import dev.aegis.portability.application.ports.ExportSourceOpener;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
@@ -52,9 +58,9 @@ import java.util.UUID;
 
 /**
  * Restore into a (fresh or existing) instance. Verifies manifest checksums, maps members by username, restores the
- * shared catalog, re-imports originals under their stable ids and restores tasks with their source links. An
- * exported classification is applied only to a document that is still unclassified, so a repeated restore never
- * overwrites newer local edits.
+ * shared catalog, re-imports originals under their stable ids and restores tasks and contracts with their source
+ * links. An exported classification is applied only to a document that is still unclassified and an existing
+ * contract is left untouched, so a repeated restore never overwrites newer local edits.
  */
 public class RestoreService implements RestoreExport {
     private final ExportSourceOpener opener;
@@ -65,12 +71,14 @@ public class RestoreService implements RestoreExport {
     private final ImportCatalog importCatalog;
     private final ImportDocumentAnalysis importAnalysis;
     private final ImportTask importTask;
+    private final ImportContract importContract;
     private final HouseholdAccess access;
     private final SecureRandom random = new SecureRandom();
 
     public RestoreService(ExportSourceOpener opener, ExportSerializer serializer, MemberDirectory members,
             ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
-            ImportDocumentAnalysis importAnalysis, ImportTask importTask, HouseholdAccess access) {
+            ImportDocumentAnalysis importAnalysis, ImportTask importTask, ImportContract importContract,
+            HouseholdAccess access) {
         this.opener = opener;
         this.serializer = serializer;
         this.members = members;
@@ -79,6 +87,7 @@ public class RestoreService implements RestoreExport {
         this.importCatalog = importCatalog;
         this.importAnalysis = importAnalysis;
         this.importTask = importTask;
+        this.importContract = importContract;
         this.access = access;
     }
 
@@ -102,9 +111,11 @@ public class RestoreService implements RestoreExport {
                     DocumentsFile.class), memberMapping, catalog, warnings);
             int[] taskCounts = restoreTasks(actor, read(source, ExportFormat.TASKS_JSON, TasksFile.class),
                     memberMapping);
+            int[] contractCounts = restoreContracts(actor, source, memberMapping);
             return new RestoreReport(manifest.generation(), documentCounts[0], documentCounts[1], taskCounts[0],
                     taskCounts[1], catalog.labelsCreated(), catalog.foldersCreated(), documentCounts[2],
-                    documentCounts[3], documentCounts[4], memberMapping, warnings);
+                    documentCounts[3], documentCounts[4], contractCounts[0], contractCounts[1], memberMapping,
+                    warnings);
         } catch (IOException e) {
             throw new UncheckedIOException("restore from " + sourceLocation + " failed", e);
         }
@@ -283,12 +294,57 @@ public class RestoreService implements RestoreExport {
         return new int[] {imported, present};
     }
 
+    /**
+     * Contracts with their complete fact history; absent in exports before schema 5. Fact ids, review states and
+     * the relationships between observations are restored as they were, so provenance survives the round trip.
+     */
+    private int[] restoreContracts(Actor actor, ExportSource source, Map<String, String> memberMapping)
+            throws IOException {
+        if (!source.exists(ExportFormat.CONTRACTS_JSON)) {
+            return new int[] {0, 0};
+        }
+        int imported = 0;
+        int present = 0;
+        for (ContractEntry entry : read(source, ExportFormat.CONTRACTS_JSON, ContractsFile.class).contracts()) {
+            List<FactExportRecord> facts = entry.facts().stream()
+                    .map(fact -> new FactExportRecord(UUID.fromString(fact.id()), fact.type(), fact.valueKind(),
+                            fact.value(), date(fact.validFrom()), date(fact.validUntil()), fact.reviewState(),
+                            fact.origin(), fact.confidence(),
+                            fact.sourceDocumentId() == null ? null : DocumentId.of(fact.sourceDocumentId()),
+                            fact.sourcePage(), fact.sourceQuote(), fact.runRef(),
+                            mapOptionalMember(memberMapping, fact.observedBy()), fact.observedAt(),
+                            mapOptionalMember(memberMapping, fact.decidedBy()), fact.decidedAt(),
+                            fact.supersededBy() == null ? null : UUID.fromString(fact.supersededBy()),
+                            fact.corrects() == null ? null : UUID.fromString(fact.corrects()), fact.note()))
+                    .toList();
+            ContractExportRecord record = new ContractExportRecord(ContractId.of(entry.id()), entry.name(),
+                    entry.status(), entry.createdBy() == null ? actor.memberId()
+                            : mapMember(memberMapping, entry.createdBy()),
+                    entry.createdAt(), entry.updatedAt(), facts);
+            if (importContract.importContract(actor, record) == ImportContract.ImportOutcome.IMPORTED) {
+                imported++;
+            } else {
+                present++;
+            }
+        }
+        return new int[] {imported, present};
+    }
+
     private static MemberId mapMember(Map<String, String> mapping, String exportedId) {
         String local = mapping.get(exportedId);
         if (local == null) {
             throw new InvalidInputException("export.member.unknown", "Export references unknown member " + exportedId);
         }
         return MemberId.of(local);
+    }
+
+    /** An unknown member in an old export stays unmapped rather than failing the whole restore. */
+    private static MemberId mapOptionalMember(Map<String, String> mapping, String exportedId) {
+        if (exportedId == null) {
+            return null;
+        }
+        String local = mapping.get(exportedId);
+        return MemberId.of(local == null ? exportedId : local);
     }
 
     private <T> T read(ExportSource source, String path, Class<T> type) throws IOException {

@@ -8,5 +8,5 @@ import java.util.List;
  * the generation is still complete for every other record and says so in its manifest.
  */
 public record ExportSummary(String generation, Instant createdAt, int documentCount, int taskCount, int memberCount,
-        List<String> missingOriginals, String location) {
+        int contractCount, List<String> missingOriginals, String location) {
 }

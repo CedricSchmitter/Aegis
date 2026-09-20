@@ -1,5 +1,15 @@
 package dev.aegis.bootstrap.config;
 
+import dev.aegis.contracts.application.ContractPresenter;
+import dev.aegis.contracts.application.ContractQueryService;
+import dev.aegis.contracts.application.ContractService;
+import dev.aegis.contracts.application.api.ContractCommands;
+import dev.aegis.contracts.application.api.ContractDeadlineQuery;
+import dev.aegis.contracts.application.api.ContractExportQuery;
+import dev.aegis.contracts.application.api.ContractQueries;
+import dev.aegis.contracts.application.api.ImportContract;
+import dev.aegis.contracts.application.api.RecordContractObservation;
+import dev.aegis.contracts.domain.ContractRepository;
 import dev.aegis.documents.application.AnalysisSettings;
 import dev.aegis.documents.application.AnalysisTrigger;
 import dev.aegis.documents.application.AnalysisViews;
@@ -298,6 +308,55 @@ public class UseCaseConfiguration {
         return new ReconciliationService(documents, store, archive, scheduler, settings, clock);
     }
 
+    // Contracts -----------------------------------------------------------------------------------------------
+
+    @Bean
+    ContractPresenter contractPresenter(DocumentReferenceQuery documents) {
+        return new ContractPresenter(documents);
+    }
+
+    record ContractServices(ContractService commands, ContractQueryService queries) {
+    }
+
+    @Bean
+    ContractServices contractServices(ContractRepository contracts, DocumentReferenceQuery documents,
+            ContractPresenter presenter, HouseholdAccess access, Clock clock) {
+        return new ContractServices(new ContractService(contracts, documents, presenter, access, clock),
+                new ContractQueryService(contracts, presenter, access, clock));
+    }
+
+    @Bean
+    ContractCommands contractCommands(ContractServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ContractCommands.class, services.commands(), tm);
+    }
+
+    /** Proposed facts from an extraction run (issues #23 and #24); they are stored for review, never applied. */
+    @Bean
+    RecordContractObservation recordContractObservation(ContractServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(RecordContractObservation.class, services.commands(), tm);
+    }
+
+    @Bean
+    ImportContract importContract(ContractServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ImportContract.class, services.commands(), tm);
+    }
+
+    @Bean
+    ContractQueries contractQueries(ContractServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ContractQueries.class, services.queries(), tm);
+    }
+
+    /** Public contract for confirmed cancellation deadlines, consumed by planning (issue #63). */
+    @Bean
+    ContractDeadlineQuery contractDeadlineQuery(ContractServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ContractDeadlineQuery.class, services.queries(), tm);
+    }
+
+    @Bean
+    ContractExportQuery contractExportQuery(ContractServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ContractExportQuery.class, services.queries(), tm);
+    }
+
     // Planning ------------------------------------------------------------------------------------------------
 
     @Bean
@@ -371,10 +430,10 @@ public class UseCaseConfiguration {
 
     @Bean
     PortabilityServices portabilityServices(DocumentExportQuery documents, TaskExportQuery tasks,
-            MemberDirectory members, ExportStore store, ExportSerializer serializer, HouseholdAccess access,
-            Clock clock, @Value("${aegis.build.commit:dev}") String commit) {
-        return new PortabilityServices(new ExportService(documents, tasks, members, store, serializer, access, clock,
-                "aegis@" + commit));
+            ContractExportQuery contracts, MemberDirectory members, ExportStore store, ExportSerializer serializer,
+            HouseholdAccess access, Clock clock, @Value("${aegis.build.commit:dev}") String commit) {
+        return new PortabilityServices(new ExportService(documents, tasks, contracts, members, store, serializer,
+                access, clock, "aegis@" + commit));
     }
 
     @Bean
@@ -390,8 +449,9 @@ public class UseCaseConfiguration {
     @Bean
     RestoreExport restoreExport(ExportSourceOpener opener, ExportSerializer serializer, MemberDirectory members,
             ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
-            ImportDocumentAnalysis importAnalysis, ImportTask importTask, HouseholdAccess access) {
+            ImportDocumentAnalysis importAnalysis, ImportTask importTask, ImportContract importContract,
+            HouseholdAccess access) {
         return new RestoreService(opener, serializer, members, provisioning, importDocument, importCatalog,
-                importAnalysis, importTask, access);
+                importAnalysis, importTask, importContract, access);
     }
 }

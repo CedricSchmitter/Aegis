@@ -1,5 +1,7 @@
 package dev.aegis.portability.application;
 
+import dev.aegis.contracts.application.api.ContractExportQuery;
+import dev.aegis.contracts.application.api.ContractExportRecord;
 import dev.aegis.documents.application.api.CatalogExport;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentExportRecord;
@@ -12,6 +14,9 @@ import dev.aegis.planning.application.api.TaskExportRecord;
 import dev.aegis.portability.application.ExportFormat.AssignmentEntry;
 import dev.aegis.portability.application.ExportFormat.CatalogFile;
 import dev.aegis.portability.application.ExportFormat.ClassificationEntry;
+import dev.aegis.portability.application.ExportFormat.ContractEntry;
+import dev.aegis.portability.application.ExportFormat.ContractFactEntry;
+import dev.aegis.portability.application.ExportFormat.ContractsFile;
 import dev.aegis.portability.application.ExportFormat.DocumentEntry;
 import dev.aegis.portability.application.ExportFormat.DocumentsFile;
 import dev.aegis.portability.application.ExportFormat.FolderEntry;
@@ -47,9 +52,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Builds a complete export generation: originals, versioned JSON (documents, tasks, members and the shared
- * catalog), readable CSV/Markdown and a checksum manifest with relative links. Published atomically through the
- * store.
+ * Builds a complete export generation: originals, versioned JSON (documents, tasks, contracts, members and the
+ * shared catalog), readable CSV/Markdown and a checksum manifest with relative links. Published atomically
+ * through the store.
  */
 public class ExportService implements CreateExport, ExportQueries {
     private static final DateTimeFormatter GENERATION_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
@@ -57,6 +62,7 @@ public class ExportService implements CreateExport, ExportQueries {
 
     private final DocumentExportQuery documents;
     private final TaskExportQuery tasks;
+    private final ContractExportQuery contracts;
     private final MemberDirectory members;
     private final ExportStore store;
     private final ExportSerializer serializer;
@@ -64,11 +70,12 @@ public class ExportService implements CreateExport, ExportQueries {
     private final Clock clock;
     private final String producerVersion;
 
-    public ExportService(DocumentExportQuery documents, TaskExportQuery tasks, MemberDirectory members,
-            ExportStore store, ExportSerializer serializer, HouseholdAccess access, Clock clock,
-            String producerVersion) {
+    public ExportService(DocumentExportQuery documents, TaskExportQuery tasks, ContractExportQuery contracts,
+            MemberDirectory members, ExportStore store, ExportSerializer serializer, HouseholdAccess access,
+            Clock clock, String producerVersion) {
         this.documents = documents;
         this.tasks = tasks;
+        this.contracts = contracts;
         this.members = members;
         this.store = store;
         this.serializer = serializer;
@@ -88,7 +95,8 @@ public class ExportService implements CreateExport, ExportQueries {
                 ExportSummary summary = write(actor, staging, generation, now);
                 String location = staging.publish();
                 return new ExportSummary(summary.generation(), summary.createdAt(), summary.documentCount(),
-                        summary.taskCount(), summary.memberCount(), summary.missingOriginals(), location);
+                        summary.taskCount(), summary.memberCount(), summary.contractCount(),
+                        summary.missingOriginals(), location);
             } catch (IOException | RuntimeException failure) {
                 staging.discard();
                 throw failure;
@@ -139,6 +147,11 @@ public class ExportService implements CreateExport, ExportQueries {
                     record.updatedAt(), record.completedAt(), text(record.completedBy())));
         }
 
+        List<ContractEntry> contractEntries = new ArrayList<>();
+        for (ContractExportRecord record : contracts.exportAll(actor)) {
+            contractEntries.add(contractEntry(record));
+        }
+
         List<MemberEntry> memberEntries = memberList.stream().map(m -> new MemberEntry(m.id().toString(),
                 m.username(), m.displayName(), m.locale().name(), m.active())).toList();
         List<LabelEntry> labelEntries = catalog.labels().stream().map(label -> new LabelEntry(
@@ -159,17 +172,22 @@ public class ExportService implements CreateExport, ExportQueries {
                 serializer.toJson(new MembersFile(ExportFormat.SCHEMA_VERSION, now, memberEntries)));
         put(staging, checksums, ExportFormat.CATALOG_JSON, serializer.toJson(
                 new CatalogFile(ExportFormat.SCHEMA_VERSION, now, labelEntries, folderEntries)));
+        put(staging, checksums, ExportFormat.CONTRACTS_JSON,
+                serializer.toJson(new ContractsFile(ExportFormat.SCHEMA_VERSION, now, contractEntries)));
         put(staging, checksums, ExportFormat.DOCUMENTS_CSV, documentsCsv(documentEntries, memberNames));
         put(staging, checksums, ExportFormat.TASKS_CSV, tasksCsv(taskEntries, memberNames, documentEntries));
         put(staging, checksums, ExportFormat.LABELS_CSV, labelsCsv(labelEntries, folderEntries));
-        put(staging, checksums, ExportFormat.INDEX_MD,
-                index(generation, now, documentEntries, taskEntries, memberNames, missingOriginals));
+        put(staging, checksums, ExportFormat.CONTRACTS_CSV,
+                contractsCsv(contractEntries, documentEntries, memberNames));
+        put(staging, checksums, ExportFormat.INDEX_MD, index(generation, now, documentEntries, taskEntries,
+                contractEntries, memberNames, missingOriginals));
 
         Manifest manifest = new Manifest(ExportFormat.SCHEMA_VERSION, generation, now, producerVersion,
-                documentEntries.size(), taskEntries.size(), memberEntries.size(), missingOriginals, checksums);
+                documentEntries.size(), taskEntries.size(), memberEntries.size(), contractEntries.size(),
+                missingOriginals, checksums);
         staging.write(ExportFormat.MANIFEST, serializer.toJson(manifest));
         return new ExportSummary(generation, now, documentEntries.size(), taskEntries.size(), memberEntries.size(),
-                List.copyOf(missingOriginals), null);
+                contractEntries.size(), List.copyOf(missingOriginals), null);
     }
 
     @Override
@@ -245,6 +263,43 @@ public class ExportService implements CreateExport, ExportQueries {
                         suggestion.runRef(), suggestion.model(), suggestion.generation(), suggestion.createdAt()));
     }
 
+    private static ContractEntry contractEntry(ContractExportRecord record) {
+        List<ContractFactEntry> facts = record.facts().stream().map(fact -> new ContractFactEntry(
+                fact.id().toString(), fact.type(), fact.valueKind(), fact.value(), text(fact.validFrom()),
+                text(fact.validUntil()), fact.reviewState(), fact.origin(), fact.confidence(),
+                text(fact.sourceDocumentId()), fact.sourcePage(), fact.sourceQuote(), fact.runRef(),
+                text(fact.observedBy()), fact.observedAt(), text(fact.decidedBy()), fact.decidedAt(),
+                text(fact.supersededBy()), text(fact.corrects()), fact.note())).toList();
+        return new ContractEntry(record.id().toString(), record.name(), record.status(), text(record.createdBy()),
+                record.createdAt(), record.updatedAt(), facts);
+    }
+
+    /** One readable row per observation, so the fact history stays legible without Aegis. */
+    private static String contractsCsv(List<ContractEntry> contracts, List<DocumentEntry> documents,
+            Map<String, String> memberNames) {
+        Map<String, String> titles = new LinkedHashMap<>();
+        documents.forEach(document -> titles.put(document.id(), document.title()));
+        List<List<String>> rows = new ArrayList<>();
+        for (ContractEntry contract : contracts) {
+            for (ContractFactEntry fact : contract.facts()) {
+                rows.add(List.of(contract.id(), contract.name(), contract.status(), fact.id(), fact.type(),
+                        fact.value(), nz(fact.validFrom()), nz(fact.validUntil()), fact.reviewState(),
+                        fact.origin(), fact.confidence() == null ? "" : fact.confidence().toString(),
+                        nz(fact.sourceDocumentId()),
+                        fact.sourceDocumentId() == null ? "" : titles.getOrDefault(fact.sourceDocumentId(), ""),
+                        fact.sourcePage() == null ? "" : fact.sourcePage().toString(), nz(fact.sourceQuote()),
+                        fact.decidedBy() == null ? "" : memberNames.getOrDefault(fact.decidedBy(),
+                                fact.decidedBy()),
+                        fact.decidedAt() == null ? "" : fact.decidedAt().toString(), nz(fact.supersededBy()),
+                        nz(fact.corrects()), nz(fact.note())));
+            }
+        }
+        return Csv.render(List.of("contractId", "contract", "contractStatus", "factId", "factType", "value",
+                "validFrom", "validUntil", "reviewState", "origin", "confidence", "sourceDocumentId",
+                "sourceDocumentTitle", "sourcePage", "sourceQuote", "decidedBy", "decidedAt", "supersededBy",
+                "corrects", "note"), rows);
+    }
+
     private static String documentsCsv(List<DocumentEntry> entries, Map<String, String> memberNames) {
         List<List<String>> rows = new ArrayList<>();
         for (DocumentEntry d : entries) {
@@ -299,7 +354,8 @@ public class ExportService implements CreateExport, ExportQueries {
     }
 
     private static String index(String generation, Instant now, List<DocumentEntry> documents,
-            List<TaskEntry> tasks, Map<String, String> memberNames, List<String> missingOriginals) {
+            List<TaskEntry> tasks, List<ContractEntry> contracts, Map<String, String> memberNames,
+            List<String> missingOriginals) {
         StringBuilder md = new StringBuilder();
         md.append("# Aegis export ").append(generation).append("\n\n");
         md.append("Exported at ").append(now).append(". Structured data: `data/*.json` (schema version ")
@@ -349,6 +405,18 @@ public class ExportService implements CreateExport, ExportQueries {
                 md.append(", source document `").append(t.sourceDocumentId()).append("`");
             }
             md.append("\n");
+        }
+        md.append("\n## Contracts (").append(contracts.size()).append(")\n\n");
+        for (ContractEntry contract : contracts) {
+            long confirmed = contract.facts().stream().filter(fact -> "CONFIRMED".equals(fact.reviewState()))
+                    .count();
+            md.append("- ").append(contract.name()).append(" (").append(contract.status()).append("), ")
+                    .append(confirmed).append(" confirmed of ").append(contract.facts().size())
+                    .append(" observed facts, id `").append(contract.id()).append("`\n");
+            contract.facts().stream().filter(fact -> "CONFIRMED".equals(fact.reviewState()))
+                    .forEach(fact -> md.append("  - ").append(fact.type()).append(": ").append(fact.value())
+                            .append(fact.validFrom() == null ? "" : " (from " + fact.validFrom() + ")")
+                            .append("\n"));
         }
         if (!missingOriginals.isEmpty()) {
             md.append("\n## Missing originals\n\n");
