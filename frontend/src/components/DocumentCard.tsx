@@ -50,6 +50,9 @@ export function DocumentCard({ document, selected, onSelectedChange, folderName 
               label={t(`analysis.stateShort.${document.analysis.state}`)}
             />
           )}
+          {document.classification.placementSuggestion && (
+            <Badge state="NEEDS_REVIEW" label={t("placement.badge")} />
+          )}
         </span>
       </div>
       <p className="text-sm text-stone-600 dark:text-stone-400">
@@ -60,6 +63,7 @@ export function DocumentCard({ document, selected, onSelectedChange, folderName 
       </p>
       <p className="text-xs text-stone-500" data-testid="document-folder">
         🗂 {path || t("documents.unsorted")}
+        {document.classification.placement.origin === "AUTOMATIC" && ` · ${t("placement.automaticShort")}`}
       </p>
       <LabelChips chips={document.classification.labels} folderName={folderName} />
       <SubjectList subjects={document.subjects} />

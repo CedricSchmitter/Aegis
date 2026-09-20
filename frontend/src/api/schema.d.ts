@@ -397,6 +397,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/{id}/classification/placement/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** File the document into the proposed folder, creating the missing folders of a proposed path */
+        post: operations["acceptPlacement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/classification/placement/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject the proposed folder; it is not proposed for this document again */
+        post: operations["rejectPlacement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/classification/placement/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move an automatically filed document back to Unsorted */
+        post: operations["revertPlacement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{id}/filename": {
         parameters: {
             query?: never;
@@ -1000,6 +1051,25 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcceptPlacementRequest: {
+            alsoForOtherDocuments: boolean;
+            anchorFolderId?: string | null;
+            /** Format: int64 */
+            expectedAnchorVersion?: number | null;
+            /** Format: int64 */
+            expectedVersion: number;
+            folderId?: string | null;
+            newPath: string[];
+        };
+        AcceptPlacementResponse: {
+            /** Format: int32 */
+            createdFolders: number;
+            document: components["schemas"]["DocumentDto"];
+            folderId: string;
+            /** Format: int32 */
+            movedDocuments: number;
+            path: string[];
+        };
         AiOverviewDto: {
             configured: boolean;
             currency: string;
@@ -1120,6 +1190,8 @@ export interface components {
             folderSubjects: components["schemas"]["SubjectDto"][];
             labels: components["schemas"]["LabelChipDto"][];
             path: components["schemas"]["CategoryRefDto"][];
+            placement: components["schemas"]["PlacementDto"];
+            placementSuggestion?: components["schemas"]["PlacementSuggestionDto"];
             /** Format: int64 */
             version: number;
         };
@@ -1362,6 +1434,21 @@ export interface components {
             currentPassword: string;
             newPassword: string;
         };
+        PlacementDecisionRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+        };
+        PlacementDto: {
+            /** Format: date-time */
+            at?: string | null;
+            by?: string | null;
+            byMember: boolean;
+            /** Format: double */
+            confidence?: number | null;
+            origin?: string | null;
+            revertible: boolean;
+            sourceRef?: string | null;
+        };
         PlacementItem: {
             documentId: string;
             /** Format: int64 */
@@ -1374,6 +1461,26 @@ export interface components {
         PlacementResponse: {
             /** Format: int32 */
             moved: number;
+        };
+        PlacementSuggestionDto: {
+            anchorFolderId?: string | null;
+            /** Format: int64 */
+            anchorVersion?: number | null;
+            /** Format: double */
+            confidence?: number | null;
+            /** Format: date-time */
+            createdAt?: string | null;
+            evidence?: string | null;
+            folderId?: string | null;
+            impliedLabels: components["schemas"]["LabelChipDto"][];
+            impliedSubjects: components["schemas"]["SubjectDto"][];
+            key: string;
+            model?: string | null;
+            newFolders: string[];
+            /** Format: int32 */
+            otherDocuments: number;
+            path: string[];
+            runRef?: string | null;
         };
         PlanWorkRequest: {
             /** Format: int64 */
@@ -2183,6 +2290,84 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    acceptPlacement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptPlacementRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AcceptPlacementResponse"];
+                };
+            };
+        };
+    };
+    rejectPlacement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlacementDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    revertPlacement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlacementDecisionRequest"];
             };
         };
         responses: {
