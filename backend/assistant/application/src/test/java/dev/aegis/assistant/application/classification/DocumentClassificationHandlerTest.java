@@ -160,12 +160,15 @@ class DocumentClassificationHandlerTest {
         assertThat(documents.appliedRefs).containsExactly("ai-run:" + context.id());
     }
 
-@Test
+    @Test
     void theFolderTreeIsPartOfTheSameCallInADeterministicOrder() {
         PreparedRun prepared = handler.prepare(run(4, 1));
 
         String message = ((ContentPart.Text) prepared.messages().getFirst().parts().getFirst()).text();
-        assertThat(prepared.system()).contains("placement").contains("Folder names are not labels");
+        assertThat(prepared.system()).contains("placement").contains("Folder names are not labels")
+                // A household whose tree has no fitting folder must get a proposal, not an unfiled document.
+                .contains("propose a path instead of leaving the document unfiled")
+                .contains("Set placement to null only when the text does not show what kind of document");
         assertThat(message).contains("Folder tree (folderId | path | implies | documents):")
                 .contains(HOUSE_FOLDER + " | Haus / Versicherungen | Versicherung, HOUSE | 12")
                 .contains("Folder the document is in now: Unsorted");
