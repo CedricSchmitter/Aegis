@@ -44,6 +44,9 @@
     <module>documents/domain</module>
     <module>documents/application</module>
     <module>documents/adapters</module>
+    <module>contracts/domain</module>
+    <module>contracts/application</module>
+    <module>contracts/adapters</module>
     <module>planning/domain</module>
     <module>planning/application</module>
     <module>planning/adapters</module>
@@ -104,6 +107,9 @@
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-documents-domain</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-documents-application</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-documents-adapters</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-contracts-domain</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-contracts-application</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-contracts-adapters</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-planning-domain</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-planning-application</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-planning-adapters</artifactId><version>${project.version}</version></dependency>

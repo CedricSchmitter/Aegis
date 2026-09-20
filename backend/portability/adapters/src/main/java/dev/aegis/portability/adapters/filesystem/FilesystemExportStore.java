@@ -103,8 +103,8 @@ public class FilesystemExportStore implements ExportStore {
         }
         Manifest manifest = serializer.fromJson(Files.readAllBytes(manifestFile), Manifest.class);
         return Optional.of(new ExportSummary(manifest.generation(), manifest.exportedAt(), manifest.documentCount(),
-                manifest.taskCount(), manifest.memberCount(), manifest.missingOriginals(),
-                generationDir.toString()));
+                manifest.taskCount(), manifest.memberCount(), manifest.contractCount(),
+                manifest.missingOriginals(), generationDir.toString()));
     }
 
     private static void deleteRecursively(Path path) throws IOException {

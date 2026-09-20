@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
 /** Verifies the production modules against the architecture rules. */
 class ArchitectureTest {
     static final String BASE = "dev.aegis";
-    static final List<String> CONTEXTS = List.of("identity", "documents", "planning", "notifications", "operations",
-            "portability", "assistant");
+    static final List<String> CONTEXTS = List.of("identity", "documents", "contracts", "planning", "notifications",
+            "operations", "portability", "assistant");
     private static JavaClasses classes;
 
     @BeforeAll
@@ -45,8 +45,9 @@ class ArchitectureTest {
     void sharedKernelStaysSmallAndIndependent() {
         noClasses().that().resideInAPackage(BASE + ".shared..")
                 .should().dependOnClassesThat().resideInAnyPackage(BASE + ".identity..", BASE + ".documents..",
-                        BASE + ".planning..", BASE + ".notifications..", BASE + ".operations..",
-                        BASE + ".portability..", BASE + ".assistant..", BASE + ".bootstrap..")
+                        BASE + ".contracts..", BASE + ".planning..", BASE + ".notifications..",
+                        BASE + ".operations..", BASE + ".portability..", BASE + ".assistant..",
+                        BASE + ".bootstrap..")
                 .as("shared kernel must not depend on any context").check(classes);
     }
 

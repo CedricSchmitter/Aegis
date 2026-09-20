@@ -47,6 +47,7 @@ backend/
     application/
     adapters/
   documents/                  Document domain, application and adapters
+  contracts/                  Contract facts, provenance, review state and deadline calculation
   bootstrap/                  Executable Spring Boot application and wiring
 frontend/                     React/TypeScript web app
 ```
@@ -76,7 +77,7 @@ Use optimistic concurrency and explicit conflict responses. Inject `Clock` for t
 | Notifications | Delivery attempts and preferences | Delivery provider |
 | Operations/portability | Job status and export/import coordination | Scheduler and storage |
 
-Identity, documents, planning, notifications, operations, portability and assistant exist as modules. The assistant module provides the bounded AI execution boundary of [ADR-0003](adr/ADR-0003-bounded-ai-execution.md) (runs, budgets, model gateway, tool policy, connection check) and the document classification workload of [ADR-0004](adr/ADR-0004-automatic-document-classification.md) with the folder placement of [ADR-0005](adr/ADR-0005-automatic-folder-placement.md), whose results the documents context assesses and applies; review and chat workflows are issue-driven extensions of it. Inbox and contracts describe boundaries for issue-driven extensions, not implemented modules. Add modules only for concrete use cases and capture substantial boundary changes in ADRs.
+Identity, documents, contracts, planning, notifications, operations, portability and assistant exist as modules. The assistant module provides the bounded AI execution boundary of [ADR-0003](adr/ADR-0003-bounded-ai-execution.md) (runs, budgets, model gateway, tool policy, connection check) and the document classification workload of [ADR-0004](adr/ADR-0004-automatic-document-classification.md) with the folder placement of [ADR-0005](adr/ADR-0005-automatic-folder-placement.md), whose results the documents context assesses and applies; review and chat workflows are issue-driven extensions of it. The contracts module stores contract facts as observations with provenance, validity periods and review states, and calculates cancellation deadlines only from confirmed rules ([ADR-0007](adr/ADR-0007-contract-facts-and-provenance.md)); automatic extraction into it and the resulting tasks and reminders are issue-driven extensions. Inbox describes a boundary for an issue-driven extension, not an implemented module. Add modules only for concrete use cases and capture substantial boundary changes in ADRs.
 
 ## Localization contract
 

@@ -20,6 +20,7 @@
   <dependencies>
     <dependency><groupId>dev.aegis</groupId><artifactId>aegis-identity-adapters</artifactId></dependency>
     <dependency><groupId>dev.aegis</groupId><artifactId>aegis-documents-adapters</artifactId></dependency>
+    <dependency><groupId>dev.aegis</groupId><artifactId>aegis-contracts-adapters</artifactId></dependency>
     <dependency><groupId>dev.aegis</groupId><artifactId>aegis-planning-adapters</artifactId></dependency>
     <dependency><groupId>dev.aegis</groupId><artifactId>aegis-notifications-adapters</artifactId></dependency>
     <dependency><groupId>dev.aegis</groupId><artifactId>aegis-operations-adapters</artifactId></dependency>

@@ -2,6 +2,9 @@ package dev.aegis.portability.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.aegis.contracts.application.api.ContractExportQuery;
+import dev.aegis.contracts.application.api.ContractExportRecord;
+import dev.aegis.contracts.application.api.ContractExportRecord.FactExportRecord;
 import dev.aegis.documents.application.api.CatalogExport;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentExportRecord;
@@ -16,6 +19,7 @@ import dev.aegis.portability.application.api.ExportSummary;
 import dev.aegis.portability.application.ports.ExportSerializer;
 import dev.aegis.portability.application.ports.ExportStore;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.ProductLocale;
@@ -39,6 +43,9 @@ class ExportServiceTest {
     private final java.util.UUID house = java.util.UUID.randomUUID();
     private final java.util.UUID invoiceLabel = java.util.UUID.randomUUID();
     private final java.util.UUID telekomLabel = java.util.UUID.randomUUID();
+    private final ContractId rental = ContractId.random();
+    private final java.util.UUID endDateFact = java.util.UUID.randomUUID();
+    private final java.util.UUID noticeFact = java.util.UUID.randomUUID();
 
     /** Records writes and publication; never touches a filesystem. */
     static final class MemoryStore implements ExportStore {
@@ -134,6 +141,14 @@ class ExportServiceTest {
         };
         TaskExportQuery tasks = actor -> List.of(new TaskExportRecord(TaskId.random(), "Kündigen", "", anna, "OPEN",
                 LocalDate.of(2026, 12, 31), null, contract, anna, NOW, NOW, null, null));
+        ContractExportQuery contracts = actor -> List.of(new ContractExportRecord(rental, "Mietvertrag",
+                "ACTIVE", anna, NOW, NOW, List.of(
+                        new FactExportRecord(endDateFact, "END_DATE", "DATE", "2028-01-01", null, null,
+                                "CONFIRMED", "MANUAL", null, contract, 2, "Vertragsende: 01.01.2028", null, anna,
+                                NOW, anna, NOW, null, null, ""),
+                        new FactExportRecord(noticeFact, "NOTICE_PERIOD", "PERIOD", "P3M", null, null, "EXTRACTED",
+                                "AUTOMATIC", 0.8, contract, null, "Kündigungsfrist drei Monate", "run:2", null,
+                                NOW, null, null, null, null, ""))));
         MemberDirectory members = new MemberDirectory() {
             @Override
             public List<MemberSummary> listMembers(Actor actor) {
@@ -146,8 +161,9 @@ class ExportServiceTest {
             }
         };
         MemoryStore store = new MemoryStore();
-        ExportService service = new ExportService(documents, tasks, members, store, new StubSerializer(), actor -> {
-        }, Clock.fixed(NOW, ZoneOffset.UTC), "test");
+        ExportService service = new ExportService(documents, tasks, contracts, members, store,
+                new StubSerializer(), actor -> {
+                }, Clock.fixed(NOW, ZoneOffset.UTC), "test");
 
         ExportSummary summary = service.export(new Actor(anna));
         assertThat(service.export(new Actor(anna)).generation()).isNotEqualTo(summary.generation());
@@ -156,8 +172,9 @@ class ExportServiceTest {
         String originalPath = ExportFormat.ORIGINALS_DIR + contractName;
         assertThat(store.published).isTrue();
         assertThat(store.staged).containsKeys(originalPath, ExportFormat.DOCUMENTS_JSON, ExportFormat.TASKS_JSON,
-                ExportFormat.MEMBERS_JSON, ExportFormat.CATALOG_JSON, ExportFormat.DOCUMENTS_CSV,
-                ExportFormat.TASKS_CSV, ExportFormat.LABELS_CSV, ExportFormat.INDEX_MD, ExportFormat.MANIFEST);
+                ExportFormat.MEMBERS_JSON, ExportFormat.CATALOG_JSON, ExportFormat.CONTRACTS_JSON,
+                ExportFormat.DOCUMENTS_CSV, ExportFormat.TASKS_CSV, ExportFormat.LABELS_CSV,
+                ExportFormat.CONTRACTS_CSV, ExportFormat.INDEX_MD, ExportFormat.MANIFEST);
         assertThat(store.staged.get(originalPath)).isEqualTo(pdf);
         assertThat(summary.documentCount()).isEqualTo(2);
         assertThat(summary.taskCount()).isEqualTo(1);
@@ -181,6 +198,17 @@ class ExportServiceTest {
         assertThat(manifest).contains(originalPath + "=" + ExportService.sha256(pdf));
         String csv = new String(store.staged.get(ExportFormat.TASKS_CSV), StandardCharsets.UTF_8);
         assertThat(csv).contains("Kündigen,,Anna,OPEN,2026-12-31,," + contract + ",Mietvertrag Müller");
+        // Every observation is one readable row, with its review state, its source document and its page.
+        assertThat(summary.contractCount()).isEqualTo(1);
+        String contractsCsv = new String(store.staged.get(ExportFormat.CONTRACTS_CSV), StandardCharsets.UTF_8);
+        assertThat(contractsCsv)
+                .contains("contractId,contract,contractStatus,factId,factType,value,validFrom,validUntil,"
+                        + "reviewState,origin,confidence")
+                .contains("END_DATE,2028-01-01,,,CONFIRMED,MANUAL,," + contract + ",Mietvertrag Müller,2,")
+                .contains("NOTICE_PERIOD,P3M,,,EXTRACTED,AUTOMATIC,0.8,");
+        // The readable index lists confirmed facts only; a proposal is not household knowledge yet.
+        assertThat(index).contains("## Contracts (1)").contains("Mietvertrag (ACTIVE), 1 confirmed of 2")
+                .contains("END_DATE: 2028-01-01").doesNotContain("NOTICE_PERIOD: P3M");
     }
 
     @Test
@@ -202,7 +230,8 @@ class ExportServiceTest {
             }
         };
         MemoryStore store = new MemoryStore();
-        ExportService service = new ExportService(failing, actor -> List.of(), new MemberDirectory() {
+        ExportService service = new ExportService(failing, actor -> List.of(), actor -> List.of(),
+                new MemberDirectory() {
             @Override
             public List<MemberSummary> listMembers(Actor actor) {
                 return List.of();

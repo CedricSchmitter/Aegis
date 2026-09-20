@@ -15,8 +15,9 @@ AGENTS.md and CLAUDE.md reference AGENT.md to avoid competing instruction sets.
 ## Repository layout
 
 ```text
-backend/        Maven multimodule Spring Boot backend (Java 21): shared-kernel, identity, documents, planning,
-                notifications, operations, portability, assistant (AI runs), bootstrap, architecture-tests
+backend/        Maven multimodule Spring Boot backend (Java 21): shared-kernel, identity, documents, contracts,
+                planning, notifications, operations, portability, assistant (AI runs), bootstrap,
+                architecture-tests
 frontend/       React/TypeScript/Vite web app (German/English), served by the backend from one origin
 api/            Committed OpenAPI contract; the TypeScript client is generated from it
 e2e/            Playwright browser smoke tests of core household workflows
@@ -96,6 +97,15 @@ folders are only created when a member accepts a proposal
 analyzed when a member selects them. A new installation starts with an empty tree; `ops/deploy/folder-tree.json`
 and `ops/deploy/seed-folder-tree.py` create the agreed starting tree on request
 ([ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md)).
+
+Contract facts are stored as observations with provenance: every value names the document it came from, the
+period it is valid for and its review state, a member entering or confirming a value is the only thing that makes
+it effective, and an amendment takes over from its own start date while the original stays readable
+([ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md)). Cancellation deadlines are
+calculated from confirmed rules only - a stated deadline, or the contract end minus the confirmed notice period -
+and are published for other contexts through the contracts application contract. Entering, correcting and
+confirming facts works through the REST API today; the web UI for reviewing them, automatic extraction (#23/#24)
+and the resulting tasks and reminders (#63) are separate issues.
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a
