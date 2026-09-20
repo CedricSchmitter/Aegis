@@ -72,6 +72,17 @@ public class ApiClient {
                 .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray())));
     }
 
+    /** Any method with any body type, for requests the API is not supposed to serve. */
+    public Response request(String method, String path, String contentType, String body) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .method(method, body == null ? HttpRequest.BodyPublishers.noBody()
+                        : HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8));
+        if (contentType != null) {
+            builder.header("Content-Type", contentType);
+        }
+        return send(builder);
+    }
+
     public Response postWithoutCsrf(String path, String json) {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")

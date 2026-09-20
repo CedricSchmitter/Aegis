@@ -6,16 +6,23 @@ import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotAuthorizedException;
 import dev.aegis.shared.NotFoundException;
 import dev.aegis.shared.StaleVersionException;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Maps application exceptions to RFC 9457 problem details with a stable machine-readable {@code code} that the UI
@@ -90,6 +97,32 @@ public class ProblemDetailsAdvice {
             org.springframework.web.bind.MissingServletRequestParameterException.class})
     ProblemDetail malformedRequest(Exception e) {
         return problem(HttpStatus.BAD_REQUEST, "validation.failed", "Request validation failed");
+    }
+
+    /**
+     * The server serves no such address: an unknown path below {@code /api/}, or a static file the SPA resolver
+     * did not find. A wrong request, not a failure, so it is answered like every other error and not logged.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    ProblemDetail noResource(NoResourceFoundException e) {
+        return problem(HttpStatus.NOT_FOUND, "request.pathNotFound", "No resource is served at this path");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    ResponseEntity<ProblemDetail> methodNotAllowed(HttpRequestMethodNotSupportedException e) {
+        ProblemDetail problem = problem(HttpStatus.METHOD_NOT_ALLOWED, "request.methodNotAllowed",
+                "This path does not support " + e.getMethod());
+        HttpHeaders headers = new HttpHeaders();
+        // RFC 9110: a 405 response states which methods the path does support.
+        Set<HttpMethod> allowed = e.getSupportedHttpMethods();
+        headers.setAllow(allowed == null ? Set.of() : allowed);
+        return new ResponseEntity<>(problem, headers, HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    ProblemDetail unsupportedMediaType(HttpMediaTypeNotSupportedException e) {
+        return problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "request.unsupportedMediaType",
+                "This path does not accept the media type of the request body");
     }
 
     @ExceptionHandler(Exception.class)
