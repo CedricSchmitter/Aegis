@@ -56,6 +56,8 @@ public class TasksController {
     public record DueDateRequest(@Schema(nullable = true) LocalDate dueDate, long expectedVersion) {
     }
 
+    /** Named explicitly because the label catalog and contracts publish their own {@code VersionRequest}. */
+    @Schema(name = "TaskVersionRequest")
     public record VersionRequest(long expectedVersion) {
     }
 

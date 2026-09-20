@@ -16,6 +16,7 @@ public final class AiDtos {
     private AiDtos() {
     }
 
+    @Schema(name = "AiSourceDto")
     public record SourceDto(String kind, String id, long version) {
         static SourceDto from(SourceVersion source) {
             return new SourceDto(source.kind(), source.id(), source.version());

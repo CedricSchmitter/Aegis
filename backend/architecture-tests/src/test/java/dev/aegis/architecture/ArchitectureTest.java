@@ -1,6 +1,7 @@
 package dev.aegis.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -59,6 +60,18 @@ class ArchitectureTest {
     @Test
     void noProcessIsStarted() {
         ArchitectureRules.noProcessExecution(BASE).check(classes);
+    }
+
+    /**
+     * Two REST payload classes with the same published name silently collapse into one OpenAPI schema, which then
+     * describes the wrong context's fields in the generated client.
+     */
+    @Test
+    void restPayloadSchemaNamesAreUnique() {
+        assertThat(ArchitectureRules.restPayloadNameCollisions(classes, BASE))
+                .as("REST payload classes must not share an OpenAPI schema name; "
+                        + "give one of them an explicit @Schema(name = ...)")
+                .isEmpty();
     }
 
     @Test

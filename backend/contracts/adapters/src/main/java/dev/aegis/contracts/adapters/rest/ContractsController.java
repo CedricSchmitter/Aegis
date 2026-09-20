@@ -55,6 +55,8 @@ public class ContractsController {
             @Schema(nullable = true) String sourceDocumentId) {
     }
 
+    /** Named explicitly because the documents context publishes its own {@code RenameRequest}. */
+    @Schema(name = "RenameContractRequest")
     public record RenameRequest(@NotBlank String name, long expectedVersion) {
     }
 
@@ -78,6 +80,8 @@ public class ContractsController {
             long expectedVersion) {
     }
 
+    /** Named explicitly because planning and the label catalog publish their own {@code VersionRequest}. */
+    @Schema(name = "ContractVersionRequest")
     public record VersionRequest(long expectedVersion) {
     }
 
