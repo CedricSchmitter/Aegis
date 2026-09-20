@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions) , [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames) and [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths).
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions) , [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames) [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths) and [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (the starting folder tree as a tracked seed).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
@@ -21,7 +21,8 @@ frontend/       React/TypeScript/Vite web app (German/English), served by the ba
 api/            Committed OpenAPI contract; the TypeScript client is generated from it
 e2e/            Playwright browser smoke tests of core household workflows
 deploy/         Dockerfile, Compose stack, Caddyfile for the Aegis VM
-ops/            Deployment, backup and restore-drill scripts; VM bootstrap
+ops/            Deployment, backup and restore-drill scripts; VM bootstrap; the tracked starting
+                folder tree and its seeding script
 fixtures/       Synthetic test material only (known checksum)
 docs/           Architecture decisions and operating procedures
 ```
@@ -92,7 +93,9 @@ downloads and exports use readable filenames such as `2026-09-17_Telekom_Rechnun
 document into a matching existing folder or proposes a folder path such as `Haus / Versicherungen / Hausrat`;
 folders are only created when a member accepts a proposal
 ([ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md)). Existing documents are only
-analyzed when a member selects them.
+analyzed when a member selects them. A new installation starts with an empty tree; `ops/deploy/folder-tree.json`
+and `ops/deploy/seed-folder-tree.py` create the agreed starting tree on request
+([ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md)).
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a
