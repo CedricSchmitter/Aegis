@@ -1,7 +1,9 @@
 """Synthetic live check of automatic classification against an isolated stack (see verify-classification.sh).
 
 Uploads generated PDFs with a text layer as one synthetic member, waits for archival and classification, lets the
-second member review a suggestion, and checks friendly downloads and exports against the upload checksums. Flow
+second member review a suggestion, and checks friendly downloads and exports against the upload checksums. It also
+exercises the folder placement of issue #67: a small tree exists before the uploads, and the check verifies that no
+run creates a folder by itself and that accepting a proposal creates the path and moves the document. Flow
 invariants fail the check; model judgments are reported. Never prints credentials or the API key.
 """
 import hashlib
@@ -20,6 +22,7 @@ MEMBERS = json.loads(Path(sys.argv[2]).read_text())["members"]
 EXPORTS = Path(sys.argv[3])
 INVOICE = "11111111-0000-4000-8000-000000000001"
 INSURANCE_POLICY = "11111111-0000-4000-8000-000000000003"
+INSURANCE_TOPIC = "22222222-0000-4000-8000-000000000008"
 FAILURES = []
 
 
@@ -120,10 +123,36 @@ marker = secrets.token_hex(4).upper()
 anna = client(MEMBERS[0])
 ben = client(MEMBERS[1])
 
+def folders(request):
+    return json.loads(request("GET", "/api/categories")[1])["categories"]
+
+
+def placement(doc):
+    """One readable line about where a document ended up or where it is proposed to go."""
+    classification = doc["classification"]
+    path = " / ".join(step["name"] for step in classification["path"]) or "Unsorted"
+    origin = classification["placement"]["origin"] or "none"
+    suggestion = classification["placementSuggestion"]
+    proposed = "" if not suggestion else (" proposed=" + " / ".join(suggestion["path"])
+                                          + (" (new: " + ", ".join(suggestion["newFolders"]) + ")"
+                                             if suggestion["newFolders"] else ""))
+    return f"folder={path} origin={origin}{proposed}"
+
+
 status, raw, _ = anna("POST", "/api/labels", {"facet": "ORGANIZATION", "name": "Telekom"})
 telekom = json.loads(raw)
 anna("PUT", f"/api/labels/{telekom['id']}/aliases", {"aliases": ["Telekom Deutschland GmbH"],
                                                      "expectedVersion": telekom["version"]})
+
+# A small tree the classifier can file into: the folder passes the insurance topic on, so a document carrying that
+# topic belongs there by its labels, not by the folder name.
+status, raw, _ = anna("POST", "/api/categories", {"parentId": None, "name": "Haus"})
+haus = json.loads(raw)
+status, raw, _ = anna("POST", "/api/categories", {"parentId": haus["id"], "name": "Versicherungen"})
+versicherungen = json.loads(raw)
+anna("PUT", f"/api/categories/{versicherungen['id']}/implications",
+     {"labelIds": [INSURANCE_TOPIC], "subjects": [], "expectedVersion": versicherungen["version"]})
+folders_before = {folder["id"] for folder in folders(anna)}
 
 samples = {
     "invoice": ("scan_0001.pdf", [
@@ -163,6 +192,41 @@ for name, (document_id, checksum) in uploaded.items():
     print(f"     title={result['title']!r} titleOrigin={result['titleOrigin']} date={analysis['documentDate']}"
           f"/{analysis['documentDateStatus']} flags={analysis['flags']} labels=[{chips(result)}]"
           f" newNames={[c['name'] for c in analysis['candidates']]} filename={result['filename']['filename']}")
+    print(f"     {placement(result)}")
+
+# No run may create a folder, whatever the model answered (ADR-0005).
+check({folder["id"] for folder in folders(anna)} == folders_before,
+      "placement: no folder was created by a classification run")
+check(results["instructions"]["classification"]["placement"]["origin"] != "AUTOMATIC",
+      "instructions: a document with embedded instructions is never filed automatically")
+check(results["unclear"]["classification"]["placement"]["origin"] != "AUTOMATIC",
+      "unclear: unreadable text never files a document automatically")
+
+# If a path was proposed, accepting it creates exactly the missing folders and moves the document.
+proposed = [(name, result) for name, result in results.items()
+            if result["classification"]["placementSuggestion"]]
+if proposed:
+    name, doc = proposed[0]
+    suggestion = doc["classification"]["placementSuggestion"]
+    status, raw, _ = ben("POST", f"/api/documents/{doc['id']}/classification/placement/accept",
+                         {"folderId": suggestion["folderId"] if not suggestion["newFolders"] else None,
+                          "anchorFolderId": suggestion["anchorFolderId"] if suggestion["newFolders"] else None,
+                          "newPath": suggestion["newFolders"],
+                          "expectedVersion": doc["classification"]["version"],
+                          "expectedAnchorVersion": suggestion["anchorVersion"],
+                          "alsoForOtherDocuments": False})
+    accepted = json.loads(raw) if status == 200 else {}
+    check(status == 200, f"{name}: proposed placement accepted ({status})")
+    if status == 200:
+        created = len({folder["id"] for folder in folders(anna)} - folders_before)
+        check(created == len(suggestion["newFolders"]),
+              f"{name}: exactly the {len(suggestion['newFolders'])} proposed folder(s) were created")
+        check(accepted["document"]["classification"]["categoryId"] == accepted["folderId"]
+              and accepted["document"]["classification"]["placement"]["origin"] == "MANUAL",
+              f"{name}: document moved to {' / '.join(accepted['path'])} as a member decision")
+        results[name] = document(ben, doc["id"])
+else:
+    print("     no folder path was proposed for these documents")
 
 invoice = results["invoice"]
 check(effective(invoice, INVOICE) and effective(invoice, telekom["id"]),
