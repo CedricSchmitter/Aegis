@@ -68,4 +68,36 @@ class ClassificationPolicyTest {
         assertThat(ClassificationPolicy.offersCandidate(0.6, true)).isTrue();
         assertThat(ClassificationPolicy.offersCandidate(0.95, false)).isFalse();
     }
+
+    @Test
+    void aDocumentIsFiledAutomaticallyOnlyWhenTheFolderMatchesItsLabels() {
+        // The folder implies "Versicherung"; the document carries it, so the folder itself is evidence.
+        assertThat(ClassificationPolicy.placesAutomatically(false, 0.9, true, true, false, Set.of("Versicherung"),
+                Set.of("Versicherung", "Rechnung"))).isTrue();
+        // A folder that would add a label the document does not have is only a suggestion.
+        assertThat(ClassificationPolicy.placesAutomatically(false, 0.9, true, true, false,
+                Set.of("Versicherung", "Auto"), Set.of("Versicherung"))).isFalse();
+        // A folder without implied labels is never evidence on its own (ADR-0002).
+        assertThat(ClassificationPolicy.placesAutomatically(false, 0.99, true, true, false, Set.of(),
+                Set.of("Versicherung"))).isFalse();
+    }
+
+    @Test
+    void doubtLowConfidenceMissingQuotesAndMemberDecisionsPreventAnAutomaticMove() {
+        Set<String> implied = Set.of("Versicherung");
+        Set<String> effective = Set.of("Versicherung");
+
+        assertThat(ClassificationPolicy.placesAutomatically(true, 0.99, true, true, false, implied, effective))
+                .as("doubt flag").isFalse();
+        assertThat(ClassificationPolicy.placesAutomatically(false, 0.84, true, true, false, implied, effective))
+                .as("below the confidence rule").isFalse();
+        assertThat(ClassificationPolicy.placesAutomatically(false, null, true, true, false, implied, effective))
+                .as("no confidence reported").isFalse();
+        assertThat(ClassificationPolicy.placesAutomatically(false, 0.99, false, true, false, implied, effective))
+                .as("no quote from the text").isFalse();
+        assertThat(ClassificationPolicy.placesAutomatically(false, 0.99, true, false, false, implied, effective))
+                .as("already in a folder").isFalse();
+        assertThat(ClassificationPolicy.placesAutomatically(false, 0.99, true, true, true, implied, effective))
+                .as("a member placed or moved it before").isFalse();
+    }
 }

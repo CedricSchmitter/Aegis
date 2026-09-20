@@ -9,12 +9,13 @@ import java.util.Set;
  * Versioned structured export files. Field names are stable English identifiers; ids are strings so that files stay
  * readable and migratable without Aegis. Schema 2 adds the shared catalog (folders and label vocabulary) and the
  * classification of each document; schema 3 adds the title origin, the friendly filename the original is exported
- * under and the automatic analysis (generated values, member decisions, filename override and history). Older
+ * under and the automatic analysis (generated values, member decisions, filename override and history); schema 4
+ * adds where a folder placement came from and a placement a run proposed that nobody has decided on. Older
  * files restore without the newer parts.
  */
 public final class ExportFormat {
-    public static final int SCHEMA_VERSION = 3;
-    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3);
+    public static final int SCHEMA_VERSION = 4;
+    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4);
     public static final String MANIFEST = "manifest.json";
     public static final String DOCUMENTS_JSON = "data/documents.json";
     public static final String TASKS_JSON = "data/tasks.json";
@@ -37,8 +38,29 @@ public final class ExportFormat {
             Double confidence, String sourceRef, String decidedBy, Instant decidedAt) {
     }
 
-    /** Folder placement ({@code folderId} null = Unsorted) and own labels of a document. */
-    public record ClassificationEntry(String folderId, List<String> folderPath, List<AssignmentEntry> labels) {
+    /**
+     * Folder placement ({@code folderId} null = Unsorted) and own labels of a document. {@code placement} and
+     * {@code suggestion} are absent before schema 4; a placement without them counts as a member's decision.
+     */
+    public record ClassificationEntry(String folderId, List<String> folderPath, List<AssignmentEntry> labels,
+            PlacementEntry placement, PlacementSuggestionEntry suggestion) {
+    }
+
+    /**
+     * Where a folder placement came from: {@code MANUAL}, {@code AUTOMATIC} or absent. {@code byMember} marks a
+     * document a member placed or moved, which keeps later automatic runs from filing it again.
+     */
+    public record PlacementEntry(String origin, Double confidence, String sourceRef, String by, Instant at,
+            boolean byMember) {
+    }
+
+    /**
+     * A placement a run proposed and nobody decided on yet: an existing {@code folderId}, or {@code newPath} below
+     * {@code anchorFolderId}. {@code path} is the readable target for humans.
+     */
+    public record PlacementSuggestionEntry(String folderId, String anchorFolderId, List<String> newPath,
+            List<String> path, Double confidence, String evidence, String runRef, String model, int generation,
+            Instant createdAt) {
     }
 
     /**

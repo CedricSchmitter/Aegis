@@ -30,6 +30,8 @@ import org.springframework.stereotype.Component;
 public class JdbcClassificationRepository implements ClassificationRepository {
     private static final String SELECT_CLASSIFICATIONS = """
             SELECT dc.document_id, dc.category_id, dc.updated_by, dc.updated_at, dc.version,
+                   dc.placement_origin, dc.placement_confidence, dc.placement_source_ref, dc.placement_by,
+                   dc.placement_at, dc.placed_by_member,
                    dl.label_id, l.facet, dl.origin, dl.review_state, dl.confidence, dl.source_ref,
                    dl.decided_by, dl.decided_at
               FROM document_classifications dc
@@ -66,7 +68,7 @@ public class JdbcClassificationRepository implements ClassificationRepository {
                         UUID updatedBy = rs.getObject("updated_by", UUID.class);
                         var updatedAt = rs.getTimestamp("updated_at");
                         roots.put(id, DocumentClassification.rehydrate(id,
-                                category == null ? null : new CategoryId(category), List.of(),
+                                category == null ? null : new CategoryId(category), placement(rs), List.of(),
                                 updatedBy == null ? null : new MemberId(updatedBy),
                                 updatedAt == null ? null : updatedAt.toInstant(), rs.getLong("version")));
                     }
@@ -88,9 +90,21 @@ public class JdbcClassificationRepository implements ClassificationRepository {
                 }).list();
         Map<DocumentId, DocumentClassification> result = new LinkedHashMap<>();
         roots.forEach((id, root) -> result.put(id, DocumentClassification.rehydrate(id,
-                root.categoryId().orElse(null), assignments.getOrDefault(id.value(), List.of()),
-                root.updatedBy().orElse(null), root.updatedAt().orElse(null), root.version())));
+                root.categoryId().orElse(null), root.placement(),
+                assignments.getOrDefault(id.value(), List.of()), root.updatedBy().orElse(null),
+                root.updatedAt().orElse(null), root.version())));
         return result;
+    }
+
+    private static DocumentClassification.Placement placement(java.sql.ResultSet rs) throws java.sql.SQLException {
+        String origin = rs.getString("placement_origin");
+        java.math.BigDecimal confidence = rs.getBigDecimal("placement_confidence");
+        UUID by = rs.getObject("placement_by", UUID.class);
+        var at = rs.getTimestamp("placement_at");
+        return new DocumentClassification.Placement(origin == null ? null : AssignmentOrigin.valueOf(origin),
+                confidence == null ? null : new Confidence(confidence.doubleValue()),
+                rs.getString("placement_source_ref"), by == null ? null : new MemberId(by),
+                at == null ? null : at.toInstant(), rs.getBoolean("placed_by_member"));
     }
 
     @Override
@@ -120,10 +134,20 @@ public class JdbcClassificationRepository implements ClassificationRepository {
         values.put("categoryId", classification.categoryId().map(CategoryId::value).orElse(null));
         values.put("updatedBy", classification.updatedBy().map(MemberId::value).orElse(null));
         values.put("updatedAt", classification.updatedAt().map(java.sql.Timestamp::from).orElse(null));
+        DocumentClassification.Placement placement = classification.placement();
+        values.put("placementOrigin", placement.origin() == null ? null : placement.origin().name());
+        values.put("placementConfidence", placement.confidence() == null ? null : placement.confidence().value());
+        values.put("placementSourceRef", placement.sourceRef());
+        values.put("placementBy", placement.by() == null ? null : placement.by().value());
+        values.put("placementAt", placement.at() == null ? null : java.sql.Timestamp.from(placement.at()));
+        values.put("placedByMember", placement.byMember());
         values.put("version", classification.version());
         int updated = jdbc.sql("""
                 UPDATE document_classifications SET category_id = :categoryId, updated_by = :updatedBy,
-                       updated_at = :updatedAt, version = version + 1
+                       updated_at = :updatedAt, placement_origin = :placementOrigin,
+                       placement_confidence = :placementConfidence, placement_source_ref = :placementSourceRef,
+                       placement_by = :placementBy, placement_at = :placementAt,
+                       placed_by_member = :placedByMember, version = version + 1
                  WHERE document_id = :documentId AND version = :version""").params(values).update();
         if (updated == 0) {
             jdbc.sql("SELECT version FROM document_classifications WHERE document_id = ?")
@@ -132,8 +156,12 @@ public class JdbcClassificationRepository implements ClassificationRepository {
                                 classification.documentId().toString(), classification.version(), stored);
                     });
             jdbc.sql("""
-                    INSERT INTO document_classifications (document_id, category_id, updated_by, updated_at, version)
-                    VALUES (:documentId, :categoryId, :updatedBy, :updatedAt, 1)""").params(values).update();
+                    INSERT INTO document_classifications (document_id, category_id, updated_by, updated_at,
+                           placement_origin, placement_confidence, placement_source_ref, placement_by,
+                           placement_at, placed_by_member, version)
+                    VALUES (:documentId, :categoryId, :updatedBy, :updatedAt, :placementOrigin,
+                           :placementConfidence, :placementSourceRef, :placementBy, :placementAt,
+                           :placedByMember, 1)""").params(values).update();
         }
         jdbc.sql("DELETE FROM document_labels WHERE document_id = ?").param(classification.documentId().value())
                 .update();

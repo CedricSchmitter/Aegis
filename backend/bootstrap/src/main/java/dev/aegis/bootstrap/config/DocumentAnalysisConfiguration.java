@@ -21,9 +21,11 @@ import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.application.api.LabelCommands;
 import dev.aegis.documents.application.ports.AnalysisRuns;
 import dev.aegis.documents.application.ports.CatalogLock;
+import dev.aegis.documents.application.ports.DocumentCatalog;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
+import dev.aegis.documents.domain.catalog.CategoryRepository;
 import dev.aegis.documents.domain.catalog.LabelRepository;
 import dev.aegis.documents.domain.classification.ClassificationRepository;
 import dev.aegis.documents.domain.naming.BuiltinLabelNames;
@@ -57,9 +59,10 @@ public class DocumentAnalysisConfiguration {
     AnalysisSettings analysisSettings(@Value("${aegis.documents.analysis.automatic:true}") boolean automatic,
             @Value("${aegis.documents.analysis.filename-language:DE}") String language,
             @Value("${aegis.documents.analysis.max-text-chars:20000}") int maxTextChars,
+            @Value("${aegis.documents.analysis.max-catalog-folders:200}") int maxCatalogFolders,
             @Value("${aegis.household.zone:Europe/Berlin}") String zone) {
         return new AnalysisSettings(automatic, BuiltinLabelNames.Language.parse(language), maxTextChars,
-                ZoneId.of(zone));
+                maxCatalogFolders, ZoneId.of(zone));
     }
 
     @Bean
@@ -103,13 +106,14 @@ public class DocumentAnalysisConfiguration {
 
     @Bean
     AnalysisServices analysisServices(DocumentRepository documents, DocumentAnalysisRepository analyses,
-            ClassificationRepository classifications, LabelRepository labels,
-            UseCaseConfiguration.ClassificationServices classification, LabelCommands labelCommands, CatalogLock lock,
-            PaperlessArchive archive, AnalysisRuns runs, ClassificationViews classificationViews,
-            DocumentPresenter presenter, HouseholdAccess access, AnalysisSettings settings, Clock clock) {
+            ClassificationRepository classifications, LabelRepository labels, CategoryRepository categories,
+            DocumentCatalog catalog, UseCaseConfiguration.ClassificationServices classification,
+            LabelCommands labelCommands, CatalogLock lock, PaperlessArchive archive, AnalysisRuns runs,
+            ClassificationViews classificationViews, DocumentPresenter presenter, HouseholdAccess access,
+            AnalysisSettings settings, Clock clock) {
         return new AnalysisServices(new DocumentAnalysisService(documents, analyses, classifications, labels,
-                classification.classification(), labelCommands, lock, archive, runs, classificationViews, presenter,
-                access, settings, clock));
+                categories, catalog, classification.classification(), labelCommands, lock, archive, runs,
+                classificationViews, presenter, access, settings, clock));
     }
 
     @Bean

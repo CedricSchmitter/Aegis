@@ -52,6 +52,24 @@ public final class CategoryTree {
     public record Changes(List<Category> upserts, List<CategoryId> deletions) {
     }
 
+    /**
+     * How far a proposed path already exists: {@code deepest} is the last folder that matched by normalized sibling
+     * name ({@code null} = top level), {@code missing} are the segments that would have to be created.
+     */
+    public record PathResolution(CategoryId deepest, List<String> missing) {
+        public PathResolution {
+            missing = List.copyOf(missing);
+        }
+
+        public boolean complete() {
+            return missing.isEmpty();
+        }
+    }
+
+    /** The folder a created path ends in and the folders that had to be created for it. */
+    public record CreatedPath(CategoryId target, List<Category> created) {
+    }
+
     private final Map<CategoryId, Category> nodes = new LinkedHashMap<>();
     private final Set<CategoryId> touched = new LinkedHashSet<>();
     private final Set<CategoryId> removed = new LinkedHashSet<>();
@@ -174,6 +192,56 @@ public final class CategoryTree {
                 touched.add(category.id());
             }
         }
+    }
+
+    /**
+     * Matches {@code segments} below {@code anchor} ({@code null} = top level) against existing folders by
+     * normalized sibling name. Matching stops at the first segment without a sibling, so an existing folder is
+     * always reused instead of a near-duplicate that differs only in case, whitespace or Unicode form.
+     */
+    public PathResolution resolve(CategoryId anchor, List<String> segments) {
+        CategoryId current = anchor == null ? null : require(anchor).id();
+        List<String> missing = new ArrayList<>();
+        for (String segment : segments) {
+            if (!missing.isEmpty()) {
+                missing.add(segment);
+                continue;
+            }
+            Category match = null;
+            for (Category child : childrenOf(current)) {
+                if (child.nameKeyEquals(segment)) {
+                    match = child;
+                    break;
+                }
+            }
+            if (match == null) {
+                missing.add(segment);
+            } else {
+                current = match.id();
+            }
+        }
+        return new PathResolution(current, missing);
+    }
+
+    /**
+     * Creates the folders of {@code segments} that do not exist yet below {@code anchor} and returns the folder the
+     * path ends in. Existing folders are reused; depth and sibling-name rules apply to every created folder.
+     */
+    public CreatedPath createPath(CategoryId anchor, List<String> segments, MemberId by, Instant now) {
+        PathResolution resolution = resolve(anchor, segments);
+        CategoryId current = resolution.deepest();
+        List<Category> created = new ArrayList<>();
+        for (String segment : resolution.missing()) {
+            Category folder = create(CategoryId.random(), current, segment, by, now);
+            created.add(folder);
+            current = folder.id();
+        }
+        return new CreatedPath(current, List.copyOf(created));
+    }
+
+    /** The names of the folders from the top level down to {@code id}. */
+    public List<String> pathNames(CategoryId id) {
+        return path(id).stream().map(Category::name).toList();
     }
 
     public Optional<Category> find(CategoryId id) {

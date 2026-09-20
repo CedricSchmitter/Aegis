@@ -147,10 +147,10 @@ class CatalogImportServiceTest {
         Document edited = fixture.document("Wasser 2026");
         fixture.classificationService.setLabels(fixture.actor, edited.id(), List.of(internet.id()), 0);
 
-        var applied = fixture.importService.importClassification(fixture.actor, imported.id(), folder.id(),
+        var applied = fixture.importService.importClassification(fixture.actor, imported.id(), folder.id(), null,
                 List.of(new AssignmentImport(telekom.id(), "AUTOMATIC", "APPLIED", 0.8, "run:7", null,
                         CatalogFixture.NOW)));
-        var kept = fixture.importService.importClassification(fixture.actor, edited.id(), folder.id(),
+        var kept = fixture.importService.importClassification(fixture.actor, edited.id(), folder.id(), null,
                 List.of(new AssignmentImport(telekom.id(), "MANUAL", "CONFIRMED", null, null, null,
                         CatalogFixture.NOW)));
 
@@ -175,7 +175,7 @@ class CatalogImportServiceTest {
     void unknownLabelsAndFoldersAreDroppedInsteadOfFailingTheRestore() {
         Document document = fixture.document("Scan");
 
-        var outcome = fixture.importService.importClassification(fixture.actor, document.id(), UUID.randomUUID(),
+        var outcome = fixture.importService.importClassification(fixture.actor, document.id(), UUID.randomUUID(), null,
                 List.of(new AssignmentImport(UUID.randomUUID(), "MANUAL", "CONFIRMED", null, null, null, null)));
 
         assertThat(outcome).isEqualTo(ClassificationOutcome.NOTHING_TO_APPLY);

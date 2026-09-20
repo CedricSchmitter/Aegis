@@ -160,7 +160,9 @@ public class CategoryService implements CategoryCommands {
                 }
             }
             if (!Objects.equals(placement, newPlacement)) {
-                classification.placeIn(newPlacement, actor.memberId(), now);
+                // Structural move: the placement provenance stays as it is, and it is no decision about this
+                // document, so a later run may still file a document that lands back in Unsorted.
+                classification.relocate(newPlacement, now);
                 documentsMoved++;
                 changed = true;
             }

@@ -108,7 +108,8 @@ final class TestDoubles {
     }
 
     static AnalysisSettings analysisSettings() {
-        return new AnalysisSettings(true, BuiltinLabelNames.Language.DE, 5_000, ZoneId.of("Europe/Berlin"));
+        return new AnalysisSettings(true, BuiltinLabelNames.Language.DE, 5_000, 200,
+                ZoneId.of("Europe/Berlin"));
     }
 
     static DocumentPresenter presenter(ProcessingScheduler scheduler, ClassificationViews views) {

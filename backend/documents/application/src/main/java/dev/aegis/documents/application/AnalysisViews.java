@@ -121,6 +121,7 @@ public class AnalysisViews {
             }
             // A doubtful result that left the document without any effective label also needs a member's look.
             case COMPLETED -> analysis.hasPendingSuggestions() || pendingLabels(classification)
+                    || classification.placementSuggestion() != null
                     || !analysis.flags().isEmpty() && classification.labels().stream().noneMatch(
                             AnalysisViews::effective)
                     ? AnalysisView.NEEDS_REVIEW : AnalysisView.CLASSIFIED;

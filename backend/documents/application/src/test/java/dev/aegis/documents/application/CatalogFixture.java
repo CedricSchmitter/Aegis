@@ -33,7 +33,8 @@ final class CatalogFixture {
     final TestDoubles.RecordingScheduler scheduler = new TestDoubles.RecordingScheduler();
     final CatalogLock lock = new NoOpCatalogLock();
 
-    final ClassificationViews views = new ClassificationViews(classifications, categories, labels);
+    final InMemoryPlacementSuggestionRepository placements = new InMemoryPlacementSuggestionRepository();
+    final ClassificationViews views = new ClassificationViews(classifications, categories, labels, placements);
     final DocumentPresenter presenter = TestDoubles.presenter(scheduler, views);
     final TestDoubles.MembersOnly access = new TestDoubles.MembersOnly(lisa, cedric);
     final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
@@ -43,10 +44,12 @@ final class CatalogFixture {
     final LabelService labelService = new LabelService(labels, categories, classifications, catalog, lock, access,
             clock);
     final ClassificationService classificationService = new ClassificationService(classifications, documents,
-            categories, labels, lock, presenter, access, clock);
+            categories, labels, placements, lock, presenter, access, clock);
+    final PlacementService placementService = new PlacementService(classifications, placements, categories, labels,
+            documents, lock, presenter, access, clock);
     final CatalogQueryService catalogQueries = new CatalogQueryService(categories, labels, catalog, access);
     final CatalogImportService importService = new CatalogImportService(labels, categories, classifications,
-            documents, lock, access, clock);
+            placements, documents, lock, access, clock);
 
     CategoryView folder(String name, UUID parent) {
         return categoryService.create(actor, new CreateCategory(null, parent, name));

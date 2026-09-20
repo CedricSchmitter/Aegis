@@ -6,6 +6,8 @@ import dev.aegis.documents.application.api.ImportCatalog.CatalogImportResult;
 import dev.aegis.documents.application.api.ImportCatalog.ClassificationOutcome;
 import dev.aegis.documents.application.api.ImportCatalog.FolderImport;
 import dev.aegis.documents.application.api.ImportCatalog.LabelImport;
+import dev.aegis.documents.application.api.ImportCatalog.PlacementImport;
+import dev.aegis.documents.application.api.ImportCatalog.SuggestionImport;
 import dev.aegis.documents.application.api.ImportDocument;
 import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand;
@@ -229,7 +231,36 @@ public class RestoreService implements RestoreExport {
             assignments.add(new AssignmentImport(label, assignment.origin(), assignment.reviewState(),
                     assignment.confidence(), assignment.sourceRef(), decidedBy, assignment.decidedAt()));
         }
-        return importCatalog.importClassification(actor, DocumentId.of(entry.id()), folder, assignments);
+        return importCatalog.importClassification(actor, DocumentId.of(entry.id()), folder,
+                placement(classification, memberMapping, catalog), assignments);
+    }
+
+    /**
+     * The exported placement origin and a pending proposal, with folder ids mapped to local ones. Exports before
+     * schema 4 carry neither; their placement counts as a member's decision, so no run refiles those documents.
+     */
+    private static PlacementImport placement(ClassificationEntry classification, Map<String, String> memberMapping,
+            CatalogImportResult catalog) {
+        ExportFormat.PlacementEntry placement = classification.placement();
+        ExportFormat.PlacementSuggestionEntry exported = classification.suggestion();
+        SuggestionImport suggestion = exported == null ? null : new SuggestionImport(
+                mapFolder(exported.folderId(), catalog), mapFolder(exported.anchorFolderId(), catalog),
+                exported.newPath() == null ? List.of() : exported.newPath(), exported.confidence(),
+                exported.evidence(), exported.runRef(), exported.model(), exported.generation(),
+                exported.createdAt());
+        if (placement == null) {
+            return classification.folderId() == null && suggestion == null ? null
+                    : new PlacementImport("MANUAL", null, null, null, null, classification.folderId() != null,
+                            suggestion);
+        }
+        MemberId by = placement.by() == null ? null
+                : MemberId.of(memberMapping.getOrDefault(placement.by(), placement.by()));
+        return new PlacementImport(placement.origin(), placement.confidence(), placement.sourceRef(), by,
+                placement.at(), placement.byMember(), suggestion);
+    }
+
+    private static UUID mapFolder(String exportedId, CatalogImportResult catalog) {
+        return exportedId == null ? null : catalog.folderIds().get(UUID.fromString(exportedId));
     }
 
     private int[] restoreTasks(Actor actor, TasksFile file, Map<String, String> memberMapping) {

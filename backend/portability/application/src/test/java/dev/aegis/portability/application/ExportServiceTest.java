@@ -106,7 +106,8 @@ class ExportServiceTest {
                                 List.of(new DocumentExportRecord.Assignment(telekomLabel, "ORGANIZATION", "Telekom",
                                         "MANUAL", "CONFIRMED", null, null, anna, NOW),
                                         new DocumentExportRecord.Assignment(invoiceLabel, "DOCUMENT_TYPE",
-                                                "Invoice", "AUTOMATIC", "SUGGESTED", 0.4, "run:1", null, NOW))),
+                                                "Invoice", "AUTOMATIC", "SUGGESTED", 0.4, "run:1", null, NOW)),
+                                new DocumentExportRecord.Placement("MANUAL", null, null, anna, NOW, true), null),
                         null),
                         new DocumentExportRecord(lost, "Verloren", "FILENAME", "lost.pdf", "Verloren_"
                                 + lost.toString().substring(0, 8) + ".pdf", "application/pdf", 3, "a".repeat(64),

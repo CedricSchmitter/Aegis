@@ -33,6 +33,22 @@ public interface ImportCatalog {
             MemberId decidedBy, Instant decidedAt) {
     }
 
+    /**
+     * A placement that a run proposed and nobody decided on yet, as it was exported. Ids are local ids; a folder
+     * that does not exist here is dropped.
+     */
+    record SuggestionImport(UUID folderId, UUID anchorFolderId, List<String> newPath, Double confidence,
+            String evidence, String runRef, String model, int generation, Instant createdAt) {
+    }
+
+    /**
+     * Where an exported folder placement came from. {@code origin} is {@code MANUAL}, {@code AUTOMATIC} or null;
+     * {@code byMember} says whether a member ever placed or moved the document.
+     */
+    record PlacementImport(String origin, Double confidence, String sourceRef, MemberId by, Instant at,
+            boolean byMember, SuggestionImport suggestion) {
+    }
+
     enum ClassificationOutcome {
         APPLIED,
         KEPT_EXISTING,
@@ -43,5 +59,5 @@ public interface ImportCatalog {
 
     /** Ids in the command are local ids (already mapped through {@link CatalogImportResult}). */
     ClassificationOutcome importClassification(Actor actor, DocumentId documentId, UUID categoryId,
-            List<AssignmentImport> assignments);
+            PlacementImport placement, List<AssignmentImport> assignments);
 }

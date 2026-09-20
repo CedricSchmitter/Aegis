@@ -223,15 +223,26 @@ public class ExportService implements CreateExport, ExportQueries {
     private static ClassificationEntry classification(DocumentExportRecord record) {
         DocumentExportRecord.Classification source = record.classification();
         if (source == null) {
-            return new ClassificationEntry(null, List.of(), List.of());
+            return new ClassificationEntry(null, List.of(), List.of(), null, null);
         }
         List<AssignmentEntry> assignments = source.assignments().stream()
                 .map(a -> new AssignmentEntry(a.labelId().toString(), a.facet(), a.displayName(), a.origin(),
                         a.reviewState(), a.confidence(), a.sourceRef(),
                         a.decidedBy() == null ? null : a.decidedBy().toString(), a.decidedAt()))
                 .toList();
+        DocumentExportRecord.Placement placement = source.placement();
+        DocumentExportRecord.PlacementSuggestion suggestion = source.suggestion();
         return new ClassificationEntry(source.categoryId() == null ? null : source.categoryId().toString(),
-                source.categoryPath(), assignments);
+                source.categoryPath(), assignments,
+                placement == null ? null : new ExportFormat.PlacementEntry(placement.origin(),
+                        placement.confidence(), placement.sourceRef(),
+                        placement.by() == null ? null : placement.by().toString(), placement.at(),
+                        placement.byMember()),
+                suggestion == null ? null : new ExportFormat.PlacementSuggestionEntry(
+                        suggestion.folderId() == null ? null : suggestion.folderId().toString(),
+                        suggestion.anchorFolderId() == null ? null : suggestion.anchorFolderId().toString(),
+                        suggestion.newPath(), suggestion.path(), suggestion.confidence(), suggestion.evidence(),
+                        suggestion.runRef(), suggestion.model(), suggestion.generation(), suggestion.createdAt()));
     }
 
     private static String documentsCsv(List<DocumentEntry> entries, Map<String, String> memberNames) {

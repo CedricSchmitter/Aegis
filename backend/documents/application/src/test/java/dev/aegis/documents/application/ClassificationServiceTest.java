@@ -110,7 +110,7 @@ class ClassificationServiceTest {
 
         var outcome = fixture.classificationService.propose(fixture.actor, new ProposalCommand(document.id(), 0,
                 "run:1", List.of(new LabelProposal(invoice.id(), 0.95, true),
-                        new LabelProposal(telekom.id(), 0.42, false))));
+                        new LabelProposal(telekom.id(), 0.42, false)), null));
 
         assertThat(outcome.applied()).isEqualTo(1);
         assertThat(outcome.suggested()).isEqualTo(1);
@@ -139,13 +139,13 @@ class ClassificationServiceTest {
         LabelView vodafone = fixture.label("ORGANIZATION", "Vodafone");
         Document document = fixture.document("Scan 0815");
         fixture.classificationService.propose(fixture.actor, new ProposalCommand(document.id(), 0, "run:1",
-                List.of(new LabelProposal(vodafone.id(), 0.6, true))));
+                List.of(new LabelProposal(vodafone.id(), 0.6, true)), null));
         fixture.classificationService.setLabels(fixture.actor, document.id(), List.of(telekom.id()),
                 fixture.classificationVersion(document.id()));
 
         long version = fixture.classificationVersion(document.id());
         var retry = fixture.classificationService.propose(fixture.actor, new ProposalCommand(document.id(), version,
-                "run:2", List.of(new LabelProposal(vodafone.id(), 0.9, true))));
+                "run:2", List.of(new LabelProposal(vodafone.id(), 0.9, true)), null));
 
         assertThat(retry.applied()).isZero();
         assertThat(retry.skipped()).isEqualTo(1);
@@ -154,7 +154,7 @@ class ClassificationServiceTest {
         assertThat(summary.classification().labels()).extracting(LabelChip::labelId).containsExactly(telekom.id());
         assertThatThrownBy(() -> fixture.classificationService.propose(fixture.actor,
                 new ProposalCommand(document.id(), version - 1, "run:3",
-                        List.of(new LabelProposal(vodafone.id(), 0.9, true)))))
+                        List.of(new LabelProposal(vodafone.id(), 0.9, true)), null)))
                 .isInstanceOf(StaleVersionException.class);
     }
 
@@ -166,7 +166,7 @@ class ClassificationServiceTest {
 
         var outcome = fixture.classificationService.propose(fixture.actor, new ProposalCommand(document.id(), 0,
                 "run:1", List.of(new LabelProposal(topic.id(), 0.9, true),
-                        new LabelProposal(java.util.UUID.randomUUID(), 0.9, true))));
+                        new LabelProposal(java.util.UUID.randomUUID(), 0.9, true)), null));
 
         assertThat(outcome.applied()).isZero();
         assertThat(outcome.skipped()).isEqualTo(2);

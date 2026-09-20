@@ -13,11 +13,15 @@ import dev.aegis.documents.domain.catalog.Label;
 import dev.aegis.documents.domain.catalog.LabelId;
 import dev.aegis.documents.domain.catalog.LabelRepository;
 import dev.aegis.documents.domain.catalog.LabelVocabulary;
+import dev.aegis.documents.domain.analysis.ClassificationPolicy;
 import dev.aegis.documents.domain.classification.ClassificationRepository;
 import dev.aegis.documents.domain.classification.Confidence;
 import dev.aegis.documents.domain.classification.DocumentClassification;
 import dev.aegis.documents.domain.classification.LabelRef;
 import dev.aegis.documents.domain.classification.Proposal;
+import dev.aegis.documents.domain.placement.PlacementSuggestion;
+import dev.aegis.documents.domain.placement.PlacementSuggestionRepository;
+import dev.aegis.documents.domain.placement.PlacementTarget;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
@@ -28,6 +32,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -39,18 +44,20 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
     private final DocumentRepository documents;
     private final CategoryRepository categories;
     private final LabelRepository labels;
+    private final PlacementSuggestionRepository placements;
     private final CatalogLock lock;
     private final DocumentPresenter presenter;
     private final HouseholdAccess access;
     private final Clock clock;
 
     public ClassificationService(ClassificationRepository classifications, DocumentRepository documents,
-            CategoryRepository categories, LabelRepository labels, CatalogLock lock, DocumentPresenter presenter,
-            HouseholdAccess access, Clock clock) {
+            CategoryRepository categories, LabelRepository labels, PlacementSuggestionRepository placements,
+            CatalogLock lock, DocumentPresenter presenter, HouseholdAccess access, Clock clock) {
         this.classifications = classifications;
         this.documents = documents;
         this.categories = categories;
         this.labels = labels;
+        this.placements = placements;
         this.lock = lock;
         this.presenter = presenter;
         this.access = access;
@@ -64,16 +71,17 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
         Document document = requireDocument(id);
         CategoryId target = folder(categoryId);
         DocumentClassification classification = loadVersion(id, expectedVersion);
-        if (classification.placeIn(target, actor.memberId(), clock.instant())) {
-            classifications.save(classification);
-        }
+        classification.placeIn(target, actor.memberId(), clock.instant());
+        classifications.save(classification);
+        // The member decided where this document belongs; a pending proposal is obsolete.
+        placements.delete(id);
         return presenter.summarize(document);
     }
 
     @Override
-    public int placeAll(Actor actor, List<Placement> placements, UUID categoryId) {
+    public int placeAll(Actor actor, List<Placement> moves, UUID categoryId) {
         access.requireMember(actor);
-        if (placements.size() > MAX_BULK_PLACEMENTS) {
+        if (moves.size() > MAX_BULK_PLACEMENTS) {
             throw new InvalidInputException("classification.bulk.tooLarge",
                     "At most " + MAX_BULK_PLACEMENTS + " documents can be moved at once");
         }
@@ -81,14 +89,14 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
         CategoryId target = folder(categoryId);
         Instant now = clock.instant();
         int moved = 0;
-        for (Placement placement : placements) {
-            requireDocument(placement.documentId());
-            DocumentClassification classification = loadVersion(placement.documentId(),
-                    placement.expectedVersion());
+        for (Placement move : moves) {
+            requireDocument(move.documentId());
+            DocumentClassification classification = loadVersion(move.documentId(), move.expectedVersion());
             if (classification.placeIn(target, actor.memberId(), now)) {
-                classifications.save(classification);
                 moved++;
             }
+            classifications.save(classification);
+            placements.delete(move.documentId());
         }
         return moved;
     }
@@ -146,6 +154,7 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
         CategoryTree tree = categories.load();
         DocumentClassification classification = classifications.findById(command.documentId())
                 .orElseGet(() -> DocumentClassification.unsorted(command.documentId()));
+        classification.requireVersion(command.analyzedVersion());
         List<Proposal> proposals = new ArrayList<>();
         int unusable = 0;
         for (LabelProposal proposal : command.proposals()) {
@@ -157,17 +166,115 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
             proposals.add(new Proposal(new LabelRef(label.get().id(), label.get().facet()),
                     proposal.confidence() == null ? null : new Confidence(proposal.confidence()), proposal.apply()));
         }
+        Instant now = clock.instant();
+        // The placement is decided first: a folder the document is moved into may already imply its document type.
+        PlacementResult placement = decidePlacement(command, classification, tree, vocabulary, proposals, now);
         boolean folderImpliesType = tree.implications(classification.categoryId().orElse(null),
                 vocabulary::facetOf).labels().keySet().stream()
                 .anyMatch(label -> vocabulary.facetOf(label).singleValued());
         DocumentClassification.ProposalResult result = classification.propose(proposals, command.analyzedVersion(),
-                command.sourceRef(), folderImpliesType, clock.instant());
-        if (result.applied() + result.suggested() > 0) {
+                command.sourceRef(), folderImpliesType, now);
+        if (result.applied() + result.suggested() > 0 || placement != null && placement.applied()) {
             classifications.save(classification);
         }
         long version = classifications.findById(command.documentId()).map(DocumentClassification::version)
                 .orElse(classification.version());
-        return new ProposalOutcome(result.applied(), result.suggested(), result.skipped() + unusable, version);
+        return new ProposalOutcome(result.applied(), result.suggested(), result.skipped() + unusable, version,
+                placement);
+    }
+
+    /**
+     * Resolves the proposed placement against the current tree and either files the document (existing folder,
+     * policy satisfied) or records a reviewable suggestion. A folder that disappeared during the run falls back to
+     * the proposed path, a path that meanwhile exists resolves to that folder, and a target the member already
+     * rejected for this document is dropped.
+     */
+    private PlacementResult decidePlacement(ProposalCommand command, DocumentClassification classification,
+            CategoryTree tree, LabelVocabulary vocabulary, List<Proposal> labelProposals, Instant now) {
+        DocumentId id = command.documentId();
+        PlacementProposal proposal = command.placement();
+        if (proposal == null) {
+            placements.delete(id);
+            return null;
+        }
+        Optional<PlacementTarget> resolved = resolve(proposal, tree);
+        // A document a member filed themselves stays where it is and is not proposed about again; one the member
+        // moved back to Unsorted may still get a different proposal, only never a target they rejected.
+        boolean memberFiled = classification.placement().byMember() && !classification.isUnsorted();
+        if (resolved.isEmpty() || memberFiled || placements.rejectedKeys(id).contains(resolved.get().key())
+                || sameFolder(classification, resolved.get())) {
+            placements.delete(id);
+            return null;
+        }
+        PlacementTarget target = resolved.get();
+        Double confidence = proposal.confidence();
+        if (target.isExisting() && applies(proposal, classification, target.folder(), tree, vocabulary,
+                labelProposals)
+                && classification.placeAutomatically(target.folder(),
+                        confidence == null ? null : new Confidence(confidence), command.sourceRef(), now)) {
+            placements.delete(id);
+            return new PlacementResult(target.folder().value(), null, List.of(), target.folder().value(),
+                    target.key(), confidence, proposal.evidence());
+        }
+        placements.save(new PlacementSuggestion(id, proposal.generation(), target, confidence, proposal.evidence(),
+                command.sourceRef(), proposal.model(), now));
+        return new PlacementResult(target.folderId().map(CategoryId::value).orElse(null),
+                target.anchorId().map(CategoryId::value).orElse(null), target.newPath(), null, target.key(),
+                confidence, proposal.evidence());
+    }
+
+    private static boolean sameFolder(DocumentClassification classification, PlacementTarget target) {
+        return target.isExisting() && classification.categoryId().map(target.folder()::equals).orElse(false);
+    }
+
+    /**
+     * Deterministic resolution (ADR-0005): an existing folder wins by id, then by normalized sibling name along
+     * the proposed path, so a folder created while the run was working is reused instead of a near-duplicate.
+     */
+    private static Optional<PlacementTarget> resolve(PlacementProposal proposal, CategoryTree tree) {
+        if (proposal.folderId() != null) {
+            Optional<PlacementTarget> folder = tree.find(new CategoryId(proposal.folderId()))
+                    .map(found -> PlacementTarget.existing(found.id()));
+            if (folder.isPresent()) {
+                return folder;
+            }
+        }
+        if (proposal.newPath().isEmpty()) {
+            return Optional.empty();
+        }
+        CategoryId anchor = null;
+        if (proposal.anchorFolderId() != null) {
+            // The path was meant for a folder that no longer exists; re-rooting it could file the document
+            // somewhere else entirely, so the proposal ends here.
+            anchor = tree.find(new CategoryId(proposal.anchorFolderId())).map(found -> found.id()).orElse(null);
+            if (anchor == null) {
+                return Optional.empty();
+            }
+        }
+        CategoryTree.PathResolution resolution = tree.resolve(anchor, proposal.newPath());
+        if (resolution.complete()) {
+            return Optional.of(PlacementTarget.existing(resolution.deepest()));
+        }
+        int depth = resolution.deepest() == null ? 0 : tree.depth(resolution.deepest());
+        if (depth + resolution.missing().size() > CategoryTree.MAX_DEPTH) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(PlacementTarget.path(resolution.deepest(), resolution.missing()));
+        } catch (InvalidInputException unusable) {
+            // Unusable folder names (blank, too long, control characters) end the proposal here.
+            return Optional.empty();
+        }
+    }
+
+    /** The documented rule for filing without review; the folder's implied labels must match the document. */
+    private static boolean applies(PlacementProposal proposal, DocumentClassification classification,
+            CategoryId target, CategoryTree tree, LabelVocabulary vocabulary, List<Proposal> labelProposals) {
+        Set<LabelId> effective = new LinkedHashSet<>(classification.effectiveLabelIds());
+        labelProposals.stream().filter(Proposal::apply).forEach(p -> effective.add(p.label().id()));
+        return ClassificationPolicy.placesAutomatically(proposal.doubtful(), proposal.confidence(),
+                proposal.evidenced(), classification.isUnsorted(), classification.placement().byMember(),
+                FolderCatalogs.impliedLabelIds(tree, target, vocabulary), effective);
     }
 
     private CategoryId folder(UUID categoryId) {

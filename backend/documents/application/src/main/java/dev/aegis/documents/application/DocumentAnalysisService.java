@@ -1,6 +1,7 @@
 package dev.aegis.documents.application;
 
 import dev.aegis.documents.application.api.AutomaticClassification;
+import dev.aegis.documents.application.api.CategoryRef;
 import dev.aegis.documents.application.api.ClassificationView;
 import dev.aegis.documents.application.api.DocumentAnalysisCommands;
 import dev.aegis.documents.application.api.AnalysisRecord;
@@ -14,6 +15,7 @@ import dev.aegis.documents.application.api.ContentUnavailableException;
 import dev.aegis.documents.application.ports.ArchiveRejectedException;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
 import dev.aegis.documents.application.ports.CatalogLock;
+import dev.aegis.documents.application.ports.DocumentCatalog;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.DocumentRepository;
@@ -33,6 +35,7 @@ import dev.aegis.documents.domain.analysis.DocumentAnalysis;
 import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
 import dev.aegis.documents.domain.analysis.Evidence;
 import dev.aegis.documents.domain.catalog.CatalogNames;
+import dev.aegis.documents.domain.catalog.CategoryRepository;
 import dev.aegis.documents.domain.catalog.Facet;
 import dev.aegis.documents.domain.catalog.Label;
 import dev.aegis.documents.domain.catalog.LabelId;
@@ -43,6 +46,7 @@ import dev.aegis.documents.domain.classification.ClassificationRepository;
 import dev.aegis.documents.domain.classification.DocumentClassification;
 import dev.aegis.documents.domain.classification.LabelRef;
 import dev.aegis.documents.domain.naming.FriendlyFilename;
+import dev.aegis.documents.domain.placement.PlacementTarget;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
@@ -86,6 +90,8 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
     private final DocumentAnalysisRepository analyses;
     private final ClassificationRepository classifications;
     private final LabelRepository labels;
+    private final CategoryRepository categories;
+    private final DocumentCatalog catalog;
     private final ProposeClassification proposals;
     private final LabelCommands labelCommands;
     private final CatalogLock lock;
@@ -98,14 +104,16 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
     private final Clock clock;
 
     public DocumentAnalysisService(DocumentRepository documents, DocumentAnalysisRepository analyses,
-            ClassificationRepository classifications, LabelRepository labels, ProposeClassification proposals,
-            LabelCommands labelCommands, CatalogLock lock, PaperlessArchive archive, AnalysisRuns runs,
-            ClassificationViews classificationViews, DocumentPresenter presenter, HouseholdAccess access,
-            AnalysisSettings settings, Clock clock) {
+            ClassificationRepository classifications, LabelRepository labels, CategoryRepository categories,
+            DocumentCatalog catalog, ProposeClassification proposals, LabelCommands labelCommands, CatalogLock lock,
+            PaperlessArchive archive, AnalysisRuns runs, ClassificationViews classificationViews,
+            DocumentPresenter presenter, HouseholdAccess access, AnalysisSettings settings, Clock clock) {
         this.documents = documents;
         this.analyses = analyses;
         this.classifications = classifications;
         this.labels = labels;
+        this.categories = categories;
+        this.catalog = catalog;
         this.proposals = proposals;
         this.labelCommands = labelCommands;
         this.lock = lock;
@@ -311,14 +319,20 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         String text = ocrText(document);
         boolean truncated = text.length() > settings.maxTextChars();
         ClassificationView classification = classificationViews.viewOf(id);
-        List<VocabularyEntry> vocabulary = labels.load().all().stream()
+        LabelVocabulary loaded = labels.load();
+        List<VocabularyEntry> vocabulary = loaded.all().stream()
                 .filter(label -> CLASSIFIER_FACETS.contains(label.facet()) && label.status() == LabelStatus.ACTIVE)
                 .map(label -> new VocabularyEntry(label.id().value(), label.facet().name(),
                         label.builtinKey().orElse(null), label.name().orElse(null), List.copyOf(label.aliases())))
                 .toList();
+        // Trusted catalog context: the folder tree with its implied values, deterministically ordered and bounded.
+        FolderCatalog folders = FolderCatalogs.build(categories.load(), loaded, catalog.documentsPerCategory(),
+                settings.maxCatalogFolders());
+        List<String> currentFolder = classification.path().stream().map(CategoryRef::name).toList();
         return new Input(id, generation, classification.version(), document.title(), document.titleOrigin().name(),
                 document.originalFilename(), truncated ? text.substring(0, settings.maxTextChars()) : text,
-                truncated, vocabulary, classification.labels(), Subjects.toViews(document.subjects()));
+                truncated, vocabulary, folders, currentFolder, classification.labels(),
+                Subjects.toViews(document.subjects()));
     }
 
     @Override
@@ -387,7 +401,8 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
                 new DateDecision(date.value() == null ? null : date.value().toString(), date.evidence(),
                         date.status().name()),
                 clean(proposal.shortTopic(), DocumentAnalysis.MAX_SHORT_TOPIC),
-                flags.stream().map(Enum::name).sorted().toList(), List.copyOf(candidates.values()), subjects);
+                flags.stream().map(Enum::name).sorted().toList(), List.copyOf(candidates.values()), subjects,
+                placement(proposal.placement(), text));
     }
 
     /** Resolves one claim to a vocabulary decision, or records an unknown name as a candidate. */
@@ -430,6 +445,35 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         return null;
     }
 
+    /**
+     * Checks a proposed placement against the document text and the shape rules: usable folder names, at most
+     * {@link PlacementTarget#MAX_NEW_FOLDERS} new folders and a quote that is really in the text. Whether it is
+     * applied or only suggested is decided when it is applied, against the folder tree of that moment.
+     */
+    private static PlacementDecision placement(PlacementClaim claim, String text) {
+        if (claim == null || claim.folderId() == null && claim.newPath().isEmpty()) {
+            return null;
+        }
+        List<String> path = new ArrayList<>();
+        for (String segment : claim.newPath()) {
+            String name = clean(segment, CatalogNames.MAX_LENGTH);
+            if (name == null) {
+                // A path with an unusable segment is not a path; only a named folder can still carry it.
+                path = List.of();
+                break;
+            }
+            if (path.size() < PlacementTarget.MAX_NEW_FOLDERS) {
+                path.add(name);
+            }
+        }
+        if (claim.folderId() == null && path.isEmpty()) {
+            return null;
+        }
+        return new PlacementDecision(claim.folderId(), claim.anchorFolderId(), path,
+                confidence(claim.confidence()), clean(claim.evidence(), Evidence.MAX_QUOTE),
+                Evidence.quoted(claim.evidence(), text));
+    }
+
     @Override
     public Applied apply(Actor actor, Assessment assessment, String runRef, String model) {
         access.requireMember(actor);
@@ -446,11 +490,12 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
                 .map(decision -> new ProposeClassification.LabelProposal(decision.labelId(), decision.confidence(),
                         decision.apply()))
                 .toList();
-        ProposeClassification.ProposalOutcome labelOutcome = proposals.propose(actor,
-                new ProposeClassification.ProposalCommand(id, assessment.classificationVersion(), runRef,
-                        labelProposals));
         Set<Flag> flags = EnumSet.noneOf(Flag.class);
         assessment.flags().forEach(flag -> flags.add(Flag.valueOf(flag)));
+        // Labels and the folder placement of this run are applied in one transaction on one classification version.
+        ProposeClassification.ProposalOutcome labelOutcome = proposals.propose(actor,
+                new ProposeClassification.ProposalCommand(id, assessment.classificationVersion(), runRef,
+                        labelProposals, placementProposal(assessment, flags, model)));
         String titleBefore = document.title();
         Decision titleDecision = null;
         if (assessment.title() != null && !assessment.title().equals(document.title())) {
@@ -484,10 +529,24 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
                 assessment.correspondentLabelId() == null ? null : new LabelId(assessment.correspondentLabelId()),
                 flags, candidates, subjects, labelOutcome.applied(), labelOutcome.suggested()));
         analyses.save(analysis);
+        ProposeClassification.PlacementResult placement = labelOutcome.placement();
+        boolean moved = placement != null && placement.applied();
         int pending = labelOutcome.suggested() + (titleDecision == Decision.SUGGESTED ? 1 : 0) + candidates.size()
-                + subjects.size();
+                + subjects.size() + (placement != null && !placement.applied() ? 1 : 0);
         return new Applied(labelOutcome.applied(), labelOutcome.suggested(), titleDecision == Decision.APPLIED,
-                pending);
+                moved, pending);
+    }
+
+    /** The assessed placement as a proposal for the classification transaction, with the run's provenance. */
+    private static ProposeClassification.PlacementProposal placementProposal(Assessment assessment, Set<Flag> flags,
+            String model) {
+        PlacementDecision decision = assessment.placement();
+        if (decision == null) {
+            return null;
+        }
+        return new ProposeClassification.PlacementProposal(decision.folderId(), decision.anchorFolderId(),
+                decision.newPath(), decision.confidence(), decision.evidence(), decision.evidenced(),
+                ClassificationPolicy.doubtful(flags), assessment.generation(), model);
     }
 
     // Restore -------------------------------------------------------------------------------------------------------

@@ -15,6 +15,7 @@ import dev.aegis.documents.application.CatalogImportService;
 import dev.aegis.documents.application.CatalogQueryService;
 import dev.aegis.documents.application.CategoryService;
 import dev.aegis.documents.application.ClassificationService;
+import dev.aegis.documents.application.PlacementService;
 import dev.aegis.documents.application.ClassificationViews;
 import dev.aegis.documents.application.DocumentQueryService;
 import dev.aegis.documents.application.LabelService;
@@ -24,6 +25,7 @@ import dev.aegis.documents.application.RegisterReceivedDocument;
 import dev.aegis.documents.application.api.CatalogQueries;
 import dev.aegis.documents.application.api.CategoryCommands;
 import dev.aegis.documents.application.api.ClassificationCommands;
+import dev.aegis.documents.application.api.PlacementCommands;
 import dev.aegis.documents.application.api.DocumentCommands;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentQueries;
@@ -44,6 +46,7 @@ import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.catalog.CategoryRepository;
 import dev.aegis.documents.domain.catalog.LabelRepository;
 import dev.aegis.documents.domain.classification.ClassificationRepository;
+import dev.aegis.documents.domain.placement.PlacementSuggestionRepository;
 import dev.aegis.identity.application.HouseholdAccessPolicy;
 import dev.aegis.identity.application.MemberService;
 import dev.aegis.identity.application.api.MemberCredentialsQuery;
@@ -144,8 +147,8 @@ public class UseCaseConfiguration {
 
     @Bean
     ClassificationViews classificationViews(ClassificationRepository classifications, CategoryRepository categories,
-            LabelRepository labels) {
-        return new ClassificationViews(classifications, categories, labels);
+            LabelRepository labels, PlacementSuggestionRepository placements) {
+        return new ClassificationViews(classifications, categories, labels, placements);
     }
 
     @Bean
@@ -170,12 +173,13 @@ public class UseCaseConfiguration {
             DocumentPresenter presenter, HouseholdAccess access, ArchivalSettings settings, Clock clock,
             DocumentRepository documents, PaperlessArchive archive, DocumentCatalog catalog,
             CategoryRepository categories, LabelRepository labels, ClassificationRepository classifications,
-            ClassificationViews views, DocumentAnalysisRepository analyses, AnalysisSettings analysisSettings) {
+            ClassificationViews views, PlacementSuggestionRepository placements,
+            DocumentAnalysisRepository analyses, AnalysisSettings analysisSettings) {
         return new DocumentServices(
                 new DocumentCaptureService(store, registrar, presenter, categories, access, settings,
                         analysisSettings, clock),
                 new DocumentQueryService(documents, archive, store, presenter, catalog, categories, labels,
-                        classifications, views, analyses, analysisSettings, access, clock));
+                        classifications, views, placements, analyses, analysisSettings, access, clock));
     }
 
     @Bean
@@ -206,10 +210,21 @@ public class UseCaseConfiguration {
 
     @Bean
     ClassificationServices classificationServices(ClassificationRepository classifications,
-            DocumentRepository documents, CategoryRepository categories, LabelRepository labels, CatalogLock lock,
-            DocumentPresenter presenter, HouseholdAccess access, Clock clock) {
+            DocumentRepository documents, CategoryRepository categories, LabelRepository labels,
+            PlacementSuggestionRepository placements, CatalogLock lock, DocumentPresenter presenter,
+            HouseholdAccess access, Clock clock) {
         return new ClassificationServices(new ClassificationService(classifications, documents, categories, labels,
-                lock, presenter, access, clock));
+                placements, lock, presenter, access, clock));
+    }
+
+    /** Member decisions about proposed folder placements (issue #67); accepting creates folders and moves. */
+    @Bean
+    PlacementCommands placementCommands(ClassificationRepository classifications,
+            PlacementSuggestionRepository placements, CategoryRepository categories, LabelRepository labels,
+            DocumentRepository documents, CatalogLock lock, DocumentPresenter presenter, HouseholdAccess access,
+            Clock clock, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(PlacementCommands.class, new PlacementService(classifications, placements,
+                categories, labels, documents, lock, presenter, access, clock), tm);
     }
 
     @Bean
@@ -226,10 +241,11 @@ public class UseCaseConfiguration {
 
     @Bean
     ImportCatalog importCatalog(LabelRepository labels, CategoryRepository categories,
-            ClassificationRepository classifications, DocumentRepository documents, CatalogLock lock,
-            HouseholdAccess access, Clock clock, PlatformTransactionManager tm) {
+            ClassificationRepository classifications, PlacementSuggestionRepository placements,
+            DocumentRepository documents, CatalogLock lock, HouseholdAccess access, Clock clock,
+            PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ImportCatalog.class, new CatalogImportService(labels, categories,
-                classifications, documents, lock, access, clock), tm);
+                classifications, placements, documents, lock, access, clock), tm);
     }
 
     @Bean

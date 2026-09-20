@@ -113,7 +113,8 @@ class RestoreIT extends PostgresIT {
         assertThat(Files.isRegularFile(Path.of(export.location()).resolve("manifest.json"))).isTrue();
 
         // Wipe household data (members stay, like a fresh instance provisioned with the same usernames).
-        jdbc.execute("TRUNCATE TABLE scheduled_tasks, notices, tasks, document_labels, document_classifications, "
+        jdbc.execute("TRUNCATE TABLE scheduled_tasks, notices, tasks, document_labels, "
+                + "document_placement_suggestions, document_placement_rejections, document_classifications, "
                 + "document_analyses, document_subjects, documents");
         jdbc.execute("DELETE FROM category_label_effects");
         jdbc.execute("DELETE FROM category_subject_effects");
