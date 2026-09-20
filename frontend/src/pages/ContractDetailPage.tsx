@@ -235,6 +235,7 @@ export function ContractDetailPage() {
                     key={fact.id}
                     fact={fact}
                     facts={contract.facts}
+                    basedOn={contract.deadline.basedOn}
                     busy={busy}
                     onConfirm={(target) =>
                       void run(() =>

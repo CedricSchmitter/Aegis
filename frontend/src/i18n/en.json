@@ -326,7 +326,7 @@
       "provenanceHint": "Only give a page or a quote when the document really states it there.",
       "note": "Note (optional)",
       "noteLabel": "Note:",
-      "effective": "In effect now",
+      "usedForDeadline": "Used for the calculated deadline",
       "observedLabel": "Stated:",
       "observedManual": "by {{name}} on {{date}}",
       "observedAutomatic": "by an extraction run on {{date}}",

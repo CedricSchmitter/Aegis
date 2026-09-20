@@ -34,6 +34,8 @@ interface Props {
   fact: ContractFactDto;
   /** All observations of the contract, so a correction can name the fact it replaces. */
   facts: ContractFactDto[];
+  /** Fact ids the calculated deadline rests on, as the backend resolved them for the evaluation day. */
+  basedOn: string[];
   busy: boolean;
   onConfirm(fact: ContractFactDto): void;
   onReject(fact: ContractFactDto): void;
@@ -45,7 +47,7 @@ interface Props {
  * who said it and where it was read. Provenance is shown exactly as far as it was stored — a page appears only
  * when the source really states one.
  */
-export function ContractFactCard({ fact, facts, busy, onConfirm, onReject, onCorrect }: Props) {
+export function ContractFactCard({ fact, facts, basedOn, busy, onConfirm, onReject, onCorrect }: Props) {
   const { t, i18n } = useTranslation();
   const { memberName } = useSession();
   const [correcting, setCorrecting] = useState(false);
@@ -70,9 +72,10 @@ export function ContractFactCard({ fact, facts, busy, onConfirm, onReject, onCor
         </div>
         <div className="flex flex-col items-end gap-1">
           <Badge state={fact.reviewState} label={t(`contracts.reviewState.${fact.reviewState}`)} />
-          {fact.effective && (
+          {/* Which statements hold on a given day is the backend's resolution, never one the UI re-derives. */}
+          {basedOn.includes(fact.id) && (
             <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
-              {t("contracts.fact.effective")}
+              {t("contracts.fact.usedForDeadline")}
             </span>
           )}
         </div>

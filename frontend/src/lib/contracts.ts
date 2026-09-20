@@ -136,7 +136,6 @@ const STATE_RANK: Record<string, number> = { CONFIRMED: 0, EXTRACTED: 1, REJECTE
 /** Facts of one type, newest validity first, so an amendment reads above the period it amends. */
 export function sortFacts(facts: ContractFactDto[]): ContractFactDto[] {
   return [...facts].sort((a, b) => {
-    if (a.effective !== b.effective) return a.effective ? -1 : 1;
     const rank = (STATE_RANK[a.reviewState] ?? 9) - (STATE_RANK[b.reviewState] ?? 9);
     if (rank !== 0) return rank;
     const validity = (b.validFrom ?? "").localeCompare(a.validFrom ?? "");

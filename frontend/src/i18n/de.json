@@ -326,7 +326,7 @@
       "provenanceHint": "Seite oder Zitat nur angeben, wenn das Dokument es dort wirklich so sagt.",
       "note": "Notiz (optional)",
       "noteLabel": "Notiz:",
-      "effective": "Gilt aktuell",
+      "usedForDeadline": "Für den berechneten Termin verwendet",
       "observedLabel": "Angegeben:",
       "observedManual": "von {{name}} am {{date}}",
       "observedAutomatic": "von einem Auswertungslauf am {{date}}",

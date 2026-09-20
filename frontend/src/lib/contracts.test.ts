@@ -119,10 +119,10 @@ describe("contract fact validity and history", () => {
     expect(isHistory(fact({ reviewState: "CONFIRMED" }))).toBe(false);
   });
 
-  it("puts what holds now first and keeps the superseded observation readable below it", () => {
-    const correction = fact({ id: "new", value: "2029-01-01", effective: true, corrects: "old" });
-    const corrected = fact({ id: "old", reviewState: "SUPERSEDED", effective: false, supersededBy: "new" });
-    const proposal = fact({ id: "proposed", reviewState: "EXTRACTED", origin: "AUTOMATIC", effective: false });
+  it("puts confirmed statements first and keeps the superseded observation readable below them", () => {
+    const correction = fact({ id: "new", value: "2029-01-01", corrects: "old" });
+    const corrected = fact({ id: "old", reviewState: "SUPERSEDED", supersededBy: "new" });
+    const proposal = fact({ id: "proposed", reviewState: "EXTRACTED", origin: "AUTOMATIC" });
 
     expect(sortFacts([corrected, proposal, correction]).map((entry) => entry.id)).toEqual([
       "new",
@@ -132,10 +132,25 @@ describe("contract fact validity and history", () => {
   });
 
   it("orders an amendment above the period it amends", () => {
-    const amendment = fact({ id: "amendment", validFrom: "2027-01-01", effective: false });
-    const original = fact({ id: "original", validFrom: "2025-01-01", effective: false });
+    const amendment = fact({ id: "amendment", validFrom: "2027-01-01" });
+    const original = fact({ id: "original", validFrom: "2025-01-01" });
 
     expect(sortFacts([original, amendment]).map((entry) => entry.id)).toEqual(["amendment", "original"]);
+  });
+
+  /**
+   * `effective` on a fact means "confirmed", not "in force on the evaluation day". Which statement holds on a
+   * day is the backend's resolution, so the order must not depend on that flag.
+   */
+  it("does not treat the confirmed flag as an answer about which statement holds today", () => {
+    const later = fact({ id: "later", validFrom: "2027-01-01", effective: true });
+    const earlier = fact({ id: "earlier", validFrom: "2025-01-01", effective: true });
+
+    expect(sortFacts([earlier, later]).map((entry) => entry.id)).toEqual(["later", "earlier"]);
+    expect(sortFacts([{ ...earlier, effective: false }, later]).map((entry) => entry.id)).toEqual([
+      "later",
+      "earlier",
+    ]);
   });
 
   it("groups facts in display order and keeps an unknown type in its own group", () => {
