@@ -1292,6 +1292,18 @@ export interface components {
             expectedVersion: number;
             key: string;
         };
+        CancellationReviewDto: {
+            /** Format: date */
+            cancellationDeadline: string;
+            /** Format: date */
+            contractEnd?: string | null;
+            contractId: string;
+            contractName: string;
+            /** Format: int64 */
+            contractVersion: number;
+            /** Format: date */
+            reminderDate: string;
+        };
         CandidateDto: {
             /** Format: double */
             confidence?: number | null;
@@ -1920,6 +1932,7 @@ export interface components {
             integrations: components["schemas"]["IntegrationStatusDto"][];
         };
         TaskDto: {
+            cancellationReview?: components["schemas"]["CancellationReviewDto"];
             /** Format: date-time */
             completedAt?: string | null;
             completedBy?: string | null;

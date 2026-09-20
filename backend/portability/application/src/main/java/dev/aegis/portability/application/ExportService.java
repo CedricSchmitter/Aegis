@@ -144,7 +144,9 @@ public class ExportService implements CreateExport, ExportQueries {
             taskEntries.add(new TaskEntry(record.id().toString(), record.title(), record.note(),
                     text(record.ownerId()), record.status(), text(record.dueDate()), text(record.plannedDate()),
                     text(record.sourceDocumentId()), record.createdBy().toString(), record.createdAt(),
-                    record.updatedAt(), record.completedAt(), text(record.completedBy())));
+                    record.updatedAt(), record.completedAt(), text(record.completedBy()), text(record.contractId()),
+                    record.contractName(), text(record.contractEnd()), text(record.cancellationDeadline()),
+                    text(record.reminderDate()), record.contractVersion()));
         }
 
         List<ContractEntry> contractEntries = new ArrayList<>();
@@ -347,10 +349,13 @@ public class ExportService implements CreateExport, ExportQueries {
                     : memberNames.getOrDefault(t.ownerId(), t.ownerId()), t.status(), nz(t.dueDate()),
                     nz(t.plannedDate()), nz(t.sourceDocumentId()),
                     t.sourceDocumentId() == null ? "" : titles.getOrDefault(t.sourceDocumentId(), ""),
-                    t.createdAt().toString(), t.completedAt() == null ? "" : t.completedAt().toString()));
+                    t.createdAt().toString(), t.completedAt() == null ? "" : t.completedAt().toString(),
+                    nz(t.contractId()), nz(t.contractName()), nz(t.contractEnd()), nz(t.cancellationDeadline()),
+                    nz(t.reminderDate())));
         }
         return Csv.render(List.of("id", "title", "note", "owner", "status", "dueDate", "plannedDate",
-                "sourceDocumentId", "sourceDocumentTitle", "createdAt", "completedAt"), rows);
+                "sourceDocumentId", "sourceDocumentTitle", "createdAt", "completedAt", "contractId",
+                "contractName", "contractEnd", "cancellationDeadline", "reminderDate"), rows);
     }
 
     private static String index(String generation, Instant now, List<DocumentEntry> documents,

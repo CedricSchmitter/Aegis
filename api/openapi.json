@@ -308,6 +308,34 @@
         "required" : [ "accept", "expectedVersion", "key" ],
         "type" : "object"
       },
+      "CancellationReviewDto" : {
+        "properties" : {
+          "cancellationDeadline" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "contractEnd" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "contractId" : {
+            "type" : "string"
+          },
+          "contractName" : {
+            "type" : "string"
+          },
+          "contractVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reminderDate" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "cancellationDeadline", "contractId", "contractName", "contractVersion", "reminderDate" ],
+        "type" : "object"
+      },
       "CandidateDto" : {
         "properties" : {
           "confidence" : {
@@ -2030,6 +2058,10 @@
       },
       "TaskDto" : {
         "properties" : {
+          "cancellationReview" : {
+            "$ref" : "#/components/schemas/CancellationReviewDto",
+            "type" : "null"
+          },
           "completedAt" : {
             "format" : "date-time",
             "type" : [ "string", "null" ]

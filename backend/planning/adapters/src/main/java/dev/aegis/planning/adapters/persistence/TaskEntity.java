@@ -37,6 +37,27 @@ public class TaskEntity {
     @Column(name = "source_document_id")
     private UUID sourceDocumentId;
 
+    @Column(name = "automation_kind", length = 40)
+    private String automationKind;
+
+    @Column(name = "contract_id")
+    private UUID contractId;
+
+    @Column(name = "contract_name", length = 200)
+    private String contractName;
+
+    @Column(name = "contract_end")
+    private LocalDate contractEnd;
+
+    @Column(name = "cancellation_deadline")
+    private LocalDate cancellationDeadline;
+
+    @Column(name = "reminder_date")
+    private LocalDate reminderDate;
+
+    @Column(name = "contract_version")
+    private Long contractVersion;
+
     @Column(name = "created_by", nullable = false)
     private UUID createdBy;
 
@@ -121,6 +142,21 @@ public class TaskEntity {
     void setSourceDocumentId(UUID sourceDocumentId) {
         this.sourceDocumentId = sourceDocumentId;
     }
+
+    String getAutomationKind() { return automationKind; }
+    void setAutomationKind(String automationKind) { this.automationKind = automationKind; }
+    UUID getContractId() { return contractId; }
+    void setContractId(UUID contractId) { this.contractId = contractId; }
+    String getContractName() { return contractName; }
+    void setContractName(String contractName) { this.contractName = contractName; }
+    LocalDate getContractEnd() { return contractEnd; }
+    void setContractEnd(LocalDate contractEnd) { this.contractEnd = contractEnd; }
+    LocalDate getCancellationDeadline() { return cancellationDeadline; }
+    void setCancellationDeadline(LocalDate cancellationDeadline) { this.cancellationDeadline = cancellationDeadline; }
+    LocalDate getReminderDate() { return reminderDate; }
+    void setReminderDate(LocalDate reminderDate) { this.reminderDate = reminderDate; }
+    Long getContractVersion() { return contractVersion; }
+    void setContractVersion(Long contractVersion) { this.contractVersion = contractVersion; }
 
     UUID getCreatedBy() {
         return createdBy;

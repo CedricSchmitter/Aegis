@@ -15,8 +15,8 @@ import java.util.Set;
  * restore without the newer parts.
  */
 public final class ExportFormat {
-    public static final int SCHEMA_VERSION = 5;
-    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5);
+    public static final int SCHEMA_VERSION = 6;
+    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5, 6);
     public static final String MANIFEST = "manifest.json";
     public static final String DOCUMENTS_JSON = "data/documents.json";
     public static final String TASKS_JSON = "data/tasks.json";
@@ -104,7 +104,8 @@ public final class ExportFormat {
 
     public record TaskEntry(String id, String title, String note, String ownerId, String status, String dueDate,
             String plannedDate, String sourceDocumentId, String createdBy, Instant createdAt, Instant updatedAt,
-            Instant completedAt, String completedBy) {
+            Instant completedAt, String completedBy, String contractId, String contractName, String contractEnd,
+            String cancellationDeadline, String reminderDate, Long contractVersion) {
     }
 
     public record MemberEntry(String id, String username, String displayName, String locale, boolean active) {

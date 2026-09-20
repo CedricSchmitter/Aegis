@@ -1,6 +1,7 @@
 package dev.aegis.planning.domain;
 
 import dev.aegis.shared.DocumentId;
+import dev.aegis.shared.ContractId;
 import dev.aegis.shared.TaskId;
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +16,9 @@ public interface TaskRepository {
     List<Task> findOpen();
 
     List<Task> findBySourceDocument(DocumentId documentId);
+
+    /** Automatic cancellation-review occurrences for one contract, including completed and superseded work. */
+    List<Task> findCancellationReviews(ContractId contractId);
 
     /**
      * Persists the aggregate.

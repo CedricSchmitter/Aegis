@@ -7,6 +7,7 @@ import dev.aegis.planning.application.api.TaskExportRecord;
 import dev.aegis.planning.application.api.TaskSummary;
 import dev.aegis.planning.application.ports.PlanningEvents;
 import dev.aegis.planning.domain.Task;
+import dev.aegis.planning.domain.CancellationReview;
 import dev.aegis.planning.domain.TaskRepository;
 import dev.aegis.planning.domain.TaskSource;
 import dev.aegis.planning.domain.TaskStatus;
@@ -133,8 +134,11 @@ public class TaskCommandService implements TaskCommands, ImportTask {
             throw new InvalidInputException("task.status.invalid", "Unknown task status " + record.status());
         }
         TaskSource source = record.sourceDocumentId() == null ? null : new TaskSource(record.sourceDocumentId());
+        CancellationReview cancellation = record.contractId() == null ? null : new CancellationReview(
+                record.contractId(), record.contractName(), record.contractEnd(), record.cancellationDeadline(),
+                record.reminderDate(), record.contractVersion());
         Task task = Task.rehydrate(record.id(), record.title(), record.note(), record.ownerId(), status,
-                record.dueDate(), record.plannedDate(), source,
+                record.dueDate(), record.plannedDate(), source, cancellation,
                 record.createdBy() == null ? actor.memberId() : record.createdBy(),
                 record.createdAt() == null ? clock.instant() : record.createdAt(), record.updatedAt(),
                 record.completedAt(), record.completedBy(), 0);

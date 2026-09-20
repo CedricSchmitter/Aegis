@@ -23,7 +23,8 @@ public final class Task {
     private TaskStatus status;
     private LocalDate dueDate;
     private LocalDate plannedDate;
-    private final TaskSource source;
+    private TaskSource source;
+    private CancellationReview cancellationReview;
     private final MemberId createdBy;
     private final Instant createdAt;
     private Instant updatedAt;
@@ -51,12 +52,28 @@ public final class Task {
         return new Task(TaskId.random(), title, note, owner, dueDate, plannedDate, source, createdBy, now);
     }
 
+    public static Task createCancellationReview(TaskId id, String title, LocalDate dueDate, TaskSource source,
+            CancellationReview review, MemberId createdBy, Instant now) {
+        Task task = new Task(id, title, "", null, dueDate, null, source, createdBy, now);
+        task.cancellationReview = Objects.requireNonNull(review);
+        return task;
+    }
+
     /** Rehydration from persistence or import; no business validation beyond construction. */
     public static Task rehydrate(TaskId id, String title, String note, MemberId owner, TaskStatus status,
             LocalDate dueDate, LocalDate plannedDate, TaskSource source, MemberId createdBy, Instant createdAt,
             Instant updatedAt, Instant completedAt, MemberId completedBy, long version) {
+        return rehydrate(id, title, note, owner, status, dueDate, plannedDate, source, null, createdBy, createdAt,
+                updatedAt, completedAt, completedBy, version);
+    }
+
+    public static Task rehydrate(TaskId id, String title, String note, MemberId owner, TaskStatus status,
+            LocalDate dueDate, LocalDate plannedDate, TaskSource source, CancellationReview cancellationReview,
+            MemberId createdBy, Instant createdAt, Instant updatedAt, Instant completedAt, MemberId completedBy,
+            long version) {
         Task task = new Task(id, title, note, owner, dueDate, plannedDate, source, createdBy, createdAt);
         task.status = Objects.requireNonNull(status);
+        task.cancellationReview = cancellationReview;
         task.updatedAt = updatedAt == null ? createdAt : updatedAt;
         task.completedAt = completedAt;
         task.completedBy = completedBy;
@@ -84,12 +101,40 @@ public final class Task {
 
     /** Explicit deadline change, a separate decision from planning work. */
     public void changeDueDate(LocalDate newDueDate, Instant now) {
+        if (cancellationReview != null) {
+            throw new InvalidInputException("task.contractDeadline.managed",
+                    "A cancellation review due date follows the confirmed contract deadline");
+        }
         this.dueDate = newDueDate;
         touch(now);
     }
 
+    /** Refreshes only contract-owned fields; member edits, owner and planned work date remain untouched. */
+    public void reconcileCancellationReview(CancellationReview review, TaskSource source, Instant now) {
+        if (cancellationReview == null || !cancellationReview.contractId().equals(review.contractId())
+                || !cancellationReview.cancellationDeadline().equals(review.cancellationDeadline())) {
+            throw new InvalidInputException("task.contractDeadline.occurrence",
+                    "Cancellation review occurrence does not match");
+        }
+        if (title.equals(cancellationReview.contractName())) {
+            title = review.contractName();
+        }
+        this.cancellationReview = Objects.requireNonNull(review);
+        this.dueDate = review.cancellationDeadline();
+        this.source = source;
+        touch(now);
+    }
+
+    /** Supersedes unresolved automatic work without rewriting a member's completion decision. */
+    public void cancelAutomatic(Instant now) {
+        if (cancellationReview != null && status == TaskStatus.OPEN) {
+            status = TaskStatus.CANCELLED;
+            touch(now);
+        }
+    }
+
     public void complete(MemberId by, Instant now) {
-        if (status == TaskStatus.DONE) {
+        if (status != TaskStatus.OPEN) {
             throw new InvalidInputException("task.alreadyDone", "Task is already completed");
         }
         this.status = TaskStatus.DONE;
@@ -99,7 +144,7 @@ public final class Task {
     }
 
     public void reopen(Instant now) {
-        if (status == TaskStatus.OPEN) {
+        if (status != TaskStatus.DONE) {
             throw new InvalidInputException("task.notDone", "Task is not completed");
         }
         this.status = TaskStatus.OPEN;
@@ -162,6 +207,10 @@ public final class Task {
 
     public Optional<TaskSource> source() {
         return Optional.ofNullable(source);
+    }
+
+    public Optional<CancellationReview> cancellationReview() {
+        return Optional.ofNullable(cancellationReview);
     }
 
     public MemberId createdBy() {

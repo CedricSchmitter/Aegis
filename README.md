@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions) , [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames) [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths) and [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (the starting folder tree as a tracked seed).
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts) and [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
@@ -105,8 +105,13 @@ it effective, and an amendment takes over from its own start date while the orig
 calculated from confirmed rules only - a stated deadline, or the contract end minus the confirmed notice period -
 and are published for other contexts through the contracts application contract. The contracts screen shows each
 observation with its provenance, the superseded history of a corrected value, reported conflicts and either the
-deadline with the rule it rests on or what is missing to calculate one; automatic extraction (#23/#24) and the
-resulting tasks and reminders (#63) are separate issues.
+deadline with the rule it rests on or what is missing to calculate one; automatic extraction (#23/#24) remains a
+separate issue. Each confirmed cancellation deadline creates one source-linked review task with the contractual
+deadline as its due date. It enters Today seven days beforehand and publishes one durable, deduplicated in-app
+reminder to each active household member, including after downtime or late entry. Corrections create a distinct
+occurrence while preserving member edits and completion; resolved contracts supersede only open automatic work
+([ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md)). This deterministic flow
+does not use AI, a calendar or phone push.
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a

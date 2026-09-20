@@ -140,7 +140,8 @@ class ExportServiceTest {
             }
         };
         TaskExportQuery tasks = actor -> List.of(new TaskExportRecord(TaskId.random(), "Kündigen", "", anna, "OPEN",
-                LocalDate.of(2026, 12, 31), null, contract, anna, NOW, NOW, null, null));
+                LocalDate.of(2026, 12, 31), null, contract, anna, NOW, NOW, null, null,
+                null, null, null, null, null, null));
         ContractExportQuery contracts = actor -> List.of(new ContractExportRecord(rental, "Mietvertrag",
                 "ACTIVE", anna, NOW, NOW, List.of(
                         new FactExportRecord(endDateFact, "END_DATE", "DATE", "2028-01-01", null, null,

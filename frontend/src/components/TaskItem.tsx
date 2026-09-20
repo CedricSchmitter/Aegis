@@ -48,13 +48,20 @@ export function TaskItem({ task, onChange, detailed = false }: Props) {
 
   const overdue = task.status === "OPEN" && !!task.dueDate && task.dueDate < todayIso();
   const owner = memberName(task.ownerId);
+  const cancellation = task.cancellationReview;
+  const displayTitle = cancellation && task.title === cancellation.contractName
+    ? t("tasks.cancellation.title", { name: cancellation.contractName })
+    : task.title;
+  const remainingDays = cancellation
+    ? Math.round((Date.parse(`${cancellation.cancellationDeadline}T00:00:00Z`) - Date.parse(`${todayIso()}T00:00:00Z`)) / 86_400_000)
+    : null;
 
   return (
     <article className="card flex flex-col gap-2" data-testid="task-item" data-task-id={task.id}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="font-semibold">
-            {detailed ? task.title : <Link to={`/tasks/${task.id}`} className="hover:underline">{task.title}</Link>}
+            {detailed ? displayTitle : <Link to={`/tasks/${task.id}`} className="hover:underline">{displayTitle}</Link>}
           </h3>
           <p className="text-sm text-stone-600 dark:text-stone-400">
             {owner ? t("tasks.ownerLabel", { name: owner }) : t("tasks.nobody")}
@@ -76,6 +83,21 @@ export function TaskItem({ task, onChange, detailed = false }: Props) {
                 {task.source.documentTitle ? t("tasks.source", { title: task.source.documentTitle }) : t("tasks.sourceMissing")}
               </Link>
             </p>
+          )}
+          {cancellation && (
+            <div className="mt-2 text-sm" data-testid="cancellation-review-details">
+              {cancellation.contractEnd && <p>{t("tasks.cancellation.contractEnd", { date: formatDate(cancellation.contractEnd, i18n.language) })}</p>}
+              <p>{t("tasks.cancellation.deadline", { date: formatDate(cancellation.cancellationDeadline, i18n.language) })}</p>
+              <p>
+                {remainingDays != null && remainingDays < 0
+                  ? t("tasks.cancellation.overdue", { count: Math.abs(remainingDays) })
+                  : t("tasks.cancellation.remaining", { count: remainingDays })}
+              </p>
+              <Link to={`/contracts/${cancellation.contractId}`} className="text-sky-800 hover:underline dark:text-sky-300">
+                {t("tasks.cancellation.openContract")}
+              </Link>
+              {detailed && <p className="mt-1 text-xs text-stone-500">{t("tasks.cancellation.completionHint")}</p>}
+            </div>
           )}
           {detailed && task.note && <p className="mt-1 whitespace-pre-wrap text-sm">{task.note}</p>}
           {task.status === "DONE" && (
@@ -111,7 +133,7 @@ export function TaskItem({ task, onChange, detailed = false }: Props) {
           >
             {t("tasks.complete")}
           </button>
-        ) : (
+        ) : task.status === "DONE" ? (
           <button
             type="button"
             className="btn-secondary"
@@ -122,7 +144,7 @@ export function TaskItem({ task, onChange, detailed = false }: Props) {
           >
             {t("tasks.reopen")}
           </button>
-        )}
+        ) : null}
         {task.status === "OPEN" && (
           <>
             <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("assign"); setDraft(task.ownerId ?? ""); }} data-testid="task-assign">
@@ -131,9 +153,11 @@ export function TaskItem({ task, onChange, detailed = false }: Props) {
             <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("plan"); setDraft(task.plannedDate ?? ""); }} data-testid="task-plan">
               {t("tasks.plan")}
             </button>
-            <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("due"); setDraft(task.dueDate ?? ""); }}>
-              {t("tasks.changeDue")}
-            </button>
+            {!cancellation && (
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("due"); setDraft(task.dueDate ?? ""); }}>
+                {t("tasks.changeDue")}
+              </button>
+            )}
             {detailed && (
               <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("edit"); setDraft(task.title); setDraftNote(task.note ?? ""); }}>
                 {t("tasks.edit")}

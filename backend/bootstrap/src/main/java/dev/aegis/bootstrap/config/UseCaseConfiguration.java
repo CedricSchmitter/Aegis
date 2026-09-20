@@ -9,6 +9,7 @@ import dev.aegis.contracts.application.api.ContractExportQuery;
 import dev.aegis.contracts.application.api.ContractQueries;
 import dev.aegis.contracts.application.api.ImportContract;
 import dev.aegis.contracts.application.api.RecordContractObservation;
+import dev.aegis.contracts.application.api.ContractReconciliationScheduler;
 import dev.aegis.contracts.domain.ContractRepository;
 import dev.aegis.documents.application.AnalysisSettings;
 import dev.aegis.documents.application.AnalysisTrigger;
@@ -74,13 +75,17 @@ import dev.aegis.operations.application.api.SystemStatusQuery;
 import dev.aegis.operations.application.ports.IntegrationStatusSource;
 import dev.aegis.operations.application.ports.ProcessingOverviewSource;
 import dev.aegis.planning.application.TaskCommandService;
+import dev.aegis.planning.application.CancellationDeadlineService;
 import dev.aegis.planning.application.TaskPresenter;
 import dev.aegis.planning.application.TaskQueryService;
 import dev.aegis.planning.application.api.ImportTask;
+import dev.aegis.planning.application.api.CancellationDeadlineReconciliation;
+import dev.aegis.planning.application.api.CancellationReminderPublication;
 import dev.aegis.planning.application.api.TaskCommands;
 import dev.aegis.planning.application.api.TaskExportQuery;
 import dev.aegis.planning.application.api.TaskQueries;
 import dev.aegis.planning.application.ports.CalendarPort;
+import dev.aegis.planning.application.ports.CancellationReminderScheduler;
 import dev.aegis.planning.application.ports.PlanningEvents;
 import dev.aegis.planning.domain.TaskRepository;
 import dev.aegis.portability.application.ExportService;
@@ -320,8 +325,10 @@ public class UseCaseConfiguration {
 
     @Bean
     ContractServices contractServices(ContractRepository contracts, DocumentReferenceQuery documents,
-            ContractPresenter presenter, HouseholdAccess access, Clock clock) {
-        return new ContractServices(new ContractService(contracts, documents, presenter, access, clock),
+            ContractPresenter presenter, HouseholdAccess access, Clock clock,
+            ContractReconciliationScheduler reconciliation) {
+        return new ContractServices(new ContractService(contracts, documents, presenter, access, clock,
+                reconciliation),
                 new ContractQueryService(contracts, presenter, access, clock));
     }
 
@@ -393,6 +400,29 @@ public class UseCaseConfiguration {
     @Bean
     TaskExportQuery taskExportQuery(PlanningServices services) {
         return TransactionalProxy.expose(TaskExportQuery.class, services.queries());
+    }
+
+    record CancellationServices(CancellationDeadlineService service) {
+    }
+
+    @Bean
+    CancellationServices cancellationServices(ContractDeadlineQuery contracts, TaskRepository tasks,
+            CancellationReminderScheduler reminders, MemberDirectory members, PublishNotice notices,
+            HouseholdAccess access, Clock clock) {
+        return new CancellationServices(new CancellationDeadlineService(contracts, tasks, reminders, members,
+                notices, access, clock));
+    }
+
+    @Bean
+    CancellationDeadlineReconciliation cancellationDeadlineReconciliation(CancellationServices services,
+            PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(CancellationDeadlineReconciliation.class, services.service(), tm);
+    }
+
+    @Bean
+    CancellationReminderPublication cancellationReminderPublication(CancellationServices services,
+            PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(CancellationReminderPublication.class, services.service(), tm);
     }
 
     // Notifications -------------------------------------------------------------------------------------------
