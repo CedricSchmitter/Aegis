@@ -30,8 +30,8 @@ jobs:
         run: ./mvnw -B -ntp verify
       - name: Backup safety regression tests
         run: python3 -m unittest discover -s ops/backup -p 'test_*.py'
-      - name: API credential installation safety tests
-        run: python3 -m unittest discover -s ops/deploy -p 'test_set_anthropic_key.py'
+      - name: Deployment script tests (credential safety, folder tree seed)
+        run: python3 -m unittest discover -s ops/deploy -p 'test_*.py'
       - name: Claude Code host runner tests
         run: python3 -m unittest discover -s ops/claude-runner -p 'test_*.py'
       - name: Upload test reports
