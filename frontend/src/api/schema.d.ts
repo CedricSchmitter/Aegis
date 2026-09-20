@@ -243,6 +243,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List contracts, optionally only those of one document */
+        get: operations["listContracts"];
+        put?: never;
+        /** Create a contract, optionally with its counterparty */
+        post: operations["createContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/deadlines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Contracts whose confirmed facts establish a cancellation deadline */
+        get: operations["listContractDeadlines"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Contract with every observation, its provenance and the calculated deadline */
+        get: operations["getContract"];
+        /** Change the household name of the contract */
+        put: operations["renameContract"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/{id}/facts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** State a fact about the contract; it counts as confirmed because a member entered it */
+        post: operations["enterContractFact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/{id}/facts/{factId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a proposed fact */
+        post: operations["confirmContractFact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/{id}/facts/{factId}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct a fact; the corrected observation is kept as superseded history */
+        post: operations["correctContractFact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/{id}/facts/{factId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a fact; it stays visible as history and stops being effective */
+        post: operations["rejectContractFact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record that the contract is active, cancelled or ended */
+        post: operations["changeContractStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents": {
         parameters: {
             query?: never;
@@ -1195,10 +1333,50 @@ export interface components {
             /** Format: int64 */
             version: number;
         };
+        ConflictDto: {
+            conflictingFactIds: string[];
+            establishedFactId?: string | null;
+            kind: string;
+            type: string;
+        };
+        ContractDto: {
+            conflicts: components["schemas"]["ConflictDto"][];
+            counterparty?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            deadline: components["schemas"]["DeadlineDto"];
+            /** Format: date */
+            evaluatedOn: string;
+            facts: components["schemas"]["FactDto"][];
+            id: string;
+            name: string;
+            sources: components["schemas"]["SourceDto"][];
+            status: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
+        CorrectFactRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            note?: string | null;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validUntil?: string | null;
+            value: string;
+        };
         CreateCategoryRequest: {
             id?: string | null;
             name: string;
             parentId?: string | null;
+        };
+        CreateContractRequest: {
+            counterparty?: string | null;
+            name: string;
+            sourceDocumentId?: string | null;
         };
         CreateLabelRequest: {
             facet: string;
@@ -1214,6 +1392,32 @@ export interface components {
             plannedDate?: string | null;
             sourceDocumentId?: string | null;
             title: string;
+        };
+        DeadlineDto: {
+            basedOn: string[];
+            basis?: string | null;
+            /** Format: date */
+            contractEnd?: string | null;
+            contradicting: string[];
+            /** Format: date */
+            deadline?: string | null;
+            determined: boolean;
+            missing: string[];
+        };
+        DeadlineItemDto: {
+            basedOnFactIds: string[];
+            basis: string;
+            /** Format: date */
+            cancellationDeadline: string;
+            /** Format: date */
+            contractEnd?: string | null;
+            contractId: string;
+            /** Format: int64 */
+            contractVersion: number;
+            counterparty?: string | null;
+            name: string;
+            sourceDocumentId?: string | null;
+            status: string;
         };
         DecisionRequest: {
             accept: boolean;
@@ -1281,7 +1485,24 @@ export interface components {
             note?: string | null;
             title: string;
         };
+        EnterFactRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            note?: string | null;
+            sourceDocumentId?: string | null;
+            /** Format: int32 */
+            sourcePage?: number | null;
+            sourceQuote?: string | null;
+            type: string;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validUntil?: string | null;
+            value: string;
+        };
         ExportSummaryDto: {
+            /** Format: int32 */
+            contractCount: number;
             /** Format: date-time */
             createdAt: string;
             /** Format: int32 */
@@ -1308,6 +1529,32 @@ export interface components {
             /** Format: int64 */
             expectedVersion: number;
             facet: string;
+        };
+        FactDto: {
+            /** Format: double */
+            confidence?: number | null;
+            corrects?: string | null;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            decidedBy?: string | null;
+            effective: boolean;
+            id: string;
+            note: string;
+            /** Format: date-time */
+            observedAt: string;
+            observedBy?: string | null;
+            origin: string;
+            reviewState: string;
+            runRef?: string | null;
+            source?: components["schemas"]["SourceDto"];
+            supersededBy?: string | null;
+            type: string;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validUntil?: string | null;
+            value: string;
+            valueKind: string;
         };
         FilenameDto: {
             filename: string;
@@ -1577,6 +1824,11 @@ export interface components {
             documentId: string;
             documentTitle?: string | null;
         };
+        StatusRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            status: string;
+        };
         StepDto: {
             /** Format: date-time */
             at: string;
@@ -1615,6 +1867,23 @@ export interface components {
             /** Format: int64 */
             expectedVersion: number;
             subjects: components["schemas"]["SubjectDto"][];
+        };
+        SummaryDto: {
+            /** Format: int32 */
+            conflicts: number;
+            /** Format: date */
+            contractEnd?: string | null;
+            counterparty?: string | null;
+            deadline: components["schemas"]["DeadlineDto"];
+            id: string;
+            name: string;
+            /** Format: int32 */
+            pendingFacts: number;
+            status: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
         };
         SystemStatusDto: {
             documentProcessing: {
@@ -2035,6 +2304,255 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CategoryDto"];
+                };
+            };
+        };
+    };
+    listContracts: {
+        parameters: {
+            query?: {
+                documentId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SummaryDto"][];
+                };
+            };
+        };
+    };
+    createContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateContractRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    listContractDeadlines: {
+        parameters: {
+            query?: {
+                on?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DeadlineItemDto"][];
+                };
+            };
+        };
+    };
+    getContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    renameContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    enterContractFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnterFactRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    confirmContractFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    correctContractFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorrectFactRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    rejectContractFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    changeContractStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
                 };
             };
         };
