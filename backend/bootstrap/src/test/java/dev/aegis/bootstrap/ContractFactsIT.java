@@ -3,6 +3,7 @@ package dev.aegis.bootstrap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.aegis.bootstrap.support.ApiClient;
 import dev.aegis.bootstrap.support.PostgresIT;
 import dev.aegis.contracts.application.api.ContractCommands;
 import dev.aegis.contracts.application.api.ContractCommands.CorrectFactCommand;
@@ -40,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
@@ -66,6 +68,8 @@ class ContractFactsIT extends PostgresIT {
     MemberCredentialsQuery members;
     @Autowired
     JdbcTemplate jdbc;
+    @LocalServerPort
+    int port;
 
     @Test
     void typedValuesAndProvenanceSurviveTheDatabase() throws Exception {
@@ -213,6 +217,52 @@ class ContractFactsIT extends PostgresIT {
         assertThat(corrected.supersededBy()).isNotNull();
         assertThat(corrected.value()).isEqualTo("2027-11-03");
         assertThat(deadline(lisa, contract.id()).cancellationDeadline()).isEqualTo(LocalDate.of(2027, 11, 30));
+    }
+
+    @Test
+    void aMemberRecordsAndReviewsAContractOverTheApiWithoutAi() throws Exception {
+        ApiClient client = new ApiClient(port);
+        assertThat(client.login(ANNA, PASSWORD)).isTrue();
+        DocumentId contractPdf = uploadDocument(actor(ANNA), "Zeitschrift Abo.pdf");
+
+        var created = client.postJson("/api/contracts", "{\"name\":\"Zeitschrift\","
+                + "\"counterparty\":\"Verlag GmbH\",\"sourceDocumentId\":\"" + contractPdf + "\"}");
+        assertThat(created.status()).isEqualTo(201);
+        String id = client.json(created).path("id").asText();
+        long version = client.json(created).path("version").asLong();
+
+        var withEnd = client.postJson("/api/contracts/" + id + "/facts",
+                "{\"type\":\"END_DATE\",\"value\":\"2028-01-01\",\"sourceDocumentId\":\"" + contractPdf
+                + "\",\"sourcePage\":1,\"sourceQuote\":\"Vertragsende: 01.01.2028\",\"expectedVersion\":"
+                + version + "}");
+        assertThat(withEnd.status()).isEqualTo(200);
+        long afterEnd = client.json(withEnd).path("version").asLong();
+        // A rule that is not confirmed yet leaves the deadline undetermined, with the open question named.
+        assertThat(client.json(withEnd).path("deadline").path("determined").asBoolean()).isFalse();
+        assertThat(client.json(withEnd).path("deadline").path("missing").toString()).contains("NOTICE_PERIOD");
+
+        var withNotice = client.postJson("/api/contracts/" + id + "/facts",
+                "{\"type\":\"NOTICE_PERIOD\",\"value\":\"P3M\",\"sourceDocumentId\":\"" + contractPdf
+                + "\",\"expectedVersion\":" + afterEnd + "}");
+        assertThat(withNotice.status()).isEqualTo(200);
+        assertThat(client.json(withNotice).path("deadline").path("deadline").asText()).isEqualTo("2027-10-01");
+        long current = client.json(withNotice).path("version").asLong();
+
+        // The same outdated version is answered with a conflict, not with an overwrite.
+        var stale = client.postJson("/api/contracts/" + id + "/facts",
+                "{\"type\":\"AMOUNT\",\"value\":\"9.90 EUR\",\"expectedVersion\":" + afterEnd + "}");
+        assertThat(stale.status()).isEqualTo(409);
+        // An unknown fact type is a validation error, even when the version is current.
+        assertThat(client.postJson("/api/contracts/" + id + "/facts",
+                "{\"type\":\"COLOUR\",\"value\":\"blau\",\"expectedVersion\":" + current + "}").status())
+                .isEqualTo(400);
+
+        var deadlines = client.get("/api/contracts/deadlines?on=2026-09-20");
+        assertThat(deadlines.status()).isEqualTo(200);
+        assertThat(deadlines.body()).contains(id).contains("2027-10-01").contains("NOTICE_PERIOD_BEFORE_END");
+        var detail = client.get("/api/contracts/" + id);
+        assertThat(detail.status()).isEqualTo(200);
+        assertThat(client.json(detail).path("facts").toString()).contains("Vertragsende: 01.01.2028");
     }
 
     /** The state the household expects before and after a restore: amendment effective, contradiction pending. */

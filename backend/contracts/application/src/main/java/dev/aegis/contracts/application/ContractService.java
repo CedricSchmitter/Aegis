@@ -62,7 +62,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
                     ValidityPeriod.always(), source, null, actor.memberId(), now);
         }
         contracts.save(contract);
-        return describe(reload(contract.id()));
+        return describe(contract.id());
     }
 
     @Override
@@ -71,7 +71,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         Contract contract = loadVersion(id, expectedVersion);
         contract.rename(name, clock.instant());
         contracts.save(contract);
-        return describe(reload(id));
+        return describe(id);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         Contract contract = loadVersion(id, expectedVersion);
         contract.changeStatus(ContractInputs.status(status), clock.instant());
         contracts.save(contract);
-        return describe(reload(id));
+        return describe(id);
     }
 
     @Override
@@ -94,7 +94,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
                         documents),
                 command.note(), actor.memberId(), clock.instant());
         contracts.save(contract);
-        return describe(reload(id));
+        return describe(id);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         Contract contract = loadVersion(id, expectedVersion);
         contract.confirm(ContractInputs.factId(factId), actor.memberId(), clock.instant());
         contracts.save(contract);
-        return describe(reload(id));
+        return describe(id);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         Contract contract = loadVersion(id, expectedVersion);
         contract.reject(ContractInputs.factId(factId), actor.memberId(), clock.instant());
         contracts.save(contract);
-        return describe(reload(id));
+        return describe(id);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
                 ContractInputs.validity(command.validFrom(), command.validUntil()), command.note(),
                 actor.memberId(), clock.instant());
         contracts.save(contract);
-        return describe(reload(id));
+        return describe(id);
     }
 
     @Override
@@ -188,8 +188,9 @@ public class ContractService implements ContractCommands, RecordContractObservat
                 record.corrects() == null ? null : new FactId(record.corrects()), record.note());
     }
 
-    private ContractView describe(Contract contract) {
-        return presenter.describe(contract, today());
+    /** Describes the aggregate as it was persisted, so the returned version is the stored one. */
+    private ContractView describe(ContractId id) {
+        return presenter.describe(load(id), today());
     }
 
     private LocalDate today() {
@@ -198,11 +199,6 @@ public class ContractService implements ContractCommands, RecordContractObservat
 
     private Contract load(ContractId id) {
         return contracts.findById(id).orElseThrow(() -> new NotFoundException("contract", id.toString()));
-    }
-
-    /** Re-reads the aggregate so the returned version is the persisted one, not the pre-save value. */
-    private Contract reload(ContractId id) {
-        return load(id);
     }
 
     private Contract loadVersion(ContractId id, long expectedVersion) {
