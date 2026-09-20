@@ -57,7 +57,8 @@ public class InMemoryClassificationRepository implements ClassificationRepositor
 
     private static DocumentClassification rehydrate(DocumentClassification classification, long version) {
         return DocumentClassification.rehydrate(classification.documentId(),
-                classification.categoryId().orElse(null), classification.assignments(),
-                classification.updatedBy().orElse(null), classification.updatedAt().orElse(null), version);
+                classification.categoryId().orElse(null), classification.placement(),
+                classification.assignments(), classification.updatedBy().orElse(null),
+                classification.updatedAt().orElse(null), version);
     }
 }

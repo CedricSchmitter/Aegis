@@ -8,6 +8,7 @@ import { AnalysisPanel } from "../components/AnalysisPanel";
 import { FolderSelect } from "../components/FolderSelect";
 import { LabelChips } from "../components/LabelChips";
 import { LabelEditor } from "../components/LabelEditor";
+import { PlacementSuggestion } from "../components/PlacementSuggestion";
 import { SubjectList } from "../components/SubjectList";
 import { TaskForm } from "../components/TaskForm";
 import { TaskItem } from "../components/TaskItem";
@@ -291,6 +292,15 @@ export function DocumentDetailPage() {
             {t("app.save")}
           </button>
         </div>
+
+        <PlacementSuggestion
+          document={document}
+          categories={categories}
+          onChange={setDocument}
+          onError={setError}
+          onMessage={setMessage}
+          reload={load}
+        />
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">{t("documents.labels")}:</span>

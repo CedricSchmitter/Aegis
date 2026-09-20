@@ -43,7 +43,7 @@ class DocumentCaptureServiceTest {
         var labels = new InMemoryLabelRepository();
         var lock = new NoOpCatalogLock();
         var presenter = TestDoubles.presenter(scheduler, new ClassificationViews(classifications, categories,
-                labels));
+                labels, new InMemoryPlacementSuggestionRepository()));
         analyses = new InMemoryDocumentAnalysisRepository();
         analysisSettings = TestDoubles.analysisSettings();
         service = new DocumentCaptureService(store,

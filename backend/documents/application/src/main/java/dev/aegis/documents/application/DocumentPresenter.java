@@ -60,7 +60,8 @@ public class DocumentPresenter {
         List<SubjectView> inherited = classification.folderSubjects().stream().filter(s -> !own.contains(s))
                 .toList();
         ClassificationView view = new ClassificationView(classification.categoryId(), classification.path(),
-                classification.labels(), inherited, classification.version());
+                classification.labels(), inherited, classification.placement(),
+                classification.placementSuggestion(), classification.version());
         return new DocumentSummary(document.id(), document.title(), document.titleOrigin().name(),
                 document.originalFilename(), document.contentType(), document.sizeBytes(),
                 document.checksum().sha256Hex(), document.uploadedBy(), document.uploadedAt(), own, processing,

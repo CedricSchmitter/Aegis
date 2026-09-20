@@ -419,6 +419,6 @@ class DocumentCatalogIT extends PostgresIT {
         Actor actor = new Actor(credentials.findCredentials(ANNA).orElseThrow().id());
         return proposals.propose(actor, new ProposeClassification.ProposalCommand(DocumentId.of(documentId),
                 version, "run:it", List.of(new ProposeClassification.LabelProposal(
-                        java.util.UUID.fromString(labelId), 0.55, false))));
+                        java.util.UUID.fromString(labelId), 0.55, false)), null));
     }
 }

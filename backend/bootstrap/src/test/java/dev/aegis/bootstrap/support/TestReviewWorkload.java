@@ -86,6 +86,6 @@ public class TestReviewWorkload implements WorkloadHandler {
         SourceRef source = run.sources().getFirst();
         proposals.propose(run.actor(), new ProposeClassification.ProposalCommand(DocumentId.of(source.id()),
                 source.version(), "ai-run:" + run.id(),
-                List.of(new ProposeClassification.LabelProposal((UUID) output.value(), 0.8, false))));
+                List.of(new ProposeClassification.LabelProposal((UUID) output.value(), 0.8, false)), null));
     }
 }

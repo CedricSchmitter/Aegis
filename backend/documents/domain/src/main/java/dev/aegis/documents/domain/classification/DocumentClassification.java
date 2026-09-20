@@ -22,6 +22,10 @@ import java.util.Set;
  * archival progress never invalidates a member's pending classification edit. Invariants: single placement, one
  * assignment per label, at most one effective document type, and human decisions are never overridden by
  * automatic proposals.
+ *
+ * <p>The placement carries its own provenance (ADR-0005): who or which run filed the document, and whether a
+ * member has ever placed or moved it. That flag is sticky, including a move back to Unsorted, so later automatic
+ * runs leave the document where the member put it.
  */
 public final class DocumentClassification {
     public static final int MAX_ASSIGNMENTS = 100;
@@ -30,17 +34,33 @@ public final class DocumentClassification {
     public record ProposalResult(int applied, int suggested, int skipped) {
     }
 
+    /**
+     * Provenance of the current folder placement. {@code origin} is {@code null} while the document has never been
+     * placed; {@code byMember} stays true once a member has placed or moved the document, including a move back to
+     * Unsorted.
+     */
+    public record Placement(AssignmentOrigin origin, Confidence confidence, String sourceRef, MemberId by,
+            Instant at, boolean byMember) {
+        public static final Placement NONE = new Placement(null, null, null, null, null, false);
+
+        public boolean automatic() {
+            return origin == AssignmentOrigin.AUTOMATIC;
+        }
+    }
+
     private final DocumentId documentId;
     private CategoryId categoryId;
+    private Placement placement;
     private final Map<LabelId, LabelAssignment> assignments = new LinkedHashMap<>();
     private MemberId updatedBy;
     private Instant updatedAt;
     private final long version;
 
-    private DocumentClassification(DocumentId documentId, CategoryId categoryId, Collection<LabelAssignment> assignments,
-            MemberId updatedBy, Instant updatedAt, long version) {
+    private DocumentClassification(DocumentId documentId, CategoryId categoryId, Placement placement,
+            Collection<LabelAssignment> assignments, MemberId updatedBy, Instant updatedAt, long version) {
         this.documentId = Objects.requireNonNull(documentId);
         this.categoryId = categoryId;
+        this.placement = placement == null ? Placement.NONE : placement;
         assignments.forEach(a -> this.assignments.put(a.labelId(), a));
         this.updatedBy = updatedBy;
         this.updatedAt = updatedAt;
@@ -49,22 +69,82 @@ public final class DocumentClassification {
 
     /** A new document starts in Unsorted without labels. */
     public static DocumentClassification unsorted(DocumentId documentId) {
-        return new DocumentClassification(documentId, null, List.of(), null, null, 0);
+        return new DocumentClassification(documentId, null, Placement.NONE, List.of(), null, null, 0);
     }
 
-    public static DocumentClassification rehydrate(DocumentId documentId, CategoryId categoryId,
+    public static DocumentClassification rehydrate(DocumentId documentId, CategoryId categoryId, Placement placement,
             Collection<LabelAssignment> assignments, MemberId updatedBy, Instant updatedAt, long version) {
-        return new DocumentClassification(documentId, categoryId, assignments, updatedBy, updatedAt, version);
+        return new DocumentClassification(documentId, categoryId, placement, assignments, updatedBy, updatedAt,
+                version);
     }
 
-    /** Places the document in a folder ({@code null} = Unsorted). Returns whether anything changed. */
+    /**
+     * Places the document in a folder ({@code null} = Unsorted) as a member's decision. Returns whether the folder
+     * changed; the member decision is recorded even when the folder stays the same.
+     */
     public boolean placeIn(CategoryId category, MemberId by, Instant now) {
+        Objects.requireNonNull(by, "by");
+        boolean moved = !Objects.equals(categoryId, category);
+        if (!moved && placement.byMember() && !placement.automatic()) {
+            return false;
+        }
+        categoryId = category;
+        placement = new Placement(category == null ? null : AssignmentOrigin.MANUAL, null, null, by, now, true);
+        touch(by, now);
+        return moved;
+    }
+
+    /**
+     * Files the document automatically into an existing folder. Refused (returns {@code false}) unless the document
+     * is still in Unsorted and no member has ever placed or moved it, so a member's decision always wins.
+     */
+    public boolean placeAutomatically(CategoryId category, Confidence confidence, String sourceRef, Instant now) {
+        Objects.requireNonNull(category, "category");
+        if (categoryId != null || placement.byMember()) {
+            return false;
+        }
+        categoryId = category;
+        placement = new Placement(AssignmentOrigin.AUTOMATIC, confidence, sourceRef, null, now, false);
+        updatedAt = now;
+        return true;
+    }
+
+    /**
+     * Takes an automatic placement back: the document returns to Unsorted and counts as decided by the member, so
+     * later runs do not file it again.
+     */
+    public void revertPlacement(MemberId by, Instant now) {
+        if (!placement.automatic()) {
+            throw new InvalidInputException("placement.notAutomatic", "The document was not filed automatically");
+        }
+        categoryId = null;
+        placement = new Placement(null, null, null, by, now, true);
+        touch(by, now);
+    }
+
+    /**
+     * Moves the document because its folder disappeared. Structural moves keep the placement provenance and do not
+     * count as a member's decision about this document.
+     */
+    public boolean relocate(CategoryId category, Instant now) {
         if (Objects.equals(categoryId, category)) {
             return false;
         }
         categoryId = category;
-        touch(by, now);
+        placement = category == null
+                ? new Placement(null, null, null, placement.by(), now, placement.byMember())
+                : new Placement(placement.origin(), placement.confidence(), placement.sourceRef(), placement.by(),
+                        now, placement.byMember());
+        updatedAt = now;
         return true;
+    }
+
+    /** Refuses a write whose analyzed state is no longer the current one. */
+    public void requireVersion(long analyzedVersion) {
+        if (analyzedVersion != version) {
+            throw new StaleVersionException("documentClassification", documentId.toString(), analyzedVersion,
+                    version);
+        }
     }
 
     /**
@@ -224,8 +304,9 @@ public final class DocumentClassification {
         }
     }
 
-    /** Restores an exported classification; only allowed while the document is still unclassified. */
-    public void restore(CategoryId category, Collection<LabelAssignment> restored, MemberId by, Instant now) {
+    /** Restores an exported classification with its placement origin; only while the document is unclassified. */
+    public void restore(CategoryId category, Placement restoredPlacement, Collection<LabelAssignment> restored,
+            MemberId by, Instant now) {
         if (!isPristine()) {
             throw new IllegalStateException("classification of " + documentId + " is not pristine");
         }
@@ -235,13 +316,17 @@ public final class DocumentClassification {
                     "A document can have at most one document type");
         }
         categoryId = category;
+        placement = restoredPlacement == null
+                ? new Placement(category == null ? null : AssignmentOrigin.MANUAL, null, null, by, now,
+                        category != null)
+                : restoredPlacement;
         restored.forEach(a -> assignments.put(a.labelId(), a));
         requireCapacity();
         touch(by, now);
     }
 
     public boolean isPristine() {
-        return categoryId == null && assignments.isEmpty();
+        return categoryId == null && assignments.isEmpty() && !placement.byMember();
     }
 
     public Set<LabelId> effectiveLabelIds() {
@@ -261,6 +346,14 @@ public final class DocumentClassification {
 
     public Optional<CategoryId> categoryId() {
         return Optional.ofNullable(categoryId);
+    }
+
+    public boolean isUnsorted() {
+        return categoryId == null;
+    }
+
+    public Placement placement() {
+        return placement;
     }
 
     public List<LabelAssignment> assignments() {

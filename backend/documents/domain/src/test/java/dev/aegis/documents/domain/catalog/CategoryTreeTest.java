@@ -192,4 +192,47 @@ class CategoryTreeTest {
 
         assertThatThrownBy(() -> new CategoryTree(List.of(first, second))).isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void resolvingAPathReusesExistingFoldersIgnoringCaseAndSpacing() {
+        CategoryTree.PathResolution existing = tree.resolve(house, List.of("  rechnungen ", "INTERNET"));
+        assertThat(existing.complete()).isTrue();
+        assertThat(existing.deepest()).isEqualTo(internet);
+
+        CategoryTree.PathResolution partly = tree.resolve(house, List.of("Rechnungen", "Strom"));
+        assertThat(partly.deepest()).isEqualTo(invoices);
+        assertThat(partly.missing()).containsExactly("Strom");
+
+        // Matching stops at the first segment without a sibling, so a later coincidence cannot skip a level.
+        CategoryTree.PathResolution stops = tree.resolve(house, List.of("Vertraege", "Rechnungen"));
+        assertThat(stops.deepest()).isEqualTo(house);
+        assertThat(stops.missing()).containsExactly("Vertraege", "Rechnungen");
+    }
+
+    @Test
+    void creatingAPathAddsOnlyTheMissingFoldersAndNeverANearDuplicate() {
+        CategoryTree.CreatedPath created = tree.createPath(house, List.of("rechnungen", "Strom"), LISA, NOW);
+
+        assertThat(created.created()).extracting(Category::name).containsExactly("Strom");
+        assertThat(tree.path(created.target())).extracting(Category::name)
+                .containsExactly("Haus", "Rechnungen", "Strom");
+        assertThat(tree.childrenOf(house)).extracting(Category::name).containsExactly("Rechnungen");
+
+        CategoryTree.CreatedPath again = tree.createPath(house, List.of("Rechnungen", "STROM"), LISA, NOW);
+        assertThat(again.created()).isEmpty();
+        assertThat(again.target()).isEqualTo(created.target());
+    }
+
+    @Test
+    void creatingAPathKeepsTheDepthLimit() {
+        CategoryId deep = internet;
+        while (tree.depth(deep) < CategoryTree.MAX_DEPTH) {
+            deep = tree.create(CategoryId.random(), deep, "Level " + tree.depth(deep), LISA, NOW).id();
+        }
+
+        CategoryId full = deep;
+        assertThatThrownBy(() -> tree.createPath(full, List.of("Zu tief"), LISA, NOW))
+                .isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "category.depth");
+    }
 }

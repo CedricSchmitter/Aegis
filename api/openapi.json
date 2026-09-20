@@ -1,6 +1,61 @@
 {
   "components" : {
     "schemas" : {
+      "AcceptPlacementRequest" : {
+        "properties" : {
+          "alsoForOtherDocuments" : {
+            "type" : "boolean"
+          },
+          "anchorFolderId" : {
+            "type" : [ "string", "null" ]
+          },
+          "expectedAnchorVersion" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "folderId" : {
+            "type" : [ "string", "null" ]
+          },
+          "newPath" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "alsoForOtherDocuments", "expectedVersion", "newPath" ],
+        "type" : "object"
+      },
+      "AcceptPlacementResponse" : {
+        "properties" : {
+          "createdFolders" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "document" : {
+            "$ref" : "#/components/schemas/DocumentDto"
+          },
+          "folderId" : {
+            "type" : "string"
+          },
+          "movedDocuments" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "path" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "createdFolders", "document", "folderId", "movedDocuments", "path" ],
+        "type" : "object"
+      },
       "AiOverviewDto" : {
         "properties" : {
           "configured" : {
@@ -368,12 +423,19 @@
             },
             "type" : "array"
           },
+          "placement" : {
+            "$ref" : "#/components/schemas/PlacementDto"
+          },
+          "placementSuggestion" : {
+            "$ref" : "#/components/schemas/PlacementSuggestionDto",
+            "type" : "null"
+          },
           "version" : {
             "format" : "int64",
             "type" : "integer"
           }
         },
-        "required" : [ "folderSubjects", "labels", "path", "version" ],
+        "required" : [ "folderSubjects", "labels", "path", "placement", "version" ],
         "type" : "object"
       },
       "CreateCategoryRequest" : {
@@ -1023,6 +1085,45 @@
         "required" : [ "currentPassword", "newPassword" ],
         "type" : "object"
       },
+      "PlacementDecisionRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "PlacementDto" : {
+        "properties" : {
+          "at" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "by" : {
+            "type" : [ "string", "null" ]
+          },
+          "byMember" : {
+            "type" : "boolean"
+          },
+          "confidence" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "origin" : {
+            "type" : [ "string", "null" ]
+          },
+          "revertible" : {
+            "type" : "boolean"
+          },
+          "sourceRef" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "byMember", "revertible" ],
+        "type" : "object"
+      },
       "PlacementItem" : {
         "properties" : {
           "documentId" : {
@@ -1060,6 +1161,70 @@
           }
         },
         "required" : [ "moved" ],
+        "type" : "object"
+      },
+      "PlacementSuggestionDto" : {
+        "properties" : {
+          "anchorFolderId" : {
+            "type" : [ "string", "null" ]
+          },
+          "anchorVersion" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "confidence" : {
+            "format" : "double",
+            "type" : [ "number", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "evidence" : {
+            "type" : [ "string", "null" ]
+          },
+          "folderId" : {
+            "type" : [ "string", "null" ]
+          },
+          "impliedLabels" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LabelChipDto"
+            },
+            "type" : "array"
+          },
+          "impliedSubjects" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SubjectDto"
+            },
+            "type" : "array"
+          },
+          "key" : {
+            "type" : "string"
+          },
+          "model" : {
+            "type" : [ "string", "null" ]
+          },
+          "newFolders" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "otherDocuments" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "path" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "runRef" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "impliedLabels", "impliedSubjects", "key", "newFolders", "otherDocuments", "path" ],
         "type" : "object"
       },
       "PlanWorkRequest" : {
@@ -2502,6 +2667,117 @@
           }
         },
         "summary" : "File a document into a folder; empty means Unsorted",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/classification/placement/accept" : {
+      "post" : {
+        "operationId" : "acceptPlacement",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AcceptPlacementRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AcceptPlacementResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "File the document into the proposed folder, creating the missing folders of a proposed path",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/classification/placement/reject" : {
+      "post" : {
+        "operationId" : "rejectPlacement",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PlacementDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Reject the proposed folder; it is not proposed for this document again",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/classification/placement/revert" : {
+      "post" : {
+        "operationId" : "revertPlacement",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PlacementDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Move an automatically filed document back to Unsorted",
         "tags" : [ "documents" ]
       }
     },

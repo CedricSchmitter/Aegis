@@ -19,6 +19,9 @@ import dev.aegis.documents.domain.classification.Confidence;
 import dev.aegis.documents.domain.classification.DocumentClassification;
 import dev.aegis.documents.domain.classification.LabelAssignment;
 import dev.aegis.documents.domain.classification.ReviewState;
+import dev.aegis.documents.domain.placement.PlacementSuggestion;
+import dev.aegis.documents.domain.placement.PlacementSuggestionRepository;
+import dev.aegis.documents.domain.placement.PlacementTarget;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
@@ -44,17 +47,19 @@ public class CatalogImportService implements ImportCatalog {
     private final LabelRepository labels;
     private final CategoryRepository categories;
     private final ClassificationRepository classifications;
+    private final PlacementSuggestionRepository placements;
     private final DocumentRepository documents;
     private final CatalogLock lock;
     private final HouseholdAccess access;
     private final Clock clock;
 
     public CatalogImportService(LabelRepository labels, CategoryRepository categories,
-            ClassificationRepository classifications, DocumentRepository documents, CatalogLock lock,
-            HouseholdAccess access, Clock clock) {
+            ClassificationRepository classifications, PlacementSuggestionRepository placements,
+            DocumentRepository documents, CatalogLock lock, HouseholdAccess access, Clock clock) {
         this.labels = labels;
         this.categories = categories;
         this.classifications = classifications;
+        this.placements = placements;
         this.documents = documents;
         this.lock = lock;
         this.access = access;
@@ -209,13 +214,14 @@ public class CatalogImportService implements ImportCatalog {
 
     @Override
     public ClassificationOutcome importClassification(Actor actor, DocumentId documentId, UUID categoryId,
-            List<AssignmentImport> assignments) {
+            PlacementImport placement, List<AssignmentImport> assignments) {
         access.requireMember(actor);
         lock.shared();
         if (documents.findById(documentId).isEmpty()) {
             throw new NotFoundException("document", documentId.toString());
         }
-        if (categoryId == null && (assignments == null || assignments.isEmpty())) {
+        if (categoryId == null && (assignments == null || assignments.isEmpty())
+                && (placement == null || placement.suggestion() == null)) {
             return ClassificationOutcome.NOTHING_TO_APPLY;
         }
         DocumentClassification classification = classifications.findById(documentId)
@@ -259,12 +265,68 @@ public class CatalogImportService implements ImportCatalog {
                 restored.put(label.get().id(), assignment);
             }
         }
-        if (folder == null && restored.isEmpty()) {
+        PlacementSuggestion suggestion = suggestion(documentId, placement, tree, now);
+        if (folder == null && restored.isEmpty() && suggestion == null) {
             return ClassificationOutcome.NOTHING_TO_APPLY;
         }
-        classification.restore(folder, restored.values(), actor.memberId(), now);
+        classification.restore(folder, placement(placement, folder, actor, now), restored.values(),
+                actor.memberId(), now);
         classifications.save(classification);
+        if (suggestion != null) {
+            placements.save(suggestion);
+        }
         return ClassificationOutcome.APPLIED;
+    }
+
+    /** The exported placement origin; an unknown origin counts as a member placement, never as an automatic one. */
+    private static DocumentClassification.Placement placement(PlacementImport imported, CategoryId folder,
+            Actor actor, Instant now) {
+        if (imported == null) {
+            return null;
+        }
+        AssignmentOrigin origin = folder == null ? null
+                : AssignmentOrigin.AUTOMATIC.name().equals(imported.origin()) ? AssignmentOrigin.AUTOMATIC
+                        : AssignmentOrigin.MANUAL;
+        return new DocumentClassification.Placement(origin,
+                imported.confidence() == null ? null : new Confidence(imported.confidence()),
+                imported.sourceRef(), imported.by() == null ? actor.memberId() : imported.by(),
+                imported.at() == null ? now : imported.at(), imported.byMember());
+    }
+
+    /** An exported pending proposal, kept only while its folders still exist here. */
+    private static PlacementSuggestion suggestion(DocumentId documentId, PlacementImport imported, CategoryTree tree,
+            Instant now) {
+        if (imported == null || imported.suggestion() == null) {
+            return null;
+        }
+        SuggestionImport exported = imported.suggestion();
+        PlacementTarget target;
+        try {
+            if (exported.folderId() != null) {
+                Optional<Category> folder = tree.find(new CategoryId(exported.folderId()));
+                if (folder.isEmpty()) {
+                    return null;
+                }
+                target = PlacementTarget.existing(folder.get().id());
+            } else {
+                CategoryId anchor = exported.anchorFolderId() == null ? null
+                        : tree.find(new CategoryId(exported.anchorFolderId())).map(Category::id).orElse(null);
+                if (exported.anchorFolderId() != null && anchor == null) {
+                    return null;
+                }
+                CategoryTree.PathResolution resolution = tree.resolve(anchor, exported.newPath());
+                if (resolution.complete()) {
+                    target = PlacementTarget.existing(resolution.deepest());
+                } else {
+                    target = PlacementTarget.path(resolution.deepest(), resolution.missing());
+                }
+            }
+        } catch (InvalidInputException unusable) {
+            return null;
+        }
+        return new PlacementSuggestion(documentId, exported.generation(), target, exported.confidence(),
+                exported.evidence(), exported.runRef(), exported.model(),
+                exported.createdAt() == null ? now : exported.createdAt());
     }
 
     private void adoptUnmodifiedBuiltin(Label local, LabelImport imported, LabelVocabulary vocabulary, Instant now) {

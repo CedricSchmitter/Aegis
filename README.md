@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions) , [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution) and [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames).
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions) , [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames) and [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
@@ -88,7 +88,10 @@ tasks, deterministic Today, in-app notifications, integration status, portable e
 recovery. Folders, labels and search work without AI. New uploads are classified automatically once archived
 (title, type, organization, topics, evidenced issue date; conservative policy with reviewable suggestions), and
 downloads and exports use readable filenames such as `2026-09-17_Telekom_Rechnung_Internet_a1b2c3d4.pdf`
-([ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md)). Existing documents are only
+([ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md)). The same run also files the
+document into a matching existing folder or proposes a folder path such as `Haus / Versicherungen / Hausrat`;
+folders are only created when a member accepts a proposal
+([ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md)). Existing documents are only
 analyzed when a member selects them.
 
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with

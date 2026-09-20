@@ -16,8 +16,24 @@ public record DocumentExportRecord(DocumentId id, String title, String titleOrig
         Instant uploadedAt, List<SubjectView> subjects, String processingState, Integer paperlessDocumentId,
         Instant archivedAt, Classification classification, AnalysisRecord analysis) {
 
-    /** Folder placement ({@code categoryId} null = Unsorted) and own label assignments with provenance. */
-    public record Classification(UUID categoryId, List<String> categoryPath, List<Assignment> assignments) {
+    /**
+     * Folder placement ({@code categoryId} null = Unsorted) and own label assignments with provenance.
+     * {@code placement} says where the placement came from and {@code suggestion} carries a proposal nobody has
+     * decided on yet (both since export schema 4).
+     */
+    public record Classification(UUID categoryId, List<String> categoryPath, List<Assignment> assignments,
+            Placement placement, PlacementSuggestion suggestion) {
+    }
+
+    /** Provenance of a folder placement; {@code byMember} marks a document a member placed or moved. */
+    public record Placement(String origin, Double confidence, String sourceRef, MemberId by, Instant at,
+            boolean byMember) {
+        public static final Placement NONE = new Placement(null, null, null, null, null, false);
+    }
+
+    /** A proposed placement waiting for a member: an existing folder or a path below {@code anchorFolderId}. */
+    public record PlacementSuggestion(UUID folderId, UUID anchorFolderId, List<String> newPath, List<String> path,
+            Double confidence, String evidence, String runRef, String model, int generation, Instant createdAt) {
     }
 
     /** {@code displayName} is a readable name for exports; built-in labels without a custom name use their key. */

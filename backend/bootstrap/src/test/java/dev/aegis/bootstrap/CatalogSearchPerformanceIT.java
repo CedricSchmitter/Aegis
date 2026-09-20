@@ -142,5 +142,9 @@ class CatalogSearchPerformanceIT extends PostgresIT {
                 INSERT INTO document_labels (document_id, label_id, origin, review_state, decided_at)
                 VALUES (?, ?, ?, ?, ?)""", labelRows);
         jdbc.batchUpdate("INSERT INTO document_subjects (document_id, kind) VALUES (?, ?)", subjectRows);
+        // Bulk-inserted fixture data has no statistics yet, so the planner would size these tables from their
+        // physical width instead of their content and could pick a plan no production instance ever uses
+        // (autovacuum analyzes there). Measuring without this would measure the fixture, not the queries.
+        jdbc.execute("ANALYZE documents, document_classifications, document_labels, document_subjects");
     }
 }

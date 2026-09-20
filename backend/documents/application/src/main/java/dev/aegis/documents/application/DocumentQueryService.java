@@ -40,6 +40,9 @@ import dev.aegis.documents.domain.catalog.LabelRepository;
 import dev.aegis.documents.domain.catalog.LabelVocabulary;
 import dev.aegis.documents.domain.classification.ClassificationRepository;
 import dev.aegis.documents.domain.classification.DocumentClassification;
+import dev.aegis.documents.domain.placement.PlacementSuggestion;
+import dev.aegis.documents.domain.placement.PlacementSuggestionRepository;
+import dev.aegis.documents.domain.placement.PlacementTarget;
 import dev.aegis.documents.domain.classification.LabelAssignment;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
@@ -77,6 +80,7 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
     private final LabelRepository labels;
     private final ClassificationRepository classifications;
     private final ClassificationViews classificationViews;
+    private final PlacementSuggestionRepository placements;
     private final DocumentAnalysisRepository analyses;
     private final AnalysisSettings analysisSettings;
     private final HouseholdAccess access;
@@ -85,8 +89,8 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
     public DocumentQueryService(DocumentRepository documents, PaperlessArchive archive, OriginalStore store,
             DocumentPresenter presenter, DocumentCatalog catalog, CategoryRepository categories,
             LabelRepository labels, ClassificationRepository classifications, ClassificationViews classificationViews,
-            DocumentAnalysisRepository analyses, AnalysisSettings analysisSettings, HouseholdAccess access,
-            Clock clock) {
+            PlacementSuggestionRepository placements, DocumentAnalysisRepository analyses,
+            AnalysisSettings analysisSettings, HouseholdAccess access, Clock clock) {
         this.documents = documents;
         this.archive = archive;
         this.store = store;
@@ -96,6 +100,7 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         this.labels = labels;
         this.classifications = classifications;
         this.classificationViews = classificationViews;
+        this.placements = placements;
         this.analyses = analyses;
         this.analysisSettings = analysisSettings;
         this.access = access;
@@ -160,6 +165,7 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         Map<DocumentId, DocumentClassification> stored = classifications.findAll(ids);
         Map<DocumentId, ClassificationView> views = classificationViews.viewsOf(ids, tree, vocabulary);
         Map<DocumentId, DocumentAnalysis> storedAnalyses = analyses.findAll(ids);
+        Map<DocumentId, PlacementSuggestion> suggestions = placements.findAll(ids);
         List<DocumentExportRecord> records = new ArrayList<>();
         for (Document document : all) {
             DocumentAnalysis analysis = storedAnalyses.get(document.id());
@@ -167,7 +173,7 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
                     views.getOrDefault(document.id(), ClassificationView.UNSORTED), analysis,
                     analysisSettings.filenameLanguage());
             records.add(presenter.exportRecord(document, exportClassification(stored.get(document.id()), tree,
-                    vocabulary), filename, analysis));
+                    vocabulary, suggestions.get(document.id())), filename, analysis));
         }
         return records;
     }
@@ -302,9 +308,10 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
     }
 
     private static DocumentExportRecord.Classification exportClassification(DocumentClassification classification,
-            CategoryTree tree, LabelVocabulary vocabulary) {
+            CategoryTree tree, LabelVocabulary vocabulary, PlacementSuggestion suggestion) {
         if (classification == null) {
-            return new DocumentExportRecord.Classification(null, List.of(), List.of());
+            return new DocumentExportRecord.Classification(null, List.of(), List.of(),
+                    DocumentExportRecord.Placement.NONE, null);
         }
         CategoryId categoryId = classification.categoryId().filter(id -> tree.find(id).isPresent()).orElse(null);
         List<String> path = categoryId == null ? List.of()
@@ -321,8 +328,28 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
                     assignment.confidence() == null ? null : assignment.confidence().value(),
                     assignment.sourceRef(), assignment.decidedBy(), assignment.decidedAt()));
         }
+        DocumentClassification.Placement placement = classification.placement();
         return new DocumentExportRecord.Classification(categoryId == null ? null : categoryId.value(), path,
-                assignments);
+                assignments,
+                new DocumentExportRecord.Placement(
+                        placement.origin() == null ? null : placement.origin().name(),
+                        placement.confidence() == null ? null : placement.confidence().value(),
+                        placement.sourceRef(), placement.by(), placement.at(), placement.byMember()),
+                exportSuggestion(suggestion, tree));
+    }
+
+    /** A pending proposal as a portable entry; {@code path} is its readable target for humans. */
+    private static DocumentExportRecord.PlacementSuggestion exportSuggestion(PlacementSuggestion suggestion,
+            CategoryTree tree) {
+        if (suggestion == null) {
+            return null;
+        }
+        PlacementTarget target = suggestion.target();
+        return new DocumentExportRecord.PlacementSuggestion(
+                target.folderId().map(CategoryId::value).orElse(null),
+                target.anchorId().map(CategoryId::value).orElse(null), target.newPath(),
+                target.readablePath(tree), suggestion.confidence(), suggestion.evidence(), suggestion.runRef(),
+                suggestion.model(), suggestion.generation(), suggestion.createdAt());
     }
 
     private String friendlyFilename(Document document) {

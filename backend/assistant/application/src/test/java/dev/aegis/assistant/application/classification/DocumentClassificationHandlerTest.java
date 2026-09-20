@@ -16,6 +16,10 @@ import dev.aegis.assistant.domain.SourceRef;
 import dev.aegis.assistant.domain.TokenUsage;
 import dev.aegis.assistant.domain.Workload;
 import dev.aegis.documents.application.api.AutomaticClassification;
+import dev.aegis.documents.application.api.AutomaticClassification.FolderCatalog;
+import dev.aegis.documents.application.api.AutomaticClassification.FolderEntry;
+import dev.aegis.documents.application.api.AutomaticClassification.PlacementDecision;
+import dev.aegis.documents.application.api.AutomaticClassification.VocabularyEntry;
 import dev.aegis.documents.application.api.ContentUnavailableException;
 import dev.aegis.documents.application.api.LabelChip;
 import dev.aegis.identity.application.api.MemberDirectory;
@@ -37,6 +41,7 @@ class DocumentClassificationHandlerTest {
     private static final DocumentId DOC = DocumentId.random();
     private static final MemberId LISA = MemberId.random();
     private static final UUID INVOICE = UUID.randomUUID();
+    private static final UUID HOUSE_FOLDER = UUID.randomUUID();
     private static final String TEXT = """
             Telekom Deutschland GmbH
             Rechnungsdatum: 17.09.2026
@@ -155,10 +160,125 @@ class DocumentClassificationHandlerTest {
         assertThat(documents.appliedRefs).containsExactly("ai-run:" + context.id());
     }
 
+    @Test
+    void theFolderTreeIsPartOfTheSameCallInADeterministicOrder() {
+        PreparedRun prepared = handler.prepare(run(4, 1));
+
+        String message = ((ContentPart.Text) prepared.messages().getFirst().parts().getFirst()).text();
+        assertThat(prepared.system()).contains("placement").contains("Folder names are not labels")
+                // A household whose tree has no fitting folder must get a proposal, not an unfiled document.
+                .contains("propose a path instead of leaving the document unfiled")
+                .contains("Set placement to null only when the text does not show what kind of document");
+        assertThat(message).contains("Folder tree (folderId | path | implies | documents):")
+                .contains(HOUSE_FOLDER + " | Haus / Versicherungen | Versicherung, HOUSE | 12")
+                .contains("Folder the document is in now: Unsorted");
+        // Same input, same prompt: the catalog prefix stays cacheable.
+        assertThat(((ContentPart.Text) handler.prepare(run(4, 1)).messages().getFirst().parts().getFirst()).text())
+                .isEqualTo(message);
+        // The folder block comes before the document, so the stable part is the prefix.
+        assertThat(message.indexOf("Folder tree")).isLessThan(message.indexOf("<untrusted_content"));
+    }
+
+    @Test
+    void anEmptyOrReducedTreeIsStatedInsteadOfPretendingCompleteness() {
+        documents.folders = new FolderCatalog(List.of(), 0);
+        assertThat(promptOf(run(4, 1))).contains("no folders yet; every document is in Unsorted");
+
+        documents.folders = new FolderCatalog(List.of(new FolderEntry(HOUSE_FOLDER, List.of("Haus"), List.of(),
+                List.of(), 0)), 37);
+        assertThat(promptOf(run(4, 1))).contains("(37 further folders are not listed");
+    }
+
+    @Test
+    void aProposedFolderOrPathIsParsedAndBounded() {
+        Map<String, Object> answer = validAnswer();
+        answer.put("placement", Map.of("folderId", HOUSE_FOLDER.toString(), "anchorFolderId", "",
+                "newPath", List.of(), "confidence", 0.91, "evidence", "Rechnungsdatum"));
+
+        handler.validate(run(4, 1), answer(answer));
+
+        AutomaticClassification.Proposal proposal = documents.assessed.getFirst();
+        assertThat(proposal.placement().folderId()).isEqualTo(HOUSE_FOLDER);
+        assertThat(proposal.placement().anchorFolderId()).isNull();
+        assertThat(proposal.placement().newPath()).isEmpty();
+        assertThat(proposal.placement().confidence()).isEqualTo(0.91);
+    }
+
+    @Test
+    void aProposedPathIsCutToTheDocumentedNumberOfNewFolders() {
+        Map<String, Object> answer = validAnswer();
+        answer.put("placement", Map.of("folderId", "", "anchorFolderId", HOUSE_FOLDER.toString(),
+                "newPath", List.of("Versicherungen", "Hausrat", "2026", "Quartal 1"), "confidence", 0.8,
+                "evidence", "Rechnungsdatum"));
+
+        handler.validate(run(4, 1), answer(answer));
+
+        assertThat(documents.assessed.getFirst().placement().newPath())
+                .containsExactly("Versicherungen", "Hausrat", "2026");
+    }
+
+    @Test
+    void aMalformedPlacementIsInvalidOutput() {
+        Map<String, Object> answer = validAnswer();
+        answer.put("placement", "Haus / Versicherungen");
+
+        assertThatThrownBy(() -> handler.validate(run(4, 1), answer(answer)))
+                .isInstanceOf(InvalidModelOutputException.class);
+    }
+
+    /**
+     * The catalog is trusted context and grows with the household, so its size is measured against representative
+     * trees. {@code aegis.documents.analysis.max-catalog-folders} (200) bounds the folder block; beyond it the
+     * catalog is reduced and says so. The numbers are printed so the cost per document can be reported.
+     */
+    @Test
+    void aRepresentativeCatalogStaysWithinTheDocumentedSizeBound() {
+        documents.vocabulary = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            documents.vocabulary.add(new VocabularyEntry(UUID.randomUUID(), "ORGANIZATION", null,
+                    "Organisation Nummer " + i, List.of("Alias A " + i, "Alias B " + i)));
+        }
+
+        int household = measure(40);
+        int bound = measure(200);
+
+        System.out.println("folder block characters: 40 folders = " + household + ", 200 folders = " + bound);
+        assertThat(household).isLessThan(bound);
+        assertThat(bound).isLessThan(40_000);
+        assertThat(catalogOf(run(4, 1)).length()).isLessThan(60_000);
+    }
+
+    /** Characters the folder block adds for a tree of {@code count} folders. */
+    private int measure(int count) {
+        List<FolderEntry> folders = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            folders.add(new FolderEntry(UUID.randomUUID(),
+                    List.of("Haus", "Versicherungen", "Ordner mit einem längeren Namen " + i),
+                    List.of("Versicherung", "Rechnung"), List.of("HOUSE"), i));
+        }
+        documents.folders = new FolderCatalog(folders, 0);
+        String prompt = promptOf(run(4, 1));
+        return prompt.indexOf("Labels the document already has") - prompt.indexOf("Folder tree (");
+    }
+
+    private String catalogOf(RunContext context) {
+        String prompt = promptOf(context);
+        return prompt.substring(0, prompt.indexOf("Current title and upload filename"));
+    }
+
+    private String promptOf(RunContext context) {
+        return ((ContentPart.Text) handler.prepare(context).messages().getFirst().parts().getFirst()).text();
+    }
+
     /** Controlled documents contract. */
     static final class FakeDocuments implements AutomaticClassification {
         final List<Proposal> assessed = new ArrayList<>();
         final List<String> appliedRefs = new ArrayList<>();
+        FolderCatalog folders = new FolderCatalog(List.of(
+                new FolderEntry(HOUSE_FOLDER, List.of("Haus", "Versicherungen"), List.of("Versicherung"),
+                        List.of("HOUSE"), 12)), 0);
+        List<VocabularyEntry> vocabulary = new ArrayList<>(List.of(new VocabularyEntry(INVOICE, "DOCUMENT_TYPE",
+                "invoice", null, List.of("Rechnung", "Invoice"))));
         boolean unavailable;
 
         @Override
@@ -166,9 +286,8 @@ class DocumentClassificationHandlerTest {
             if (unavailable) {
                 throw new ContentUnavailableException("down", null);
             }
-            return new Input(id, generation, 4, "Scan 0001", "FILENAME", "Scan 0001.pdf", TEXT, false,
-                    List.of(new VocabularyEntry(INVOICE, "DOCUMENT_TYPE", "invoice", null,
-                            List.of("Rechnung", "Invoice"))),
+            return new Input(id, generation, 4, "Scan 0001", "FILENAME", "Scan 0001.pdf", TEXT, false, vocabulary,
+                    folders, List.of(),
                     List.of(new LabelChip(INVOICE, "DOCUMENT_TYPE", "invoice", null, LabelChip.SOURCE_OWN,
                             "AUTOMATIC", "SUGGESTED", 0.5, "ai-run:x", null)),
                     List.of());
@@ -186,13 +305,16 @@ class DocumentClassificationHandlerTest {
                     proposal.title(), List.of(new LabelDecision(INVOICE, "DOCUMENT_TYPE", 0.9, true, false)), null,
                     new DateDecision("2026-09-17", "Rechnungsdatum: 17.09.2026", "FOUND"), "Internet",
                     proposal.flags(), List.of(new CandidateDecision("ORGANIZATION", "Telekom", "Telekom", 0.9)),
-                    List.of());
+                    List.of(), proposal.placement() == null ? null
+                            : new PlacementDecision(proposal.placement().folderId(),
+                                    proposal.placement().anchorFolderId(), proposal.placement().newPath(),
+                                    proposal.placement().confidence(), proposal.placement().evidence(), true));
         }
 
         @Override
         public Applied apply(Actor actor, Assessment assessment, String runRef, String model) {
             appliedRefs.add(runRef);
-            return new Applied(0, 1, false, 1);
+            return new Applied(0, 1, false, false, 1);
         }
     }
 }

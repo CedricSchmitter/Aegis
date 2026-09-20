@@ -4,6 +4,7 @@ import dev.aegis.documents.domain.analysis.AnalysisTypes.DateStatus;
 import dev.aegis.documents.domain.analysis.AnalysisTypes.Flag;
 import dev.aegis.documents.domain.analysis.AnalysisValues.DocumentDate;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -22,11 +23,15 @@ import java.util.Set;
  * <li>Subject associations are always suggestions.</li>
  * <li>The issue date counts only when its quote is in the text and spells out that date; dates in the future (beyond
  * one year) or before 1900 are rejected.</li>
+ * <li>A document is filed automatically only into an existing folder and only under
+ * {@link #placesAutomatically}; a path that does not exist yet is always a suggestion, because Aegis never creates
+ * folders without a member (ADR-0005).</li>
  * </ul>
  */
 public final class ClassificationPolicy {
     public static final double APPLY_CONFIDENCE = 0.85;
     public static final double CANDIDATE_CONFIDENCE = 0.6;
+    public static final double PLACE_CONFIDENCE = 0.85;
     public static final int MAX_APPLIED_TOPICS = 3;
     public static final int MAX_TOPICS = 5;
 
@@ -40,6 +45,24 @@ public final class ClassificationPolicy {
     /** Whether a label that resolved to an active vocabulary entry may be applied without review. */
     public static boolean applies(boolean doubtful, Double confidence, boolean evidenced) {
         return !doubtful && evidenced && confidence != null && confidence >= APPLY_CONFIDENCE;
+    }
+
+    /**
+     * Whether an automatic placement may be applied without review (ADR-0005). The folder must already exist, the
+     * document must still be in Unsorted and never have been placed or moved by a member, the result must carry no
+     * doubt flag, the model's own confidence must be at least {@value #PLACE_CONFIDENCE}, a verbatim quote from the
+     * text must support the placement, and the folder's implied labels must be evidence of their own: it implies at
+     * least one label and every label it implies is among the document's effective labels. A folder name alone is
+     * never evidence (ADR-0002), so folders without implied labels only ever receive a suggestion.
+     *
+     * @param impliedLabels the labels the target folder and its ancestors pass on
+     * @param effectiveLabels the document's effective labels after this run
+     */
+    public static <T> boolean placesAutomatically(boolean doubtful, Double confidence, boolean evidenced,
+            boolean unsorted, boolean placedByMember, Collection<T> impliedLabels, Collection<T> effectiveLabels) {
+        return !doubtful && evidenced && unsorted && !placedByMember && confidence != null
+                && confidence >= PLACE_CONFIDENCE && !impliedLabels.isEmpty()
+                && effectiveLabels.containsAll(impliedLabels);
     }
 
     /** Whether an unknown name is worth offering as a new label. */

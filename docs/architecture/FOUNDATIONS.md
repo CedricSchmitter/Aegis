@@ -76,7 +76,7 @@ Use optimistic concurrency and explicit conflict responses. Inject `Clock` for t
 | Notifications | Delivery attempts and preferences | Delivery provider |
 | Operations/portability | Job status and export/import coordination | Scheduler and storage |
 
-Identity, documents, planning, notifications, operations, portability and assistant exist as modules. The assistant module provides the bounded AI execution boundary of [ADR-0003](adr/ADR-0003-bounded-ai-execution.md) (runs, budgets, model gateway, tool policy, connection check) and the document classification workload of [ADR-0004](adr/ADR-0004-automatic-document-classification.md), whose results the documents context assesses and applies; review and chat workflows are issue-driven extensions of it. Inbox and contracts describe boundaries for issue-driven extensions, not implemented modules. Add modules only for concrete use cases and capture substantial boundary changes in ADRs.
+Identity, documents, planning, notifications, operations, portability and assistant exist as modules. The assistant module provides the bounded AI execution boundary of [ADR-0003](adr/ADR-0003-bounded-ai-execution.md) (runs, budgets, model gateway, tool policy, connection check) and the document classification workload of [ADR-0004](adr/ADR-0004-automatic-document-classification.md) with the folder placement of [ADR-0005](adr/ADR-0005-automatic-folder-placement.md), whose results the documents context assesses and applies; review and chat workflows are issue-driven extensions of it. Inbox and contracts describe boundaries for issue-driven extensions, not implemented modules. Add modules only for concrete use cases and capture substantial boundary changes in ADRs.
 
 ## Localization contract
 
@@ -135,6 +135,7 @@ workload and executed with the requesting member's authorization; results applie
 | Original documents, archive renditions and OCR full text | Paperless | Preserve original bytes, checksums and stable Aegis references |
 | Document title, folder tree, labels and their assignments | Aegis PostgreSQL ([ADR-0002](adr/ADR-0002-document-tree-and-labels.md)) | Stable folder/label IDs, aliases, provenance and review state in the versioned export; Paperless classification fields are not written |
 | Automatic analysis results, title origin and friendly filenames | Aegis PostgreSQL ([ADR-0004](adr/ADR-0004-automatic-document-classification.md)) | Generated values with run/model provenance, review decisions, filename override and history in the versioned export; originals keep their bytes and upload filename |
+| Folder placement origin and pending placement proposals | Aegis PostgreSQL ([ADR-0005](adr/ADR-0005-automatic-folder-placement.md)) | Placement origin and the proposal a member has not decided on in the versioned export; folders are only created by a member accepting a proposal |
 | Tasks and confirmed contract facts | Aegis PostgreSQL | Versioned structured export with source relationships and review state |
 | Original email, when connected | Provider mailbox and unchanged local EML copy | Preserve attachment and message origins |
 | Calendar events, when connected | Selected calendar provider | Retain external identity, version and synchronization state |

@@ -40,10 +40,12 @@ class DocumentQueryServiceTest {
         var classifications = new InMemoryClassificationRepository();
         var categories = new InMemoryCategoryRepository();
         var labels = new InMemoryLabelRepository();
-        var views = new ClassificationViews(classifications, categories, labels);
+        var placements = new InMemoryPlacementSuggestionRepository();
+        var views = new ClassificationViews(classifications, categories, labels, placements);
         service = new DocumentQueryService(repository, archive, store, TestDoubles.presenter(scheduler, views),
                 new InMemoryDocumentCatalog(repository, classifications, categories, labels), categories, labels,
-                classifications, views, new InMemoryDocumentAnalysisRepository(), TestDoubles.analysisSettings(),
+                classifications, views, placements, new InMemoryDocumentAnalysisRepository(),
+                TestDoubles.analysisSettings(),
                 new TestDoubles.MembersOnly(anna, ben), Clock.fixed(NOW, ZoneOffset.UTC));
     }
 

@@ -7,6 +7,7 @@ import dev.aegis.documents.domain.catalog.CategoryId;
 import dev.aegis.documents.domain.catalog.Facet;
 import dev.aegis.documents.domain.catalog.LabelId;
 import dev.aegis.shared.DocumentId;
+import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
 import java.time.Instant;
@@ -120,8 +121,8 @@ class DocumentClassificationTest {
 
     @Test
     void staleAnalysesAreRefused() {
-        DocumentClassification stored = DocumentClassification.rehydrate(DocumentId.random(), null, List.of(), LISA,
-                NOW, 4);
+        DocumentClassification stored = DocumentClassification.rehydrate(DocumentId.random(), null,
+                DocumentClassification.Placement.NONE, List.of(), LISA, NOW, 4);
 
         assertThatThrownBy(() -> stored.propose(List.of(applied(TELEKOM)), 3, "run:old", false, NOW))
                 .isInstanceOf(StaleVersionException.class);
@@ -201,11 +202,11 @@ class DocumentClassificationTest {
         LabelAssignment exported = new LabelAssignment(TELEKOM.id(), Facet.ORGANIZATION, AssignmentOrigin.AUTOMATIC,
                 ReviewState.APPLIED, new Confidence(0.8), "run:7", null, NOW);
 
-        classification.restore(folder, List.of(exported), LISA, NOW);
+        classification.restore(folder, null, List.of(exported), LISA, NOW);
 
         assertThat(classification.categoryId()).contains(folder);
         assertThat(classification.assignments()).containsExactly(exported);
-        assertThatThrownBy(() -> classification.restore(null, List.of(), LISA, NOW))
+        assertThatThrownBy(() -> classification.restore(null, null, List.of(), LISA, NOW))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -228,5 +229,67 @@ class DocumentClassificationTest {
 
         assertThat(classification.assignment(tag.id())).get().extracting(LabelAssignment::facet)
                 .isEqualTo(Facet.TOPIC);
+    }
+
+    @Test
+    void anAutomaticPlacementOnlyHappensWhileTheDocumentIsUnsortedAndUntouchedByMembers() {
+        CategoryId folder = CategoryId.random();
+
+        assertThat(classification.placeAutomatically(folder, new Confidence(0.9), "ai-run:1", NOW)).isTrue();
+        assertThat(classification.categoryId()).contains(folder);
+        assertThat(classification.placement().origin()).isEqualTo(AssignmentOrigin.AUTOMATIC);
+        assertThat(classification.placement().automatic()).isTrue();
+        assertThat(classification.placement().byMember()).isFalse();
+        assertThat(classification.placement().confidence()).isEqualTo(new Confidence(0.9));
+        // A second run does not move a document that is already filed.
+        assertThat(classification.placeAutomatically(CategoryId.random(), new Confidence(0.99), "ai-run:2", NOW))
+                .isFalse();
+        assertThat(classification.categoryId()).contains(folder);
+    }
+
+    @Test
+    void aMemberDecisionAboutThePlacementSurvivesLaterRuns() {
+        CategoryId chosen = CategoryId.random();
+        classification.placeIn(chosen, LISA, NOW);
+
+        assertThat(classification.placement().byMember()).isTrue();
+        assertThat(classification.placement().origin()).isEqualTo(AssignmentOrigin.MANUAL);
+        assertThat(classification.placeAutomatically(CategoryId.random(), new Confidence(0.99), "ai-run:1", NOW))
+                .isFalse();
+
+        // Moving back to Unsorted is a decision too: no run files the document again.
+        classification.placeIn(null, LISA, NOW);
+        assertThat(classification.categoryId()).isEmpty();
+        assertThat(classification.placement().byMember()).isTrue();
+        assertThat(classification.placeAutomatically(chosen, new Confidence(0.99), "ai-run:2", NOW)).isFalse();
+    }
+
+    @Test
+    void anAutomaticMoveCanBeRevertedAndOnlyAnAutomaticOne() {
+        CategoryId folder = CategoryId.random();
+        classification.placeAutomatically(folder, new Confidence(0.9), "ai-run:1", NOW);
+
+        classification.revertPlacement(LISA, NOW);
+
+        assertThat(classification.categoryId()).isEmpty();
+        assertThat(classification.placement().byMember()).isTrue();
+        assertThat(classification.placement().origin()).isNull();
+        assertThatThrownBy(() -> classification.revertPlacement(LISA, NOW))
+                .isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "placement.notAutomatic");
+    }
+
+    @Test
+    void aStructuralMoveKeepsTheProvenanceAndIsNoMemberDecision() {
+        CategoryId folder = CategoryId.random();
+        CategoryId parent = CategoryId.random();
+        classification.placeAutomatically(folder, new Confidence(0.9), "ai-run:1", NOW);
+
+        assertThat(classification.relocate(parent, NOW)).isTrue();
+
+        assertThat(classification.categoryId()).contains(parent);
+        assertThat(classification.placement().origin()).isEqualTo(AssignmentOrigin.AUTOMATIC);
+        assertThat(classification.placement().sourceRef()).isEqualTo("ai-run:1");
+        assertThat(classification.placement().byMember()).isFalse();
     }
 }
