@@ -70,6 +70,33 @@ The JSON file only seeds accounts that do not exist yet. After onboarding/passwo
 plaintext values by replacing its content with `{"members": []}`; keep the bind-mounted file in place so
 later container recreation does not encounter a missing file or create a directory in its place.
 
+## Starting folder tree (optional, on request)
+
+A new installation starts with an empty folder tree and the Unsorted inbox. The tree agreed for this household is
+tracked as data in `ops/deploy/folder-tree.json`; `ops/deploy/seed-folder-tree.py` creates it through the ordinary
+REST API. It is not part of deployment, and the application never creates folders by itself
+([ADR-0006](../architecture/adr/ADR-0006-starting-folder-tree.md)).
+
+Read the data file first and edit the names and implied labels if the household's life areas differ; every implied
+label on a folder's path gates automatic filing
+([ADR-0002 naming rules](../architecture/adr/ADR-0002-document-tree-and-labels.md#folder-naming-rules)). Then run a
+plan and only afterwards apply it, from the VM against the trusted HTTPS endpoint:
+
+```sh
+# on the VM, as aegis-agent, from a checkout of the deployed commit
+sudo -n cat /srv/aegis/data/caddy/data/caddy/pki/authorities/local/root.crt > /tmp/aegis-root.crt
+python3 ops/deploy/seed-folder-tree.py --base-url https://192.168.2.159 --ca-cert /tmp/aegis-root.crt     --credentials /srv/aegis/deploy/secrets/aegis-dev-login.json
+# repeat with --apply once the plan is what you want
+```
+
+The script is idempotent: folders are matched by normalized sibling name under the same parent, so a second run
+reports no changes and never creates a near-duplicate of an existing folder. It writes nothing without `--apply`,
+and it deletes nothing without `--prune`, which removes only folders the data file does not list and refuses any
+folder that holds documents or still has a kept subfolder. `--prune` reads the data file as the complete tree, so
+a partial file would propose deleting everything else; read the printed plan before adding `--apply`. A built-in label key that no longer resolves fails the
+run before anything is written. Credentials come from the JSON file or from `--username` with `AEGIS_PASSWORD`;
+they are never printed. Delete the copied CA certificate afterwards.
+
 ## AI provider (optional)
 
 AI runs through the bounded execution boundary of [ADR-0003](../architecture/adr/ADR-0003-bounded-ai-execution.md).

@@ -1,6 +1,7 @@
 # ADR-0002: Document tree, structured labels and their shared metadata contract
 
 Status: accepted (owner decisions 2026-09-17; implemented for issues #20 and #46). Date: 2026-09-17.
+Amended 2026-09-20 with the folder naming rules agreed in #71 and written down for #72.
 
 ## Context
 
@@ -48,6 +49,35 @@ one-way mirror into Paperless would be a separate issue and must stay a read-onl
   rejects the deletion until one folder is renamed.
 - A folder can carry explicit **implied labels** and **implied subjects** (for example House → subject House,
   Invoices → type Invoice, Internet → topic Internet). Folder names are never interpreted as labels.
+
+### Folder naming rules
+
+Added on 2026-09-20 for issues #71 and #72, after a tree that had grown ad hoc turned out to file almost nothing by
+itself. These are not style advice. [ADR-0005](ADR-0005-automatic-folder-placement.md) files a document without
+review only when the target folder implies at least one label and **every** label it and its ancestors imply is
+among the document's effective labels, so the shape of the tree decides how much filing happens automatically.
+
+- **Sort by life area, never by document type.** A folder named `Rechnungen` duplicates the `invoice` label and
+  forces a choice between the contract folder and the invoice folder for the same subject. The electricity bill and
+  the electricity contract belong in the same folder and are told apart by their label.
+- **No folders for states** such as `Eingang`, `Aktiv` or `Archiv`. Paper needs them because paper has no state.
+  Aegis has Unsorted, processing and analysis states, tasks with due dates and review. Modelling a state as a folder
+  would break single placement, because a document would have to move as its state changes.
+- **A folder implies a label only when every document anywhere below it really carries that label.** An implication
+  on a parent gates all of its children, so folders that merely group unrelated areas imply nothing and a leaf
+  implies the one topic that defines it (`Wohnen / Energie / Strom` implies `electricity`). A folder that groups one
+  coherent topic may imply it: `Versicherungen` implies `insurance`, and its children then require that topic too,
+  which is right for a car insurance policy that carries both `insurance` and `car`. A folder that implies nothing
+  and inherits nothing only ever receives suggestions - intended for a pure grouping folder, a defect anywhere else.
+- Only implied **labels** take part in that gate, not implied subjects. `Wohnen` implying the `HOUSE` subject
+  therefore stays a grouping folder that never receives a document automatically.
+- **People are subjects, not folders.** `MEMBER` subjects already record whom a document concerns and do not
+  restrict visibility. A per-person folder level would fragment joint documents, which is most household mail.
+- At most three levels, names that still make sense in two years, no permanent `Sonstiges`, and a new area only when
+  documents for it actually arrive rather than in advance.
+
+The starting tree that follows these rules, and how a household gets it, are in
+[ADR-0006](ADR-0006-starting-folder-tree.md).
 
 ### Facets and cardinality
 
