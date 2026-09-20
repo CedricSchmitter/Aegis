@@ -9,6 +9,7 @@ import { PendingShares } from "./PendingShares";
 const NAV = [
   { to: "/today", key: "nav.today" },
   { to: "/documents", key: "nav.documents" },
+  { to: "/contracts", key: "nav.contracts" },
   { to: "/tasks", key: "nav.tasks" },
   { to: "/notices", key: "nav.notices" },
   { to: "/status", key: "nav.status" },
@@ -106,14 +107,14 @@ export function Layout({ children }: { children: ReactNode }) {
       </footer>
       <nav
         aria-label={t("nav.menu")}
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-stone-800 dark:bg-stone-900 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-stone-800 dark:bg-stone-900 md:hidden"
       >
         {NAV.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `relative flex min-h-14 flex-col items-center justify-center text-xs ${
+              `relative flex min-h-14 flex-col items-center justify-center px-1 text-center text-xs leading-tight ${
                 isActive ? "text-sky-800 dark:text-sky-300" : "text-stone-600 dark:text-stone-400"
               }`
             }

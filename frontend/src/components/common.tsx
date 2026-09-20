@@ -61,6 +61,12 @@ const STATE_STYLES: Record<string, string> = {
   NEEDS_REVIEW: "bg-violet-100 text-violet-900 dark:bg-violet-900 dark:text-violet-100",
   OPEN: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
   DONE: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
+  ACTIVE: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
+  ENDED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
+  EXTRACTED: "bg-violet-100 text-violet-900 dark:bg-violet-900 dark:text-violet-100",
+  CONFIRMED: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
+  REJECTED: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
+  SUPERSEDED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
 };
 
 export function Badge({ state, label }: { state: string; label: string }) {

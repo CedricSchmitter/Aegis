@@ -19,6 +19,7 @@
   "nav": {
     "today": "Heute",
     "documents": "Dokumente",
+    "contracts": "Verträge",
     "tasks": "Aufgaben",
     "notices": "Hinweise",
     "status": "Status",
@@ -154,7 +155,8 @@
     "removeLabel": "Label „{{name}}“ entfernen",
     "renameTitle": "Titel ändern",
     "renamed": "Titel geändert.",
-    "inheritedFromFolder": "Aus dem Ordner übernommen; ändert sich beim Verschieben mit."
+    "inheritedFromFolder": "Aus dem Ordner übernommen; ändert sich beim Verschieben mit.",
+    "linkedContracts": "Verträge aus diesem Dokument"
   },
   "subjects": {
     "HOUSE": "Haus",
@@ -197,6 +199,167 @@
     "status": {
       "OPEN": "Offen",
       "DONE": "Erledigt"
+    }
+  },
+  "contracts": {
+    "title": "Verträge",
+    "new": "Neuer Vertrag",
+    "newLabel": "Neuer Vertrag",
+    "nameField": "Name",
+    "nameRequired": "Bitte einen Namen für den Vertrag eingeben.",
+    "counterpartyField": "Vertragspartner (optional)",
+    "counterpartyLabel": "Vertragspartner: {{name}}",
+    "counterpartyUnknown": "Kein Vertragspartner erfasst",
+    "create": "Vertrag anlegen",
+    "empty": "Noch keine Verträge. Lege den ersten an und trage ein, was im Dokument steht.",
+    "updatedAt": "Angelegt von {{name}}, letzte Änderung {{date}}",
+    "stale": "Jemand anderes hat diesen Vertrag zwischenzeitlich geändert. Der aktuelle Stand wurde neu geladen; bitte prüfe ihn und wiederhole deine Entscheidung.",
+    "reload": "Jetzt neu laden",
+    "pendingFacts": "{{count}} Angaben warten auf eine Entscheidung",
+    "pendingFacts_one": "{{count}} Angabe wartet auf eine Entscheidung",
+    "conflictCount": "{{count}} Widersprüche",
+    "conflictCount_one": "{{count}} Widerspruch",
+    "status": {
+      "ACTIVE": "Aktiv",
+      "CANCELLED": "Gekündigt",
+      "ENDED": "Beendet"
+    },
+    "reviewState": {
+      "EXTRACTED": "Vorgeschlagen",
+      "CONFIRMED": "Bestätigt",
+      "REJECTED": "Abgelehnt",
+      "SUPERSEDED": "Ersetzt"
+    },
+    "factType": {
+      "COUNTERPARTY": "Vertragspartner",
+      "CONTRACT_NUMBER": "Vertragsnummer",
+      "START_DATE": "Vertragsbeginn",
+      "END_DATE": "Vertragsende",
+      "MINIMUM_TERM": "Mindestlaufzeit",
+      "RENEWAL_TERM": "Verlängerung um",
+      "NOTICE_PERIOD": "Kündigungsfrist",
+      "AUTOMATIC_RENEWAL": "Verlängert sich automatisch",
+      "CANCELLATION_DEADLINE": "Kündigungstermin",
+      "AMOUNT": "Betrag",
+      "BILLING_PERIOD": "Abrechnungszeitraum"
+    },
+    "periodUnit": {
+      "Y": "Jahre",
+      "M": "Monate",
+      "D": "Tage"
+    },
+    "period": {
+      "years": "{{count}} Jahre",
+      "years_one": "{{count}} Jahr",
+      "months": "{{count}} Monate",
+      "months_one": "{{count}} Monat",
+      "days": "{{count}} Tage",
+      "days_one": "{{count}} Tag"
+    },
+    "validity": {
+      "always": "Gilt für den ganzen Vertrag",
+      "from": "Gilt ab {{from}}",
+      "until": "Gilt bis {{until}}",
+      "between": "Gilt von {{from}} bis {{until}}"
+    },
+    "deadline": {
+      "title": "Kündigungstermin",
+      "upcoming": "Bestätigte Kündigungstermine",
+      "cancelBy": "Kündigen bis {{date}}",
+      "none": "Noch kein Kündigungstermin berechenbar",
+      "basedOn": "Berechnet aus diesen bestätigten Angaben:",
+      "contractualHint": "Das ist der vertragliche Termin. Geplante Arbeit und Erinnerungen sind davon getrennt und verschieben ihn nie.",
+      "evaluatedOn": "Berechnet für den {{date}}",
+      "insufficient": "Es lässt sich kein Kündigungstermin berechnen.",
+      "insufficientHint": "Aegis rechnet nur mit bestätigten Regeln und schätzt einen Termin nie.",
+      "insufficientUnspecified": "Die bestätigten Angaben ergeben keinen Termin.",
+      "missing": "Es fehlt: {{types}}",
+      "contradicting": "Bestätigte Angaben widersprechen sich und brauchen zuerst eine Entscheidung: {{types}}",
+      "basis": {
+        "STATED_DEADLINE": "Ein Dokument nennt diesen Termin selbst.",
+        "NOTICE_PERIOD_BEFORE_END": "Berechnet als Vertragsende am {{end}} minus der bestätigten Kündigungsfrist."
+      },
+      "basisUnknown": "Berechnet aus den unten aufgeführten bestätigten Angaben."
+    },
+    "conflicts": {
+      "title": "Widersprüche",
+      "hint": "Aegis meldet Widersprüche und entscheidet sie nicht. Solange ein Widerspruch besteht, gilt für diese Tage kein Wert.",
+      "established": "Bisher bestätigt:",
+      "against": "Widersprochen von:",
+      "kind": {
+        "CONFIRMED_AGAINST_CONFIRMED": "Zwei bestätigte Angaben zu {{type}} beschreiben denselben Tag unterschiedlich.",
+        "EXTRACTED_AGAINST_CONFIRMED": "Ein Vorschlag zu {{type}} widerspricht dem, was der Haushalt bestätigt hat."
+      }
+    },
+    "facts": {
+      "title": "Angaben",
+      "empty": "Zu diesem Vertrag ist noch nichts erfasst.",
+      "showHistory": "{{count}} ersetzte und abgelehnte Angaben anzeigen",
+      "showHistory_one": "{{count}} ersetzte oder abgelehnte Angabe anzeigen"
+    },
+    "fact": {
+      "new": "Angabe eintragen",
+      "newLabel": "Angabe zum Vertrag eintragen",
+      "enter": "Angabe speichern",
+      "enterHint": "Was du einträgst, gilt als bestätigt, weil ein Mitglied es angibt.",
+      "type": "Was steht im Dokument?",
+      "summary": "{{type}}: {{value}}",
+      "valueText": "Wert",
+      "valueDate": "Datum",
+      "valueAmount": "Betrag",
+      "valueCurrency": "Währung",
+      "valuePeriod": "Dauer",
+      "valuePeriodUnit": "Einheit",
+      "valueFlag": "Trifft zu",
+      "valueRequired": "Bitte einen Wert eingeben.",
+      "validFrom": "Gilt ab (optional)",
+      "validUntil": "Gilt bis (optional)",
+      "validityHint": "Beide Felder leer lassen, wenn die Angabe für den ganzen Vertrag gilt. Eine Angabe, die später beginnt, ändert den Vertrag, statt den früheren Wert zu ersetzen.",
+      "source": "Quelldokument",
+      "sourceNone": "Kein Quelldokument",
+      "sourceSearch": "Anderes Dokument suchen",
+      "sourceNoMatches": "Kein Dokument passt zu dieser Suche.",
+      "sourceUnnamed": "Dokument ohne Titel",
+      "sourceRequiredForPage": "Eine Seite oder ein Zitat lässt sich nur zusammen mit dem Dokument speichern, in dem es steht.",
+      "page": "Seite",
+      "quote": "Zitat",
+      "provenanceHint": "Seite oder Zitat nur angeben, wenn das Dokument es dort wirklich so sagt.",
+      "note": "Notiz (optional)",
+      "noteLabel": "Notiz:",
+      "effective": "Gilt aktuell",
+      "observedLabel": "Angegeben:",
+      "observedManual": "von {{name}} am {{date}}",
+      "observedAutomatic": "von einem Auswertungslauf am {{date}}",
+      "confidence": "(angegebene Sicherheit {{percent}} %)",
+      "runRef": "(Lauf {{run}})",
+      "sourceLabel": "Gelesen in:",
+      "sourceMissing": "Kein Quelldokument erfasst",
+      "sourceGone": "(Dokument nicht mehr vorhanden)",
+      "pageLabel": "Seite {{page}}",
+      "decidedLabel": "Entschieden:",
+      "decided": {
+        "EXTRACTED": "wartet seit {{date}} auf eine Entscheidung",
+        "CONFIRMED": "bestätigt von {{name}} am {{date}}",
+        "REJECTED": "abgelehnt von {{name}} am {{date}}",
+        "SUPERSEDED": "am {{date}} ersetzt, nachdem {{name}} entschieden hat"
+      },
+      "correctsLabel": "Korrigiert:",
+      "supersededByLabel": "Ersetzt durch:",
+      "supersededByUnknown": "eine neuere Angabe",
+      "supersededHint": "Bleibt als Verlauf erhalten: Das ist der Wert, den ein Mitglied bei seiner Entscheidung gesehen hat.",
+      "confirm": "Bestätigen",
+      "reject": "Ablehnen",
+      "correct": "Korrigieren",
+      "correctLabel": "Diese Angabe korrigieren",
+      "correctHint": "Die korrigierte Angabe bleibt als Verlauf lesbar; der neue Wert gilt als bestätigt.",
+      "saveCorrection": "Korrektur speichern"
+    },
+    "manage": {
+      "title": "Vertrag",
+      "rename": "Umbenennen",
+      "renameLabel": "Vertrag umbenennen",
+      "status": "Status",
+      "statusHint": "Der Status hält fest, was der Haushalt mit dem Vertrag gemacht hat. Er ändert keine Angabe und keinen Termin."
     }
   },
   "notices": {
@@ -409,7 +572,33 @@
     "analysis.candidate.missing": "Dieser Namensvorschlag ist nicht mehr offen.",
     "analysis.subject.missing": "Dieser Zuordnungsvorschlag ist nicht mehr offen.",
     "document.notArchived": "Das Dokument ist noch nicht archiviert.",
-    "ai.run.keyConflict": "Diese Anfrage passt nicht zu einem bereits vorhandenen KI-Lauf."
+    "ai.run.keyConflict": "Diese Anfrage passt nicht zu einem bereits vorhandenen KI-Lauf.",
+    "contract.notFound": "Vertrag nicht gefunden.",
+    "contract.fact.notFound": "Diese Angabe gibt es nicht mehr. Bitte lade den Vertrag neu.",
+    "contract.name.missing": "Der Vertragsname fehlt.",
+    "contract.name.tooLong": "Der Vertragsname ist zu lang.",
+    "contract.status.unknown": "Unbekannter Vertragsstatus.",
+    "contract.validity.invalid": "Die Gültigkeit endet vor ihrem Beginn.",
+    "contract.fact.type.unknown": "Unbekannte Art der Angabe.",
+    "contract.fact.state.unknown": "Unbekannter Prüfstatus.",
+    "contract.fact.origin.unknown": "Unbekannte Herkunft der Angabe.",
+    "contract.fact.value.missing": "Bitte einen Wert eingeben.",
+    "contract.fact.value.invalid": "Der Wert passt nicht zu dieser Art von Angabe.",
+    "contract.fact.value.kind": "Der Wert passt nicht zu dieser Art von Angabe.",
+    "contract.fact.value.tooLong": "Der Wert ist zu lang.",
+    "contract.fact.period.invalid": "Die Dauer muss größer als null sein.",
+    "contract.fact.note.tooLong": "Die Notiz ist zu lang.",
+    "contract.fact.alreadyConfirmed": "Diese Angabe ist bereits bestätigt.",
+    "contract.fact.alreadyRejected": "Diese Angabe ist bereits abgelehnt.",
+    "contract.fact.superseded": "Eine ersetzte Angabe lässt sich nicht mehr ändern.",
+    "contract.amount.invalid": "Bitte einen Betrag und einen Währungscode eingeben, zum Beispiel 29.90 EUR.",
+    "contract.amount.precision": "Ein Betrag darf höchstens vier Nachkommastellen haben.",
+    "contract.confidence.invalid": "Die angegebene Sicherheit liegt außerhalb des gültigen Bereichs.",
+    "contract.provenance.invalid": "Der Angabe fehlt, wer sie gemacht hat.",
+    "contract.source.missing": "Eine Seite oder ein Zitat braucht das Dokument, in dem es steht.",
+    "contract.source.page.invalid": "Seitenzahlen beginnen bei 1.",
+    "contract.source.quote.tooLong": "Das Zitat ist zu lang.",
+    "contract.reminder.lead.invalid": "Die Vorlaufzeit darf nicht negativ sein."
   },
   "format": {
     "bytes": "{{value}} B",

@@ -27,6 +27,13 @@ export type ExportSummary = Schemas["ExportSummaryDto"];
 export type VersionResponse = Schemas["VersionResponse"];
 export type AiOverview = Schemas["AiOverviewDto"];
 export type AiRun = Schemas["RunDto"];
+export type ContractDto = Schemas["ContractDto"];
+export type ContractSummaryDto = Schemas["SummaryDto"];
+export type ContractFactDto = Schemas["FactDto"];
+export type ContractSourceDto = Schemas["ContractSourceDto"];
+export type ContractConflictDto = Schemas["ConflictDto"];
+export type ContractDeadlineDto = Schemas["DeadlineDto"];
+export type ContractDeadlineItemDto = Schemas["DeadlineItemDto"];
 export type ProductLocale = MemberDto["locale"];
 
 /** Facet groups in display order; subjects and the folder are separate groups. */
