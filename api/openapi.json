@@ -291,23 +291,6 @@
         "required" : [ "connected", "readSupported", "writeSupported" ],
         "type" : "object"
       },
-      "CandidateDecisionRequest" : {
-        "properties" : {
-          "accept" : {
-            "type" : "boolean"
-          },
-          "expectedVersion" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "key" : {
-            "minLength" : 1,
-            "type" : "string"
-          }
-        },
-        "required" : [ "accept", "expectedVersion", "key" ],
-        "type" : "object"
-      },
       "CancellationReviewDto" : {
         "properties" : {
           "cancellationDeadline" : {
@@ -334,6 +317,23 @@
           }
         },
         "required" : [ "cancellationDeadline", "contractId", "contractName", "contractVersion", "reminderDate" ],
+        "type" : "object"
+      },
+      "CandidateDecisionRequest" : {
+        "properties" : {
+          "accept" : {
+            "type" : "boolean"
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "key" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "accept", "expectedVersion", "key" ],
         "type" : "object"
       },
       "CandidateDto" : {

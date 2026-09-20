@@ -15,6 +15,7 @@ import dev.aegis.contracts.application.api.ContractQueries;
 import dev.aegis.contracts.domain.ContractRepository;
 import dev.aegis.identity.application.api.MemberCredentialsQuery;
 import dev.aegis.notifications.application.api.NoticeInbox;
+import dev.aegis.notifications.application.api.NoticeSummary;
 import dev.aegis.planning.adapters.jobs.ContractCancellationTasks;
 import dev.aegis.planning.application.api.CancellationDeadlineReconciliation;
 import dev.aegis.planning.application.api.CancellationReminderPublication;
@@ -26,6 +27,7 @@ import dev.aegis.shared.ContractId;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +78,9 @@ class CancellationDeadlineIT extends PostgresIT {
             assertThat(inbox.status()).isEqualTo(200);
             assertThat(inbox.body()).contains("CONTRACT_CANCELLATION_REMINDER").contains(name);
         });
+        String taskId = tasks.findCancellationReviews(ContractId.of(id)).getFirst().id().toString();
+        markReviewNoticesRead(actor(ANNA), taskId);
+        markReviewNoticesRead(actor(BEN), taskId);
     }
 
     @Test
@@ -109,11 +114,11 @@ class CancellationDeadlineIT extends PostgresIT {
                         .satisfies(task -> assertThat(task.dueDate()).contains(deadline)));
         var task = tasks.findCancellationReviews(id).getFirst();
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
-            assertThat(notices.list(anna, false)).singleElement();
-            assertThat(notices.list(ben, false)).singleElement();
+            assertThat(reviewNotices(anna, task.id().toString())).singleElement();
+            assertThat(reviewNotices(ben, task.id().toString())).singleElement();
         });
 
-        String annasNotice = notices.list(anna, false).getFirst().id();
+        String annasNotice = reviewNotices(anna, task.id().toString()).getFirst().id();
         notices.markRead(anna, annasNotice);
         reminderPublication.publish(anna, task.id());
         reminderPublication.publish(anna, task.id());
@@ -121,12 +126,13 @@ class CancellationDeadlineIT extends PostgresIT {
         reconciliation.reconcile(anna, id);
 
         assertThat(tasks.findCancellationReviews(id)).hasSize(1);
-        assertThat(notices.list(anna, false)).hasSize(1);
-        assertThat(notices.list(anna, false).getFirst().readAt()).isNotNull();
+        assertThat(reviewNotices(anna, task.id().toString())).hasSize(1);
+        assertThat(reviewNotices(anna, task.id().toString()).getFirst().readAt()).isNotNull();
         assertThat(tasks.findById(task.id()).orElseThrow().isOpen()).isTrue();
 
         taskCommands.complete(anna, task.id(), tasks.findById(task.id()).orElseThrow().version());
-        assertThat(notices.list(anna, false).getFirst().readAt()).isNotNull();
+        assertThat(reviewNotices(anna, task.id().toString()).getFirst().readAt()).isNotNull();
+        markReviewNoticesRead(ben, task.id().toString());
     }
 
     @Test
@@ -161,5 +167,17 @@ class CancellationDeadlineIT extends PostgresIT {
 
     private Actor actor(String username) {
         return new Actor(members.findCredentials(username).orElseThrow().id());
+    }
+
+    private List<NoticeSummary> reviewNotices(Actor recipient, String taskId) {
+        return notices.list(recipient, false).stream()
+                .filter(notice -> notice.kind().equals("CONTRACT_CANCELLATION_REMINDER"))
+                .filter(notice -> taskId.equals(notice.linkId()))
+                .toList();
+    }
+
+    private void markReviewNoticesRead(Actor recipient, String taskId) {
+        reviewNotices(recipient, taskId).stream().filter(notice -> notice.readAt() == null)
+                .forEach(notice -> notices.markRead(recipient, notice.id()));
     }
 }

@@ -1286,12 +1286,6 @@ export interface components {
             readSupported: boolean;
             writeSupported: boolean;
         };
-        CandidateDecisionRequest: {
-            accept: boolean;
-            /** Format: int64 */
-            expectedVersion: number;
-            key: string;
-        };
         CancellationReviewDto: {
             /** Format: date */
             cancellationDeadline: string;
@@ -1303,6 +1297,12 @@ export interface components {
             contractVersion: number;
             /** Format: date */
             reminderDate: string;
+        };
+        CandidateDecisionRequest: {
+            accept: boolean;
+            /** Format: int64 */
+            expectedVersion: number;
+            key: string;
         };
         CandidateDto: {
             /** Format: double */
