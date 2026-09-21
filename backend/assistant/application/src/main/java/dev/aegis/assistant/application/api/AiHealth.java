@@ -10,8 +10,8 @@ import java.util.List;
 public record AiHealth(boolean configured, Instant lastSuccessAt, List<ModelHealth> models) {
 
     /** {@code lastState} and {@code lastFailureCategory} are null while the model has no finished run. */
-    public record ModelHealth(String provider, String model, String lastState, String lastFailureCategory,
-            Instant lastFinishedAt) {
+    public record ModelHealth(String provider, String model, boolean credentialsAvailable, String lastState,
+            String lastFailureCategory, Instant lastFinishedAt) {
     }
 
     public AiHealth {

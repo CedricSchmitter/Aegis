@@ -29,6 +29,7 @@ class ScriptedGateway implements ModelGateway {
     private final Deque<Function<ModelRequest, ModelTurn>> script = new ArrayDeque<>();
     private final String provider;
     boolean configured = true;
+    String credentialRevision = "initial";
     Set<MemberId> allowed;
 
     ScriptedGateway() {
@@ -47,6 +48,11 @@ class ScriptedGateway implements ModelGateway {
     @Override
     public boolean configured() {
         return configured;
+    }
+
+    @Override
+    public String credentialRevision() {
+        return configured ? credentialRevision : "not-configured";
     }
 
     @Override

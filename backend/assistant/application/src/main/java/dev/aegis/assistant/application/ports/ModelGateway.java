@@ -15,6 +15,14 @@ public interface ModelGateway {
     boolean configured();
 
     /**
+     * Non-secret identity of the credential/configuration currently used by this gateway. A changed value makes
+     * earlier connection evidence stale. Implementations should hash credential material rather than return it.
+     */
+    default String credentialRevision() {
+        return configured() ? "configured" : "not-configured";
+    }
+
+    /**
      * Whether runs requested by {@code member} may use this provider. A personal credential, such as the owner's
      * Claude subscription, serves only its owner; a household API key serves every member. Checked before every run
      * and call, in addition to the household membership check.

@@ -63,6 +63,12 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
     private final AiSettings settings;
     private final HouseholdAccess access;
     private final Clock clock;
+    private final Map<ModelSelection, CredentialState> credentialStates = new LinkedHashMap<>();
+    private final Instant serviceStartedAt;
+    private Set<ModelSelection> lastHealthSelection = Set.of();
+
+    private record CredentialState(String revision, Instant freshSince) {
+    }
 
     public AiRunService(AiRunRepository runs, RunScheduler scheduler, AiLock lock,
             Map<Workload, WorkloadHandler> handlers, Map<String, ModelGateway> gateways, AiSettings settings,
@@ -75,6 +81,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         this.settings = settings;
         this.access = access;
         this.clock = clock;
+        this.serviceStartedAt = clock.instant();
     }
 
     // Requests ------------------------------------------------------------------------------------------------------
@@ -341,7 +348,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
      * the status.
      */
     @Override
-    public AiHealth health(Actor actor) {
+    public synchronized AiHealth health(Actor actor) {
         access.requireMember(actor);
         Map<ModelSelection, AiRun> latest = new LinkedHashMap<>();
         for (AiRun run : runs.findLatestOutcomePerModel()) {
@@ -354,14 +361,28 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         List<AiHealth.ModelHealth> models = new ArrayList<>();
         for (ModelSelection model : configured) {
+            ModelGateway gateway = gateways.get(model.provider());
+            boolean credentialsAvailable = gateway != null && gateway.configured();
+            String revision = gateway == null ? "missing" : gateway.credentialRevision();
+            boolean returnedToSelection = !lastHealthSelection.isEmpty() && !lastHealthSelection.contains(model);
+            CredentialState state = credentialStates.compute(model, (key, existing) -> existing == null
+                    ? new CredentialState(revision, serviceStartedAt)
+                    : !existing.revision().equals(revision) || returnedToSelection
+                            ? new CredentialState(revision, clock.instant()) : existing);
             AiRun run = latest.get(model);
-            models.add(new AiHealth.ModelHealth(model.provider(), model.model(),
+            if (run != null && run.finishedAt().orElse(Instant.MIN).isBefore(state.freshSince())) {
+                run = null;
+            }
+            models.add(new AiHealth.ModelHealth(model.provider(), model.model(), credentialsAvailable,
                     run == null ? null : run.state().name(),
                     run == null || run.state() != RunState.FAILED ? null
                             : run.failure().map(failure -> failure.category().name()).orElse(null),
                     run == null ? null : run.finishedAt().orElse(null)));
         }
-        return new AiHealth(anyProviderConfigured(), runs.lastSucceededAt().orElse(null), models);
+        lastHealthSelection = Set.copyOf(configured);
+        Instant lastSuccess = models.stream().filter(model -> "SUCCEEDED".equals(model.lastState()))
+                .map(AiHealth.ModelHealth::lastFinishedAt).max(Instant::compareTo).orElse(null);
+        return new AiHealth(anyProviderConfigured(), lastSuccess, models);
     }
 
     private boolean anyProviderConfigured() {
