@@ -1761,34 +1761,6 @@ export interface components {
             /** Format: date-time */
             readAt?: string | null;
         };
-        ReviewItemDto: {
-            actions: string[];
-            category: string;
-            /** Format: date-time */
-            createdAt: string;
-            id: string;
-            linkId: string;
-            linkType: string;
-            params: {
-                [key: string]: string;
-            };
-            priority: string;
-            reason: string;
-            sourceId: string;
-            sourceKind: string;
-            /** Format: int64 */
-            sourceVersion: number;
-            status: string;
-            titleKey: string;
-            /** Format: date-time */
-            updatedAt: string;
-            /** Format: int64 */
-            version: number;
-        };
-        ReviewVersionRequest: {
-            /** Format: int64 */
-            expectedVersion: number;
-        };
         PasswordChangeRequest: {
             currentPassword: string;
             newPassword: string;
@@ -1882,6 +1854,35 @@ export interface components {
             /** Format: int64 */
             expectedVersion: number;
             title: string;
+        };
+        ReviewItemDto: {
+            actions: string[];
+            category: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            linkId: string;
+            linkType: string;
+            params: {
+                [key: string]: string;
+            };
+            priority: string;
+            reason: string;
+            sourceId: string;
+            sourceKind: string;
+            /** Format: int64 */
+            sourceVersion: number;
+            status: string;
+            titleKey: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
+        ReviewVersionRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
         };
         RunDto: {
             /** Format: int32 */
