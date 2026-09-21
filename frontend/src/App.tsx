@@ -13,6 +13,7 @@ import { ContractDetailPage } from "./pages/ContractDetailPage";
 import { TasksPage } from "./pages/TasksPage";
 import { TaskDetailPage } from "./pages/TaskDetailPage";
 import { NoticesPage } from "./pages/NoticesPage";
+import { ReviewPage } from "./pages/ReviewPage";
 import { StatusPage } from "./pages/StatusPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SharePage } from "./pages/SharePage";
@@ -52,6 +53,7 @@ export function App() {
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/tasks/:id" element={<TaskDetailPage />} />
         <Route path="/notices" element={<NoticesPage />} />
+        <Route path="/review" element={<ReviewPage />} />
         <Route path="/status" element={<StatusPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/share" element={<SharePage />} />

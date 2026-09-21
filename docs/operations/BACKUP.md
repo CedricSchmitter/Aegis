@@ -18,6 +18,7 @@ discarded and never replaces a good one.
   data/documents.json             versioned records (stable Aegis ids, checksums, subjects, Paperless ids)
   data/tasks.json                 tasks with owner, due date, planned date and source document id
   data/members.json               members (ids, usernames, display names, locale); no credentials
+  data/reviews.json               review references, source versions, lifecycle and decision audit
   readable/documents.csv          readable table
   readable/tasks.csv              readable table with source titles
   documents/originals/<date>_<title>_<id>.pdf   unchanged originals

@@ -48,6 +48,7 @@ backend/
     adapters/
   documents/                  Document domain, application and adapters
   contracts/                  Contract facts, provenance, review state and deadline calculation
+  review/                     Central workflow references; producer contexts keep business authority
   bootstrap/                  Executable Spring Boot application and wiring
 frontend/                     React/TypeScript web app
 ```
@@ -75,9 +76,10 @@ Use optimistic concurrency and explicit conflict responses. Inject `Clock` for t
 | Planning | Tasks, deadlines, planned work | Calendar port |
 | Assistant | Conversations, proposals, bounded execution | Model and tool ports |
 | Notifications | Delivery attempts and preferences | Delivery provider |
+| Review | Cross-context workflow references and decisions | Producer application contracts |
 | Operations/portability | Job status and export/import coordination | Scheduler and storage |
 
-Identity, documents, contracts, planning, notifications, operations, portability and assistant exist as modules. The assistant module provides the bounded AI execution boundary of [ADR-0003](adr/ADR-0003-bounded-ai-execution.md) (runs, budgets, model gateway, tool policy, connection check) and the document classification workload of [ADR-0004](adr/ADR-0004-automatic-document-classification.md) with the folder placement of [ADR-0005](adr/ADR-0005-automatic-folder-placement.md), whose results the documents context assesses and applies; review and chat workflows are issue-driven extensions of it. The contracts module stores contract facts as observations with provenance, validity periods and review states, and calculates cancellation deadlines only from confirmed rules ([ADR-0007](adr/ADR-0007-contract-facts-and-provenance.md)); automatic extraction into it remains issue-driven. Confirmed deadlines are projected into source-linked planning tasks and durable seven-day in-app reminders without AI ([ADR-0008](adr/ADR-0008-contract-cancellation-tasks-and-reminders.md)). Inbox describes a boundary for an issue-driven extension, not an implemented module. Add modules only for concrete use cases and capture substantial boundary changes in ADRs.
+Identity, documents, contracts, planning, notifications, review, operations, portability and assistant exist as modules. The assistant module provides the bounded AI execution boundary of [ADR-0003](adr/ADR-0003-bounded-ai-execution.md) and document classification and folder placement ([ADR-0004](adr/ADR-0004-automatic-document-classification.md), [ADR-0005](adr/ADR-0005-automatic-folder-placement.md)); chat workflows remain issue-driven. Contracts owns observations and confirmed deadline calculation ([ADR-0007](adr/ADR-0007-contract-facts-and-provenance.md)); confirmed deadlines become planning tasks and reminders ([ADR-0008](adr/ADR-0008-contract-cancellation-tasks-and-reminders.md)). Review stores durable workflow references and delegates business actions to producer application contracts ([ADR-0009](adr/ADR-0009-central-review-inbox.md)). Add modules only for concrete use cases and capture substantial boundary changes in ADRs.
 
 ## Localization contract
 
@@ -138,6 +140,7 @@ workload and executed with the requesting member's authorization; results applie
 | Automatic analysis results, title origin and friendly filenames | Aegis PostgreSQL ([ADR-0004](adr/ADR-0004-automatic-document-classification.md)) | Generated values with run/model provenance, review decisions, filename override and history in the versioned export; originals keep their bytes and upload filename |
 | Folder placement origin and pending placement proposals | Aegis PostgreSQL ([ADR-0005](adr/ADR-0005-automatic-folder-placement.md)) | Placement origin and the proposal a member has not decided on in the versioned export; folders are only created by a member accepting a proposal |
 | Tasks and confirmed contract facts | Aegis PostgreSQL | Versioned structured export with source relationships and review state |
+| Review workflow references and lifecycle | Aegis PostgreSQL ([ADR-0009](adr/ADR-0009-central-review-inbox.md)) | Stable card/source ids, lifecycle, versions and decisions in portable export schema 7; source facts stay in their owning context |
 | Original email, when connected | Provider mailbox and unchanged local EML copy | Preserve attachment and message origins |
 | Calendar events, when connected | Selected calendar provider | Retain external identity, version and synchronization state |
 | Household prose/preferences | Versioned Markdown where appropriate; application preferences remain structured | Never include credentials |

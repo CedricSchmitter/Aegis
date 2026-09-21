@@ -10,6 +10,8 @@ import { problemMessage } from "../lib/problem";
 function linkTarget(notice: NoticeSummary): string | null {
   if (notice.linkType === "TASK" && notice.linkId) return `/tasks/${notice.linkId}`;
   if (notice.linkType === "DOCUMENT" && notice.linkId) return `/documents/${notice.linkId}`;
+  if (notice.linkType === "CONTRACT" && notice.linkId) return `/contracts/${notice.linkId}`;
+  if (notice.linkType === "REVIEW" && notice.linkId) return `/review?item=${encodeURIComponent(notice.linkId)}`;
   return null;
 }
 

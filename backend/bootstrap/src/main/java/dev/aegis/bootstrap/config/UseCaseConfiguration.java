@@ -70,6 +70,12 @@ import dev.aegis.notifications.application.NoticeService;
 import dev.aegis.notifications.application.api.NoticeInbox;
 import dev.aegis.notifications.application.api.PublishNotice;
 import dev.aegis.notifications.domain.NoticeRepository;
+import dev.aegis.review.application.ReviewService;
+import dev.aegis.review.application.api.ReviewInbox;
+import dev.aegis.review.application.api.ReviewPortability;
+import dev.aegis.review.application.ports.ReviewActionDispatcher;
+import dev.aegis.review.application.ports.ReviewProducer;
+import dev.aegis.review.domain.ReviewRepository;
 import dev.aegis.operations.application.IntegrationStatusService;
 import dev.aegis.operations.application.api.SystemStatusQuery;
 import dev.aegis.operations.application.ports.IntegrationStatusSource;
@@ -445,6 +451,24 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(NoticeInbox.class, services.notices(), tm);
     }
 
+    // Review inbox -------------------------------------------------------------------------------------------
+
+    @Bean
+    ReviewInbox reviewInbox(ReviewRepository items, List<ReviewProducer> producers, ReviewActionDispatcher actions,
+            HouseholdAccess access, MemberDirectory members, PublishNotice notices, Clock clock,
+            PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ReviewInbox.class,
+                new ReviewService(items, producers, actions, access, members, notices, clock), tm);
+    }
+
+    @Bean
+    ReviewPortability reviewPortability(ReviewRepository items, List<ReviewProducer> producers,
+            ReviewActionDispatcher actions, HouseholdAccess access, MemberDirectory members, PublishNotice notices,
+            Clock clock, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ReviewPortability.class,
+                new ReviewService(items, producers, actions, access, members, notices, clock), tm);
+    }
+
     // Operations ----------------------------------------------------------------------------------------------
 
     @Bean
@@ -460,9 +484,9 @@ public class UseCaseConfiguration {
 
     @Bean
     PortabilityServices portabilityServices(DocumentExportQuery documents, TaskExportQuery tasks,
-            ContractExportQuery contracts, MemberDirectory members, ExportStore store, ExportSerializer serializer,
+            ContractExportQuery contracts, ReviewPortability reviews, MemberDirectory members, ExportStore store, ExportSerializer serializer,
             HouseholdAccess access, Clock clock, @Value("${aegis.build.commit:dev}") String commit) {
-        return new PortabilityServices(new ExportService(documents, tasks, contracts, members, store, serializer,
+        return new PortabilityServices(new ExportService(documents, tasks, contracts, reviews, members, store, serializer,
                 access, clock, "aegis@" + commit));
     }
 
@@ -480,8 +504,8 @@ public class UseCaseConfiguration {
     RestoreExport restoreExport(ExportSourceOpener opener, ExportSerializer serializer, MemberDirectory members,
             ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
             ImportDocumentAnalysis importAnalysis, ImportTask importTask, ImportContract importContract,
-            HouseholdAccess access) {
+            ReviewPortability reviews, HouseholdAccess access) {
         return new RestoreService(opener, serializer, members, provisioning, importDocument, importCatalog,
-                importAnalysis, importTask, importContract, access);
+                importAnalysis, importTask, importContract, reviews, access);
     }
 }

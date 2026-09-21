@@ -1,0 +1,17 @@
+package dev.aegis.review.adapters.persistence;
+
+import dev.aegis.review.domain.*; import dev.aegis.shared.*; import java.sql.*; import java.time.Instant; import java.util.*;
+import org.springframework.jdbc.core.JdbcTemplate; import org.springframework.stereotype.Repository; import tools.jackson.databind.ObjectMapper;
+
+@Repository
+public class JdbcReviewRepository implements ReviewRepository {
+ private final JdbcTemplate jdbc; private final ObjectMapper json;
+ public JdbcReviewRepository(JdbcTemplate jdbc,ObjectMapper json){this.jdbc=jdbc;this.json=json;}
+ @Override public Optional<ReviewItem> find(UUID id){return jdbc.query("SELECT * FROM review_items WHERE id=?",this::row,id).stream().findFirst();}
+ @Override public Optional<ReviewItem> findByFingerprint(String f){return jdbc.query("SELECT * FROM review_items WHERE fingerprint=?",this::row,f).stream().findFirst();}
+ @Override public List<ReviewItem> findAll(){return jdbc.query("SELECT * FROM review_items ORDER BY created_at DESC",this::row);}
+ @Override public void insert(ReviewItem i){jdbc.update("INSERT INTO review_items(id,fingerprint,producer,source_kind,source_id,source_version,category,reason,priority,title_key,params_json,link_type,link_id,actions_json,status,created_at,updated_at,version,decided_by,decided_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",i.id(),i.fingerprint(),i.producer(),i.sourceKind(),i.sourceId(),i.sourceVersion(),i.category(),i.reason(),i.priority(),i.titleKey(),write(i.params()),i.linkType(),i.linkId(),write(i.actions()),i.status().name(),Timestamp.from(i.createdAt()),Timestamp.from(i.updatedAt()),i.version(),i.decidedBy()==null?null:i.decidedBy().value(),i.decidedAt()==null?null:Timestamp.from(i.decidedAt()));}
+ @Override public void update(ReviewItem i,long expected){int n=jdbc.update("UPDATE review_items SET status=?,updated_at=?,version=?,decided_by=?,decided_at=? WHERE id=? AND version=?",i.status().name(),Timestamp.from(i.updatedAt()),i.version(),i.decidedBy()==null?null:i.decidedBy().value(),i.decidedAt()==null?null:Timestamp.from(i.decidedAt()),i.id(),expected);if(n!=1){Long actual=jdbc.queryForObject("SELECT version FROM review_items WHERE id=?",Long.class,i.id());throw new StaleVersionException("reviewItem",i.id().toString(),expected,actual==null?expected:actual);}}
+ private ReviewItem row(ResultSet r,int n)throws SQLException{return ReviewItem.rehydrate(r.getObject("id",UUID.class),r.getString("fingerprint"),r.getString("producer"),r.getString("source_kind"),r.getString("source_id"),r.getLong("source_version"),r.getString("category"),r.getString("reason"),r.getString("priority"),r.getString("title_key"),readMap(r.getString("params_json")),r.getString("link_type"),r.getString("link_id"),readList(r.getString("actions_json")),ReviewStatus.valueOf(r.getString("status")),r.getTimestamp("created_at").toInstant(),r.getTimestamp("updated_at").toInstant(),r.getLong("version"),r.getObject("decided_by",UUID.class)==null?null:new MemberId(r.getObject("decided_by",UUID.class)),instant(r,"decided_at"));}
+ private Instant instant(ResultSet r,String c)throws SQLException{Timestamp t=r.getTimestamp(c);return t==null?null:t.toInstant();} private String write(Object o){return json.writeValueAsString(o);} @SuppressWarnings("unchecked") private Map<String,String> readMap(String s){return json.readValue(s,Map.class);} @SuppressWarnings("unchecked") private List<String> readList(String s){return json.readValue(s,List.class);}
+}

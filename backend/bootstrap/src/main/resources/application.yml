@@ -26,6 +26,7 @@ spring:
       - classpath:db/migration/contracts
       - classpath:db/migration/planning
       - classpath:db/migration/notifications
+      - classpath:db/migration/review
       - classpath:db/migration/assistant
   servlet:
     multipart:
