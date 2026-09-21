@@ -1286,6 +1286,18 @@ export interface components {
             readSupported: boolean;
             writeSupported: boolean;
         };
+        CancellationReviewDto: {
+            /** Format: date */
+            cancellationDeadline: string;
+            /** Format: date */
+            contractEnd?: string | null;
+            contractId: string;
+            contractName: string;
+            /** Format: int64 */
+            contractVersion: number;
+            /** Format: date */
+            reminderDate: string;
+        };
         CandidateDecisionRequest: {
             accept: boolean;
             /** Format: int64 */
@@ -1920,6 +1932,7 @@ export interface components {
             integrations: components["schemas"]["IntegrationStatusDto"][];
         };
         TaskDto: {
+            cancellationReview?: components["schemas"]["CancellationReviewDto"];
             /** Format: date-time */
             completedAt?: string | null;
             completedBy?: string | null;

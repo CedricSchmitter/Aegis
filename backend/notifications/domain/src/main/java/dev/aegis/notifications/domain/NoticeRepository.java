@@ -11,9 +11,12 @@ public interface NoticeRepository {
     /** Newest first. */
     List<Notice> findByRecipient(MemberId recipient, boolean unreadOnly);
 
-    Optional<Notice> findUnreadByDedupKey(MemberId recipient, String dedupKey);
+    Optional<Notice> findByDedupKey(MemberId recipient, String dedupKey);
 
     long countUnread(MemberId recipient);
 
     void save(Notice notice);
+
+    /** Atomically inserts unless this recipient already has the durable deduplication key. */
+    boolean saveIfAbsent(Notice notice);
 }

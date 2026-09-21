@@ -15,4 +15,6 @@ interface TaskJpaRepository extends JpaRepository<TaskEntity, UUID> {
     List<TaskEntity> findOpenOrdered();
 
     List<TaskEntity> findBySourceDocumentIdOrderByCreatedAtAsc(UUID sourceDocumentId);
+
+    List<TaskEntity> findByContractIdOrderByCancellationDeadlineAsc(UUID contractId);
 }

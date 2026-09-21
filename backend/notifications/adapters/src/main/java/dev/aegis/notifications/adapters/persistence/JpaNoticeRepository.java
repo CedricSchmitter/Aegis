@@ -41,8 +41,8 @@ public class JpaNoticeRepository implements NoticeRepository {
     }
 
     @Override
-    public Optional<Notice> findUnreadByDedupKey(MemberId recipient, String dedupKey) {
-        return jpa.findFirstByRecipientIdAndDedupKeyAndReadAtIsNull(recipient.value(), dedupKey).map(this::toDomain);
+    public Optional<Notice> findByDedupKey(MemberId recipient, String dedupKey) {
+        return jpa.findFirstByRecipientIdAndDedupKey(recipient.value(), dedupKey).map(this::toDomain);
     }
 
     @Override
@@ -62,6 +62,14 @@ public class JpaNoticeRepository implements NoticeRepository {
                 notice.dedupKey(), mapper.writeValueAsString(new LinkedHashMap<>(notice.params())),
                 notice.link().map(l -> l.type().name()).orElse(null), notice.link().map(NoticeLink::id).orElse(null),
                 notice.createdAt(), notice.readAt().orElse(null)));
+    }
+
+    @Override
+    public boolean saveIfAbsent(Notice notice) {
+        return jpa.insertIfAbsent(notice.id().value(), notice.recipient().value(), notice.kind().name(),
+                notice.dedupKey(), mapper.writeValueAsString(new LinkedHashMap<>(notice.params())),
+                notice.link().map(l -> l.type().name()).orElse(null),
+                notice.link().map(NoticeLink::id).orElse(null), notice.createdAt()) == 1;
     }
 
     private Notice toDomain(NoticeEntity e) {

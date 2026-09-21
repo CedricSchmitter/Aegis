@@ -44,8 +44,8 @@ class NoticeServiceTest {
         }
 
         @Override
-        public Optional<Notice> findUnreadByDedupKey(MemberId recipient, String dedupKey) {
-            return store.values().stream().filter(n -> n.recipient().equals(recipient) && n.isUnread()
+        public Optional<Notice> findByDedupKey(MemberId recipient, String dedupKey) {
+            return store.values().stream().filter(n -> n.recipient().equals(recipient)
                     && n.dedupKey().equals(dedupKey)).findFirst();
         }
 
@@ -57,6 +57,15 @@ class NoticeServiceTest {
         @Override
         public void save(Notice notice) {
             store.put(notice.id(), notice);
+        }
+
+        @Override
+        public boolean saveIfAbsent(Notice notice) {
+            if (findByDedupKey(notice.recipient(), notice.dedupKey()).isPresent()) {
+                return false;
+            }
+            save(notice);
+            return true;
         }
     }
 
@@ -77,13 +86,13 @@ class NoticeServiceTest {
     }
 
     @Test
-    void repeatedUnreadNoticeAboutTheSameFactIsDeduplicated() {
+    void repeatedNoticeAboutTheSameFactStaysDeduplicatedAfterItIsRead() {
         assertThat(service.publish(assigned(anna, "t1"))).isEqualTo(PublishOutcome.PUBLISHED);
         assertThat(service.publish(assigned(anna, "t1"))).isEqualTo(PublishOutcome.DEDUPLICATED);
         assertThat(service.unreadCount(new Actor(anna))).isEqualTo(1);
 
         service.markAllRead(new Actor(anna));
-        assertThat(service.publish(assigned(anna, "t1"))).isEqualTo(PublishOutcome.PUBLISHED);
+        assertThat(service.publish(assigned(anna, "t1"))).isEqualTo(PublishOutcome.DEDUPLICATED);
     }
 
     @Test

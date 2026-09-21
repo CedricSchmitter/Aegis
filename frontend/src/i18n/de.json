@@ -196,9 +196,22 @@
     "ownerLabel": "Zuständig: {{name}}",
     "nobody": "Niemand zuständig",
     "conflict": "Jemand anderes hat diese Aufgabe inzwischen geändert. Die aktuelle Fassung wurde neu geladen; bitte prüfe sie und wiederhole deine Änderung.",
+    "cancellation": {
+      "title": "{{name}} - Kündigung prüfen",
+      "contractEnd": "Vertragsende: {{date}}",
+      "deadline": "Kündigen bis: {{date}}",
+      "remaining": "Noch {{count}} Tage",
+      "remaining_one": "Noch {{count}} Tag",
+      "overdue": "Seit {{count}} Tagen überfällig",
+      "overdue_one": "Seit {{count}} Tag überfällig",
+      "remaining_zero": "Heute fällig",
+      "openContract": "Vertrag öffnen",
+      "completionHint": "Das Erledigen dieser Prüfung hält nicht fest, dass der Vertrag gekündigt wurde. Ändere den Vertragsstatus nach der Kündigung getrennt."
+    },
     "status": {
       "OPEN": "Offen",
-      "DONE": "Erledigt"
+      "DONE": "Erledigt",
+      "CANCELLED": "Ersetzt"
     }
   },
   "contracts": {
@@ -374,7 +387,8 @@
       "TASK_ASSIGNED": "Dir wurde die Aufgabe „{{title}}“ zugewiesen.",
       "TASK_COMPLETED": "Deine Aufgabe „{{title}}“ wurde erledigt.",
       "DOCUMENT_ARCHIVED": "„{{title}}“ wurde archiviert und ist durchsuchbar.",
-      "DOCUMENT_ARCHIVAL_FAILED": "Die Archivierung von „{{title}}“ ist fehlgeschlagen ({{code}}). Das Original bleibt gespeichert."
+      "DOCUMENT_ARCHIVAL_FAILED": "Die Archivierung von „{{title}}“ ist fehlgeschlagen ({{code}}). Das Original bleibt gespeichert.",
+      "CONTRACT_CANCELLATION_REMINDER": "Kündigung für „{{contractName}}“ bis {{cancellationDeadline}} prüfen."
     },
     "readAt": "Gelesen am {{date}}",
     "inAppOnly": "Hinweise werden nur hier in der App angezeigt. Push auf das Telefon ist nicht eingerichtet."
@@ -513,6 +527,8 @@
     "task.note.tooLong": "Die Notiz ist zu lang.",
     "task.alreadyDone": "Die Aufgabe ist bereits erledigt.",
     "task.notDone": "Die Aufgabe ist nicht erledigt.",
+    "task.contractDeadline.managed": "Diese Frist stammt aus bestätigten Vertragsangaben. Korrigiere stattdessen die Vertragsangabe; das geplante Arbeitsdatum kannst du frei verschieben.",
+    "task.contractDeadline.occurrence": "Diese Kündigungsprüfung ist nicht mehr aktuell. Bitte lade die Aufgabe neu.",
     "password.tooShort": "Das Passwort muss mindestens 10 Zeichen haben.",
     "password.current.mismatch": "Das aktuelle Passwort stimmt nicht.",
     "subject.kind.invalid": "Ungültige Zuordnung.",

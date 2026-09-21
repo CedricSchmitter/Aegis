@@ -46,7 +46,8 @@ class ContractServiceTest {
     @BeforeEach
     void setUp() {
         ContractPresenter presenter = new ContractPresenter(documents);
-        commands = new ContractService(repository, documents, presenter, ContractTestSupport.household(), clock);
+        commands = new ContractService(repository, documents, presenter, ContractTestSupport.household(), clock,
+                (contractId, requestedBy) -> { });
         queries = new ContractQueryService(repository, presenter, ContractTestSupport.household(), clock);
         contractPdf = documents.add("Fitnessstudio Vertrag");
     }
@@ -210,7 +211,7 @@ class ContractServiceTest {
         InMemoryContractRepository fresh = new InMemoryContractRepository();
         ContractPresenter presenter = new ContractPresenter(documents);
         ContractService restoreTarget = new ContractService(fresh, documents, presenter,
-                ContractTestSupport.household(), clock);
+                ContractTestSupport.household(), clock, (contractId, requestedBy) -> { });
         ContractQueryService restored = new ContractQueryService(fresh, presenter,
                 ContractTestSupport.household(), clock);
 

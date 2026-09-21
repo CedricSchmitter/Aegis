@@ -196,9 +196,22 @@
     "ownerLabel": "Responsible: {{name}}",
     "nobody": "Nobody responsible",
     "conflict": "Someone else changed this task in the meantime. The current version has been reloaded; please review it and repeat your change.",
+    "cancellation": {
+      "title": "{{name}} - Review cancellation",
+      "contractEnd": "Contract end: {{date}}",
+      "deadline": "Cancel by: {{date}}",
+      "remaining": "{{count}} days remaining",
+      "remaining_one": "{{count}} day remaining",
+      "overdue": "Overdue by {{count}} days",
+      "overdue_one": "Overdue by {{count}} day",
+      "remaining_zero": "Due today",
+      "openContract": "Open contract",
+      "completionHint": "Completing this review does not record that the contract was cancelled. Change the contract status separately after taking action."
+    },
     "status": {
       "OPEN": "Open",
-      "DONE": "Done"
+      "DONE": "Done",
+      "CANCELLED": "Superseded"
     }
   },
   "contracts": {
@@ -374,7 +387,8 @@
       "TASK_ASSIGNED": "You were assigned the task “{{title}}”.",
       "TASK_COMPLETED": "Your task “{{title}}” was completed.",
       "DOCUMENT_ARCHIVED": "“{{title}}” has been archived and is searchable.",
-      "DOCUMENT_ARCHIVAL_FAILED": "Archival of “{{title}}” failed ({{code}}). The original remains stored."
+      "DOCUMENT_ARCHIVAL_FAILED": "Archival of “{{title}}” failed ({{code}}). The original remains stored.",
+      "CONTRACT_CANCELLATION_REMINDER": "Review cancellation for “{{contractName}}” by {{cancellationDeadline}}."
     },
     "readAt": "Read on {{date}}",
     "inAppOnly": "Notices are shown here in the app only. Phone push is not set up."
@@ -513,6 +527,8 @@
     "task.note.tooLong": "The note is too long.",
     "task.alreadyDone": "The task is already completed.",
     "task.notDone": "The task is not completed.",
+    "task.contractDeadline.managed": "This deadline comes from confirmed contract facts. Correct the contract fact instead; you can freely reschedule the planned work date.",
+    "task.contractDeadline.occurrence": "This cancellation review is no longer current. Reload the task.",
     "password.tooShort": "The password needs at least 10 characters.",
     "password.current.mismatch": "The current password does not match.",
     "subject.kind.invalid": "Invalid assignment.",

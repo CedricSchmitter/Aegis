@@ -7,6 +7,7 @@ import dev.aegis.planning.application.ports.PlanningEvents;
 import dev.aegis.planning.domain.Task;
 import dev.aegis.planning.domain.TaskRepository;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.MemberId;
@@ -55,6 +56,12 @@ final class PlanningTestSupport {
         }
 
         @Override
+        public List<Task> findCancellationReviews(ContractId contractId) {
+            return findAll().stream().filter(t -> t.cancellationReview()
+                    .map(r -> r.contractId().equals(contractId)).orElse(false)).toList();
+        }
+
+        @Override
         public void save(Task task) {
             long stored = versions.getOrDefault(task.id(), -1L);
             if (stored >= 0 && stored != task.version()) {
@@ -64,13 +71,13 @@ final class PlanningTestSupport {
             versions.put(task.id(), next);
             store.put(task.id(), Task.rehydrate(task.id(), task.title(), task.note(), task.owner().orElse(null),
                     task.status(), task.dueDate().orElse(null), task.plannedDate().orElse(null),
-                    task.source().orElse(null), task.createdBy(), task.createdAt(), task.updatedAt(),
+                    task.source().orElse(null), task.cancellationReview().orElse(null), task.createdBy(), task.createdAt(), task.updatedAt(),
                     task.completedAt().orElse(null), task.completedBy().orElse(null), next));
         }
 
         private Task copy(Task task) {
             return Task.rehydrate(task.id(), task.title(), task.note(), task.owner().orElse(null), task.status(),
-                    task.dueDate().orElse(null), task.plannedDate().orElse(null), task.source().orElse(null),
+                    task.dueDate().orElse(null), task.plannedDate().orElse(null), task.source().orElse(null), task.cancellationReview().orElse(null),
                     task.createdBy(), task.createdAt(), task.updatedAt(), task.completedAt().orElse(null),
                     task.completedBy().orElse(null), task.version());
         }

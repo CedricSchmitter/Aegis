@@ -31,7 +31,7 @@ public class NoticeService implements PublishNotice, NoticeInbox {
 
     @Override
     public PublishOutcome publish(NoticeDraft draft) {
-        if (notices.findUnreadByDedupKey(draft.recipient(), draft.dedupKey()).isPresent()) {
+        if (notices.findByDedupKey(draft.recipient(), draft.dedupKey()).isPresent()) {
             return PublishOutcome.DEDUPLICATED;
         }
         NoticeKind kind;
@@ -42,8 +42,9 @@ public class NoticeService implements PublishNotice, NoticeInbox {
         }
         NoticeLink link = draft.linkType() == null ? null
                 : new NoticeLink(NoticeLink.LinkType.valueOf(draft.linkType()), draft.linkId());
-        notices.save(Notice.create(draft.recipient(), kind, draft.dedupKey(), draft.params(), link, clock.instant()));
-        return PublishOutcome.PUBLISHED;
+        Notice notice = Notice.create(draft.recipient(), kind, draft.dedupKey(), draft.params(), link,
+                clock.instant());
+        return notices.saveIfAbsent(notice) ? PublishOutcome.PUBLISHED : PublishOutcome.DEDUPLICATED;
     }
 
     @Override

@@ -284,7 +284,10 @@ public class RestoreService implements RestoreExport {
                     entry.sourceDocumentId() == null ? null : DocumentId.of(entry.sourceDocumentId()),
                     entry.createdBy() == null ? actor.memberId() : mapMember(memberMapping, entry.createdBy()),
                     entry.createdAt(), entry.updatedAt(), entry.completedAt(),
-                    entry.completedBy() == null ? null : mapMember(memberMapping, entry.completedBy()));
+                    entry.completedBy() == null ? null : mapMember(memberMapping, entry.completedBy()),
+                    entry.contractId() == null ? null : dev.aegis.shared.ContractId.of(entry.contractId()),
+                    entry.contractName(), date(entry.contractEnd()), date(entry.cancellationDeadline()),
+                    date(entry.reminderDate()), entry.contractVersion());
             if (importTask.importTask(actor, record) == ImportTask.ImportOutcome.IMPORTED) {
                 imported++;
             } else {

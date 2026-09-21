@@ -6,6 +6,7 @@ import dev.aegis.contracts.application.api.ContractExportRecord.FactExportRecord
 import dev.aegis.contracts.application.api.ContractViews.ContractView;
 import dev.aegis.contracts.application.api.ImportContract;
 import dev.aegis.contracts.application.api.RecordContractObservation;
+import dev.aegis.contracts.application.api.ContractReconciliationScheduler;
 import dev.aegis.contracts.domain.Confidence;
 import dev.aegis.contracts.domain.Contract;
 import dev.aegis.contracts.domain.ContractFact;
@@ -41,14 +42,17 @@ public class ContractService implements ContractCommands, RecordContractObservat
     private final ContractPresenter presenter;
     private final HouseholdAccess access;
     private final Clock clock;
+    private final ContractReconciliationScheduler reconciliation;
 
     public ContractService(ContractRepository contracts, DocumentReferenceQuery documents,
-            ContractPresenter presenter, HouseholdAccess access, Clock clock) {
+            ContractPresenter presenter, HouseholdAccess access, Clock clock,
+            ContractReconciliationScheduler reconciliation) {
         this.contracts = contracts;
         this.documents = documents;
         this.presenter = presenter;
         this.access = access;
         this.clock = clock;
+        this.reconciliation = reconciliation;
     }
 
     @Override
@@ -62,6 +66,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
                     ValidityPeriod.always(), source, null, actor.memberId(), now);
         }
         contracts.save(contract);
+        reconcile(contract, actor);
         return describe(contract.id());
     }
 
@@ -71,6 +76,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         Contract contract = loadVersion(id, expectedVersion);
         contract.rename(name, clock.instant());
         contracts.save(contract);
+        reconcile(contract, actor);
         return describe(id);
     }
 
@@ -80,6 +86,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         Contract contract = loadVersion(id, expectedVersion);
         contract.changeStatus(ContractInputs.status(status), clock.instant());
         contracts.save(contract);
+        reconcile(contract, actor);
         return describe(id);
     }
 
@@ -94,6 +101,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
                         documents),
                 command.note(), actor.memberId(), clock.instant());
         contracts.save(contract);
+        reconcile(contract, actor);
         return describe(id);
     }
 
@@ -103,6 +111,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         Contract contract = loadVersion(id, expectedVersion);
         contract.confirm(ContractInputs.factId(factId), actor.memberId(), clock.instant());
         contracts.save(contract);
+        reconcile(contract, actor);
         return describe(id);
     }
 
@@ -112,6 +121,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         Contract contract = loadVersion(id, expectedVersion);
         contract.reject(ContractInputs.factId(factId), actor.memberId(), clock.instant());
         contracts.save(contract);
+        reconcile(contract, actor);
         return describe(id);
     }
 
@@ -127,6 +137,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
                 ContractInputs.validity(command.validFrom(), command.validUntil()), command.note(),
                 actor.memberId(), clock.instant());
         contracts.save(contract);
+        reconcile(contract, actor);
         return describe(id);
     }
 
@@ -165,7 +176,12 @@ public class ContractService implements ContractCommands, RecordContractObservat
                 record.createdBy() == null ? actor.memberId() : record.createdBy(), createdAt, record.updatedAt(),
                 facts, 0);
         contracts.save(contract);
+        reconcile(contract, actor);
         return ImportOutcome.IMPORTED;
+    }
+
+    private void reconcile(Contract contract, Actor actor) {
+        reconciliation.schedule(contract.id(), actor.memberId());
     }
 
     private ContractFact importedFact(FactExportRecord record) {

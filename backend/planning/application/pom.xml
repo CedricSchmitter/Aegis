@@ -18,5 +18,17 @@
       <groupId>dev.aegis</groupId>
       <artifactId>aegis-documents-application</artifactId>
     </dependency>
+    <dependency>
+      <groupId>dev.aegis</groupId>
+      <artifactId>aegis-contracts-application</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.aegis</groupId>
+      <artifactId>aegis-identity-application</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.aegis</groupId>
+      <artifactId>aegis-notifications-application</artifactId>
+    </dependency>
   </dependencies>
 </project>
