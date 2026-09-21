@@ -11,6 +11,7 @@ const NAV = [
   { to: "/documents", key: "nav.documents" },
   { to: "/contracts", key: "nav.contracts" },
   { to: "/tasks", key: "nav.tasks" },
+  { to: "/review", key: "nav.review" },
   { to: "/notices", key: "nav.notices" },
   { to: "/status", key: "nav.status" },
 ] as const;
@@ -107,7 +108,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </footer>
       <nav
         aria-label={t("nav.menu")}
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-stone-800 dark:bg-stone-900 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-stone-800 dark:bg-stone-900 md:hidden"
       >
         {NAV.map((item) => (
           <NavLink

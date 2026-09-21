@@ -41,6 +41,12 @@ public class AiStatusSource implements IntegrationStatusSource {
             return IntegrationStatus.notConfigured("ai",
                     "no AI provider credentials; capture, search and planning work without AI");
         }
+        List<String> missingCredentials = ai.models().stream().filter(model -> !model.credentialsAvailable())
+                .map(model -> model.provider() + "/" + model.model()).toList();
+        if (!missingCredentials.isEmpty()) {
+            return new IntegrationStatus("ai", IntegrationStatus.DEGRADED, "selected provider credentials missing for "
+                    + String.join(", ", missingCredentials), ai.lastSuccessAt(), clock.instant());
+        }
         List<String> failing = ai.models().stream()
                 .filter(model -> model.lastFailureCategory() != null
                         && PROVIDER_FAILURES.contains(model.lastFailureCategory()))

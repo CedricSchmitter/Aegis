@@ -30,5 +30,6 @@
       <groupId>dev.aegis</groupId>
       <artifactId>aegis-identity-application</artifactId>
     </dependency>
+    <dependency><groupId>dev.aegis</groupId><artifactId>aegis-review-application</artifactId></dependency>
   </dependencies>
 </project>

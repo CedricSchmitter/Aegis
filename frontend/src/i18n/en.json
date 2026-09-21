@@ -21,6 +21,7 @@
     "documents": "Documents",
     "contracts": "Contracts",
     "tasks": "Tasks",
+    "review": "Review",
     "notices": "Notices",
     "status": "Status",
     "settings": "Settings",
@@ -388,10 +389,32 @@
       "TASK_COMPLETED": "Your task “{{title}}” was completed.",
       "DOCUMENT_ARCHIVED": "“{{title}}” has been archived and is searchable.",
       "DOCUMENT_ARCHIVAL_FAILED": "Archival of “{{title}}” failed ({{code}}). The original remains stored.",
-      "CONTRACT_CANCELLATION_REMINDER": "Review cancellation for “{{contractName}}” by {{cancellationDeadline}}."
+      "CONTRACT_CANCELLATION_REMINDER": "Review cancellation for “{{contractName}}” by {{cancellationDeadline}}.",
+      "REVIEW_ITEM": "A new item needs review."
     },
     "readAt": "Read on {{date}}",
     "inAppOnly": "Notices are shown here in the app only. Phone push is not set up."
+  },
+  "review": {
+    "title": "Review inbox",
+    "intro": "One shared place for processing failures, uncertain classifications and contract statements. Opening or dismissing a card does not change its source; source actions still enforce their own rules.",
+    "filters": "Review filters",
+    "statusLabel": "State",
+    "categoryLabel": "Category",
+    "allCategories": "All categories",
+    "empty": "Nothing needs review.",
+    "emptyHistory": "No items in this history view.",
+    "openSource": "Review source",
+    "dismiss": "Dismiss notice",
+    "archiveFailed": "Archival failed for “{{title}}” ({{errorCode}}).",
+    "analysisFailed": "Automatic classification failed for “{{title}}” ({{errorCode}}).",
+    "classification": "“{{title}}” has classification results awaiting review.",
+    "contractFact": "{{contract}}: {{type}} was proposed as {{value}}.",
+    "contractConflict": "{{contract}} has conflicting statements about {{type}}.",
+    "category": { "PROCESSING_FAILURE": "Processing", "CLASSIFICATION": "Classification", "CONTRACT_FACT": "Contract" },
+    "reason": { "ARCHIVAL_FAILED": "The retained original can be submitted again.", "ANALYSIS_FAILED": "The document is safe; only the optional analysis failed.", "UNCERTAIN_CLASSIFICATION": "Confirm or reject each proposal on the document.", "UNCONFIRMED_FACT": "It remains ineffective until a member confirms or corrects it.", "CONFLICTING_FACTS": "Aegis will not choose between contradictory sources." },
+    "status": { "OPEN": "Open", "RESOLVED": "Resolved", "DISMISSED": "Dismissed", "SUPERSEDED": "Superseded" },
+    "action": { "RETRY_ARCHIVAL": "Retry archival", "RETRY_ANALYSIS": "Retry classification" }
   },
   "status": {
     "title": "Status",

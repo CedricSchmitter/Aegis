@@ -32,6 +32,8 @@ import dev.aegis.portability.application.ExportFormat.MemberEntry;
 import dev.aegis.portability.application.ExportFormat.MembersFile;
 import dev.aegis.portability.application.ExportFormat.TaskEntry;
 import dev.aegis.portability.application.ExportFormat.TasksFile;
+import dev.aegis.portability.application.ExportFormat.ReviewsFile;
+import dev.aegis.review.application.api.ReviewPortability;
 import dev.aegis.portability.application.api.RestoreExport;
 import dev.aegis.portability.application.ports.ExportSerializer;
 import dev.aegis.portability.application.ports.ExportSource;
@@ -72,6 +74,7 @@ public class RestoreService implements RestoreExport {
     private final ImportDocumentAnalysis importAnalysis;
     private final ImportTask importTask;
     private final ImportContract importContract;
+    private final ReviewPortability reviews;
     private final HouseholdAccess access;
     private final SecureRandom random = new SecureRandom();
 
@@ -79,6 +82,14 @@ public class RestoreService implements RestoreExport {
             ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
             ImportDocumentAnalysis importAnalysis, ImportTask importTask, ImportContract importContract,
             HouseholdAccess access) {
+        this(opener,serializer,members,provisioning,importDocument,importCatalog,importAnalysis,importTask,importContract,
+                new ReviewPortability(){public List<Record> exportAll(Actor actor){return List.of();}public void importAll(Actor actor,List<Record> records){}},access);
+    }
+
+    public RestoreService(ExportSourceOpener opener, ExportSerializer serializer, MemberDirectory members,
+            ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
+            ImportDocumentAnalysis importAnalysis, ImportTask importTask, ImportContract importContract,
+            ReviewPortability reviews, HouseholdAccess access) {
         this.opener = opener;
         this.serializer = serializer;
         this.members = members;
@@ -88,6 +99,7 @@ public class RestoreService implements RestoreExport {
         this.importAnalysis = importAnalysis;
         this.importTask = importTask;
         this.importContract = importContract;
+        this.reviews = reviews;
         this.access = access;
     }
 
@@ -112,6 +124,7 @@ public class RestoreService implements RestoreExport {
             int[] taskCounts = restoreTasks(actor, read(source, ExportFormat.TASKS_JSON, TasksFile.class),
                     memberMapping);
             int[] contractCounts = restoreContracts(actor, source, memberMapping);
+            restoreReviews(actor, source, memberMapping);
             return new RestoreReport(manifest.generation(), documentCounts[0], documentCounts[1], taskCounts[0],
                     taskCounts[1], catalog.labelsCreated(), catalog.foldersCreated(), documentCounts[2],
                     documentCounts[3], documentCounts[4], contractCounts[0], contractCounts[1], memberMapping,
@@ -119,6 +132,17 @@ public class RestoreService implements RestoreExport {
         } catch (IOException e) {
             throw new UncheckedIOException("restore from " + sourceLocation + " failed", e);
         }
+    }
+
+    private void restoreReviews(Actor actor, ExportSource source, Map<String,String> memberMapping) throws IOException {
+        if (!source.exists(ExportFormat.REVIEWS_JSON)) return;
+        var records = read(source, ExportFormat.REVIEWS_JSON, ReviewsFile.class).reviews().stream().map(r ->
+                new ReviewPortability.Record(UUID.fromString(r.id()),r.fingerprint(),r.producer(),r.sourceKind(),
+                        r.sourceId(),r.sourceVersion(),r.category(),r.reason(),r.priority(),r.titleKey(),r.params(),
+                        r.linkType(),r.linkId(),r.actions(),r.status(),r.createdAt(),r.updatedAt(),r.version(),
+                        r.decidedBy()==null?null:memberMapping.getOrDefault(r.decidedBy(),r.decidedBy()),r.decidedAt()))
+                .toList();
+        reviews.importAll(actor, records);
     }
 
     private void verifyChecksums(ExportSource source, Manifest manifest, List<String> warnings) throws IOException {

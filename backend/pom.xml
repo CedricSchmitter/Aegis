@@ -53,6 +53,9 @@
     <module>notifications/domain</module>
     <module>notifications/application</module>
     <module>notifications/adapters</module>
+    <module>review/domain</module>
+    <module>review/application</module>
+    <module>review/adapters</module>
     <module>operations/application</module>
     <module>operations/adapters</module>
     <module>portability/application</module>
@@ -116,6 +119,9 @@
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-notifications-domain</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-notifications-application</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-notifications-adapters</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-review-domain</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-review-application</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>dev.aegis</groupId><artifactId>aegis-review-adapters</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-operations-application</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-operations-adapters</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-portability-application</artifactId><version>${project.version}</version></dependency>

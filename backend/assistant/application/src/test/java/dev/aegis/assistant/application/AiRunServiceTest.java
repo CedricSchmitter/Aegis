@@ -250,8 +250,8 @@ class AiRunServiceTest {
 
     @Test
     void healthReportsTheLatestOutcomeOfEveryConfiguredModel() {
-        AiHealth.ModelHealth unverified = new AiHealth.ModelHealth(ScriptedGateway.PROVIDER, AiTestKit.MODEL, null,
-                null, null);
+        AiHealth.ModelHealth unverified = new AiHealth.ModelHealth(ScriptedGateway.PROVIDER, AiTestKit.MODEL, true,
+                null, null, null);
         assertThat(kit.service().health(AS_LISA)).isEqualTo(new AiHealth(true, null, List.of(unverified)));
         kit.gateway.fail(FailureCategory.AUTHENTICATION, "provider.authentication", null);
         kit.executor().execute(new RunId(kit.classify("doc-1", 3, "Rechnung", false).id()));
@@ -272,6 +272,44 @@ class AiRunServiceTest {
             assertThat(model.lastFailureCategory()).isNull();
         });
         assertThat(recovered.lastSuccessAt()).isNotNull();
+    }
+
+    @Test
+    void credentialRotationMakesAnEarlierSuccessUnverified() {
+        kit.gateway.answer(json(Map.of("label", "invoice")));
+        kit.executor().execute(new RunId(kit.classify("doc-1", 3, "Rechnung", false).id()));
+        assertThat(kit.service().health(AS_LISA).models()).singleElement()
+                .extracting(AiHealth.ModelHealth::lastState).isEqualTo("SUCCEEDED");
+
+        kit.clock.advance(java.time.Duration.ofMinutes(1));
+        kit.gateway.credentialRevision = "rotated";
+
+        assertThat(kit.service().health(AS_LISA).models()).singleElement().satisfies(model -> {
+            assertThat(model.credentialsAvailable()).isTrue();
+            assertThat(model.lastState()).isNull();
+        });
+    }
+
+    @Test
+    void removedPreferredCredentialDoesNotReuseFallbackHistory() {
+        kit.gateway.configured = false;
+        kit.subscription.configured = true;
+        kit.subscription.answer(json(Map.of("label", "invoice")));
+        RunView earlier = classifyAs(AS_CEDRIC, "doc-1");
+        kit.executor().execute(new RunId(earlier.id()));
+        assertThat(kit.service().health(AS_CEDRIC).models()).singleElement()
+                .extracting(AiHealth.ModelHealth::lastState).isEqualTo("SUCCEEDED");
+
+        kit.gateway.configured = true;
+        kit.service().health(AS_CEDRIC);
+        kit.clock.advance(java.time.Duration.ofMinutes(1));
+        kit.gateway.configured = false;
+
+        assertThat(kit.service().health(AS_CEDRIC).models()).singleElement().satisfies(model -> {
+            assertThat(model.provider()).isEqualTo(AiTestKit.SUBSCRIPTION);
+            assertThat(model.credentialsAvailable()).isTrue();
+            assertThat(model.lastState()).isNull();
+        });
     }
 
     @Test

@@ -66,6 +66,11 @@ public class AnthropicModelGateway implements ModelGateway, DisposableBean {
     }
 
     @Override
+    public String credentialRevision() {
+        return keyFile.revision();
+    }
+
+    @Override
     public ModelTurn complete(ModelRequest request) {
         String key = keyFile.read().orElseThrow(() -> new ModelCallException(FailureCategory.NOT_CONFIGURED,
                 "ai.provider.notConfigured", "no readable Anthropic API key file"));

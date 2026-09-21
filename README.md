@@ -113,6 +113,14 @@ occurrence while preserving member edits and completion; resolved contracts supe
 ([ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md)). This deterministic flow
 does not use AI, a calendar or phone push.
 
+The shared review inbox persists versioned workflow cards without copying source facts. It currently reconciles
+failed archival, failed or unavailable document analysis, classification suggestions, proposed contract facts and
+fact conflicts. Retries use document application commands; confirmations and corrections stay on their source
+screens. Dismissal, source resolution and notification read state remain separate, and both members share
+optimistic-concurrency conflict handling. Review history is included in portable export schema 7 and restore
+([ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md)). Mail exceptions, task candidates and
+duplicate/relationship suggestions are not connected because those producers do not yet exist.
+
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a
 fallback to the owner's Claude subscription through headless `claude -p` on the VM.
@@ -123,6 +131,8 @@ in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Without either, AI is not configured. See
 [API setup](docs/operations/DEPLOYMENT.md#claude-api-with-sonnet-5) and
 [subscription fallback](docs/operations/DEPLOYMENT.md#subscription-fallback-through-claude--p).
 Scheduled review and chat workflows (#24, #25) are not connected.
+Integration status evaluates credentials for every currently selected provider/model. Process startup, provider
+fallback and API-key rotation make earlier outcomes unverified until a fresh connection check succeeds.
 
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
 passed isolated recovery and its daily timer is enabled; the first scheduled run succeeded on 2026-09-18.

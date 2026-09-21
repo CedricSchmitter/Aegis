@@ -1013,6 +1013,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List and reconcile the shared review inbox */
+        get: operations["listReviewItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reviews/{id}/actions/{action}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run an application-owned source action */
+        post: operations["actOnReviewItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reviews/{id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss the notice without changing its source */
+        post: operations["dismissReviewItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/status": {
         parameters: {
             query?: never;
@@ -1803,6 +1854,35 @@ export interface components {
             /** Format: int64 */
             expectedVersion: number;
             title: string;
+        };
+        ReviewItemDto: {
+            actions: string[];
+            category: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            linkId: string;
+            linkType: string;
+            params: {
+                [key: string]: string;
+            };
+            priority: string;
+            reason: string;
+            sourceId: string;
+            sourceKind: string;
+            /** Format: int64 */
+            sourceVersion: number;
+            status: string;
+            titleKey: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: int64 */
+            version: number;
+        };
+        ReviewVersionRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
         };
         RunDto: {
             /** Format: int32 */
@@ -3574,6 +3654,82 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["NoticeDto"];
+                };
+            };
+        };
+    };
+    listReviewItems: {
+        parameters: {
+            query?: {
+                status?: string;
+                category?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReviewItemDto"][];
+                };
+            };
+        };
+    };
+    actOnReviewItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                action: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReviewItemDto"];
+                };
+            };
+        };
+    };
+    dismissReviewItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReviewItemDto"];
                 };
             };
         };

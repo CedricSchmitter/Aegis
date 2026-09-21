@@ -21,6 +21,7 @@
     "documents": "Dokumente",
     "contracts": "Verträge",
     "tasks": "Aufgaben",
+    "review": "Prüfen",
     "notices": "Hinweise",
     "status": "Status",
     "settings": "Einstellungen",
@@ -388,10 +389,32 @@
       "TASK_COMPLETED": "Deine Aufgabe „{{title}}“ wurde erledigt.",
       "DOCUMENT_ARCHIVED": "„{{title}}“ wurde archiviert und ist durchsuchbar.",
       "DOCUMENT_ARCHIVAL_FAILED": "Die Archivierung von „{{title}}“ ist fehlgeschlagen ({{code}}). Das Original bleibt gespeichert.",
-      "CONTRACT_CANCELLATION_REMINDER": "Kündigung für „{{contractName}}“ bis {{cancellationDeadline}} prüfen."
+      "CONTRACT_CANCELLATION_REMINDER": "Kündigung für „{{contractName}}“ bis {{cancellationDeadline}} prüfen.",
+      "REVIEW_ITEM": "Ein neuer Eintrag muss geprüft werden."
     },
     "readAt": "Gelesen am {{date}}",
     "inAppOnly": "Hinweise werden nur hier in der App angezeigt. Push auf das Telefon ist nicht eingerichtet."
+  },
+  "review": {
+    "title": "Prüfkorb",
+    "intro": "Ein gemeinsamer Ort für Verarbeitungsfehler, unsichere Einordnungen und Vertragsangaben. Öffnen oder Ausblenden ändert die Quelle nicht; Aktionen prüfen weiterhin deren eigene Regeln.",
+    "filters": "Prüffilter",
+    "statusLabel": "Status",
+    "categoryLabel": "Kategorie",
+    "allCategories": "Alle Kategorien",
+    "empty": "Nichts muss geprüft werden.",
+    "emptyHistory": "Keine Einträge in dieser Verlaufsansicht.",
+    "openSource": "Quelle prüfen",
+    "dismiss": "Hinweis ausblenden",
+    "archiveFailed": "Die Archivierung von „{{title}}“ ist fehlgeschlagen ({{errorCode}}).",
+    "analysisFailed": "Die automatische Einordnung von „{{title}}“ ist fehlgeschlagen ({{errorCode}}).",
+    "classification": "Für „{{title}}“ warten Einordnungsergebnisse auf eine Prüfung.",
+    "contractFact": "{{contract}}: {{type}} wurde als {{value}} vorgeschlagen.",
+    "contractConflict": "In {{contract}} widersprechen sich Angaben zu {{type}}.",
+    "category": { "PROCESSING_FAILURE": "Verarbeitung", "CLASSIFICATION": "Einordnung", "CONTRACT_FACT": "Vertrag" },
+    "reason": { "ARCHIVAL_FAILED": "Das aufbewahrte Original kann erneut eingereicht werden.", "ANALYSIS_FAILED": "Das Dokument ist sicher; nur die optionale Einordnung ist fehlgeschlagen.", "UNCERTAIN_CLASSIFICATION": "Prüfe jeden Vorschlag am Dokument.", "UNCONFIRMED_FACT": "Die Angabe bleibt unwirksam, bis ein Mitglied sie bestätigt oder korrigiert.", "CONFLICTING_FACTS": "Aegis entscheidet nicht zwischen widersprüchlichen Quellen." },
+    "status": { "OPEN": "Offen", "RESOLVED": "Erledigt", "DISMISSED": "Ausgeblendet", "SUPERSEDED": "Überholt" },
+    "action": { "RETRY_ARCHIVAL": "Archivierung wiederholen", "RETRY_ANALYSIS": "Einordnung wiederholen" }
   },
   "status": {
     "title": "Status",

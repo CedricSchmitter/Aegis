@@ -27,6 +27,9 @@ import dev.aegis.portability.application.ExportFormat.MembersFile;
 import dev.aegis.portability.application.ExportFormat.SubjectEntry;
 import dev.aegis.portability.application.ExportFormat.TaskEntry;
 import dev.aegis.portability.application.ExportFormat.TasksFile;
+import dev.aegis.portability.application.ExportFormat.ReviewEntry;
+import dev.aegis.portability.application.ExportFormat.ReviewsFile;
+import dev.aegis.review.application.api.ReviewPortability;
 import dev.aegis.portability.application.api.CreateExport;
 import dev.aegis.portability.application.api.ExportQueries;
 import dev.aegis.portability.application.api.ExportSummary;
@@ -63,6 +66,7 @@ public class ExportService implements CreateExport, ExportQueries {
     private final DocumentExportQuery documents;
     private final TaskExportQuery tasks;
     private final ContractExportQuery contracts;
+    private final ReviewPortability reviews;
     private final MemberDirectory members;
     private final ExportStore store;
     private final ExportSerializer serializer;
@@ -73,9 +77,16 @@ public class ExportService implements CreateExport, ExportQueries {
     public ExportService(DocumentExportQuery documents, TaskExportQuery tasks, ContractExportQuery contracts,
             MemberDirectory members, ExportStore store, ExportSerializer serializer, HouseholdAccess access,
             Clock clock, String producerVersion) {
+        this(documents, tasks, contracts, new ReviewPortability() { public List<Record> exportAll(Actor actor) { return List.of(); } public void importAll(Actor actor,List<Record> records) {} }, members, store, serializer, access, clock, producerVersion);
+    }
+
+    public ExportService(DocumentExportQuery documents, TaskExportQuery tasks, ContractExportQuery contracts,
+            ReviewPortability reviews, MemberDirectory members, ExportStore store, ExportSerializer serializer,
+            HouseholdAccess access, Clock clock, String producerVersion) {
         this.documents = documents;
         this.tasks = tasks;
         this.contracts = contracts;
+        this.reviews = reviews;
         this.members = members;
         this.store = store;
         this.serializer = serializer;
@@ -153,6 +164,10 @@ public class ExportService implements CreateExport, ExportQueries {
         for (ContractExportRecord record : contracts.exportAll(actor)) {
             contractEntries.add(contractEntry(record));
         }
+        List<ReviewEntry> reviewEntries = reviews.exportAll(actor).stream().map(r -> new ReviewEntry(r.id().toString(),
+                r.fingerprint(), r.producer(), r.sourceKind(), r.sourceId(), r.sourceVersion(), r.category(),
+                r.reason(), r.priority(), r.titleKey(), r.params(), r.linkType(), r.linkId(), r.actions(), r.status(),
+                r.createdAt(), r.updatedAt(), r.version(), r.decidedBy(), r.decidedAt())).toList();
 
         List<MemberEntry> memberEntries = memberList.stream().map(m -> new MemberEntry(m.id().toString(),
                 m.username(), m.displayName(), m.locale().name(), m.active())).toList();
@@ -176,6 +191,8 @@ public class ExportService implements CreateExport, ExportQueries {
                 new CatalogFile(ExportFormat.SCHEMA_VERSION, now, labelEntries, folderEntries)));
         put(staging, checksums, ExportFormat.CONTRACTS_JSON,
                 serializer.toJson(new ContractsFile(ExportFormat.SCHEMA_VERSION, now, contractEntries)));
+        put(staging, checksums, ExportFormat.REVIEWS_JSON,
+                serializer.toJson(new ReviewsFile(ExportFormat.SCHEMA_VERSION, now, reviewEntries)));
         put(staging, checksums, ExportFormat.DOCUMENTS_CSV, documentsCsv(documentEntries, memberNames));
         put(staging, checksums, ExportFormat.TASKS_CSV, tasksCsv(taskEntries, memberNames, documentEntries));
         put(staging, checksums, ExportFormat.LABELS_CSV, labelsCsv(labelEntries, folderEntries));

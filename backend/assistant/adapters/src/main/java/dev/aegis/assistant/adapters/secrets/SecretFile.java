@@ -5,6 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Optional;
 
 /**
@@ -40,6 +43,20 @@ public final class SecretFile {
             return key;
         } catch (IOException | SecurityException unreadable) {
             return Optional.empty();
+        }
+    }
+
+    /** A non-secret fingerprint used only to invalidate stale connection checks after a rotation. */
+    public String revision() {
+        return read().map(SecretFile::sha256).orElse("not-configured");
+    }
+
+    private static String sha256(String value) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
         }
     }
 

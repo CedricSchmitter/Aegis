@@ -1730,6 +1730,81 @@
         "required" : [ "expectedVersion", "title" ],
         "type" : "object"
       },
+      "ReviewItemDto" : {
+        "properties" : {
+          "actions" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "linkId" : {
+            "type" : "string"
+          },
+          "linkType" : {
+            "type" : "string"
+          },
+          "params" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "priority" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "sourceId" : {
+            "type" : "string"
+          },
+          "sourceKind" : {
+            "type" : "string"
+          },
+          "sourceVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "titleKey" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "actions", "category", "createdAt", "id", "linkId", "linkType", "params", "priority", "reason", "sourceId", "sourceKind", "sourceVersion", "status", "titleKey", "updatedAt", "version" ],
+        "type" : "object"
+      },
+      "ReviewVersionRequest" : {
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
       "RunDto" : {
         "properties" : {
           "attempt" : {
@@ -4443,6 +4518,126 @@
         },
         "summary" : "Mark one notice as read",
         "tags" : [ "notices" ]
+      }
+    },
+    "/api/reviews" : {
+      "get" : {
+        "operationId" : "listReviewItems",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReviewItemDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "List and reconcile the shared review inbox",
+        "tags" : [ "reviews" ]
+      }
+    },
+    "/api/reviews/{id}/actions/{action}" : {
+      "post" : {
+        "operationId" : "actOnReviewItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "action",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReviewVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReviewItemDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Run an application-owned source action",
+        "tags" : [ "reviews" ]
+      }
+    },
+    "/api/reviews/{id}/dismiss" : {
+      "post" : {
+        "operationId" : "dismissReviewItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReviewVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReviewItemDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Dismiss the notice without changing its source",
+        "tags" : [ "reviews" ]
       }
     },
     "/api/status" : {

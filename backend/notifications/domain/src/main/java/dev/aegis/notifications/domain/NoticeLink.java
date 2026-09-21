@@ -6,7 +6,9 @@ import java.util.Objects;
 public record NoticeLink(LinkType type, String id) {
     public enum LinkType {
         TASK,
-        DOCUMENT
+        DOCUMENT,
+        CONTRACT,
+        REVIEW
     }
 
     public NoticeLink {

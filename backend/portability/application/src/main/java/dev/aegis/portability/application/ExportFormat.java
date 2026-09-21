@@ -15,14 +15,15 @@ import java.util.Set;
  * restore without the newer parts.
  */
 public final class ExportFormat {
-    public static final int SCHEMA_VERSION = 6;
-    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5, 6);
+    public static final int SCHEMA_VERSION = 7;
+    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5, 6, 7);
     public static final String MANIFEST = "manifest.json";
     public static final String DOCUMENTS_JSON = "data/documents.json";
     public static final String TASKS_JSON = "data/tasks.json";
     public static final String MEMBERS_JSON = "data/members.json";
     public static final String CATALOG_JSON = "data/catalog.json";
     public static final String CONTRACTS_JSON = "data/contracts.json";
+    public static final String REVIEWS_JSON = "data/reviews.json";
     public static final String DOCUMENTS_CSV = "readable/documents.csv";
     public static final String TASKS_CSV = "readable/tasks.csv";
     public static final String LABELS_CSV = "readable/labels.csv";
@@ -148,6 +149,9 @@ public final class ExportFormat {
 
     public record ContractsFile(int schemaVersion, Instant exportedAt, List<ContractEntry> contracts) {
     }
+
+    public record ReviewEntry(String id,String fingerprint,String producer,String sourceKind,String sourceId,long sourceVersion,String category,String reason,String priority,String titleKey,Map<String,String> params,String linkType,String linkId,List<String> actions,String status,Instant createdAt,Instant updatedAt,long version,String decidedBy,Instant decidedAt) {}
+    public record ReviewsFile(int schemaVersion, Instant exportedAt, List<ReviewEntry> reviews) {}
 
     public record CatalogFile(int schemaVersion, Instant exportedAt, List<LabelEntry> labels,
             List<FolderEntry> folders) {
