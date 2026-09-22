@@ -170,6 +170,8 @@ class ApiFlowIT extends PostgresIT {
         ApiClient ben = loggedIn(BEN);
         ApiClient anna = loggedIn(ANNA);
         long annaUnreadBefore = anna.json(anna.get("/api/notices/unread-count")).path("unread").asLong();
+        // Other test classes may have left notices for Ben; assigning Anna's task must not add one.
+        long benUnreadBefore = ben.json(ben.get("/api/notices/unread-count")).path("unread").asLong();
 
         ApiClient.Response created = ben.postJson("/api/tasks", "{\"title\":\"Stromvertrag kündigen\","
                 + "\"note\":\"Frist prüfen\",\"ownerId\":\"" + annaId + "\",\"dueDate\":\"2026-12-31\","
@@ -187,7 +189,7 @@ class ApiFlowIT extends PostgresIT {
         });
         assertThat(anna.json(anna.get("/api/notices/unread-count")).path("unread").asLong())
                 .isEqualTo(annaUnreadBefore + 1);
-        assertThat(ben.json(ben.get("/api/notices/unread-count")).path("unread").asLong()).isZero();
+        assertThat(ben.json(ben.get("/api/notices/unread-count")).path("unread").asLong()).isEqualTo(benUnreadBefore);
 
         JsonNode planned = anna.json(anna.postJson("/api/tasks/" + taskId + "/plan",
                 "{\"plannedDate\":\"2026-11-15\",\"expectedVersion\":" + taskVersion + "}"));
