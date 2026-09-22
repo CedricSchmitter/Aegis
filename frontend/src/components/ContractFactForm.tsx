@@ -213,7 +213,8 @@ function SourcePicker({
       const result: DocumentListResponse = unwrap(
         await api.GET("/api/documents", { params: { query: { query: query.trim(), size: 10 } } }),
       );
-      onFound(result.items.map((item) => ({ documentId: item.id, documentTitle: item.title })));
+      // Search never returns trashed documents, so a found source is never in the trash.
+      onFound(result.items.map((item) => ({ documentId: item.id, documentTitle: item.title, documentTrashed: false })));
       setNoMatches(result.items.length === 0);
     } catch (failure) {
       setSearchError(problemMessage(t, failure));

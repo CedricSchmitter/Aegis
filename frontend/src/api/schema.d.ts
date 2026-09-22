@@ -278,6 +278,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/contracts/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Contracts in the trash, most recently trashed first */
+        get: operations["listTrashedContracts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/contracts/{id}": {
         parameters: {
             query?: never;
@@ -364,6 +381,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/contracts/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bring a contract back from the trash */
+        post: operations["restoreContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/contracts/{id}/status": {
         parameters: {
             query?: never;
@@ -375,6 +409,23 @@ export interface paths {
         put?: never;
         /** Record that the contract is active, cancelled or ended */
         post: operations["changeContractStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/{id}/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a contract to the trash; its facts stay and it can be restored */
+        post: operations["trashContract"];
         delete?: never;
         options?: never;
         head?: never;
@@ -433,6 +484,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Documents in the trash, most recently trashed first */
+        get: operations["listTrashedDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{id}": {
         parameters: {
             query?: never;
@@ -440,7 +508,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Document details including processing state and labels */
+        /** Document details including processing state, labels and trash state */
         get: operations["getDocument"];
         put?: never;
         post?: never;
@@ -671,6 +739,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bring a document back from the trash */
+        post: operations["restoreDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{id}/retry": {
         parameters: {
             query?: never;
@@ -716,6 +801,23 @@ export interface paths {
         /** Change the display title of a document */
         put: operations["renameDocument"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a document to the trash; nothing is deleted and it can be restored */
+        post: operations["trashDocument"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1116,6 +1218,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tasks in the trash, most recently trashed first */
+        get: operations["listTrashedTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks/{id}": {
         parameters: {
             query?: never;
@@ -1213,6 +1332,40 @@ export interface paths {
         put?: never;
         /** Reopen a completed task */
         post: operations["reopenTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bring a task back from the trash */
+        post: operations["restoreTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a task to the trash; it leaves lists, Today and reminders and can be restored */
+        post: operations["trashTask"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1422,6 +1575,7 @@ export interface components {
             name: string;
             sources: components["schemas"]["ContractSourceDto"][];
             status: string;
+            trash?: components["schemas"]["ContractTrashDto"];
             /** Format: date-time */
             updatedAt: string;
             /** Format: int64 */
@@ -1430,9 +1584,17 @@ export interface components {
         ContractSourceDto: {
             documentId: string;
             documentTitle?: string | null;
+            documentTrashed: boolean;
             /** Format: int32 */
             page?: number | null;
             quote?: string | null;
+        };
+        ContractTrashDto: {
+            /** Format: date-time */
+            restorableUntil: string;
+            /** Format: date-time */
+            trashedAt: string;
+            trashedBy: string;
         };
         ContractVersionRequest: {
             /** Format: int64 */
@@ -1531,6 +1693,7 @@ export interface components {
             subjects: components["schemas"]["SubjectDto"][];
             title: string;
             titleOrigin: string;
+            trash?: components["schemas"]["DocumentTrashDto"];
             /** Format: date-time */
             uploadedAt: string;
             uploadedBy: string;
@@ -1552,6 +1715,13 @@ export interface components {
             size: number;
             /** Format: int64 */
             totalDocuments: number;
+        };
+        DocumentTrashDto: {
+            /** Format: date-time */
+            restorableUntil: string;
+            /** Format: date-time */
+            trashedAt: string;
+            trashedBy: string;
         };
         DueDateRequest: {
             /** Format: date */
@@ -1941,6 +2111,7 @@ export interface components {
         SourceDto: {
             documentId: string;
             documentTitle?: string | null;
+            documentTrashed: boolean;
         };
         StatusRequest: {
             /** Format: int64 */
@@ -1998,6 +2169,7 @@ export interface components {
             /** Format: int32 */
             pendingFacts: number;
             status: string;
+            trash?: components["schemas"]["ContractTrashDto"];
             /** Format: date-time */
             updatedAt: string;
             /** Format: int64 */
@@ -2029,10 +2201,18 @@ export interface components {
             source?: components["schemas"]["SourceDto"];
             status: string;
             title: string;
+            trash?: components["schemas"]["TaskTrashDto"];
             /** Format: date-time */
             updatedAt: string;
             /** Format: int64 */
             version: number;
+        };
+        TaskTrashDto: {
+            /** Format: date-time */
+            restorableUntil: string;
+            /** Format: date-time */
+            trashedAt: string;
+            trashedBy: string;
         };
         TaskVersionRequest: {
             /** Format: int64 */
@@ -2495,6 +2675,26 @@ export interface operations {
             };
         };
     };
+    listTrashedContracts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SummaryDto"][];
+                };
+            };
+        };
+    };
     getContract: {
         parameters: {
             query?: never;
@@ -2650,6 +2850,32 @@ export interface operations {
             };
         };
     };
+    restoreContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
     changeContractStatus: {
         parameters: {
             query?: never;
@@ -2662,6 +2888,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["StatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    trashContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractVersionRequest"];
             };
         };
         responses: {
@@ -2785,6 +3037,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PlacementResponse"];
+                };
+            };
+        };
+    };
+    listTrashedDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"][];
                 };
             };
         };
@@ -3149,6 +3421,32 @@ export interface operations {
             };
         };
     };
+    restoreDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
     retryArchival: {
         parameters: {
             query?: never;
@@ -3209,6 +3507,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RenameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    trashDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelVersionRequest"];
             };
         };
         responses: {
@@ -3821,6 +4145,26 @@ export interface operations {
             };
         };
     };
+    listTrashedTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TaskDto"][];
+                };
+            };
+        };
+    };
     getTask: {
         parameters: {
             query?: never;
@@ -3974,6 +4318,58 @@ export interface operations {
         };
     };
     reopenTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TaskDto"];
+                };
+            };
+        };
+    };
+    restoreTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TaskDto"];
+                };
+            };
+        };
+    };
+    trashTask: {
         parameters: {
             query?: never;
             header?: never;

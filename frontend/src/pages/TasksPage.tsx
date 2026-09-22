@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import type { TaskDto } from "../api/types";
@@ -39,6 +40,9 @@ export function TasksPage() {
               <input type="checkbox" checked={includeDone} onChange={(e) => setIncludeDone(e.target.checked)} />
               {t("tasks.showDone")}
             </label>
+            <Link className="btn-ghost" to="/trash">
+              {t("trash.open")}
+            </Link>
             <button type="button" className="btn-primary" onClick={() => setShowForm((v) => !v)} data-testid="new-task-toggle">
               {t("tasks.new")}
             </button>

@@ -114,6 +114,9 @@ export function ContractFactCard({ fact, facts, basedOn, busy, onConfirm, onReje
               {!fact.source.documentTitle && (
                 <span className="text-stone-600 dark:text-stone-400"> {t("contracts.fact.sourceGone")}</span>
               )}
+              {fact.source.documentTrashed && (
+                <span className="text-stone-600 dark:text-stone-400"> {t("trash.sourceInTrash")}</span>
+              )}
             </>
           ) : (
             <span className="text-stone-600 dark:text-stone-400">{t("contracts.fact.sourceMissing")}</span>
