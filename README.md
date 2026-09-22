@@ -121,6 +121,14 @@ optimistic-concurrency conflict handling. Review history is included in portable
 ([ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md)). Mail exceptions, task candidates and
 duplicate/relationship suggestions are not connected because those producers do not yet exist.
 
+Documents, tasks and contracts can be moved to a recoverable trash from their pages and restored from the trash
+page by either member ([ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md)). A trashed record keeps its
+identity, original, metadata and links; lists, search, counts, Today, reminders, review cards and published
+deadlines leave it out, while links to it still resolve and say that it is in the trash. It stays restorable at
+least 30 days (`aegis.trash.recovery-window`); permanent deletion is not implemented, so nothing is purged. A
+trashed contract supersedes its open cancellation review, and restoring it reopens the same task. Paperless is not
+changed by trashing.
+
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a
 fallback to the owner's Claude subscription through headless `claude -p` on the VM.

@@ -26,6 +26,12 @@ discarded and never replaces a good one.
 
 Exports open without Aegis (PDF, CSV, Markdown). They are one-way views: editing the CSV changes nothing.
 
+Records in the trash ([ADR-0010](../architecture/adr/ADR-0010-recoverable-trash.md)) are exported like all
+others. Since export schema 8, `data/*.json` carries their trash record (who, when, restorable until), the readable
+CSV files have a `trashedAt` column and the index marks them "in the trash". A restore keeps that state, so a
+trashed record comes back trashed. Trashing or restoring never prunes a backup or an export generation; earlier
+copies stay where they are.
+
 ## Isolated restore drill (implemented, synthetic data only)
 
 ```bash
