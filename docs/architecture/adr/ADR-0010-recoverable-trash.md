@@ -67,5 +67,5 @@ for at least 30 days; this change implements the trash only, and permanent delet
   deletion exists.
 - Who trashed a record and when is kept while it is trashed. After a restore only the record's current state
   remains; a full change history belongs to issue #47.
-- Permanent deletion (including the Paperless original and its own trash) is not implemented and is tracked
-  separately.
+- Permanent deletion (including the Paperless original and its own trash) is not implemented; it is tracked in
+  issue #85.

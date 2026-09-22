@@ -125,7 +125,7 @@ Documents, tasks and contracts can be moved to a recoverable trash from their pa
 page by either member ([ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md)). A trashed record keeps its
 identity, original, metadata and links; lists, search, counts, Today, reminders, review cards and published
 deadlines leave it out, while links to it still resolve and say that it is in the trash. It stays restorable at
-least 30 days (`aegis.trash.recovery-window`); permanent deletion is not implemented, so nothing is purged. A
+least 30 days (`aegis.trash.recovery-window`); permanent deletion is not implemented (#85), so nothing is purged. A
 trashed contract supersedes its open cancellation review, and restoring it reopens the same task. Paperless is not
 changed by trashing.
 
