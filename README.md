@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts) and [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders).
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts), [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders) and [ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md) (central review inbox).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
@@ -16,8 +16,8 @@ AGENTS.md and CLAUDE.md reference AGENT.md to avoid competing instruction sets.
 
 ```text
 backend/        Maven multimodule Spring Boot backend (Java 21): shared-kernel, identity, documents, contracts,
-                planning, notifications, operations, portability, assistant (AI runs), bootstrap,
-                architecture-tests
+                planning, notifications, review (shared review inbox), operations, portability,
+                assistant (AI runs), bootstrap, architecture-tests
 frontend/       React/TypeScript/Vite web app (German/English), served by the backend from one origin
 api/            Committed OpenAPI contract; the TypeScript client is generated from it
 e2e/            Playwright browser smoke tests of core household workflows
@@ -135,7 +135,7 @@ Integration status evaluates credentials for every currently selected provider/m
 fallback and API-key rotation make earlier outcomes unverified until a fresh connection check succeeds.
 
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
-passed isolated recovery and its daily timer is enabled; the first scheduled run succeeded on 2026-09-18.
+passed isolated recovery and runs daily at 03:30; scheduled-run evidence is recorded in #39.
 Aegis can be installed from Chrome on Android and receives PDFs from Android's Share menu into the normal durable
 upload flow ([details](docs/operations/DEPLOYMENT.md#installable-app-and-android-share-target)); real-device
 verification is tracked in #33. Mail, calendar, MCP, messenger delivery and Web Push are not connected.
