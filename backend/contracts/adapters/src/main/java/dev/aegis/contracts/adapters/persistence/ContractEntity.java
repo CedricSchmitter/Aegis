@@ -30,6 +30,15 @@ public class ContractEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "trashed_by")
+    private UUID trashedBy;
+
+    @Column(name = "trashed_at")
+    private Instant trashedAt;
+
+    @Column(name = "restorable_until")
+    private Instant restorableUntil;
+
     @Version
     private Long version;
 
@@ -62,6 +71,24 @@ public class ContractEntity {
 
     UUID getCreatedBy() {
         return createdBy;
+    }
+
+    UUID getTrashedBy() {
+        return trashedBy;
+    }
+
+    Instant getTrashedAt() {
+        return trashedAt;
+    }
+
+    Instant getRestorableUntil() {
+        return restorableUntil;
+    }
+
+    void setTrash(UUID trashedBy, Instant trashedAt, Instant restorableUntil) {
+        this.trashedBy = trashedBy;
+        this.trashedAt = trashedAt;
+        this.restorableUntil = restorableUntil;
     }
 
     void setCreatedBy(UUID createdBy) {

@@ -2,6 +2,7 @@ package dev.aegis.documents.application.api;
 
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
+import java.util.List;
 
 /** Shared document collection: both members read the same records. */
 public interface DocumentQueries {
@@ -11,6 +12,9 @@ public interface DocumentQueries {
     default DocumentSearchResult search(Actor actor, String query) {
         return search(actor, DocumentSearchRequest.text(query));
     }
+
+    /** Documents in the trash, most recently trashed first; ordinary search never returns them. */
+    List<DocumentSummary> trashed(Actor actor);
 
     /** Text, folder and facet search with counts and pagination, evaluated in the database. */
     DocumentSearchResult search(Actor actor, DocumentSearchRequest request);

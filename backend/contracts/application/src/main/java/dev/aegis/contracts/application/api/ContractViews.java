@@ -3,6 +3,7 @@ package dev.aegis.contracts.application.api;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
+import dev.aegis.shared.Trash;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,8 +18,12 @@ public final class ContractViews {
     private ContractViews() {
     }
 
-    /** Where a fact was read; the title is resolved through the documents contract and may be unknown. */
-    public record SourceView(DocumentId documentId, String documentTitle, Integer page, String quote) {
+    /**
+     * Where a fact was read; the title is resolved through the documents contract and may be unknown.
+     * {@code documentTrashed} says the document is in the trash, where it can be restored.
+     */
+    public record SourceView(DocumentId documentId, String documentTitle, boolean documentTrashed, Integer page,
+            String quote) {
     }
 
     /**
@@ -51,16 +56,19 @@ public final class ContractViews {
         }
     }
 
-    /** List entry: what the household needs to recognize a contract and see whether it needs attention. */
+    /**
+     * List entry: what the household needs to recognize a contract and see whether it needs attention.
+     * {@code trash} is null unless the contract is in the trash.
+     */
     public record ContractSummary(ContractId id, String name, String counterparty, String status,
             LocalDate contractEnd, DeadlineView deadline, int pendingFacts, int conflicts, Instant updatedAt,
-            long version) {
+            long version, Trash trash) {
     }
 
-    /** Full contract with every observation, its sources and the open contradictions. */
+    /** Full contract with every observation, its sources, the open contradictions and its trash state. */
     public record ContractView(ContractId id, String name, String counterparty, String status, MemberId createdBy,
             Instant createdAt, Instant updatedAt, long version, LocalDate evaluatedOn, DeadlineView deadline,
-            List<FactView> facts, List<ConflictView> conflicts, List<SourceView> sources) {
+            List<FactView> facts, List<ConflictView> conflicts, List<SourceView> sources, Trash trash) {
         public ContractView {
             facts = List.copyOf(facts);
             conflicts = List.copyOf(conflicts);

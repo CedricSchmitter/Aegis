@@ -41,7 +41,8 @@ public class ContractPresenter {
         DeadlineView deadline = deadline(contract, on);
         return new ContractSummary(contract.id(), contract.name(), counterparty(contract, on).orElse(null),
                 contract.status().name(), deadline.contractEnd(), deadline, contract.pendingFacts().size(),
-                contract.conflicts(on).size(), contract.updatedAt(), contract.version());
+                contract.conflicts(on).size(), contract.updatedAt(), contract.version(),
+                contract.trash().orElse(null));
     }
 
     public ContractView describe(Contract contract, LocalDate on) {
@@ -53,7 +54,8 @@ public class ContractPresenter {
         List<SourceView> sources = contract.sources().stream().map(this::sourceView).toList();
         return new ContractView(contract.id(), contract.name(), counterparty(contract, on).orElse(null),
                 contract.status().name(), contract.createdBy(), contract.createdAt(), contract.updatedAt(),
-                contract.version(), on, deadline(contract, on), facts, conflicts, sources);
+                contract.version(), on, deadline(contract, on), facts, conflicts, sources,
+                contract.trash().orElse(null));
     }
 
     public DeadlineView deadline(Contract contract, LocalDate on) {
@@ -70,7 +72,8 @@ public class ContractPresenter {
     public ContractExportRecord exportRecord(Contract contract) {
         List<FactExportRecord> facts = contract.facts().stream().map(ContractPresenter::factExportRecord).toList();
         return new ContractExportRecord(contract.id(), contract.name(), contract.status().name(),
-                contract.createdBy(), contract.createdAt(), contract.updatedAt(), facts);
+                contract.createdBy(), contract.createdAt(), contract.updatedAt(), facts,
+                contract.trash().orElse(null));
     }
 
     /** The confirmed counterparty on that day, if any; used for list entries and deadline views. */
@@ -97,9 +100,9 @@ public class ContractPresenter {
     }
 
     public SourceView sourceView(SourceReference source) {
-        return new SourceView(source.documentId(),
-                documents.findReference(source.documentId()).map(DocumentReference::title).orElse(null),
-                source.page(), source.quote());
+        DocumentReference reference = documents.findReference(source.documentId()).orElse(null);
+        return new SourceView(source.documentId(), reference == null ? null : reference.title(),
+                reference != null && reference.trashed(), source.page(), source.quote());
     }
 
     private static FactExportRecord factExportRecord(ContractFact fact) {

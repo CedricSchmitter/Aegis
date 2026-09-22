@@ -170,6 +170,80 @@ class CancellationDeadlineServiceTest {
     }
 
     @Test
+    void aTrashedContractSupersedesItsReviewAndRestoringReopensTheSameTaskWithTheMemberEdits() {
+        service.reconcile(actor, contractId);
+        Task task = tasks.findCancellationReviews(contractId).getFirst();
+        task.assign(ben, clock.instant());
+        task.edit("Call the studio", "Membership 4711", clock.instant());
+        tasks.save(task);
+
+        // The contracts context publishes no deadline for a contract in the trash.
+        ContractDeadlineView beforeTrash = view;
+        view = null;
+        service.reconcile(actor, contractId);
+        assertThat(tasks.findById(task.id()).orElseThrow().status()).isEqualTo(TaskStatus.CANCELLED);
+        assertThat(tasks.findOpen()).isEmpty();
+
+        view = beforeTrash;
+        reminders.scheduledAt.clear();
+        service.reconcile(actor, contractId);
+
+        Task reopened = tasks.findById(task.id()).orElseThrow();
+        assertThat(tasks.findCancellationReviews(contractId)).hasSize(1);
+        assertThat(reopened.status()).isEqualTo(TaskStatus.OPEN);
+        assertThat(reopened.owner()).contains(ben);
+        assertThat(reopened.title()).isEqualTo("Call the studio");
+        assertThat(reopened.note()).isEqualTo("Membership 4711");
+        assertThat(reminders.scheduledAt).hasSize(1);
+    }
+
+    @Test
+    void undoingACorrectionReopensTheFirstOccurrenceInsteadOfLeavingNoOpenReview() {
+        service.reconcile(actor, contractId);
+        ContractDeadlineView original = view;
+        view = deadline(LocalDate.of(2027, 12, 15), "ACTIVE", 4);
+        service.reconcile(actor, contractId);
+
+        view = deadline(original.cancellationDeadline(), "ACTIVE", 5);
+        service.reconcile(actor, contractId);
+
+        assertThat(tasks.findOpen()).singleElement().satisfies(open -> assertThat(open.dueDate())
+                .contains(original.cancellationDeadline()));
+        assertThat(tasks.findCancellationReviews(contractId)).hasSize(2);
+    }
+
+    @Test
+    void aReviewTaskAMemberTrashedGetsNoReminderAndIsNotRecreated() {
+        service.reconcile(actor, contractId);
+        Task task = tasks.findCancellationReviews(contractId).getFirst();
+        task.moveToTrash(anna, clock.instant(), dev.aegis.shared.Trash.RecoveryWindow.DEFAULT);
+        tasks.save(task);
+        reminders.scheduledAt.clear();
+
+        service.reconcile(actor, contractId);
+        clock.set("2027-11-25T10:00:00Z");
+        service.publish(actor, task.id());
+
+        assertThat(tasks.findCancellationReviews(contractId)).singleElement()
+                .satisfies(same -> assertThat(same.isTrashed()).isTrue());
+        assertThat(reminders.scheduledAt).isEmpty();
+        assertThat(notices.drafts).isEmpty();
+    }
+
+    @Test
+    void aResolvedContractAlsoSupersedesAReviewWaitingInTheTrash() {
+        service.reconcile(actor, contractId);
+        Task task = tasks.findCancellationReviews(contractId).getFirst();
+        task.moveToTrash(anna, clock.instant(), dev.aegis.shared.Trash.RecoveryWindow.DEFAULT);
+        tasks.save(task);
+
+        view = deadline(LocalDate.of(2027, 11, 30), "CANCELLED", 4);
+        service.reconcile(actor, contractId);
+
+        assertThat(tasks.findById(task.id()).orElseThrow().status()).isEqualTo(TaskStatus.CANCELLED);
+    }
+
+    @Test
     void unknownOrUnconfirmedFactsCreateNothing() {
         view = null;
         service.reconcile(actor, contractId);

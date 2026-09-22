@@ -125,6 +125,25 @@ public class TasksController {
         return TaskDto.from(commands.complete(actor, TaskId.of(id), body.expectedVersion()));
     }
 
+    @Operation(operationId = "listTrashedTasks", summary = "Tasks in the trash, most recently trashed first")
+    @GetMapping("/tasks/trash")
+    public List<TaskDto> trashed(Actor actor) {
+        return map(queries.trashed(actor));
+    }
+
+    @Operation(operationId = "trashTask",
+            summary = "Move a task to the trash; it leaves lists, Today and reminders and can be restored")
+    @PostMapping("/tasks/{id}/trash")
+    public TaskDto trash(Actor actor, @PathVariable("id") String id, @RequestBody VersionRequest body) {
+        return TaskDto.from(commands.moveToTrash(actor, TaskId.of(id), body.expectedVersion()));
+    }
+
+    @Operation(operationId = "restoreTask", summary = "Bring a task back from the trash")
+    @PostMapping("/tasks/{id}/restore")
+    public TaskDto restore(Actor actor, @PathVariable("id") String id, @RequestBody VersionRequest body) {
+        return TaskDto.from(commands.restoreFromTrash(actor, TaskId.of(id), body.expectedVersion()));
+    }
+
     @Operation(operationId = "reopenTask", summary = "Reopen a completed task")
     @PostMapping("/tasks/{id}/reopen")
     public TaskDto reopen(Actor actor, @PathVariable("id") String id, @RequestBody VersionRequest body) {

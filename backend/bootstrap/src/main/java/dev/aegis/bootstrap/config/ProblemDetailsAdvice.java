@@ -6,6 +6,7 @@ import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotAuthorizedException;
 import dev.aegis.shared.NotFoundException;
 import dev.aegis.shared.StaleVersionException;
+import dev.aegis.shared.TrashedException;
 import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -48,6 +49,14 @@ public class ProblemDetailsAdvice {
         problem.setProperty("id", e.id());
         problem.setProperty("expectedVersion", e.expectedVersion());
         problem.setProperty("actualVersion", e.actualVersion());
+        return problem;
+    }
+
+    /** The record exists but is in the trash: a conflict with its current state, resolved by restoring it. */
+    @ExceptionHandler(TrashedException.class)
+    ProblemDetail trashed(TrashedException e) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, e.code(), e.getMessage());
+        e.details().forEach(problem::setProperty);
         return problem;
     }
 

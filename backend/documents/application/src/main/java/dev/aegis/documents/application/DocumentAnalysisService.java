@@ -135,6 +135,10 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
      */
     @Override
     public void archived(Document document) {
+        if (document.isTrashed()) {
+            // Waits until a member restores the document; restoring calls this trigger again.
+            return;
+        }
         Optional<DocumentAnalysis> found = analyses.findById(document.id());
         if (found.isEmpty() || !found.get().awaitsArchive()) {
             return;
@@ -202,6 +206,9 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
     }
 
     private Optional<String> refusal(Document document, DocumentAnalysis analysis) {
+        if (document.isTrashed()) {
+            return Optional.of("document.trashed");
+        }
         if (document.state() != ProcessingState.ARCHIVED) {
             return Optional.of("document.notArchived");
         }
@@ -220,7 +227,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
     @Override
     public DocumentSummary decideTitle(Actor actor, DocumentId id, boolean accept, long expectedVersion) {
         access.requireMember(actor);
-        Document document = load(id);
+        Document document = loadActive(id);
         DocumentAnalysis analysis = loadVersion(id, expectedVersion);
         Decision before = analysis.titleDecision().orElse(null);
         String generated = analysis.title().orElse(null);
@@ -247,7 +254,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         } else {
             lock.shared();
         }
-        load(id);
+        loadActive(id);
         DocumentAnalysis analysis = loadVersion(id, expectedVersion);
         Instant now = clock.instant();
         if (!accept) {
@@ -285,7 +292,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
     public DocumentSummary decideSubject(Actor actor, DocumentId id, SubjectView subject, boolean accept,
             long expectedVersion) {
         access.requireMember(actor);
-        Document document = load(id);
+        Document document = loadActive(id);
         DocumentAnalysis analysis = loadVersion(id, expectedVersion);
         Subject decided = Subjects.fromViews(List.of(subject)).iterator().next();
         analysis.decideSubject(decided, accept, actor.memberId(), clock.instant());
@@ -302,7 +309,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
     @Override
     public DocumentSummary setFilename(Actor actor, DocumentId id, String stem, long expectedVersion) {
         access.requireMember(actor);
-        load(id);
+        loadActive(id);
         DocumentAnalysis analysis = loadVersion(id, expectedVersion);
         String normalized = stem == null || stem.isBlank() ? null : FriendlyFilename.overrideStem(id, stem);
         analysis.overrideFilename(normalized, actor.memberId(), clock.instant());
@@ -636,5 +643,12 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
 
     private Document load(DocumentId id) {
         return documents.findById(id).orElseThrow(() -> new NotFoundException("document", id.toString()));
+    }
+
+    /** A document a member may change: it exists and is not in the trash. */
+    private Document loadActive(DocumentId id) {
+        Document document = load(id);
+        document.requireNotTrashed();
+        return document;
     }
 }

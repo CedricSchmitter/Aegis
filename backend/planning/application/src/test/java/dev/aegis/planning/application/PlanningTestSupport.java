@@ -50,6 +50,13 @@ final class PlanningTestSupport {
         }
 
         @Override
+        public List<Task> findTrashed() {
+            return findAll().stream().filter(Task::isTrashed)
+                    .sorted(Comparator.comparing((Task t) -> t.trash().orElseThrow().trashedAt()).reversed())
+                    .toList();
+        }
+
+        @Override
         public List<Task> findBySourceDocument(DocumentId documentId) {
             return findAll().stream()
                     .filter(t -> t.source().map(s -> s.documentId().equals(documentId)).orElse(false)).toList();
@@ -71,24 +78,26 @@ final class PlanningTestSupport {
             versions.put(task.id(), next);
             store.put(task.id(), Task.rehydrate(task.id(), task.title(), task.note(), task.owner().orElse(null),
                     task.status(), task.dueDate().orElse(null), task.plannedDate().orElse(null),
-                    task.source().orElse(null), task.cancellationReview().orElse(null), task.createdBy(), task.createdAt(), task.updatedAt(),
-                    task.completedAt().orElse(null), task.completedBy().orElse(null), next));
+                    task.source().orElse(null), task.cancellationReview().orElse(null), task.createdBy(),
+                    task.createdAt(), task.updatedAt(), task.completedAt().orElse(null),
+                    task.completedBy().orElse(null), task.trash().orElse(null), next));
         }
 
         private Task copy(Task task) {
             return Task.rehydrate(task.id(), task.title(), task.note(), task.owner().orElse(null), task.status(),
                     task.dueDate().orElse(null), task.plannedDate().orElse(null), task.source().orElse(null), task.cancellationReview().orElse(null),
                     task.createdBy(), task.createdAt(), task.updatedAt(), task.completedAt().orElse(null),
-                    task.completedBy().orElse(null), task.version());
+                    task.completedBy().orElse(null), task.trash().orElse(null), task.version());
         }
     }
 
     static final class KnownDocuments implements DocumentReferenceQuery {
         final Map<DocumentId, String> titles = new HashMap<>();
+        final Set<DocumentId> trashed = new java.util.HashSet<>();
 
         @Override
         public Optional<DocumentReference> findReference(DocumentId id) {
-            return Optional.ofNullable(titles.get(id)).map(t -> new DocumentReference(id, t));
+            return Optional.ofNullable(titles.get(id)).map(t -> new DocumentReference(id, t, trashed.contains(id)));
         }
     }
 

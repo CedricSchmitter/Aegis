@@ -50,4 +50,16 @@ public interface ContractCommands {
 
     ContractView correctFact(Actor actor, ContractId id, UUID factId, CorrectFactCommand command,
             long expectedVersion);
+
+    /**
+     * Moves the contract to the trash (ADR-0010). It keeps every fact; its deadline is no longer published, so its
+     * open cancellation review is superseded. Repeating it for a trashed contract returns it unchanged.
+     */
+    ContractView moveToTrash(Actor actor, ContractId id, long expectedVersion);
+
+    /**
+     * Brings a trashed contract back; its deadline is published again and reopens the superseded review.
+     * Repeating it for a contract that is not in the trash returns it unchanged.
+     */
+    ContractView restoreFromTrash(Actor actor, ContractId id, long expectedVersion);
 }

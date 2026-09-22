@@ -46,10 +46,12 @@ import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.ProductLocale;
 import dev.aegis.shared.TaskId;
+import dev.aegis.shared.Trash;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -225,7 +227,8 @@ public class RestoreService implements RestoreExport {
             var result = importDocument.importDocument(actor, new ImportDocumentCommand(DocumentId.of(entry.id()),
                     entry.title(), entry.titleOrigin(), entry.originalFilename(), entry.contentType(),
                     mapMember(memberMapping, entry.uploadedBy()), entry.uploadedAt(), subjects,
-                    entry.checksumSha256(), new ByteArrayInputStream(source.read(entry.originalPath()))));
+                    entry.checksumSha256(), new ByteArrayInputStream(source.read(entry.originalPath())),
+                    trash(entry.trash(), memberMapping)));
             if (result.outcome() == ImportDocument.ImportOutcome.IMPORTED) {
                 imported++;
             } else {
@@ -311,7 +314,7 @@ public class RestoreService implements RestoreExport {
                     entry.completedBy() == null ? null : mapMember(memberMapping, entry.completedBy()),
                     entry.contractId() == null ? null : dev.aegis.shared.ContractId.of(entry.contractId()),
                     entry.contractName(), date(entry.contractEnd()), date(entry.cancellationDeadline()),
-                    date(entry.reminderDate()), entry.contractVersion());
+                    date(entry.reminderDate()), entry.contractVersion(), trash(entry.trash(), memberMapping));
             if (importTask.importTask(actor, record) == ImportTask.ImportOutcome.IMPORTED) {
                 imported++;
             } else {
@@ -347,7 +350,7 @@ public class RestoreService implements RestoreExport {
             ContractExportRecord record = new ContractExportRecord(ContractId.of(entry.id()), entry.name(),
                     entry.status(), entry.createdBy() == null ? actor.memberId()
                             : mapMember(memberMapping, entry.createdBy()),
-                    entry.createdAt(), entry.updatedAt(), facts);
+                    entry.createdAt(), entry.updatedAt(), facts, trash(entry.trash(), memberMapping));
             if (importContract.importContract(actor, record) == ImportContract.ImportOutcome.IMPORTED) {
                 imported++;
             } else {
@@ -355,6 +358,19 @@ public class RestoreService implements RestoreExport {
             }
         }
         return new int[] {imported, present};
+    }
+
+    /** The exported trash record with the local member; files before schema 8 carry none. */
+    private static Trash trash(ExportFormat.TrashEntry entry, Map<String, String> memberMapping) {
+        if (entry == null || entry.trashedAt() == null) {
+            return null;
+        }
+        if (entry.trashedBy() == null) {
+            throw new InvalidInputException("export.trash.invalid", "A trashed record names nobody who trashed it");
+        }
+        MemberId by = mapOptionalMember(memberMapping, entry.trashedBy());
+        Instant until = entry.restorableUntil() == null ? entry.trashedAt() : entry.restorableUntil();
+        return new Trash(by, entry.trashedAt(), until);
     }
 
     private static MemberId mapMember(Map<String, String> mapping, String exportedId) {

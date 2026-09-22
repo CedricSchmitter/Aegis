@@ -11,12 +11,13 @@ import java.util.Set;
  * classification of each document; schema 3 adds the title origin, the friendly filename the original is exported
  * under and the automatic analysis (generated values, member decisions, filename override and history); schema 4
  * adds where a folder placement came from and a placement a run proposed that nobody has decided on; schema 5
- * adds the contracts with every observed fact, its provenance, validity period and review state. Older files
- * restore without the newer parts.
+ * adds the contracts with every observed fact, its provenance, validity period and review state; schema 8 adds
+ * the trash state of documents, tasks and contracts (ADR-0010). Older files restore without the newer parts, and
+ * records from files before schema 8 come back as not trashed.
  */
 public final class ExportFormat {
-    public static final int SCHEMA_VERSION = 7;
-    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5, 6, 7);
+    public static final int SCHEMA_VERSION = 8;
+    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5, 6, 7, 8);
     public static final String MANIFEST = "manifest.json";
     public static final String DOCUMENTS_JSON = "data/documents.json";
     public static final String TASKS_JSON = "data/tasks.json";
@@ -35,6 +36,13 @@ public final class ExportFormat {
     }
 
     public record SubjectEntry(String kind, String memberId) {
+    }
+
+    /**
+     * A record in the trash: who moved it there, when, and until when it is guaranteed to stay restorable. Absent
+     * for records that are not in the trash and in files before schema 8.
+     */
+    public record TrashEntry(String trashedBy, Instant trashedAt, Instant restorableUntil) {
     }
 
     /** One label on one document with its provenance; {@code label} is a readable name for humans. */
@@ -75,7 +83,8 @@ public final class ExportFormat {
     public record DocumentEntry(String id, String title, String titleOrigin, String originalFilename,
             String filename, String contentType, long sizeBytes, String checksumSha256, String uploadedBy,
             Instant uploadedAt, List<SubjectEntry> subjects, String processingState, Integer paperlessDocumentId,
-            Instant archivedAt, String originalPath, ClassificationEntry classification, AnalysisEntry analysis) {
+            Instant archivedAt, String originalPath, ClassificationEntry classification, AnalysisEntry analysis,
+            TrashEntry trash) {
     }
 
     /** A name the classifier found that was not in the vocabulary, with the member's decision. */
@@ -106,7 +115,7 @@ public final class ExportFormat {
     public record TaskEntry(String id, String title, String note, String ownerId, String status, String dueDate,
             String plannedDate, String sourceDocumentId, String createdBy, Instant createdAt, Instant updatedAt,
             Instant completedAt, String completedBy, String contractId, String contractName, String contractEnd,
-            String cancellationDeadline, String reminderDate, Long contractVersion) {
+            String cancellationDeadline, String reminderDate, Long contractVersion, TrashEntry trash) {
     }
 
     public record MemberEntry(String id, String username, String displayName, String locale, boolean active) {
@@ -144,7 +153,7 @@ public final class ExportFormat {
 
     /** A contract with its complete fact history; absent before schema 5. */
     public record ContractEntry(String id, String name, String status, String createdBy, Instant createdAt,
-            Instant updatedAt, List<ContractFactEntry> facts) {
+            Instant updatedAt, List<ContractFactEntry> facts, TrashEntry trash) {
     }
 
     public record ContractsFile(int schemaVersion, Instant exportedAt, List<ContractEntry> contracts) {

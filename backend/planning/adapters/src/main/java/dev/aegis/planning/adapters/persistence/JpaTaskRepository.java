@@ -10,6 +10,7 @@ import dev.aegis.shared.ContractId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.TaskId;
+import dev.aegis.shared.Trash;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -37,6 +38,12 @@ public class JpaTaskRepository implements TaskRepository {
     @Override
     public List<Task> findOpen() {
         return jpa.findOpenOrdered().stream().map(JpaTaskRepository::toDomain).toList();
+    }
+
+    @Override
+    public List<Task> findTrashed() {
+        return jpa.findByTrashedAtIsNotNullOrderByTrashedAtDesc().stream().map(JpaTaskRepository::toDomain)
+                .toList();
     }
 
     @Override
@@ -77,6 +84,9 @@ public class JpaTaskRepository implements TaskRepository {
         entity.setUpdatedAt(task.updatedAt());
         entity.setCompletedAt(task.completedAt().orElse(null));
         entity.setCompletedBy(task.completedBy().map(MemberId::value).orElse(null));
+        Trash trash = task.trash().orElse(null);
+        entity.setTrash(trash == null ? null : trash.trashedBy().value(), trash == null ? null : trash.trashedAt(),
+                trash == null ? null : trash.restorableUntil());
         try {
             jpa.saveAndFlush(entity);
         } catch (OptimisticLockingFailureException e) {
@@ -94,6 +104,8 @@ public class JpaTaskRepository implements TaskRepository {
                 e.getSourceDocumentId() == null ? null : new TaskSource(new DocumentId(e.getSourceDocumentId())),
                 review, new MemberId(e.getCreatedBy()), e.getCreatedAt(), e.getUpdatedAt(), e.getCompletedAt(),
                 e.getCompletedBy() == null ? null : new MemberId(e.getCompletedBy()),
+                e.getTrashedAt() == null ? null : new Trash(new MemberId(e.getTrashedBy()), e.getTrashedAt(),
+                        e.getRestorableUntil()),
                 e.getVersion() == null ? 0 : e.getVersion());
     }
 }

@@ -31,4 +31,16 @@ public interface TaskCommands {
     TaskSummary complete(Actor actor, TaskId id, long expectedVersion);
 
     TaskSummary reopen(Actor actor, TaskId id, long expectedVersion);
+
+    /**
+     * Moves the task to the trash (ADR-0010): it leaves lists, Today and reminders and keeps all of its data.
+     * Repeating it for a trashed task returns it unchanged.
+     */
+    TaskSummary moveToTrash(Actor actor, TaskId id, long expectedVersion);
+
+    /**
+     * Brings a trashed task back. An owner who is no longer an active member is replaced by nobody. Repeating it for
+     * a task that is not in the trash returns it unchanged.
+     */
+    TaskSummary restoreFromTrash(Actor actor, TaskId id, long expectedVersion);
 }

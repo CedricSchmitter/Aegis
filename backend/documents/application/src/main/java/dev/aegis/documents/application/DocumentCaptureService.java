@@ -67,7 +67,7 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
         var registration = registrar.register(new RegisterReceivedDocument.RegistrationCommand(id, titleFrom(filename),
                 TitleOrigin.FILENAME, filename, PDF_CONTENT_TYPE, stored.sizeBytes(), stored.checksum(),
                 actor.memberId(), clock.instant(), subjects, stored.stagingPath(), command.categoryId(),
-                analysis.automatic()));
+                analysis.automatic(), null));
         if (registration.duplicate()) {
             deleteQuietly(stored.stagingPath());
         }
@@ -91,7 +91,7 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
         var registration = registrar.register(new RegisterReceivedDocument.RegistrationCommand(command.id(),
                 command.title(), titleOrigin(command.titleOrigin()), safeFilename(command.originalFilename()),
                 PDF_CONTENT_TYPE, stored.sizeBytes(), stored.checksum(), command.uploadedBy(), uploadedAt,
-                Subjects.fromViews(command.subjects()), stored.stagingPath(), null, false));
+                Subjects.fromViews(command.subjects()), stored.stagingPath(), null, false, command.trash()));
         if (registration.duplicate()) {
             deleteQuietly(stored.stagingPath());
             if (!registration.document().id().equals(command.id())) {

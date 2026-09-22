@@ -65,6 +65,7 @@ public class PlacementService implements PlacementCommands {
         access.requireMember(actor);
         lock.exclusive();
         Document document = requireDocument(id);
+        document.requireNotTrashed();
         PlacementSuggestion suggestion = placements.findById(id).orElseThrow(() -> new InvalidInputException(
                 "placement.suggestion.missing", "There is no pending placement suggestion"));
         DocumentClassification classification = loadVersion(id, command.expectedVersion());
@@ -101,6 +102,7 @@ public class PlacementService implements PlacementCommands {
         access.requireMember(actor);
         lock.shared();
         Document document = requireDocument(id);
+        document.requireNotTrashed();
         PlacementSuggestion suggestion = placements.findById(id).orElseThrow(() -> new InvalidInputException(
                 "placement.suggestion.missing", "There is no pending placement suggestion"));
         loadVersion(id, expectedVersion);
@@ -114,6 +116,7 @@ public class PlacementService implements PlacementCommands {
         access.requireMember(actor);
         lock.shared();
         Document document = requireDocument(id);
+        document.requireNotTrashed();
         DocumentClassification classification = loadVersion(id, expectedVersion);
         CategoryId reverted = classification.categoryId().orElse(null);
         Instant now = clock.instant();
@@ -136,7 +139,9 @@ public class PlacementService implements PlacementCommands {
                 continue;
             }
             DocumentClassification classification = classifications.findById(other.documentId()).orElse(null);
-            if (classification == null || documents.findById(other.documentId()).isEmpty()) {
+            // A document in the trash keeps its suggestion but is not moved along with the visible ones.
+            boolean active = documents.findById(other.documentId()).filter(d -> !d.isTrashed()).isPresent();
+            if (classification == null || !active) {
                 continue;
             }
             moved += move(classification, target, actor, now);

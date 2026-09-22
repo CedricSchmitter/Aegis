@@ -25,7 +25,7 @@ public class TaskPresenter {
         return new TaskSummary(task.id(), task.title(), task.note(), task.owner().orElse(null), task.status().name(),
                 task.dueDate().orElse(null), task.plannedDate().orElse(null), source, cancellation, task.createdBy(),
                 task.createdAt(), task.updatedAt(), task.completedAt().orElse(null),
-                task.completedBy().orElse(null), task.version());
+                task.completedBy().orElse(null), task.version(), task.trash().orElse(null));
     }
 
     public TaskExportRecord exportRecord(Task task) {
@@ -39,11 +39,12 @@ public class TaskPresenter {
                 cancellation == null ? null : cancellation.contractEnd(),
                 cancellation == null ? null : cancellation.cancellationDeadline(),
                 cancellation == null ? null : cancellation.reminderDate(),
-                cancellation == null ? null : cancellation.contractVersion());
+                cancellation == null ? null : cancellation.contractVersion(), task.trash().orElse(null));
     }
 
     private SourceView sourceView(TaskSource source) {
-        return new SourceView(source.documentId(),
-                documents.findReference(source.documentId()).map(DocumentReference::title).orElse(null));
+        DocumentReference reference = documents.findReference(source.documentId()).orElse(null);
+        return new SourceView(source.documentId(), reference == null ? null : reference.title(),
+                reference != null && reference.trashed());
     }
 }

@@ -2,6 +2,7 @@ package dev.aegis.documents.application.api;
 
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
+import dev.aegis.shared.Trash;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -9,12 +10,13 @@ import java.util.UUID;
 /**
  * Versioned export view of a document record; the original bytes are exported separately. {@code filename} is the
  * friendly name the original is exported under; {@code originalFilename} stays the immutable upload name.
- * {@code analysis} is null when the document was never analyzed and has no filename override.
+ * {@code analysis} is null when the document was never analyzed and has no filename override. {@code trash} is
+ * null unless the document is in the trash.
  */
 public record DocumentExportRecord(DocumentId id, String title, String titleOrigin, String originalFilename,
         String filename, String contentType, long sizeBytes, String checksumSha256, MemberId uploadedBy,
         Instant uploadedAt, List<SubjectView> subjects, String processingState, Integer paperlessDocumentId,
-        Instant archivedAt, Classification classification, AnalysisRecord analysis) {
+        Instant archivedAt, Classification classification, AnalysisRecord analysis, Trash trash) {
 
     /**
      * Folder placement ({@code categoryId} null = Unsorted) and own label assignments with provenance.

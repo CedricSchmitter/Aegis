@@ -25,4 +25,6 @@ interface DocumentJpaRepository extends JpaRepository<DocumentEntity, UUID> {
     List<DocumentEntity> findByStateOrderByUploadedAtDesc(String state);
 
     List<DocumentEntity> findByStateAndStagingPresentTrueAndArchivedAtBefore(String state, Instant archivedBefore);
+
+    List<DocumentEntity> findByTrashedAtIsNotNullOrderByTrashedAtDesc();
 }

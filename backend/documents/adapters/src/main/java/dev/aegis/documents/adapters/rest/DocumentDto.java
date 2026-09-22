@@ -4,6 +4,7 @@ import dev.aegis.documents.application.api.DocumentSummary;
 import dev.aegis.documents.application.api.ProcessingInfo;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.shared.MemberId;
+import dev.aegis.shared.Trash;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -12,11 +13,20 @@ import java.util.List;
  * REST representation of a document; ids are strings, enum-like values keep their stable English names.
  * {@code originalFilename} is the immutable upload name, {@code filename} the friendly download/export name,
  * {@code processing} the archival state and {@code analysis} the separate automatic classification state.
+ * {@code trash} is null unless the document is in the trash.
  */
 public record DocumentDto(String id, String title, String titleOrigin, String originalFilename, String contentType,
         long sizeBytes, String checksumSha256, String uploadedBy, Instant uploadedAt, List<SubjectDto> subjects,
         ProcessingDto processing, boolean originalAvailable, long version, ClassificationDto classification,
-        AnalysisDto.FilenameDto filename, AnalysisDto analysis) {
+        AnalysisDto.FilenameDto filename, AnalysisDto analysis, @Schema(nullable = true) DocumentTrashDto trash) {
+
+    /** Who moved the document to the trash, when, and until when it is guaranteed to stay restorable. */
+    public record DocumentTrashDto(String trashedBy, Instant trashedAt, Instant restorableUntil) {
+        static DocumentTrashDto from(Trash trash) {
+            return trash == null ? null : new DocumentTrashDto(trash.trashedBy().toString(), trash.trashedAt(),
+                    trash.restorableUntil());
+        }
+    }
 
     public record SubjectDto(String kind, @Schema(nullable = true) String memberId) {
         static SubjectDto from(SubjectView view) {
@@ -45,6 +55,7 @@ public record DocumentDto(String id, String title, String titleOrigin, String or
                 summary.uploadedBy().toString(), summary.uploadedAt(),
                 summary.subjects().stream().map(SubjectDto::from).toList(), ProcessingDto.from(summary.processing()),
                 summary.originalAvailable(), summary.version(), ClassificationDto.from(summary.classification()),
-                AnalysisDto.FilenameDto.from(summary.filename()), AnalysisDto.from(summary.analysis()));
+                AnalysisDto.FilenameDto.from(summary.filename()), AnalysisDto.from(summary.analysis()),
+                DocumentTrashDto.from(summary.trash()));
     }
 }

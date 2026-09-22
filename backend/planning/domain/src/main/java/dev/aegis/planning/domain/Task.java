@@ -3,6 +3,8 @@ package dev.aegis.planning.domain;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.TaskId;
+import dev.aegis.shared.Trash;
+import dev.aegis.shared.TrashedException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -10,7 +12,8 @@ import java.util.Optional;
 
 /**
  * A household task with one responsible member or explicitly nobody. The actual due date and the planned work date
- * are independent: rescheduling work never moves a deadline.
+ * are independent: rescheduling work never moves a deadline. A trashed task keeps everything (ADR-0010); member
+ * changes are refused until it is restored.
  */
 public final class Task {
     public static final int MAX_TITLE_LENGTH = 200;
@@ -30,6 +33,7 @@ public final class Task {
     private Instant updatedAt;
     private Instant completedAt;
     private MemberId completedBy;
+    private Trash trash;
     private long version;
 
     private Task(TaskId id, String title, String note, MemberId owner, LocalDate dueDate, LocalDate plannedDate,
@@ -71,17 +75,27 @@ public final class Task {
             LocalDate dueDate, LocalDate plannedDate, TaskSource source, CancellationReview cancellationReview,
             MemberId createdBy, Instant createdAt, Instant updatedAt, Instant completedAt, MemberId completedBy,
             long version) {
+        return rehydrate(id, title, note, owner, status, dueDate, plannedDate, source, cancellationReview, createdBy,
+                createdAt, updatedAt, completedAt, completedBy, null, version);
+    }
+
+    public static Task rehydrate(TaskId id, String title, String note, MemberId owner, TaskStatus status,
+            LocalDate dueDate, LocalDate plannedDate, TaskSource source, CancellationReview cancellationReview,
+            MemberId createdBy, Instant createdAt, Instant updatedAt, Instant completedAt, MemberId completedBy,
+            Trash trash, long version) {
         Task task = new Task(id, title, note, owner, dueDate, plannedDate, source, createdBy, createdAt);
         task.status = Objects.requireNonNull(status);
         task.cancellationReview = cancellationReview;
         task.updatedAt = updatedAt == null ? createdAt : updatedAt;
         task.completedAt = completedAt;
         task.completedBy = completedBy;
+        task.trash = trash;
         task.version = version;
         return task;
     }
 
     public void edit(String newTitle, String newNote, Instant now) {
+        requireNotTrashed();
         this.title = requireTitle(newTitle);
         this.note = normalizeNote(newNote);
         touch(now);
@@ -89,18 +103,21 @@ public final class Task {
 
     /** Assigns one responsible member; null makes the task explicitly unassigned. */
     public void assign(MemberId newOwner, Instant now) {
+        requireNotTrashed();
         this.owner = newOwner;
         touch(now);
     }
 
     /** Moves the planned work date only. The due date is untouched by design. */
     public void planWork(LocalDate newPlannedDate, Instant now) {
+        requireNotTrashed();
         this.plannedDate = newPlannedDate;
         touch(now);
     }
 
     /** Explicit deadline change, a separate decision from planning work. */
     public void changeDueDate(LocalDate newDueDate, Instant now) {
+        requireNotTrashed();
         if (cancellationReview != null) {
             throw new InvalidInputException("task.contractDeadline.managed",
                     "A cancellation review due date follows the confirmed contract deadline");
@@ -133,7 +150,76 @@ public final class Task {
         }
     }
 
+    /**
+     * Reopens a superseded automatic occurrence whose deadline is current again, for example after its contract
+     * came back from the trash or a correction was undone. Owner, note and planned date are kept; a member's
+     * completion is never touched.
+     *
+     * @return whether the task changed
+     */
+    public boolean reviveAutomatic(Instant now) {
+        if (cancellationReview == null || status != TaskStatus.CANCELLED) {
+            return false;
+        }
+        status = TaskStatus.OPEN;
+        touch(now);
+        return true;
+    }
+
+    /**
+     * Moves the task to the trash: it leaves lists, Today and reminders and keeps its status, dates, owner and
+     * source. Trashing a trashed task changes nothing.
+     *
+     * @return whether the task changed
+     */
+    public boolean moveToTrash(MemberId by, Instant now, Trash.RecoveryWindow window) {
+        return moveToTrash(Trash.begin(by, now, window), now);
+    }
+
+    /** Moves the task to the trash with a known trash record, for example one carried over by a restore. */
+    public boolean moveToTrash(Trash trashed, Instant now) {
+        if (trash != null) {
+            return false;
+        }
+        trash = Objects.requireNonNull(trashed);
+        touch(now);
+        return true;
+    }
+
+    /**
+     * Brings a trashed task back unchanged. An owner who is no longer an active member is replaced by nobody
+     * rather than kept as a dead assignment; the caller decides that.
+     *
+     * @return whether the task changed
+     */
+    public boolean restoreFromTrash(boolean ownerStillMember, Instant now) {
+        if (trash == null) {
+            return false;
+        }
+        trash = null;
+        if (!ownerStillMember) {
+            owner = null;
+        }
+        touch(now);
+        return true;
+    }
+
+    public void requireNotTrashed() {
+        if (trash != null) {
+            throw new TrashedException("task", id.toString());
+        }
+    }
+
+    public boolean isTrashed() {
+        return trash != null;
+    }
+
+    public Optional<Trash> trash() {
+        return Optional.ofNullable(trash);
+    }
+
     public void complete(MemberId by, Instant now) {
+        requireNotTrashed();
         if (status != TaskStatus.OPEN) {
             throw new InvalidInputException("task.alreadyDone", "Task is already completed");
         }
@@ -144,6 +230,7 @@ public final class Task {
     }
 
     public void reopen(Instant now) {
+        requireNotTrashed();
         if (status != TaskStatus.DONE) {
             throw new InvalidInputException("task.notDone", "Task is not completed");
         }
@@ -153,8 +240,9 @@ public final class Task {
         touch(now);
     }
 
+    /** Open work that is not in the trash; only such a task appears on Today or triggers a reminder. */
     public boolean isOpen() {
-        return status == TaskStatus.OPEN;
+        return status == TaskStatus.OPEN && trash == null;
     }
 
     public boolean isOverdueOn(LocalDate today) {

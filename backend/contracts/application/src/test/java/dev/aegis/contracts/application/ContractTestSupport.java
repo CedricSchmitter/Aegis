@@ -41,6 +41,7 @@ final class ContractTestSupport {
     /** The documents context as the contracts context sees it: a lookup of known document references. */
     static final class KnownDocuments implements DocumentReferenceQuery {
         private final Map<DocumentId, String> titles = new LinkedHashMap<>();
+        private final java.util.Set<DocumentId> trashed = new java.util.HashSet<>();
 
         DocumentId add(String title) {
             DocumentId id = DocumentId.random();
@@ -48,9 +49,15 @@ final class ContractTestSupport {
             return id;
         }
 
+        /** The document is moved to the trash in the documents context. */
+        void trash(DocumentId id) {
+            trashed.add(id);
+        }
+
         @Override
         public Optional<DocumentReference> findReference(DocumentId id) {
-            return Optional.ofNullable(titles.get(id)).map(title -> new DocumentReference(id, title));
+            return Optional.ofNullable(titles.get(id))
+                    .map(title -> new DocumentReference(id, title, trashed.contains(id)));
         }
     }
 }

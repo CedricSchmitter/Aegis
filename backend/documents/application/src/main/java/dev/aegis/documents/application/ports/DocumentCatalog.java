@@ -107,4 +107,7 @@ public interface DocumentCatalog {
     long countUnsorted();
 
     Map<UUID, LabelUsage> labelUsage();
+
+    /** Ids of the documents in the trash; the counts above leave them out. */
+    Set<UUID> trashedDocumentIds();
 }

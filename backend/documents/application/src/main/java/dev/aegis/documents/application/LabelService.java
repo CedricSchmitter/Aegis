@@ -22,6 +22,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -167,9 +168,19 @@ public class LabelService implements LabelCommands {
                 .anyMatch(other -> other.mergedInto().map(labelId::equals).orElse(false));
         boolean mapped = CatalogViews.folderCounts(categories.load()).containsKey(labelId);
         List<DocumentClassification> assigned = classifications.findByLabel(labelId);
-        boolean inUse = assigned.stream().anyMatch(classification -> classification.assignment(labelId)
-                .map(a -> a.effective() || a.state() == ReviewState.SUGGESTED).orElse(false));
-        if (redirected || mapped || inUse) {
+        List<DocumentClassification> using = assigned.stream().filter(classification -> classification
+                .assignment(labelId).map(a -> a.effective() || a.state() == ReviewState.SUGGESTED).orElse(false))
+                .toList();
+        if (!redirected && !mapped && !using.isEmpty()) {
+            // The label counts show only the ordinary collection; say so when only trashed documents still use it.
+            Set<UUID> trashed = catalog.trashedDocumentIds();
+            if (using.stream().allMatch(classification -> trashed.contains(classification.documentId().value()))) {
+                throw new InvalidInputException("label.inUseInTrash",
+                        "The label is still used by documents in the trash",
+                        Map.of("documents", String.valueOf(using.size())));
+            }
+        }
+        if (redirected || mapped || !using.isEmpty()) {
             throw new InvalidInputException("label.inUse", "The label is still referenced",
                     Map.of("documents", String.valueOf(assigned.size())));
         }

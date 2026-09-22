@@ -46,7 +46,18 @@ public class ContractQueryService implements ContractQueries, ContractDeadlineQu
     public List<ContractSummary> list(Actor actor) {
         access.requireMember(actor);
         LocalDate today = today();
-        return contracts.findAll().stream().map(contract -> presenter.summarize(contract, today)).toList();
+        return contracts.findAll().stream().filter(contract -> !contract.isTrashed())
+                .map(contract -> presenter.summarize(contract, today)).toList();
+    }
+
+    @Override
+    public List<ContractSummary> trashed(Actor actor) {
+        access.requireMember(actor);
+        LocalDate today = today();
+        return contracts.findAll().stream().filter(Contract::isTrashed)
+                .sorted(Comparator.comparing((Contract contract) -> contract.trash().orElseThrow().trashedAt())
+                        .reversed())
+                .map(contract -> presenter.summarize(contract, today)).toList();
     }
 
     @Override
@@ -59,7 +70,7 @@ public class ContractQueryService implements ContractQueries, ContractDeadlineQu
     public List<ContractSummary> forDocument(Actor actor, DocumentId documentId) {
         access.requireMember(actor);
         LocalDate today = today();
-        return contracts.findBySourceDocument(documentId).stream()
+        return contracts.findBySourceDocument(documentId).stream().filter(contract -> !contract.isTrashed())
                 .map(contract -> presenter.summarize(contract, today)).toList();
     }
 
@@ -85,8 +96,14 @@ public class ContractQueryService implements ContractQueries, ContractDeadlineQu
         return contracts.findAll().stream().map(presenter::exportRecord).toList();
     }
 
-    /** Empty unless the confirmed facts establish a deadline on that day; nothing is estimated. */
+    /**
+     * Empty unless the confirmed facts establish a deadline on that day; nothing is estimated. A contract in the
+     * trash publishes no deadline, so planning supersedes its open review until the contract is restored.
+     */
     private Optional<ContractDeadlineView> deadlineView(Contract contract, LocalDate on) {
+        if (contract.isTrashed()) {
+            return Optional.empty();
+        }
         if (!(CancellationDeadlinePolicy.calculate(contract, on)
                 instanceof CancellationDeadline.Determined determined)) {
             return Optional.empty();

@@ -10,10 +10,14 @@ import java.util.Optional;
 public interface TaskRepository {
     Optional<Task> findById(TaskId id);
 
-    /** All tasks: open first by due date, then done by completion time descending. */
+    /** All tasks including those in the trash: open first by due date, then done by completion time descending. */
     List<Task> findAll();
 
+    /** Open tasks that are not in the trash, by due date. */
     List<Task> findOpen();
+
+    /** Tasks in the trash, most recently trashed first. */
+    List<Task> findTrashed();
 
     List<Task> findBySourceDocument(DocumentId documentId);
 

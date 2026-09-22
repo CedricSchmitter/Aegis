@@ -114,6 +114,12 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
     }
 
     @Override
+    public List<DocumentSummary> trashed(Actor actor) {
+        access.requireMember(actor);
+        return documents.findTrashed().stream().map(presenter::summarize).toList();
+    }
+
+    @Override
     public DocumentSearchResult search(Actor actor, DocumentSearchRequest request) {
         access.requireMember(actor);
         CategoryTree tree = categories.load();
@@ -152,7 +158,7 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
 
     @Override
     public Optional<DocumentReference> findReference(DocumentId id) {
-        return documents.findById(id).map(d -> new DocumentReference(d.id(), d.title()));
+        return documents.findById(id).map(d -> new DocumentReference(d.id(), d.title(), d.isTrashed()));
     }
 
     @Override

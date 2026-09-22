@@ -65,7 +65,8 @@ public class DocumentPresenter {
         return new DocumentSummary(document.id(), document.title(), document.titleOrigin().name(),
                 document.originalFilename(), document.contentType(), document.sizeBytes(),
                 document.checksum().sha256Hex(), document.uploadedBy(), document.uploadedAt(), own, processing,
-                originalAvailable, document.version(), view, parts.filename(), parts.analysis());
+                originalAvailable, document.version(), view, parts.filename(), parts.analysis(),
+                document.trash().orElse(null));
     }
 
     public DocumentExportRecord exportRecord(Document document, DocumentExportRecord.Classification classification,
@@ -76,6 +77,6 @@ public class DocumentPresenter {
                 document.checksum().sha256Hex(), document.uploadedBy(), document.uploadedAt(),
                 Subjects.toViews(document.subjects()), document.state().name(),
                 document.paperlessDocumentId().orElse(null), document.archivedAt().orElse(null), classification,
-                portable ? AnalysisRecords.toRecord(analysis) : null);
+                portable ? AnalysisRecords.toRecord(analysis) : null, document.trash().orElse(null));
     }
 }

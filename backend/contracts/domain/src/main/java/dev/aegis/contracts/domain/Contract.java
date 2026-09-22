@@ -3,6 +3,8 @@ package dev.aegis.contracts.domain;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.MemberId;
+import dev.aegis.shared.Trash;
+import dev.aegis.shared.TrashedException;
 import dev.aegis.shared.NotFoundException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,7 +21,8 @@ import java.util.Optional;
  * A household contract and everything Aegis knows about it. Facts are appended, never overwritten: an extraction
  * can only propose, a member decides, and a correction supersedes the observation it replaces. Which value is
  * effective on a day follows from the confirmed facts and their validity periods, so an amendment takes over from
- * its own start date while the original stays readable.
+ * its own start date while the original stays readable. A trashed contract keeps every fact (ADR-0010); member
+ * changes are refused until it is restored.
  */
 public final class Contract {
     public static final int MAX_NAME_LENGTH = 200;
@@ -31,6 +34,7 @@ public final class Contract {
     private final Instant createdAt;
     private Instant updatedAt;
     private final List<ContractFact> facts = new ArrayList<>();
+    private Trash trash;
     private long version;
 
     private Contract(ContractId id, String name, ContractStatus status, MemberId createdBy, Instant createdAt) {
@@ -49,21 +53,73 @@ public final class Contract {
     /** Rehydration from persistence or an export; facts are restored with their stored review states. */
     public static Contract rehydrate(ContractId id, String name, ContractStatus status, MemberId createdBy,
             Instant createdAt, Instant updatedAt, List<ContractFact> facts, long version) {
+        return rehydrate(id, name, status, createdBy, createdAt, updatedAt, facts, null, version);
+    }
+
+    /** Rehydration including the trash record; {@code trash} is null for a contract that is not in the trash. */
+    public static Contract rehydrate(ContractId id, String name, ContractStatus status, MemberId createdBy,
+            Instant createdAt, Instant updatedAt, List<ContractFact> facts, Trash trash, long version) {
         Contract contract = new Contract(id, name, status, createdBy, createdAt);
         contract.updatedAt = updatedAt == null ? createdAt : updatedAt;
         contract.facts.addAll(facts);
+        contract.trash = trash;
         contract.version = version;
         return contract;
     }
 
     public void rename(String newName, Instant now) {
+        requireNotTrashed();
         this.name = requireName(newName);
         touch(now);
     }
 
     public void changeStatus(ContractStatus newStatus, Instant now) {
+        requireNotTrashed();
         this.status = Objects.requireNonNull(newStatus, "status");
         touch(now);
+    }
+
+    /**
+     * Moves the contract to the trash: it leaves lists, published deadlines and review, and keeps every fact with
+     * its provenance. Trashing a trashed contract changes nothing.
+     *
+     * @return whether the contract changed
+     */
+    public boolean moveToTrash(MemberId by, Instant now, Trash.RecoveryWindow window) {
+        if (trash != null) {
+            return false;
+        }
+        trash = Trash.begin(by, now, window);
+        touch(now);
+        return true;
+    }
+
+    /**
+     * Brings a trashed contract back exactly as it was.
+     *
+     * @return whether the contract changed
+     */
+    public boolean restoreFromTrash(Instant now) {
+        if (trash == null) {
+            return false;
+        }
+        trash = null;
+        touch(now);
+        return true;
+    }
+
+    public void requireNotTrashed() {
+        if (trash != null) {
+            throw new TrashedException("contract", id.toString());
+        }
+    }
+
+    public boolean isTrashed() {
+        return trash != null;
+    }
+
+    public Optional<Trash> trash() {
+        return Optional.ofNullable(trash);
     }
 
     /**
@@ -72,6 +128,7 @@ public final class Contract {
      */
     public ContractFact enter(FactType type, FactValue value, ValidityPeriod validity, SourceReference source,
             String note, MemberId by, Instant now) {
+        requireNotTrashed();
         ContractFact fact = ContractFact.stated(type, value, validity, by, source, note, now);
         supersedeReplaced(fact);
         facts.add(fact);
@@ -107,6 +164,7 @@ public final class Contract {
 
     /** A member accepts a proposal; it replaces a confirmed fact for the same period. */
     public ContractFact confirm(FactId factId, MemberId by, Instant now) {
+        requireNotTrashed();
         ContractFact fact = require(factId);
         fact.confirm(by, now);
         supersedeReplaced(fact);
@@ -116,6 +174,7 @@ public final class Contract {
 
     /** A member decides a value is wrong. The fact stays visible as history and stops being effective. */
     public ContractFact reject(FactId factId, MemberId by, Instant now) {
+        requireNotTrashed();
         ContractFact fact = require(factId);
         fact.reject(by, now);
         touch(now);
@@ -128,6 +187,7 @@ public final class Contract {
      */
     public ContractFact correct(FactId factId, FactValue value, ValidityPeriod validity, String note, MemberId by,
             Instant now) {
+        requireNotTrashed();
         ContractFact corrected = require(factId);
         if (corrected.state() == ReviewState.SUPERSEDED) {
             throw new InvalidInputException("contract.fact.superseded", "A superseded fact cannot be corrected");

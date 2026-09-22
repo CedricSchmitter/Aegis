@@ -10,9 +10,11 @@ interface TaskJpaRepository extends JpaRepository<TaskEntity, UUID> {
             + "t.dueDate asc nulls last, t.plannedDate asc nulls last, t.completedAt desc, t.createdAt asc")
     List<TaskEntity> findAllOrdered();
 
-    @Query("select t from TaskEntity t where t.status = 'OPEN' order by t.dueDate asc nulls last, "
-            + "t.plannedDate asc nulls last, t.createdAt asc")
+    @Query("select t from TaskEntity t where t.status = 'OPEN' and t.trashedAt is null "
+            + "order by t.dueDate asc nulls last, t.plannedDate asc nulls last, t.createdAt asc")
     List<TaskEntity> findOpenOrdered();
+
+    List<TaskEntity> findByTrashedAtIsNotNullOrderByTrashedAtDesc();
 
     List<TaskEntity> findBySourceDocumentIdOrderByCreatedAtAsc(UUID sourceDocumentId);
 

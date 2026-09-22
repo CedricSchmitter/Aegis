@@ -153,7 +153,30 @@ public class DocumentsController {
         }
     }
 
-    @Operation(operationId = "getDocument", summary = "Document details including processing state and labels")
+    @Operation(operationId = "listTrashedDocuments",
+            summary = "Documents in the trash, most recently trashed first")
+    @GetMapping("/trash")
+    public List<DocumentDto> trashed(Actor actor) {
+        return queries.trashed(actor).stream().map(DocumentDto::from).toList();
+    }
+
+    @Operation(operationId = "trashDocument",
+            summary = "Move a document to the trash; nothing is deleted and it can be restored")
+    @PostMapping("/{id}/trash")
+    public DocumentDto trash(Actor actor, @PathVariable("id") String id,
+            @Valid @RequestBody LabelsController.VersionRequest body) {
+        return DocumentDto.from(commands.moveToTrash(actor, DocumentId.of(id), body.expectedVersion()));
+    }
+
+    @Operation(operationId = "restoreDocument", summary = "Bring a document back from the trash")
+    @PostMapping("/{id}/restore")
+    public DocumentDto restore(Actor actor, @PathVariable("id") String id,
+            @Valid @RequestBody LabelsController.VersionRequest body) {
+        return DocumentDto.from(commands.restoreFromTrash(actor, DocumentId.of(id), body.expectedVersion()));
+    }
+
+    @Operation(operationId = "getDocument",
+            summary = "Document details including processing state, labels and trash state")
     @GetMapping("/{id}")
     public DocumentDto get(Actor actor, @PathVariable("id") String id) {
         return DocumentDto.from(queries.get(actor, DocumentId.of(id)));

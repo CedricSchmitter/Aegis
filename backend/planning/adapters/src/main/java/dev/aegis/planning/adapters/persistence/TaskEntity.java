@@ -73,6 +73,15 @@ public class TaskEntity {
     @Column(name = "completed_by")
     private UUID completedBy;
 
+    @Column(name = "trashed_by")
+    private UUID trashedBy;
+
+    @Column(name = "trashed_at")
+    private Instant trashedAt;
+
+    @Column(name = "restorable_until")
+    private Instant restorableUntil;
+
     @Version
     private Long version;
 
@@ -196,6 +205,24 @@ public class TaskEntity {
 
     void setCompletedBy(UUID completedBy) {
         this.completedBy = completedBy;
+    }
+
+    UUID getTrashedBy() {
+        return trashedBy;
+    }
+
+    Instant getTrashedAt() {
+        return trashedAt;
+    }
+
+    Instant getRestorableUntil() {
+        return restorableUntil;
+    }
+
+    void setTrash(UUID trashedBy, Instant trashedAt, Instant restorableUntil) {
+        this.trashedBy = trashedBy;
+        this.trashedAt = trashedAt;
+        this.restorableUntil = restorableUntil;
     }
 
     Long getVersion() {

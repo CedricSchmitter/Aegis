@@ -103,6 +103,7 @@ import dev.aegis.portability.application.ports.ExportSerializer;
 import dev.aegis.portability.application.ports.ExportSourceOpener;
 import dev.aegis.portability.application.ports.ExportStore;
 import dev.aegis.shared.HouseholdAccess;
+import dev.aegis.shared.Trash;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
@@ -154,6 +155,12 @@ public class UseCaseConfiguration {
     @Bean
     MemberPreferences memberPreferences(IdentityServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(MemberPreferences.class, services.members(), tm);
+    }
+
+    /** How long a trashed document, task or contract is guaranteed to stay restorable (ADR-0010). */
+    @Bean
+    Trash.RecoveryWindow trashRecoveryWindow(@Value("${aegis.trash.recovery-window:30d}") Duration window) {
+        return new Trash.RecoveryWindow(window);
     }
 
     // Documents -----------------------------------------------------------------------------------------------
@@ -301,9 +308,10 @@ public class UseCaseConfiguration {
 
     @Bean
     DocumentCommands documentCommands(DocumentRepository documents, ProcessingScheduler scheduler,
-            DocumentPresenter presenter, HouseholdAccess access, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(DocumentCommands.class,
-                new DocumentCommandService(documents, scheduler, presenter, access), tm);
+            DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdAccess access,
+            Trash.RecoveryWindow recoveryWindow, Clock clock, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(DocumentCommands.class, new DocumentCommandService(documents, scheduler,
+                presenter, analysis, access, recoveryWindow, clock), tm);
     }
 
     @Bean
@@ -332,9 +340,9 @@ public class UseCaseConfiguration {
     @Bean
     ContractServices contractServices(ContractRepository contracts, DocumentReferenceQuery documents,
             ContractPresenter presenter, HouseholdAccess access, Clock clock,
-            ContractReconciliationScheduler reconciliation) {
+            ContractReconciliationScheduler reconciliation, Trash.RecoveryWindow recoveryWindow) {
         return new ContractServices(new ContractService(contracts, documents, presenter, access, clock,
-                reconciliation),
+                reconciliation, recoveryWindow),
                 new ContractQueryService(contracts, presenter, access, clock));
     }
 
@@ -383,9 +391,11 @@ public class UseCaseConfiguration {
     @Bean
     PlanningServices planningServices(TaskRepository tasks, DocumentReferenceQuery documents,
             PlanningEvents events, TaskPresenter presenter, HouseholdAccess access, Clock clock,
-            CalendarPort calendar) {
-        return new PlanningServices(new TaskCommandService(tasks, documents, events, presenter, access, clock),
-                new TaskQueryService(tasks, calendar, presenter, access, clock));
+            CalendarPort calendar, CancellationDeadlineReconciliation cancellations,
+            Trash.RecoveryWindow recoveryWindow) {
+        return new PlanningServices(new TaskCommandService(tasks, documents, events, presenter, access,
+                cancellations, recoveryWindow, clock), new TaskQueryService(tasks, calendar, presenter, access,
+                clock));
     }
 
     @Bean

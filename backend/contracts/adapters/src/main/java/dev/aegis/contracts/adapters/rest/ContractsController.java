@@ -123,6 +123,26 @@ public class ContractsController {
         return ContractDto.from(commands.rename(actor, ContractId.of(id), body.name(), body.expectedVersion()));
     }
 
+    @Operation(operationId = "listTrashedContracts",
+            summary = "Contracts in the trash, most recently trashed first")
+    @GetMapping("/trash")
+    public List<ContractDto.SummaryDto> trashed(Actor actor) {
+        return queries.trashed(actor).stream().map(ContractDto::from).toList();
+    }
+
+    @Operation(operationId = "trashContract",
+            summary = "Move a contract to the trash; its facts stay and it can be restored")
+    @PostMapping("/{id}/trash")
+    public ContractDto trash(Actor actor, @PathVariable("id") String id, @RequestBody VersionRequest body) {
+        return ContractDto.from(commands.moveToTrash(actor, ContractId.of(id), body.expectedVersion()));
+    }
+
+    @Operation(operationId = "restoreContract", summary = "Bring a contract back from the trash")
+    @PostMapping("/{id}/restore")
+    public ContractDto restore(Actor actor, @PathVariable("id") String id, @RequestBody VersionRequest body) {
+        return ContractDto.from(commands.restoreFromTrash(actor, ContractId.of(id), body.expectedVersion()));
+    }
+
     @Operation(operationId = "changeContractStatus",
             summary = "Record that the contract is active, cancelled or ended")
     @PostMapping("/{id}/status")

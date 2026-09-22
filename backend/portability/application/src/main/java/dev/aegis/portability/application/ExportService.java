@@ -38,6 +38,7 @@ import dev.aegis.portability.application.ports.ExportStore;
 import dev.aegis.portability.application.ports.ExportStore.ExportStaging;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
+import dev.aegis.shared.Trash;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -147,7 +148,8 @@ public class ExportService implements CreateExport, ExportQueries {
                     record.uploadedAt(), record.subjects().stream()
                             .map(s -> new SubjectEntry(s.kind(), s.memberId() == null ? null : s.memberId().toString()))
                             .toList(), record.processingState(), record.paperlessDocumentId(), record.archivedAt(),
-                    originalPath, classification(record), ExportAnalysis.toEntry(record.analysis())));
+                    originalPath, classification(record), ExportAnalysis.toEntry(record.analysis()),
+                    trashEntry(record.trash())));
         }
 
         List<TaskEntry> taskEntries = new ArrayList<>();
@@ -157,7 +159,7 @@ public class ExportService implements CreateExport, ExportQueries {
                     text(record.sourceDocumentId()), record.createdBy().toString(), record.createdAt(),
                     record.updatedAt(), record.completedAt(), text(record.completedBy()), text(record.contractId()),
                     record.contractName(), text(record.contractEnd()), text(record.cancellationDeadline()),
-                    text(record.reminderDate()), record.contractVersion()));
+                    text(record.reminderDate()), record.contractVersion(), trashEntry(record.trash())));
         }
 
         List<ContractEntry> contractEntries = new ArrayList<>();
@@ -290,7 +292,21 @@ public class ExportService implements CreateExport, ExportQueries {
                 text(fact.observedBy()), fact.observedAt(), text(fact.decidedBy()), fact.decidedAt(),
                 text(fact.supersededBy()), text(fact.corrects()), fact.note())).toList();
         return new ContractEntry(record.id().toString(), record.name(), record.status(), text(record.createdBy()),
-                record.createdAt(), record.updatedAt(), facts);
+                record.createdAt(), record.updatedAt(), facts, trashEntry(record.trash()));
+    }
+
+    private static ExportFormat.TrashEntry trashEntry(Trash trash) {
+        return trash == null ? null : new ExportFormat.TrashEntry(trash.trashedBy().toString(), trash.trashedAt(),
+                trash.restorableUntil());
+    }
+
+    private static String trashedAt(ExportFormat.TrashEntry trash) {
+        return trash == null ? "" : trash.trashedAt().toString();
+    }
+
+    /** A readable marker for the index, so a reader without Aegis sees what the household had put aside. */
+    private static String inTrash(ExportFormat.TrashEntry trash) {
+        return trash == null ? "" : ", in the trash since " + trash.trashedAt();
     }
 
     /** One readable row per observation, so the fact history stays legible without Aegis. */
@@ -301,7 +317,8 @@ public class ExportService implements CreateExport, ExportQueries {
         List<List<String>> rows = new ArrayList<>();
         for (ContractEntry contract : contracts) {
             for (ContractFactEntry fact : contract.facts()) {
-                rows.add(List.of(contract.id(), contract.name(), contract.status(), fact.id(), fact.type(),
+                rows.add(List.of(contract.id(), contract.name(), contract.status(), trashedAt(contract.trash()),
+                        fact.id(), fact.type(),
                         fact.value(), nz(fact.validFrom()), nz(fact.validUntil()), fact.reviewState(),
                         fact.origin(), fact.confidence() == null ? "" : fact.confidence().toString(),
                         nz(fact.sourceDocumentId()),
@@ -313,7 +330,8 @@ public class ExportService implements CreateExport, ExportQueries {
                         nz(fact.corrects()), nz(fact.note())));
             }
         }
-        return Csv.render(List.of("contractId", "contract", "contractStatus", "factId", "factType", "value",
+        return Csv.render(List.of("contractId", "contract", "contractStatus", "contractTrashedAt", "factId",
+                "factType", "value",
                 "validFrom", "validUntil", "reviewState", "origin", "confidence", "sourceDocumentId",
                 "sourceDocumentTitle", "sourcePage", "sourceQuote", "decidedBy", "decidedAt", "supersededBy",
                 "corrects", "note"), rows);
@@ -332,12 +350,12 @@ public class ExportService implements CreateExport, ExportQueries {
                     labels(d, "DOCUMENT_TYPE"), labels(d, "ORGANIZATION"), labels(d, "TOPIC"), labels(d, "TAG"),
                     d.analysis() == null || !"FOUND".equals(d.analysis().documentDateStatus()) ? ""
                             : nz(d.analysis().documentDate()),
-                    d.analysis() == null ? "NOT_REQUESTED" : d.analysis().status()));
+                    d.analysis() == null ? "NOT_REQUESTED" : d.analysis().status(), trashedAt(d.trash())));
         }
         return Csv.render(List.of("id", "title", "originalFilename", "filename", "sizeBytes", "checksumSha256",
                 "uploadedBy", "uploadedAt", "subjects", "processingState", "paperlessDocumentId", "originalPath",
-                "folder", "documentType", "organizations", "topics", "tags", "documentDate", "analysisStatus"),
-                rows);
+                "folder", "documentType", "organizations", "topics", "tags", "documentDate", "analysisStatus",
+                "trashedAt"), rows);
     }
 
     private static String labelsCsv(List<LabelEntry> labels, List<FolderEntry> folders) {
@@ -368,11 +386,11 @@ public class ExportService implements CreateExport, ExportQueries {
                     t.sourceDocumentId() == null ? "" : titles.getOrDefault(t.sourceDocumentId(), ""),
                     t.createdAt().toString(), t.completedAt() == null ? "" : t.completedAt().toString(),
                     nz(t.contractId()), nz(t.contractName()), nz(t.contractEnd()), nz(t.cancellationDeadline()),
-                    nz(t.reminderDate())));
+                    nz(t.reminderDate()), trashedAt(t.trash())));
         }
         return Csv.render(List.of("id", "title", "note", "owner", "status", "dueDate", "plannedDate",
                 "sourceDocumentId", "sourceDocumentTitle", "createdAt", "completedAt", "contractId",
-                "contractName", "contractEnd", "cancellationDeadline", "reminderDate"), rows);
+                "contractName", "contractEnd", "cancellationDeadline", "reminderDate", "trashedAt"), rows);
     }
 
     private static String index(String generation, Instant now, List<DocumentEntry> documents,
@@ -398,6 +416,7 @@ public class ExportService implements CreateExport, ExportQueries {
                 md.append(" — uploaded ").append(d.uploadedAt()).append(" by ")
                         .append(memberNames.getOrDefault(d.uploadedBy(), d.uploadedBy())).append(", state ")
                         .append(d.processingState());
+                md.append(inTrash(d.trash()));
                 String chips = labelSummary(d);
                 if (!chips.isEmpty()) {
                     md.append(", labels ").append(chips);
@@ -426,7 +445,7 @@ public class ExportService implements CreateExport, ExportQueries {
             } else if (t.sourceDocumentId() != null) {
                 md.append(", source document `").append(t.sourceDocumentId()).append("`");
             }
-            md.append("\n");
+            md.append(inTrash(t.trash())).append("\n");
         }
         md.append("\n## Contracts (").append(contracts.size()).append(")\n\n");
         for (ContractEntry contract : contracts) {
@@ -434,7 +453,8 @@ public class ExportService implements CreateExport, ExportQueries {
                     .count();
             md.append("- ").append(contract.name()).append(" (").append(contract.status()).append("), ")
                     .append(confirmed).append(" confirmed of ").append(contract.facts().size())
-                    .append(" observed facts, id `").append(contract.id()).append("`\n");
+                    .append(" observed facts").append(inTrash(contract.trash())).append(", id `")
+                    .append(contract.id()).append("`\n");
             contract.facts().stream().filter(fact -> "CONFIRMED".equals(fact.reviewState()))
                     .forEach(fact -> md.append("  - ").append(fact.type()).append(": ").append(fact.value())
                             .append(fact.validFrom() == null ? "" : " (from " + fact.validFrom() + ")")
