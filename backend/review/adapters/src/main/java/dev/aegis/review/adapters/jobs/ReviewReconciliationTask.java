@@ -12,9 +12,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Recurring reconciliation of the review inbox (issue #89, ADR-0009), so a new card and its notices reach both
- * members shortly after their source changed instead of when someone next opens the inbox. It runs as the review
- * reconciler, never as a member. db-scheduler keeps the schedule in PostgreSQL, runs one execution at a time and
+ * Recurring reconciliation of the review inbox (issue #89, ADR-0009), by default once a day, so a new card and its
+ * notices reach both members even if nobody opens the inbox, which reconciles at once when opened. It runs as the
+ * review reconciler, never as a member. db-scheduler keeps the schedule in PostgreSQL, runs one execution at a time and
  * continues after a restart; a failed run is not retried early but repeated at the next interval, and because the
  * cards are its progress, a repeated or interrupted run creates nothing twice.
  */
@@ -27,7 +27,7 @@ public class ReviewReconciliationTask {
     private final Duration interval;
 
     public ReviewReconciliationTask(ReviewReconciliation reconciliation,
-            @Value("${aegis.review.reconciliation-interval:2m}") Duration interval) {
+            @Value("${aegis.review.reconciliation-interval:1d}") Duration interval) {
         if (interval.isNegative() || interval.isZero()) {
             throw new IllegalArgumentException("the review reconciliation interval must be positive");
         }

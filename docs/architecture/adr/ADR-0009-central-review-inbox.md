@@ -38,9 +38,9 @@ same table.
 ### Background reconciliation (issue #89)
 
 **Trigger.** Reconciliation runs when a member opens the inbox (`GET /api/reviews`) and in the recurring db-scheduler
-job `reconcile-review-inbox`, every `aegis.review.reconciliation-interval` (default 2 minutes). A new card and its
-notices therefore reach both members within about two minutes of their source changing, without anyone opening the
-inbox. The schedule is stored in PostgreSQL, one execution runs at a time and a restart continues it; a failed run is
+job `reconcile-review-inbox`, every `aegis.review.reconciliation-interval`. The owner chose once a day (default
+`1d`): opening the inbox shows every current card at once, and the daily run is the safety net that makes a new card
+and its notices reach both members within a day even if nobody opens the inbox. The schedule is stored in PostgreSQL, one execution runs at a time and a restart continues it; a failed run is
 repeated at the next interval, not retried early. Each run is one transaction, so a card and its notices commit
 together and a run that stops before committing leaves neither behind. The cards are the job's only progress: a
 repeated run creates nothing twice.
@@ -68,7 +68,7 @@ facts or conflicts, the existing fingerprints of all current candidates in one q
 It writes only new and superseded cards and new notices. Measured on the household instance on 2026-09-23 (5
 documents, no contracts, 8 cards): a job run that created two cards and their notices took 114 ms, one that superseded
 two cards 35 ms, and opening the inbox, which reconciles and lists, 47 to 69 ms. The work grows with one page of
-queries per 100 documents, so the two-minute interval stays far above the cost of a run for a household collection.
+queries per 100 documents, so even a short interval would stay far above the cost of a run for a household collection.
 
 ## Consequences
 
