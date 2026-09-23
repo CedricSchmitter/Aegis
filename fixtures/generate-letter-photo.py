@@ -2,18 +2,23 @@
 
 The letter, sender and numbers are invented. The "photo" is simulated: the page lies slightly rotated on a darker
 surface with uneven light and sensor noise, and the JPEG carries 72 dpi like most phone cameras. It keeps the
-fixture small while giving the archive's text recognition realistic work.
+fixture small while giving the archive's text recognition realistic work. The "skewed" variant is the same letter
+held at 10 degrees, which the archive's text recognition cannot read (issue #87).
 
     python fixtures/generate-letter-photo.py            # needs Pillow; writes the JPEG and its .sha256 next to it
+    python fixtures/generate-letter-photo.py skewed     # writes synthetic-letter-photo-skewed.jpg instead
 """
 import hashlib
 import pathlib
 import random
+import sys
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 HERE = pathlib.Path(__file__).resolve().parent
 OUTPUT = HERE / "synthetic-letter-photo.jpg"
+# Rotation of the page in degrees per variant; the default one is read completely, the skewed one not at all.
+VARIANTS = {"straight": (OUTPUT, -2.5), "skewed": (HERE / "synthetic-letter-photo-skewed.jpg", -10.0)}
 FONTS = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     "C:/Windows/Fonts/arial.ttf",
@@ -69,11 +74,14 @@ def page():
     return paper
 
 
-def photograph(paper):
+def photograph(paper, degrees):
     rng = random.Random(80)
     canvas = Image.new("RGB", (1200, 1600), (96, 78, 62))
-    rotated = paper.rotate(-2.5, resample=Image.BICUBIC, expand=True, fillcolor=(96, 78, 62))
-    canvas.paste(rotated, (70, 70))
+    rotated = paper.rotate(degrees, resample=Image.BICUBIC, expand=True, fillcolor=(96, 78, 62))
+    fits = rotated.width + 70 <= canvas.width and rotated.height + 70 <= canvas.height
+    # A strongly rotated page is centered instead; its margins keep the text inside the picture.
+    offset = (70, 70) if fits else ((canvas.width - rotated.width) // 2, (canvas.height - rotated.height) // 2)
+    canvas.paste(rotated, offset)
     # Uneven light: full brightness at the top left, about a quarter darker at the bottom right.
     corners = Image.new("L", (2, 2))
     corners.putdata([255, 225, 225, 190])
@@ -87,11 +95,12 @@ def photograph(paper):
 
 
 def main():
-    photo = photograph(page())
-    photo.save(OUTPUT, "JPEG", quality=82, dpi=(72, 72), optimize=True)
-    digest = hashlib.sha256(OUTPUT.read_bytes()).hexdigest()
-    OUTPUT.with_name(OUTPUT.name + ".sha256").write_text(f"{digest}  {OUTPUT.name}\n", encoding="ascii")
-    print(OUTPUT, OUTPUT.stat().st_size, digest)
+    output, degrees = VARIANTS[sys.argv[1] if len(sys.argv) > 1 else "straight"]
+    photo = photograph(page(), degrees)
+    photo.save(output, "JPEG", quality=82, dpi=(72, 72), optimize=True)
+    digest = hashlib.sha256(output.read_bytes()).hexdigest()
+    output.with_name(output.name + ".sha256").write_text(f"{digest}  {output.name}\n", encoding="ascii")
+    print(output, output.stat().st_size, digest)
 
 
 if __name__ == "__main__":

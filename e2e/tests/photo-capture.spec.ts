@@ -6,6 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.resolve(here, "../../fixtures/synthetic-letter-photo.jpg");
+const SKEWED = path.resolve(here, "../../fixtures/synthetic-letter-photo-skewed.jpg");
 const runId = Date.now().toString(36);
 
 const userA = { username: process.env.AEGIS_USER_A ?? "anna", password: process.env.AEGIS_PASSWORD_A ?? "" };
@@ -51,6 +52,9 @@ test.describe("photos of paper documents", () => {
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });
     const documentId = page.url().split("/").pop()!;
     await expect(page.getByTestId("checksum")).toContainText(sha256);
+    // The archive read the letter, so there is no hint once the text check arrived.
+    await expect(page.getByTestId("text-pending")).toHaveCount(0, { timeout: 60_000 });
+    await expect(page.getByTestId("text-hint")).toHaveCount(0);
 
     // The photo stays the original with its own type; the archive's searchable PDF is offered next to it.
     const original = await page.request.get(`/api/documents/${documentId}/original`, { headers: { Accept: "*/*" } });
@@ -69,6 +73,48 @@ test.describe("photos of paper documents", () => {
     await page.getByTestId("search-input").fill("Ablesekarte");
     await page.getByRole("button", { name: "Suchen" }).click();
     await expect(page.locator(`a[href="/documents/${documentId}"]`).first()).toBeVisible();
+
+    // Leave no test document in the collection.
+    await page.goto(`/documents/${documentId}`);
+    await page.getByTestId("trash-document").click();
+    await page.getByTestId("trash-document-confirm").click();
+    await expect(page.getByTestId("trash-banner")).toBeVisible();
+  });
+
+  test("a photo held at an angle that the archive cannot read is marked and explained @mobile", async ({ page }, info) => {
+    test.setTimeout(480_000);
+    const title = `Schief e2e ${runId} ${info.project.name}`;
+    const photo = Buffer.concat([readFileSync(SKEWED), Buffer.from(title, "latin1")]);
+    await login(page, userA);
+    await ensureGerman(page);
+
+    await page.goto("/documents");
+    await page.getByTestId("upload-panel-toggle").click();
+    await page.getByTestId("upload-image-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
+    await page.getByTestId("upload-submit").click();
+    await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
+    const card = page.locator("[data-testid=document-card]", { hasText: title }).first();
+    await card.getByRole("link").first().click();
+    await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });
+    const documentId = page.url().split("/").pop()!;
+
+    // Without AI the page tells why full-text search misses the document and how to capture it better.
+    const hint = page.getByTestId("text-hint");
+    await expect(hint).toBeVisible({ timeout: 60_000 });
+    await expect(hint).toContainText("Kein Text erkannt");
+    await expect(hint).toContainText("gerade von oben");
+    const box = await hint.boundingBox();
+    expect(box && box.width <= (page.viewportSize()?.width ?? 0)).toBeTruthy();
+
+    // The list marks it next to the archival state.
+    await page.goto("/documents");
+    const listed = page.locator("[data-testid=document-card]", { hasText: title }).first();
+    await expect(listed.locator("[data-state=TEXT_NONE]")).toHaveText("Kein Text erkannt");
+
+    // "Neues Foto hochladen" opens the upload panel with the camera button.
+    await page.goto(`/documents/${documentId}`);
+    await page.getByTestId("text-hint-upload").click();
+    await expect(page.getByTestId("upload-take-photo")).toBeVisible();
 
     // Leave no test document in the collection.
     await page.goto(`/documents/${documentId}`);
