@@ -101,9 +101,9 @@ aegis:
     # long; the owner chose 30 days. Nothing is deleted permanently, so it also stays restorable afterwards.
     recovery-window: 30d
   review:
-    # Background reconciliation of the review inbox (issue #89, ADR-0009): new cards and their notices reach the
-    # members within this delay of their source changing, without anyone opening the inbox.
-    reconciliation-interval: 2m
+    # Background reconciliation of the review inbox (issue #89, ADR-0009): a daily safety net so that new cards and
+    # their notices reach the members even if nobody opens the inbox, which reconciles at once when opened.
+    reconciliation-interval: 1d
   documents:
     # Automatic classification of new uploads once archived (ADR-0004). Existing and restored documents are only
     # analyzed when a member selects them. Filenames use one household naming language, not the UI language.
