@@ -146,6 +146,7 @@ workload and executed with the requesting member's authorization; results applie
 | Calendar events, when connected | Selected calendar provider | Retain external identity, version and synchronization state |
 | Household prose/preferences | Versioned Markdown where appropriate; application preferences remain structured | Never include credentials |
 | Executable rules, conversations and action history, when implemented | Aegis PostgreSQL | Preserve structured state and audit; significant conclusions become explicit facts |
+| Whether the archive recognized text in a document | Aegis PostgreSQL, derived from the archive's OCR text ([ADR-0012](adr/ADR-0012-recognized-text.md)) | Not exported; measured again from the archive after a restore |
 | Indexes, summaries and embeddings | Rebuildable derived data | Never the only copy of an authoritative fact |
 
 Exports are one-way views, not another writable source of truth. Readability, migration and independent
