@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import de from "./de.json";
 import en from "./en.json";
+import { FAILURE_REASONS } from "../lib/failureReasons";
 
 /** All TypeScript sources of the app, so no translation key is missed. */
 function collectSources(directory: string): string[] {
@@ -99,6 +100,8 @@ describe("locale catalogs", () => {
       // Keys the document review producer publishes for documents without recognized text (ADR-0012).
       "review.noText",
       "review.reason.NO_TEXT_RECOGNIZED",
+      // Short reasons for the failure codes of review cards and archival notices (issue #96).
+      ...FAILURE_REASONS.map((reason) => `review.failureReason.${reason}`),
     ];
 
     for (const key of families) {
