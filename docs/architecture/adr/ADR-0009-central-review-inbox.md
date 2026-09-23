@@ -80,6 +80,8 @@ queries per 100 documents, so even a short interval would stay far above the cos
 - A disappeared source cannot receive a stale command: reconciliation supersedes its card and actions revalidate the
   source and version.
 - Product text lives in the German and English catalogs; stored keys, reasons and statuses are locale-independent.
+  Cards for failed archival or analysis store the stable failure code; the frontend presents it as a short localized
+  reason, falling back to a generic one for unknown codes (issue #96). The code itself stays visible on the document.
 - A new card notifies the members who are active when it is created, within the reconciliation interval, even if
   nobody opens the inbox. The interval bounds that delay, not correctness: opening the inbox still reconciles at once.
 - Household processes are a separate kind of actor. Opening another query to them is an explicit change of that
