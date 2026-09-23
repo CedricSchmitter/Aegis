@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import { uploadDocument } from "../api/upload";
@@ -8,6 +9,7 @@ import { useSession } from "../auth/SessionContext";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { DocumentCard } from "../components/DocumentCard";
 import { FacetFilters } from "../components/FacetFilters";
+import { FileCapture, type CaptureSource } from "../components/FileCapture";
 import { FolderSelect } from "../components/FolderSelect";
 import { FolderTree } from "../components/FolderTree";
 import { UploadSubjects } from "../components/UploadSubjects";
@@ -21,10 +23,19 @@ import {
   withoutFilters,
   type CatalogFilters,
 } from "../lib/catalogSearch";
+import { todayIso } from "../lib/format";
 import { problemMessage } from "../lib/problem";
+import { CONTENT_TYPES, detectFormat, localRejection, uploadName, type UploadFormat } from "../lib/uploadFormat";
 
 /** Upper bound of one explicit analysis request; matches the server's bulk limit. */
 const MAX_ANALYSIS_SELECTION = 10;
+
+/** "Foto 2026-09-23 10.15": the local date and time a photo was taken, as its initial name and title. */
+function photoName(t: TFunction): string {
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2, "0")}.${String(now.getMinutes()).padStart(2, "0")}`;
+  return t("documents.photoName", { date: todayIso(), time });
+}
 
 export function DocumentsPage() {
   const { t } = useTranslation();
@@ -42,6 +53,7 @@ export function DocumentsPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [fileFormat, setFileFormat] = useState<UploadFormat | null>(null);
   const [uploadSubjects, setUploadSubjects] = useState<string[]>(["HOUSEHOLD"]);
   const [uploadFolder, setUploadFolder] = useState<string | null>(null);
   const [showFolders, setShowFolders] = useState(false);
@@ -97,14 +109,36 @@ export function DocumentsPage() {
   const folderName = (folderId: string) =>
     categories.find((category) => category.id === folderId)?.name ?? "";
 
+  const selectFile = async (chosen: File, source: CaptureSource) => {
+    setMessage(null);
+    const format = await detectFormat(chosen);
+    // A camera capture has a meaningless temporary name; name it after the moment it was taken instead.
+    const named =
+      source === "camera" && format
+        ? new File([chosen], uploadName(photoName(t), "", format), { type: CONTENT_TYPES[format] })
+        : chosen;
+    const rejection = localRejection(named, format);
+    setFile(named);
+    setFileFormat(rejection ? null : format);
+    setUploadError(rejection ? t(`errors.${rejection}`) : null);
+  };
+
+  const clearFile = () => {
+    setFile(null);
+    setFileFormat(null);
+    setUploadError(null);
+  };
+
   const onUpload = async (event: FormEvent) => {
     event.preventDefault();
-    if (!file) return;
+    if (!file || !fileFormat) return;
     setUploading(true);
     setUploadError(null);
     setMessage(null);
     try {
-      const result = await uploadDocument(file, { subjects: uploadSubjects, categoryId: uploadFolder });
+      const named = uploadName(file.name, t("share.fallbackName", { date: todayIso() }), fileFormat);
+      const upload = named === file.name ? file : new File([file], named, { type: CONTENT_TYPES[fileFormat] });
+      const result = await uploadDocument(upload, { subjects: uploadSubjects, categoryId: uploadFolder });
       setMessage(
         result.duplicate
           ? t(result.document.trash ? "documents.duplicateTrashed" : "documents.duplicate", {
@@ -112,7 +146,7 @@ export function DocumentsPage() {
             })
           : t("documents.uploaded", { title: result.document.title }),
       );
-      setFile(null);
+      clearFile();
       await Promise.all([load(), loadCatalog()]);
     } catch (failure) {
       setUploadError(problemMessage(t, failure));
@@ -186,16 +220,12 @@ export function DocumentsPage() {
         </summary>
         <form className="mt-3 flex flex-col gap-3" onSubmit={onUpload} data-testid="upload-form">
           <p className="text-sm text-stone-600 dark:text-stone-400">{t("documents.uploadHint")}</p>
-          <label className="label" htmlFor="file">
-            {t("documents.chooseFile")}
-          </label>
-          <input
-            id="file"
-            type="file"
-            accept="application/pdf,.pdf"
-            className="field"
-            data-testid="upload-input"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          <FileCapture
+            file={file}
+            format={fileFormat}
+            disabled={uploading}
+            onSelect={(chosen, source) => void selectFile(chosen, source)}
+            onClear={clearFile}
           />
           <FolderSelect
             categories={categories}
@@ -207,8 +237,13 @@ export function DocumentsPage() {
           <UploadSubjects value={uploadSubjects} onChange={setUploadSubjects} />
           <ErrorBox message={uploadError} />
           <div>
-            <button type="submit" className="btn-primary" disabled={!file || uploading} data-testid="upload-submit">
-              {uploading ? t("documents.uploading") : t("documents.upload")}
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={!file || !fileFormat || uploading}
+              data-testid="upload-submit"
+            >
+              {uploading ? t("documents.uploading") : t("documents.uploadSubmit")}
             </button>
           </div>
         </form>

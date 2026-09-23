@@ -9,6 +9,7 @@ import { UploadSubjects } from "../components/UploadSubjects";
 import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import { formatBytes, todayIso } from "../lib/format";
 import { problemMessage } from "../lib/problem";
+import { CONTENT_TYPES, detectFormat, uploadName, type UploadFormat } from "../lib/uploadFormat";
 import {
   listSharedFiles,
   openInbox,
@@ -19,20 +20,20 @@ import {
 } from "../share/inbox";
 import {
   contentHead,
-  hasPdfSignature,
   initialStatus,
   isStored,
   isUnauthenticated,
   needsUpload,
   statusFromError,
   statusFromResponse,
-  uploadName,
   type ShareStatus,
 } from "../share/sharedUpload";
 
 interface Item {
   file: SharedFile;
   status: ShareStatus;
+  /** Format recognized from the content; null when Aegis does not accept it. */
+  format: UploadFormat | null;
   /** What was actually read from the inbox; shown with a rejected file. */
   inspected?: { bytes: number; head: string };
 }
@@ -75,9 +76,9 @@ export function SharePage() {
         const checked = await Promise.all(
           files.map(async (file) => {
             const content = await readSharedFile(opened, file);
-            const pdf = content !== null && (await hasPdfSignature(content));
+            const format = content === null ? null : await detectFormat(content);
             const inspected = { bytes: content?.size ?? 0, head: content ? await contentHead(content) : "" };
-            return { file, status: initialStatus(file, pdf), inspected };
+            return { file, status: initialStatus(file, format), format, inspected };
           }),
         );
         if (active) setItems(checked);
@@ -112,6 +113,8 @@ export function SharePage() {
     setError(null);
     try {
       for (const item of items.filter((entry) => needsUpload(entry.status))) {
+        const format = item.format;
+        if (format === null) continue;
         update(item.file.key, { kind: "uploading" });
         try {
           const content = await readSharedFile(inbox, item.file);
@@ -120,8 +123,8 @@ export function SharePage() {
             drop(item.file.key);
             continue;
           }
-          const name = uploadName(item.file.name, t("share.fallbackName", { date: todayIso() }));
-          const response = await uploadDocument(new File([content], name, { type: "application/pdf" }), {
+          const name = uploadName(item.file.name, t("share.fallbackName", { date: todayIso() }), format);
+          const response = await uploadDocument(new File([content], name, { type: CONTENT_TYPES[format] }), {
             subjects,
             categoryId: folder,
           });

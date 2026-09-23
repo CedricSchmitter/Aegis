@@ -186,12 +186,16 @@ test.describe("first runnable test", () => {
     await logout(page);
   });
 
-  test("mobile layout shows the bottom navigation and the upload control @mobile", async ({ page }) => {
+  test("mobile layout shows the bottom navigation and the upload controls @mobile", async ({ page }) => {
     await login(page, userA);
     await expect(page.getByRole("navigation").last()).toBeVisible();
     await page.getByRole("link", { name: /Dokumente|Documents/ }).last().click();
     await page.getByTestId("upload-panel-toggle").click();
-    await expect(page.getByTestId("upload-input")).toBeVisible();
+    for (const control of ["upload-take-photo", "upload-choose-image", "upload-choose-file"]) {
+      await expect(page.getByTestId(control)).toBeVisible();
+    }
+    // The camera control opens the rear camera directly on a phone.
+    await expect(page.getByTestId("upload-camera-input")).toHaveAttribute("capture", "environment");
     await logout(page);
   });
 });
