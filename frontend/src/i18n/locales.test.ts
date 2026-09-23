@@ -89,6 +89,13 @@ describe("locale catalogs", () => {
         "NOT_AUTHORIZED", "STALE_SOURCE", "SOURCE_UNAVAILABLE", "INTERRUPTED", "INTERNAL"].map((c) => `ai.failure.${c}`),
       ...["Y", "M", "D"].map((unit) => `contracts.periodUnit.${unit}`),
       ...["NONE", "LITTLE"].map((state) => `documents.text.badge.${state}`),
+      // Recurring background jobs on the status page (ADR-0013).
+      ...["OK", "PENDING", "FAILING", "STALE", "NOT_SCHEDULED", "UNKNOWN"].map((s) => `status.jobs.state.${s}`),
+      ...["reconcile-review-inbox", "check-archive-text", "reconcile-documents"].flatMap((job) => [
+        `status.jobs.name.${job}`,
+        `status.jobs.purpose.${job}`,
+      ]),
+      ...["minutes", "hours", "days"].flatMap((unit) => [`status.jobs.every.${unit}`, `status.jobs.every.${unit}_one`]),
       // Keys the document review producer publishes for documents without recognized text (ADR-0012).
       "review.noText",
       "review.reason.NO_TEXT_RECOGNIZED",

@@ -6,6 +6,7 @@ import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import dev.aegis.documents.application.ReconciliationService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +15,8 @@ import org.springframework.context.annotation.Configuration;
 /** Recurring reconciliation of filesystem, database and scheduler state. */
 @Configuration
 public class ReconciliationTask {
+    public static final String NAME = "reconcile-documents";
+    public static final Duration INTERVAL = Duration.ofMinutes(5);
     private static final Logger log = LoggerFactory.getLogger(ReconciliationTask.class);
 
     private final ReconciliationService reconciliation;
@@ -24,7 +27,7 @@ public class ReconciliationTask {
 
     @Bean
     RecurringTask<Void> reconcileDocumentsJob() {
-        return Tasks.recurring("reconcile-documents", FixedDelay.ofMinutes(5)).execute((instance, context) -> {
+        return Tasks.recurring(NAME, FixedDelay.of(INTERVAL)).execute((instance, context) -> {
             try {
                 var report = reconciliation.reconcile();
                 if (report.rescheduled() > 0 || report.quarantined() > 0 || report.stagingRemoved() > 0) {

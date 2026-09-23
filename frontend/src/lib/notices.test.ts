@@ -47,7 +47,8 @@ describe("noticeText", () => {
   });
 
   it("keeps the generic text for older notices without the card's parameters and for unknown keys", () => {
-    for (const params of [{ titleKey: "review.noText" }, { titleKey: "review.somethingNew", title: "X" }, {}]) {
+    const older: Record<string, string>[] = [{ titleKey: "review.noText" }, { titleKey: "review.somethingNew", title: "X" }, {}];
+    for (const params of older) {
       expect(noticeText(german, notice("REVIEW_ITEM", params), "de")).toBe("Ein neuer Eintrag muss geprüft werden.");
       expect(noticeText(english, notice("REVIEW_ITEM", params), "en")).toBe("A new item needs review.");
     }

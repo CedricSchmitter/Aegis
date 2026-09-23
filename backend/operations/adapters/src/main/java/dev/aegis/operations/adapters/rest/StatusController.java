@@ -1,6 +1,7 @@
 package dev.aegis.operations.adapters.rest;
 
 import dev.aegis.operations.application.api.IntegrationStatus;
+import dev.aegis.operations.application.api.JobHealth;
 import dev.aegis.operations.application.api.SystemStatus;
 import dev.aegis.operations.application.api.SystemStatusQuery;
 import dev.aegis.shared.Actor;
@@ -32,15 +33,28 @@ public class StatusController {
         }
     }
 
-    public record SystemStatusDto(List<IntegrationStatusDto> integrations, Map<String, Long> documentProcessing,
-            Instant generatedAt) {
-        static SystemStatusDto from(SystemStatus s) {
-            return new SystemStatusDto(s.integrations().stream().map(IntegrationStatusDto::from).toList(),
-                    s.documentProcessing(), s.generatedAt());
+    @Schema(description = "Whether a recurring background job still runs; names the job only, never its data")
+    public record JobHealthDto(String name,
+            @Schema(allowableValues = {"OK", "FAILING", "STALE", "PENDING", "NOT_SCHEDULED", "UNKNOWN"}) String state,
+            long intervalSeconds, @Schema(nullable = true) Instant lastSuccessAt,
+            @Schema(nullable = true) Instant lastFailureAt, int consecutiveFailures,
+            @Schema(nullable = true) Instant nextRunAt) {
+        static JobHealthDto from(JobHealth j) {
+            return new JobHealthDto(j.name(), j.state(), j.interval().toSeconds(), j.lastSuccessAt(),
+                    j.lastFailureAt(), j.consecutiveFailures(), j.nextRunAt());
         }
     }
 
-    @Operation(operationId = "systemStatus", summary = "Integration and processing status with last success times")
+    public record SystemStatusDto(List<IntegrationStatusDto> integrations, Map<String, Long> documentProcessing,
+            List<JobHealthDto> jobs, Instant generatedAt) {
+        static SystemStatusDto from(SystemStatus s) {
+            return new SystemStatusDto(s.integrations().stream().map(IntegrationStatusDto::from).toList(),
+                    s.documentProcessing(), s.jobs().stream().map(JobHealthDto::from).toList(), s.generatedAt());
+        }
+    }
+
+    @Operation(operationId = "systemStatus",
+            summary = "Integration, processing and recurring job status with last success times")
     @GetMapping
     public SystemStatusDto status(Actor actor) {
         return SystemStatusDto.from(status.status(actor));

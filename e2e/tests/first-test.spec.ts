@@ -165,6 +165,11 @@ test.describe("first runnable test", () => {
     await expect(page.getByTestId("integration-paperless")).toContainText(/Verbunden/);
     await expect(page.getByTestId("integration-externalBackup")).toContainText(/Nicht eingerichtet/);
     await expect(page.getByTestId("integration-calendar")).toContainText(/Nicht eingerichtet/);
+    // Recurring background jobs are scheduled and either ran successfully or wait for their first run (ADR-0013).
+    for (const job of ["reconcile-review-inbox", "check-archive-text", "reconcile-documents"]) {
+      await expect(page.getByTestId(`job-${job}`).locator("[data-state]")).toHaveAttribute("data-state", /^JOB_(OK|PENDING)$/);
+    }
+    await expect(page.getByTestId("job-reconcile-review-inbox")).toContainText("Prüfkorb abgleichen");
     // Without provider credentials the AI boundary says so and capture, search and tasks above still worked.
     await expect(page.getByTestId("integration-ai")).toContainText(/Nicht eingerichtet/);
     await expect(page.getByTestId("ai-section")).toContainText("Kein KI-Anbieter eingerichtet");

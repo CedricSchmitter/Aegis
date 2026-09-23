@@ -473,7 +473,42 @@
     "exportLine": "{{generation}}: {{documents}} Dokumente, {{tasks}} Aufgaben",
     "missingOriginals": "{{count}} Originale fehlen im Export",
     "backupWarning": "Das externe Backup ist nicht betriebsbereit oder nicht aktuell. Prüfe den Backup-Status unten.",
-    "version": "Laufende Version: {{commit}} (Build {{time}})"
+    "version": "Laufende Version: {{commit}} (Build {{time}})",
+    "jobs": {
+      "title": "Hintergrundjobs",
+      "intro": "Regelmäßige Arbeiten des Servers. „Veraltet“ heißt: seit mehr als zwei Intervallen kein erfolgreicher Lauf.",
+      "warning": "Mindestens ein Hintergrundjob läuft nicht wie geplant. Details stehen unten unter „Hintergrundjobs“.",
+      "runs": "Läuft {{interval}}.",
+      "nextRun": "Nächster Lauf: {{date}}",
+      "lastFailure": "Letzter Fehler: {{date}} ({{count}} Läufe in Folge fehlgeschlagen)",
+      "lastFailure_one": "Letzter Fehler: {{date}}",
+      "every": {
+        "minutes": "alle {{count}} Minuten",
+        "minutes_one": "jede Minute",
+        "hours": "alle {{count}} Stunden",
+        "hours_one": "stündlich",
+        "days": "alle {{count}} Tage",
+        "days_one": "täglich"
+      },
+      "state": {
+        "OK": "In Ordnung",
+        "PENDING": "Wartet auf den ersten Lauf",
+        "FAILING": "Letzter Lauf fehlgeschlagen",
+        "STALE": "Veraltet",
+        "NOT_SCHEDULED": "Nicht geplant",
+        "UNKNOWN": "Unbekannt"
+      },
+      "name": {
+        "reconcile-review-inbox": "Prüfkorb abgleichen",
+        "check-archive-text": "Texterkennung prüfen",
+        "reconcile-documents": "Dokumentverarbeitung abgleichen"
+      },
+      "purpose": {
+        "reconcile-review-inbox": "Legt neue Einträge im Prüfkorb an und benachrichtigt die Mitglieder.",
+        "check-archive-text": "Prüft bei archivierten Dokumenten, ob das Archiv Text erkannt hat.",
+        "reconcile-documents": "Setzt unterbrochene Archivierungen fort und räumt Zwischendateien auf."
+      }
+    }
   },
   "ai": {
     "title": "KI-Ausführung",

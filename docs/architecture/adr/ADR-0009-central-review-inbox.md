@@ -30,8 +30,10 @@ source version. Classification and contract decisions stay on the source screens
 their existing confirm, correct and reject commands show evidence and enforce domain rules. There is no heterogeneous
 bulk approval command.
 
-New cards publish one durable `REVIEW_ITEM` notice per active member with a review deep link. Reading that notice does
-not decide the card. Portable export schema 7 carries every review reference and lifecycle record; restore is
+New cards publish one durable `REVIEW_ITEM` notice per active member with a review deep link. The notice carries the
+card's presentation key and parameters (issue #91), so it names the reason and the source, for example the document
+title in its original language; notices published earlier carry the key only and show a generic text. Reading that
+notice does not decide the card. Portable export schema 7 carries every review reference and lifecycle record; restore is
 insert-only by stable id/fingerprint, so it does not overwrite newer local decisions. PostgreSQL backup captures the
 same table.
 

@@ -1190,7 +1190,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Integration and processing status with last success times */
+        /** Integration, processing and recurring job status with last success times */
         get: operations["systemStatus"];
         put?: never;
         post?: never;
@@ -1861,6 +1861,22 @@ export interface components {
             name: string;
             state: string;
         };
+        /** @description Whether a recurring background job still runs; names the job only, never its data */
+        JobHealthDto: {
+            /** Format: int32 */
+            consecutiveFailures: number;
+            /** Format: int64 */
+            intervalSeconds: number;
+            /** Format: date-time */
+            lastFailureAt?: string | null;
+            /** Format: date-time */
+            lastSuccessAt?: string | null;
+            name: string;
+            /** Format: date-time */
+            nextRunAt?: string | null;
+            /** @enum {string} */
+            state: "OK" | "FAILING" | "STALE" | "PENDING" | "NOT_SCHEDULED" | "UNKNOWN";
+        };
         LabelChipDto: {
             builtinKey?: string | null;
             /** Format: double */
@@ -2200,6 +2216,7 @@ export interface components {
             /** Format: date-time */
             generatedAt: string;
             integrations: components["schemas"]["IntegrationStatusDto"][];
+            jobs: components["schemas"]["JobHealthDto"][];
         };
         TaskDto: {
             cancellationReview?: components["schemas"]["CancellationReviewDto"];

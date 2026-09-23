@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-/** Status page model: integrations plus document processing counts by state. */
+/** Status page model: integrations, document processing counts by state and recurring background jobs. */
 public record SystemStatus(List<IntegrationStatus> integrations, Map<String, Long> documentProcessing,
-        Instant generatedAt) {
+        List<JobHealth> jobs, Instant generatedAt) {
 }
