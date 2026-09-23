@@ -1708,6 +1708,7 @@ export interface components {
             /** Format: int64 */
             sizeBytes: number;
             subjects: components["schemas"]["SubjectDto"][];
+            textRecognition: components["schemas"]["TextRecognitionDto"];
             title: string;
             titleOrigin: string;
             trash?: components["schemas"]["DocumentTrashDto"];
@@ -2234,6 +2235,16 @@ export interface components {
         TaskVersionRequest: {
             /** Format: int64 */
             expectedVersion: number;
+        };
+        TextRecognitionDto: {
+            /** Format: date-time */
+            checkedAt?: string | null;
+            /** Format: date-time */
+            nextAttemptAt?: string | null;
+            /** Format: int32 */
+            recognizedCharacters?: number | null;
+            /** @enum {string} */
+            state: "NOT_ARCHIVED" | "PENDING" | "UNAVAILABLE" | "NONE" | "LITTLE" | "RECOGNIZED";
         };
         TodayResponse: {
             calendar: components["schemas"]["CalendarStatusDto"];

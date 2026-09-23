@@ -4,7 +4,10 @@ import dev.aegis.documents.application.api.ClassificationView;
 import dev.aegis.documents.application.api.DocumentExportRecord;
 import dev.aegis.documents.application.api.DocumentSummary;
 import dev.aegis.documents.application.api.FilenameView;
+import dev.aegis.documents.application.api.TextRecognitionView;
 import dev.aegis.documents.domain.analysis.DocumentAnalysis;
+import dev.aegis.documents.domain.text.ArchiveTextCheck;
+import dev.aegis.documents.domain.text.ArchiveTextCheckRepository;
 import dev.aegis.shared.DocumentId;
 import java.util.Map;
 import dev.aegis.documents.application.api.ProcessingInfo;
@@ -21,12 +24,14 @@ public class DocumentPresenter {
     private final ProcessingScheduler scheduler;
     private final ClassificationViews classifications;
     private final AnalysisViews analyses;
+    private final ArchiveTextCheckRepository textChecks;
 
     public DocumentPresenter(ProcessingScheduler scheduler, ClassificationViews classifications,
-            AnalysisViews analyses) {
+            AnalysisViews analyses, ArchiveTextCheckRepository textChecks) {
         this.scheduler = scheduler;
         this.classifications = classifications;
         this.analyses = analyses;
+        this.textChecks = textChecks;
     }
 
     public DocumentSummary summarize(Document document) {
@@ -34,20 +39,23 @@ public class DocumentPresenter {
     }
 
     public DocumentSummary summarize(Document document, ClassificationView classification) {
-        return summarize(document, classification, analyses.partsOf(document, classification));
+        return summarize(document, classification, analyses.partsOf(document, classification),
+                textChecks.find(document.id()).orElse(null));
     }
 
-    /** Summaries of a page of documents with one batch lookup of analyses and run states. */
+    /** Summaries of a page of documents with one batch lookup of analyses, run states and text checks. */
     public List<DocumentSummary> summarizeAll(List<Document> documents,
             Map<DocumentId, ClassificationView> classificationViews) {
         Map<DocumentId, AnalysisViews.Parts> parts = analyses.partsOf(documents, classificationViews);
+        Map<DocumentId, ArchiveTextCheck> checks = documents.isEmpty() ? Map.of()
+                : textChecks.findAll(documents.stream().map(Document::id).toList());
         return documents.stream().map(document -> summarize(document,
                 classificationViews.getOrDefault(document.id(), ClassificationView.UNSORTED),
-                parts.get(document.id()))).toList();
+                parts.get(document.id()), checks.get(document.id()))).toList();
     }
 
-    public DocumentSummary summarize(Document document, ClassificationView classification,
-            AnalysisViews.Parts parts) {
+    private DocumentSummary summarize(Document document, ClassificationView classification,
+            AnalysisViews.Parts parts, ArchiveTextCheck textCheck) {
         boolean pending = document.state() == ProcessingState.RECEIVED || document.state() == ProcessingState.SUBMITTED;
         Optional<Instant> next = pending ? scheduler.nextAttempt(document.id()) : Optional.empty();
         var failure = document.lastFailure();
@@ -66,7 +74,22 @@ public class DocumentPresenter {
                 document.originalFilename(), document.contentType(), document.sizeBytes(),
                 document.checksum().sha256Hex(), document.uploadedBy(), document.uploadedAt(), own, processing,
                 originalAvailable, document.version(), view, parts.filename(), parts.analysis(),
-                document.trash().orElse(null));
+                textRecognition(document, textCheck), document.trash().orElse(null));
+    }
+
+    /** The stored check only speaks for the archive document it measured; until then the check is pending. */
+    static TextRecognitionView textRecognition(Document document, ArchiveTextCheck check) {
+        if (document.state() != ProcessingState.ARCHIVED || document.paperlessDocumentId().isEmpty()) {
+            return new TextRecognitionView(TextRecognitionView.NOT_ARCHIVED, null, null, null);
+        }
+        if (check == null || !check.appliesTo(document.paperlessDocumentId().get())) {
+            return new TextRecognitionView(TextRecognitionView.PENDING, null, null, null);
+        }
+        return check.amount()
+                .map(amount -> new TextRecognitionView(amount.name(), check.recognizedCharacters(),
+                        check.checkedAt(), null))
+                .orElseGet(() -> new TextRecognitionView(TextRecognitionView.UNAVAILABLE, null, check.checkedAt(),
+                        check.nextAttemptAt()));
     }
 
     public DocumentExportRecord exportRecord(Document document, DocumentExportRecord.Classification classification,

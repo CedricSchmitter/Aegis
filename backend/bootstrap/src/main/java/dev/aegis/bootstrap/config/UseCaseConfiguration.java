@@ -19,6 +19,7 @@ import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
 import dev.aegis.documents.application.ArchivalSettings;
 import dev.aegis.documents.application.ArchivalUseCases;
+import dev.aegis.documents.application.ArchiveTextService;
 import dev.aegis.documents.application.DocumentCaptureService;
 import dev.aegis.documents.application.DocumentCommandService;
 import dev.aegis.documents.application.DocumentPresenter;
@@ -58,6 +59,7 @@ import dev.aegis.documents.domain.catalog.CategoryRepository;
 import dev.aegis.documents.domain.catalog.LabelRepository;
 import dev.aegis.documents.domain.classification.ClassificationRepository;
 import dev.aegis.documents.domain.placement.PlacementSuggestionRepository;
+import dev.aegis.documents.domain.text.ArchiveTextCheckRepository;
 import dev.aegis.identity.application.HouseholdAccessPolicy;
 import dev.aegis.identity.application.MemberService;
 import dev.aegis.identity.application.api.MemberCredentialsQuery;
@@ -181,8 +183,8 @@ public class UseCaseConfiguration {
 
     @Bean
     DocumentPresenter documentPresenter(ProcessingScheduler scheduler, ClassificationViews classifications,
-            AnalysisViews analyses) {
-        return new DocumentPresenter(scheduler, classifications, analyses);
+            AnalysisViews analyses, ArchiveTextCheckRepository textChecks) {
+        return new DocumentPresenter(scheduler, classifications, analyses, textChecks);
     }
 
     @Bean
@@ -325,6 +327,14 @@ public class UseCaseConfiguration {
     ReconciliationService reconciliationService(DocumentRepository documents, OriginalStore store,
             PaperlessArchive archive, ProcessingScheduler scheduler, ArchivalSettings settings, Clock clock) {
         return new ReconciliationService(documents, store, archive, scheduler, settings, clock);
+    }
+
+    /** Whether the archive recognized text (ADR-0012); each check is one write of derived data, no transaction. */
+    @Bean
+    ArchiveTextService archiveTextService(DocumentRepository documents, ArchiveTextCheckRepository checks,
+            PaperlessArchive archive, @Value("${aegis.documents.text-check.batch-size:10}") int batchSize,
+            Clock clock) {
+        return new ArchiveTextService(documents, checks, archive, batchSize, clock);
     }
 
     // Contracts -----------------------------------------------------------------------------------------------

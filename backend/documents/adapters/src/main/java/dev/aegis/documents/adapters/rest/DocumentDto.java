@@ -3,6 +3,7 @@ package dev.aegis.documents.adapters.rest;
 import dev.aegis.documents.application.api.DocumentSummary;
 import dev.aegis.documents.application.api.ProcessingInfo;
 import dev.aegis.documents.application.api.SubjectView;
+import dev.aegis.documents.application.api.TextRecognitionView;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.Trash;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,12 +14,30 @@ import java.util.List;
  * REST representation of a document; ids are strings, enum-like values keep their stable English names.
  * {@code originalFilename} is the immutable upload name, {@code filename} the friendly download/export name,
  * {@code processing} the archival state and {@code analysis} the separate automatic classification state.
- * {@code trash} is null unless the document is in the trash.
+ * {@code textRecognition} tells whether the archive recognized text, independent of AI. {@code trash} is null unless
+ * the document is in the trash.
  */
 public record DocumentDto(String id, String title, String titleOrigin, String originalFilename, String contentType,
         long sizeBytes, String checksumSha256, String uploadedBy, Instant uploadedAt, List<SubjectDto> subjects,
         ProcessingDto processing, boolean originalAvailable, long version, ClassificationDto classification,
-        AnalysisDto.FilenameDto filename, AnalysisDto analysis, @Schema(nullable = true) DocumentTrashDto trash) {
+        AnalysisDto.FilenameDto filename, AnalysisDto analysis, TextRecognitionDto textRecognition,
+        @Schema(nullable = true) DocumentTrashDto trash) {
+
+    /**
+     * Whether the archive recognized text (ADR-0012): {@code NOT_ARCHIVED}, {@code PENDING}, {@code UNAVAILABLE}
+     * (the text could not be read yet; tried again at {@code nextAttemptAt}), {@code NONE}, {@code LITTLE} or
+     * {@code RECOGNIZED}. {@code recognizedCharacters} counts letters and digits once measured.
+     */
+    public record TextRecognitionDto(
+            @Schema(allowableValues = {"NOT_ARCHIVED", "PENDING", "UNAVAILABLE", "NONE", "LITTLE", "RECOGNIZED"})
+            String state,
+            @Schema(nullable = true) Integer recognizedCharacters, @Schema(nullable = true) Instant checkedAt,
+            @Schema(nullable = true) Instant nextAttemptAt) {
+        static TextRecognitionDto from(TextRecognitionView view) {
+            return new TextRecognitionDto(view.state(), view.recognizedCharacters(), view.checkedAt(),
+                    view.nextAttemptAt());
+        }
+    }
 
     /** Who moved the document to the trash, when, and until when it is guaranteed to stay restorable. */
     public record DocumentTrashDto(String trashedBy, Instant trashedAt, Instant restorableUntil) {
@@ -56,6 +75,6 @@ public record DocumentDto(String id, String title, String titleOrigin, String or
                 summary.subjects().stream().map(SubjectDto::from).toList(), ProcessingDto.from(summary.processing()),
                 summary.originalAvailable(), summary.version(), ClassificationDto.from(summary.classification()),
                 AnalysisDto.FilenameDto.from(summary.filename()), AnalysisDto.from(summary.analysis()),
-                DocumentTrashDto.from(summary.trash()));
+                TextRecognitionDto.from(summary.textRecognition()), DocumentTrashDto.from(summary.trash()));
     }
 }

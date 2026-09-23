@@ -875,6 +875,9 @@
             },
             "type" : "array"
           },
+          "textRecognition" : {
+            "$ref" : "#/components/schemas/TextRecognitionDto"
+          },
           "title" : {
             "type" : "string"
           },
@@ -897,7 +900,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "analysis", "checksumSha256", "classification", "contentType", "filename", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "title", "titleOrigin", "uploadedAt", "uploadedBy", "version" ],
+        "required" : [ "analysis", "checksumSha256", "classification", "contentType", "filename", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "textRecognition", "title", "titleOrigin", "uploadedAt", "uploadedBy", "version" ],
         "type" : "object"
       },
       "DocumentListResponse" : {
@@ -2271,6 +2274,28 @@
           }
         },
         "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "TextRecognitionDto" : {
+        "properties" : {
+          "checkedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "nextAttemptAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "recognizedCharacters" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "state" : {
+            "enum" : [ "NOT_ARCHIVED", "PENDING", "UNAVAILABLE", "NONE", "LITTLE", "RECOGNIZED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "state" ],
         "type" : "object"
       },
       "TodayResponse" : {

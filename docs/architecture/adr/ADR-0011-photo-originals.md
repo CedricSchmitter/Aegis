@@ -69,7 +69,8 @@ and contrast.
   brightness and with a keystone from a tilted phone. **Rotation is the limit**: 3 degrees were read completely,
   5 degrees gave 14 of 60 words, 7 degrees and more gave no text. A very dark, noisy 2-megapixel photo lost all
   text in Paperless' deskew step. Such a document is archived and keeps its title, labels and folder, but its
-  text is not searchable. Scan improvements (straightening, cropping, contrast) are assessed in #81.
+  text is not searchable; Aegis marks it and advises a new capture ([ADR-0012](ADR-0012-recognized-text.md)). Scan
+  improvements (straightening, cropping, contrast) are assessed in #81.
 - Paperless sizes the archive PDF page from the photo's resolution metadata: a 12-megapixel photo tagged with
   72 dpi, as phones usually do, becomes a 3000 × 4000 pt page (about 106 × 141 cm) that is scaled when printed;
   photos without such metadata get an A4-sized page.

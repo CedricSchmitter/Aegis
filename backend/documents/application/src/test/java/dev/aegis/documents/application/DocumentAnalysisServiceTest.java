@@ -63,7 +63,7 @@ class DocumentAnalysisServiceTest {
         runs = new TestDoubles.RecordingRuns();
         AnalysisSettings settings = TestDoubles.analysisSettings();
         DocumentPresenter presenter = new DocumentPresenter(f.scheduler, f.views, new AnalysisViews(analyses, runs,
-                settings));
+                settings), new InMemoryArchiveTextCheckRepository());
         service = new DocumentAnalysisService(f.documents, analyses, f.classifications, f.labels, f.categories,
                 f.catalog, f.classificationService, f.labelService, f.lock, archive, runs, f.views, presenter,
                 f.access, settings, f.clock);
@@ -118,7 +118,7 @@ class DocumentAnalysisServiceTest {
 
     private DocumentPresenter presenter() {
         return new DocumentPresenter(f.scheduler, f.views, new AnalysisViews(analyses, runs,
-                TestDoubles.analysisSettings()));
+                TestDoubles.analysisSettings()), new InMemoryArchiveTextCheckRepository());
     }
 
     private static LabelChip chip(DocumentSummary summary, UUID label) {

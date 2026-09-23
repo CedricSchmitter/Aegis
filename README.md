@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts), [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders) and [ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md) (central review inbox), [ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md) (recoverable trash) and [ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md) (photos as document originals).
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts), [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders) and [ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md) (central review inbox), [ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md) (recoverable trash), [ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md) (photos as document originals) and [ADR-0012](docs/architecture/adr/ADR-0012-recognized-text.md) (whether the archive recognized text).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
@@ -98,6 +98,10 @@ analyzed when a member selects them. Photos of paper documents (JPEG, PNG, WebP,
 Android share menu) are accepted by their content, stay the original and are archived by Paperless into a searchable
 PDF that is offered next to the photo
 ([ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md)); several photos as one document are issue #81.
+After archival Aegis records, without AI, whether the archive recognized text in a document; a photo held at an
+angle or taken in poor light that the archive could not read is marked "Kein Text erkannt" in the list, explained
+with capture advice on its page and reported in the review inbox. Documents archived earlier are caught up by a
+bounded background check ([ADR-0012](docs/architecture/adr/ADR-0012-recognized-text.md)).
 A new installation starts with an empty tree; `ops/deploy/folder-tree.json`
 and `ops/deploy/seed-folder-tree.py` create the agreed starting tree on request
 ([ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md)).
@@ -118,8 +122,8 @@ occurrence while preserving member edits and completion; resolved contracts supe
 does not use AI, a calendar or phone push.
 
 The shared review inbox persists versioned workflow cards without copying source facts. It currently reconciles
-failed archival, failed or unavailable document analysis, classification suggestions, proposed contract facts and
-fact conflicts. Retries use document application commands; confirmations and corrections stay on their source
+failed archival, documents without recognized text, failed or unavailable document analysis, classification
+suggestions, proposed contract facts and fact conflicts. Retries use document application commands; confirmations and corrections stay on their source
 screens. Dismissal, source resolution and notification read state remain separate, and both members share
 optimistic-concurrency conflict handling. Review history is included in portable export schema 7 and restore
 ([ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md)). Mail exceptions, task candidates and
