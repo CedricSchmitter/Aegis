@@ -23,6 +23,10 @@ import org.junit.jupiter.api.Test;
 
 class DocumentCaptureServiceTest {
     private static final byte[] PDF = "%PDF-1.4 synthetic".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE1, 0, 0x10, 'E', 'x', 'i',
+            'f', 0, 0, 'M', 'M', 0, 0x2A, 1, 2, 3};
+    private static final byte[] PNG = {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 0x49,
+            0x48, 0x44, 0x52, 0, 0, 4, 0};
     private final MemberId anna = MemberId.random();
     private final MemberId ben = MemberId.random();
     private InMemoryDocumentRepository repository;
@@ -111,13 +115,63 @@ class DocumentCaptureServiceTest {
     }
 
     @Test
-    void rejectsNonPdfContentAndRemovesTheStagedFile() {
+    void rejectsContentOfAnUnsupportedTypeWhateverItsNameAndRemovesTheStagedFile() {
         assertThatThrownBy(() -> service.upload(new Actor(anna), command("notes.pdf", "hello".getBytes())))
-                .isInstanceOf(InvalidInputException.class).hasFieldOrPropertyWithValue("code", "document.notPdf");
-        assertThatThrownBy(() -> service.upload(new Actor(anna), command("image.png", PDF)))
-                .isInstanceOf(InvalidInputException.class).hasFieldOrPropertyWithValue("code", "document.notPdf");
+                .isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "document.unsupportedType");
+        assertThatThrownBy(() -> service.upload(new Actor(anna), command("Foto.jpg", "GIF89a...".getBytes())))
+                .isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "document.unsupportedType");
         assertThat(store.listStagingPaths()).isEmpty();
         assertThat(repository.findAll()).isEmpty();
+    }
+
+    @Test
+    void aPhotoIsCapturedWithTheTypeOfItsContentNotOfItsName() {
+        UploadResult camera = service.upload(new Actor(anna), photo("IMG_20260923_101500.JPG", JPEG));
+        UploadResult misnamed = service.upload(new Actor(ben), photo("Brief vom Amt.pdf", PNG));
+
+        assertThat(camera.duplicate()).isFalse();
+        assertThat(camera.document().contentType()).isEqualTo("image/jpeg");
+        assertThat(camera.document().title()).isEqualTo("IMG 20260923 101500");
+        assertThat(camera.document().originalFilename()).isEqualTo("IMG_20260923_101500.JPG");
+        assertThat(camera.document().processing().state()).isEqualTo(ProcessingState.RECEIVED.name());
+        assertThat(store.exists(camera.document().id() + ".jpg")).isTrue();
+        assertThat(misnamed.document().contentType()).isEqualTo("image/png");
+        assertThat(misnamed.document().title()).isEqualTo("Brief vom Amt");
+        assertThat(scheduler.scheduled).containsExactly(camera.document().id(), misnamed.document().id());
+        assertThat(analyses.findById(camera.document().id())).hasValueSatisfying(analysis ->
+                assertThat(analysis.awaitsArchive()).isTrue());
+    }
+
+    @Test
+    void theSamePhotoSharedAgainIsRecognizedByItsChecksum() {
+        UploadResult first = service.upload(new Actor(anna), photo("IMG_1.jpg", JPEG));
+        UploadResult again = service.upload(new Actor(ben), photo("image.jpg", JPEG));
+
+        assertThat(again.duplicate()).isTrue();
+        assertThat(again.document().id()).isEqualTo(first.document().id());
+        assertThat(store.listStagingPaths()).containsExactly(first.document().id() + ".jpg");
+        assertThat(scheduler.scheduled).hasSize(1);
+    }
+
+    @Test
+    void aRestoredPhotoKeepsItsImageType() {
+        var id = dev.aegis.shared.DocumentId.random();
+
+        var result = service.importDocument(new Actor(anna), new dev.aegis.documents.application.api.ImportDocument
+                .ImportDocumentCommand(id, "Brief", "MANUAL", "IMG_1.jpg", "image/jpeg", anna, null, List.of(),
+                        InMemoryOriginalStore.sha256(JPEG).sha256Hex(), new ByteArrayInputStream(JPEG), null));
+
+        assertThat(result.outcome()).isEqualTo(dev.aegis.documents.application.api.ImportDocument.ImportOutcome.IMPORTED);
+        var restored = repository.findById(id).orElseThrow();
+        assertThat(restored.contentType()).isEqualTo("image/jpeg");
+        assertThat(restored.stagingPath()).endsWith(".jpg");
+    }
+
+    private UploadCommand photo(String filename, byte[] bytes) {
+        return new UploadCommand(filename, "application/octet-stream", bytes.length,
+                new ByteArrayInputStream(bytes), List.of(new SubjectView("HOUSEHOLD", null)));
     }
 
     @Test
@@ -197,7 +251,9 @@ class DocumentCaptureServiceTest {
         assertThat(DocumentCaptureService.safeFilename("C:\\Users\\x\\..\\Strom Rechnung.PDF"))
                 .isEqualTo("Strom Rechnung.PDF");
         assertThat(DocumentCaptureService.safeFilename("../evil:name?.pdf")).isEqualTo("evil_name_.pdf");
-        assertThatThrownBy(() -> DocumentCaptureService.safeFilename("report.docx"))
+        assertThat(DocumentCaptureService.safeFilename("Foto")).as("the content decides the type")
+                .isEqualTo("Foto");
+        assertThatThrownBy(() -> DocumentCaptureService.safeFilename("a/.."))
                 .isInstanceOf(InvalidInputException.class);
     }
 }

@@ -1,6 +1,7 @@
 package dev.aegis.documents.adapters.rest;
 
 import dev.aegis.documents.adapters.rest.DocumentDto.SubjectDto;
+import dev.aegis.documents.application.api.ArchivePdf;
 import dev.aegis.documents.application.api.ClassificationCommands;
 import dev.aegis.documents.application.api.ClassificationCommands.Placement;
 import dev.aegis.documents.application.api.ContentSearchState;
@@ -134,7 +135,8 @@ public class DocumentsController {
                 result.size(), result.facets(), result.notContentIndexed());
     }
 
-    @Operation(operationId = "uploadDocument", summary = "Upload a PDF; answers only after durable storage")
+    @Operation(operationId = "uploadDocument", summary = "Upload a PDF or a photo (JPEG, PNG, WebP, HEIC); the type "
+            + "is recognized from the content, and the answer comes only after durable storage")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponse> upload(Actor actor, @RequestPart("file") MultipartFile file,
             @RequestParam(name = "subjects", required = false) List<String> subjects,
@@ -192,6 +194,16 @@ public class DocumentsController {
                 content.filename()))
                 .header("X-Aegis-Original-Source", content.source())
                 .contentType(MediaType.parseMediaType(content.contentType())).body(content.bytes());
+    }
+
+    @Operation(operationId = "downloadArchivePdf",
+            summary = "Searchable PDF the archive generated from the original, for example from a photo")
+    @GetMapping(value = "/{id}/archive-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> archivePdf(Actor actor, @PathVariable("id") String id,
+            @RequestParam(name = "inline", defaultValue = "false") boolean inline) {
+        ArchivePdf pdf = queries.archivePdf(actor, DocumentId.of(id));
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(inline,
+                pdf.filename())).contentType(MediaType.APPLICATION_PDF).body(pdf.bytes());
     }
 
     @Operation(operationId = "retryArchival", summary = "Re-queue archival of a failed document")

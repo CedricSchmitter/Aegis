@@ -4,6 +4,7 @@ import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.ports.ArchiveRejectedException;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
 import dev.aegis.documents.application.ports.PaperlessArchive;
+import dev.aegis.documents.domain.OriginalFormat;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -11,8 +12,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,11 +48,11 @@ public class PaperlessClient implements PaperlessArchive {
     }
 
     @Override
-    public SubmissionOutcome submit(Path file, String title, String originalFilename) {
+    public SubmissionOutcome submit(Path file, String title, String originalFilename, String contentType) {
         byte[] body;
         String boundary = "----aegis" + UUID.randomUUID();
         try {
-            body = multipart(boundary, title, originalFilename, Files.readAllBytes(file));
+            body = multipart(boundary, title, originalFilename, contentType, Files.readAllBytes(file));
         } catch (IOException e) {
             throw new UncheckedIOException("could not read staging file " + file, e);
         }
@@ -134,6 +137,42 @@ public class PaperlessClient implements PaperlessArchive {
         }
     }
 
+    /**
+     * Paperless names the archive version in {@code archived_file_name} and serves it from the download endpoint
+     * without {@code original=true}; without an archive version that endpoint would serve the original instead.
+     */
+    @Override
+    public Optional<byte[]> fetchArchivePdf(int paperlessDocumentId) {
+        JsonNode document;
+        try {
+            document = getJson("/api/documents/{id}/?fields=id,archived_file_name", paperlessDocumentId);
+        } catch (ArchiveRejectedException rejected) {
+            throw new ArchiveUnavailableException("Paperless did not describe document " + paperlessDocumentId);
+        }
+        JsonNode archivedName = document.path("archived_file_name");
+        if (!archivedName.isTextual() || archivedName.asText().isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            byte[] bytes = client.get().uri("/api/documents/{id}/download/", paperlessDocumentId).retrieve()
+                    .body(byte[].class);
+            byte[] head = bytes == null ? new byte[0]
+                    : Arrays.copyOf(bytes, Math.min(bytes.length, OriginalFormat.SIGNATURE_LENGTH));
+            if (OriginalFormat.detect(head).filter(format -> format == OriginalFormat.PDF).isEmpty()) {
+                throw new ArchiveUnavailableException("Paperless did not return a PDF archive version of document "
+                        + paperlessDocumentId);
+            }
+            return Optional.of(bytes);
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().value() == 404) {
+                throw new ArchiveUnavailableException("Paperless no longer lists document " + paperlessDocumentId);
+            }
+            throw translate(e);
+        } catch (ResourceAccessException e) {
+            throw new ArchiveUnavailableException("Paperless unreachable: " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public boolean exists(int paperlessDocumentId) {
         try {
@@ -198,17 +237,21 @@ public class PaperlessClient implements PaperlessArchive {
 
     /**
      * Builds the multipart body explicitly (a text part {@code title} and a file part {@code document}) so the
-     * request does not depend on the client's converter configuration and always carries a Content-Length.
+     * request does not depend on the client's converter configuration and always carries a Content-Length. Paperless
+     * recognizes the type from the content itself; the part still declares the verified media type.
      */
-    static byte[] multipart(String boundary, String title, String originalFilename, byte[] content) {
+    static byte[] multipart(String boundary, String title, String originalFilename, String contentType,
+            byte[] content) {
         String safeName = originalFilename.replace('"', '_').replace('\r', ' ').replace('\n', ' ');
+        String safeType = OriginalFormat.ofContentType(contentType).map(OriginalFormat::contentType)
+                .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
         ByteArrayOutputStream out = new ByteArrayOutputStream(content.length + 512);
         try {
             out.write(("--" + boundary + CRLF + "Content-Disposition: form-data; name=\"title\"" + CRLF
                     + "Content-Type: text/plain; charset=UTF-8" + CRLF + CRLF + title + CRLF)
                     .getBytes(StandardCharsets.UTF_8));
             out.write(("--" + boundary + CRLF + "Content-Disposition: form-data; name=\"document\"; filename=\""
-                    + safeName + "\"" + CRLF + "Content-Type: application/pdf" + CRLF + CRLF)
+                    + safeName + "\"" + CRLF + "Content-Type: " + safeType + CRLF + CRLF)
                     .getBytes(StandardCharsets.UTF_8));
             out.write(content);
             out.write((CRLF + "--" + boundary + "--" + CRLF).getBytes(StandardCharsets.UTF_8));

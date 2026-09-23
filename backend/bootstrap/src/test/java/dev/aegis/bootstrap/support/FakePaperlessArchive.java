@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * adapter is covered separately; the deployed stack is verified against real Paperless.
  */
 public class FakePaperlessArchive implements PaperlessArchive {
-    public record Stored(int id, String title, byte[] bytes, String checksum) {
+    /** {@code archivePdf} stands in for the searchable PDF Paperless generates from an image original. */
+    public record Stored(int id, String title, byte[] bytes, String checksum, String contentType, byte[] archivePdf) {
     }
 
     public volatile boolean available = true;
@@ -46,7 +47,7 @@ public class FakePaperlessArchive implements PaperlessArchive {
     }
 
     @Override
-    public SubmissionOutcome submit(Path file, String title, String originalFilename) {
+    public SubmissionOutcome submit(Path file, String title, String originalFilename, String contentType) {
         requireAvailable();
         submissions.incrementAndGet();
         byte[] bytes;
@@ -63,7 +64,10 @@ public class FakePaperlessArchive implements PaperlessArchive {
             tasks.put(taskId, new Duplicate(existing));
         } else {
             int id = nextId.getAndIncrement();
-            documents.put(id, new Stored(id, title, bytes, checksum));
+            byte[] archivePdf = contentType.startsWith("image/")
+                    ? ("%PDF-1.7 archive of " + checksum).getBytes(java.nio.charset.StandardCharsets.US_ASCII)
+                    : null;
+            documents.put(id, new Stored(id, title, bytes, checksum, contentType, archivePdf));
             texts.put(id, textsByChecksum.getOrDefault(checksum,
                     new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)));
             tasks.put(taskId, new Completed(id));
@@ -75,7 +79,7 @@ public class FakePaperlessArchive implements PaperlessArchive {
     /** Registers a task that already finished, to simulate a submission whose result was never recorded. */
     public String registerCompletedTask(byte[] bytes, String title) {
         int id = nextId.getAndIncrement();
-        documents.put(id, new Stored(id, title, bytes, sha256(bytes)));
+        documents.put(id, new Stored(id, title, bytes, sha256(bytes), "application/pdf", null));
         String taskId = UUID.randomUUID().toString();
         tasks.put(taskId, new Completed(id));
         pollsRemaining.put(taskId, 0);
@@ -100,8 +104,18 @@ public class FakePaperlessArchive implements PaperlessArchive {
         if (stored == null) {
             throw new ArchiveUnavailableException("no document " + paperlessDocumentId);
         }
-        return new OriginalContent("paperless-" + paperlessDocumentId + ".pdf", "application/pdf", stored.bytes(),
+        return new OriginalContent("paperless-" + paperlessDocumentId, stored.contentType(), stored.bytes(),
                 OriginalContent.SOURCE_ARCHIVE);
+    }
+
+    @Override
+    public java.util.Optional<byte[]> fetchArchivePdf(int paperlessDocumentId) {
+        requireAvailable();
+        Stored stored = documents.get(paperlessDocumentId);
+        if (stored == null) {
+            throw new ArchiveUnavailableException("no document " + paperlessDocumentId);
+        }
+        return java.util.Optional.ofNullable(stored.archivePdf());
     }
 
     @Override

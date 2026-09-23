@@ -5,7 +5,10 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 
-/** Durable PDF capture. Success is reported only after the original is stored and the record is committed. */
+/**
+ * Durable capture of a PDF or a photo (JPEG, PNG, WebP, HEIC). Success is reported only after the original is stored
+ * and the record is committed.
+ */
 public interface UploadDocument {
 
     /** {@code categoryId} optionally files the new document into a folder; null keeps it in Unsorted. */

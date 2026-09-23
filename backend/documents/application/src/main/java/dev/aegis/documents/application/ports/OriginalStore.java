@@ -1,6 +1,7 @@
 package dev.aegis.documents.application.ports;
 
 import dev.aegis.documents.domain.Checksum;
+import dev.aegis.documents.domain.OriginalFormat;
 import dev.aegis.shared.DocumentId;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,10 +11,14 @@ import java.util.List;
 /** Durable staging (ingress) storage for accepted originals. Paths are relative to the ingress root. */
 public interface OriginalStore {
 
-    record StoredOriginal(String stagingPath, long sizeBytes, Checksum checksum, boolean pdfSignature) {
+    /**
+     * A durably written file. {@code format} is the format recognized from its content ({@link OriginalFormat}), or
+     * null when the content matches no accepted format; such a file is named without a format's extension.
+     */
+    record StoredOriginal(String stagingPath, long sizeBytes, Checksum checksum, OriginalFormat format) {
     }
 
-    /** Writes the content durably (fsync), computes its checksum and detects the PDF signature. */
+    /** Writes the content durably (fsync), computes its checksum and recognizes its format from the first bytes. */
     StoredOriginal store(DocumentId id, InputStream content) throws IOException;
 
     boolean exists(String stagingPath);

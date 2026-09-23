@@ -7,6 +7,7 @@ import dev.aegis.documents.domain.catalog.CategoryId;
 import dev.aegis.documents.domain.catalog.CategoryRepository;
 import dev.aegis.documents.application.ports.OriginalStore.StoredOriginal;
 import dev.aegis.documents.domain.Checksum;
+import dev.aegis.documents.domain.OriginalFormat;
 import dev.aegis.documents.domain.Subject;
 import dev.aegis.documents.domain.TitleOrigin;
 import dev.aegis.shared.Actor;
@@ -18,16 +19,15 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.Set;
 
 /**
  * Capture use cases. Writes the original to ingress first, validates it, then registers record and job atomically.
- * An interrupted upload therefore never produces a "saved" acknowledgement.
+ * An interrupted upload therefore never produces a "saved" acknowledgement. PDFs and photos (JPEG, PNG, WebP, HEIC)
+ * are accepted; the type is recognized from the stored content, never from the name or the reported media type
+ * (ADR-0011).
  */
 public class DocumentCaptureService implements UploadDocument, ImportDocument {
-    public static final String PDF_CONTENT_TYPE = "application/pdf";
-
     private final OriginalStore store;
     private final RegisterReceivedDocument registrar;
     private final DocumentPresenter presenter;
@@ -65,7 +65,7 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
         StoredOriginal stored = storeValidated(id, command.content());
         Set<Subject> subjects = Subjects.fromViews(command.subjects());
         var registration = registrar.register(new RegisterReceivedDocument.RegistrationCommand(id, titleFrom(filename),
-                TitleOrigin.FILENAME, filename, PDF_CONTENT_TYPE, stored.sizeBytes(), stored.checksum(),
+                TitleOrigin.FILENAME, filename, stored.format().contentType(), stored.sizeBytes(), stored.checksum(),
                 actor.memberId(), clock.instant(), subjects, stored.stagingPath(), command.categoryId(),
                 analysis.automatic(), null));
         if (registration.duplicate()) {
@@ -87,10 +87,11 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
                     "Imported content does not match the exported checksum for " + command.id());
         }
         Instant uploadedAt = command.uploadedAt() == null ? clock.instant() : command.uploadedAt();
-        // Restored documents are never analyzed automatically; the export carries their earlier results.
+        // Restored documents are never analyzed automatically; the export carries their earlier results. The type
+        // comes from the verified bytes, which the checksum ties to the exported original.
         var registration = registrar.register(new RegisterReceivedDocument.RegistrationCommand(command.id(),
                 command.title(), titleOrigin(command.titleOrigin()), safeFilename(command.originalFilename()),
-                PDF_CONTENT_TYPE, stored.sizeBytes(), stored.checksum(), command.uploadedBy(), uploadedAt,
+                stored.format().contentType(), stored.sizeBytes(), stored.checksum(), command.uploadedBy(), uploadedAt,
                 Subjects.fromViews(command.subjects()), stored.stagingPath(), null, false, command.trash()));
         if (registration.duplicate()) {
             deleteQuietly(stored.stagingPath());
@@ -118,9 +119,10 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
             deleteQuietly(stored.stagingPath());
             throw new InvalidInputException("document.tooLarge", "Upload exceeds " + settings.maxUploadBytes());
         }
-        if (!stored.pdfSignature()) {
+        if (stored.format() == null) {
             deleteQuietly(stored.stagingPath());
-            throw new InvalidInputException("document.notPdf", "Only PDF files are accepted");
+            throw new InvalidInputException("document.unsupportedType",
+                    "Only PDF documents and JPEG, PNG, WebP or HEIC photos are accepted");
         }
         return stored;
     }
@@ -143,9 +145,6 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
         if (name.isEmpty() || name.equals(".") || name.equals("..")) {
             throw new InvalidInputException("document.filename.invalid", "Filename is invalid");
         }
-        if (!name.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
-            throw new InvalidInputException("document.notPdf", "Only PDF files are accepted");
-        }
         return name.length() > 180 ? name.substring(name.length() - 180) : name;
     }
 
@@ -161,8 +160,9 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
         }
     }
 
+    /** The upload name without the extension of an accepted format, for example {@code Brief vom Amt.jpg}. */
     static String titleFrom(String filename) {
-        String base = filename.substring(0, filename.length() - ".pdf".length()).replace('_', ' ').trim();
+        String base = OriginalFormat.withoutKnownExtension(filename).replace('_', ' ').trim();
         return base.isEmpty() ? filename : base;
     }
 }

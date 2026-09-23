@@ -34,7 +34,8 @@ public class ArchivalService implements ArchivalUseCases {
         }
         Document document = found.get();
         return switch (document.state()) {
-            case RECEIVED -> new Submit(id, document.stagingPath(), document.title(), document.originalFilename());
+            case RECEIVED -> new Submit(id, document.stagingPath(), document.title(), document.originalFilename(),
+                    document.contentType());
             case SUBMITTED -> new Poll(id, document.paperlessTaskId().orElseThrow(),
                     document.submittedAt().orElse(document.uploadedAt()));
             case ARCHIVED -> new Finished(id, "archived");

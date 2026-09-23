@@ -3,6 +3,7 @@ package dev.aegis.documents.application.ports;
 import dev.aegis.documents.application.api.OriginalContent;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Outbound port to the document archive (Paperless). Transport failures surface as
@@ -38,11 +39,19 @@ public interface PaperlessArchive {
     record ArchiveProbe(boolean reachable, String serverVersion, String detail) {
     }
 
-    SubmissionOutcome submit(Path file, String title, String originalFilename);
+    /** Hands the original over for consumption; {@code contentType} is the media type Aegis verified. */
+    SubmissionOutcome submit(Path file, String title, String originalFilename, String contentType);
 
     TaskOutcome checkTask(String taskId);
 
     OriginalContent fetchOriginal(int paperlessDocumentId);
+
+    /**
+     * The searchable PDF the archive generated from the original (its archive version), or empty when it keeps
+     * none, as for a born-digital PDF. It is derived data of the archive: it never replaces the original and is not
+     * exported, because the archive can generate it again.
+     */
+    Optional<byte[]> fetchArchivePdf(int paperlessDocumentId);
 
     /** OCR text of an archived document as extracted by the archive; empty when it found no text. */
     String fetchContent(int paperlessDocumentId);

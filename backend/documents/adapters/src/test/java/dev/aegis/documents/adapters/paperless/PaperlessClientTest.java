@@ -55,9 +55,53 @@ class PaperlessClientTest {
                 })
                 .andRespond(withSuccess("\"7d3d1b8a-1111-2222-3333-444455556666\"", MediaType.APPLICATION_JSON));
 
-        var outcome = client.submit(file, "Title", "x.pdf");
+        var outcome = client.submit(file, "Title", "x.pdf", "application/pdf");
 
         assertThat(outcome).isEqualTo(new PaperlessArchive.Accepted("7d3d1b8a-1111-2222-3333-444455556666"));
+    }
+
+    @Test
+    void aPhotoIsSubmittedWithItsVerifiedImageType(@TempDir Path dir) throws IOException {
+        Path file = dir.resolve("staged.jpg");
+        Files.write(file, new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0});
+        server.expect(requestTo("http://paperless.test/api/documents/post_document/")).andExpect(method(HttpMethod.POST))
+                .andExpect(request -> {
+                    String body = ((org.springframework.mock.http.client.MockClientHttpRequest) request)
+                            .getBodyAsString();
+                    assertThat(body).contains("name=\"document\"; filename=\"IMG_1.JPG\"")
+                            .contains("Content-Type: image/jpeg").doesNotContain("application/pdf");
+                })
+                .andRespond(withSuccess("\"task-photo\"", MediaType.APPLICATION_JSON));
+
+        assertThat(client.submit(file, "Brief", "IMG_1.JPG", "image/jpeg"))
+                .isEqualTo(new PaperlessArchive.Accepted("task-photo"));
+        assertThat(new String(PaperlessClient.multipart("b", "t", "x", "text/html; x", new byte[0]),
+                java.nio.charset.StandardCharsets.UTF_8)).as("an unverified type is never passed on")
+                .contains("Content-Type: application/octet-stream");
+    }
+
+    @Test
+    void theArchivePdfIsFetchedOnlyWhenPaperlessKeepsAnArchiveVersion() {
+        byte[] archivePdf = "%PDF-1.7 archive".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        server.expect(requestTo("http://paperless.test/api/documents/5/?fields=id,archived_file_name"))
+                .andRespond(withSuccess("{\"id\":5,\"archived_file_name\":\"2026-09-22 Brief.pdf\"}",
+                        MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://paperless.test/api/documents/5/download/"))
+                .andRespond(withSuccess(archivePdf, MediaType.APPLICATION_PDF));
+        server.expect(requestTo("http://paperless.test/api/documents/6/?fields=id,archived_file_name"))
+                .andRespond(withSuccess("{\"id\":6,\"archived_file_name\":null}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://paperless.test/api/documents/7/?fields=id,archived_file_name"))
+                .andRespond(withSuccess("{\"id\":7,\"archived_file_name\":\"x.pdf\"}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://paperless.test/api/documents/7/download/"))
+                .andRespond(withSuccess(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}, MediaType.IMAGE_JPEG));
+        server.expect(requestTo("http://paperless.test/api/documents/8/?fields=id,archived_file_name"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThat(client.fetchArchivePdf(5)).hasValueSatisfying(bytes -> assertThat(bytes).isEqualTo(archivePdf));
+        assertThat(client.fetchArchivePdf(6)).isEmpty();
+        assertThatThrownBy(() -> client.fetchArchivePdf(7)).as("the original instead of an archive PDF")
+                .isInstanceOf(ArchiveUnavailableException.class);
+        assertThatThrownBy(() -> client.fetchArchivePdf(8)).isInstanceOf(ArchiveUnavailableException.class);
     }
 
     @Test

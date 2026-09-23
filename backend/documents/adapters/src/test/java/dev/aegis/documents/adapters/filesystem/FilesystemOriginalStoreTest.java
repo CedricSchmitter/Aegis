@@ -3,6 +3,7 @@ package dev.aegis.documents.adapters.filesystem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.aegis.documents.domain.OriginalFormat;
 import dev.aegis.shared.DocumentId;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -27,11 +28,43 @@ class FilesystemOriginalStoreTest {
 
         assertThat(stored.stagingPath()).isEqualTo(id.value() + ".pdf");
         assertThat(stored.sizeBytes()).isEqualTo(pdf.length);
-        assertThat(stored.pdfSignature()).isTrue();
+        assertThat(stored.format()).isEqualTo(OriginalFormat.PDF);
         assertThat(stored.checksum().sha256Hex()).isEqualTo(sha256Hex(pdf));
         assertThat(store.read(stored.stagingPath())).isEqualTo(pdf);
         assertThat(store.listStagingPaths()).containsExactly(stored.stagingPath());
         assertThat(Files.list(dir).filter(p -> p.toString().endsWith(".part")).count()).isZero();
+    }
+
+    @Test
+    void aPhotoIsNamedByTheFormatOfItsContentNotByItsUploadName() throws IOException {
+        FilesystemOriginalStore store = new FilesystemOriginalStore(dir.toString());
+        byte[] jpeg = new byte[4096];
+        jpeg[0] = (byte) 0xFF;
+        jpeg[1] = (byte) 0xD8;
+        jpeg[2] = (byte) 0xFF;
+        jpeg[3] = (byte) 0xE0;
+        DocumentId photo = DocumentId.random();
+        DocumentId unknown = DocumentId.random();
+
+        var storedPhoto = store.store(photo, new ByteArrayInputStream(jpeg));
+        var storedUnknown = store.store(unknown, new ByteArrayInputStream("GIF89a....".getBytes()));
+
+        assertThat(storedPhoto.stagingPath()).isEqualTo(photo.value() + ".jpg");
+        assertThat(storedPhoto.format()).isEqualTo(OriginalFormat.JPEG);
+        assertThat(storedPhoto.sizeBytes()).isEqualTo(jpeg.length);
+        assertThat(store.read(storedPhoto.stagingPath())).isEqualTo(jpeg);
+        assertThat(storedUnknown.stagingPath()).isEqualTo(unknown.value() + ".bin");
+        assertThat(storedUnknown.format()).isNull();
+    }
+
+    @Test
+    void aFileShorterThanASignatureIsStoredButNotRecognized() throws IOException {
+        FilesystemOriginalStore store = new FilesystemOriginalStore(dir.toString());
+
+        var stored = store.store(DocumentId.random(), new ByteArrayInputStream(new byte[] {(byte) 0xFF, (byte) 0xD8}));
+
+        assertThat(stored.sizeBytes()).isEqualTo(2);
+        assertThat(stored.format()).isNull();
     }
 
     @Test
@@ -53,7 +86,7 @@ class FilesystemOriginalStoreTest {
         assertThatThrownBy(() -> store.store(id, failing)).isInstanceOf(IOException.class);
 
         assertThat(store.exists(id.value() + ".pdf")).isFalse();
-        assertThat(Files.exists(dir.resolve(id.value() + ".pdf.part"))).isFalse();
+        assertThat(Files.exists(dir.resolve(id.value() + ".part"))).isFalse();
         assertThat(store.listStagingPaths()).isEmpty();
     }
 

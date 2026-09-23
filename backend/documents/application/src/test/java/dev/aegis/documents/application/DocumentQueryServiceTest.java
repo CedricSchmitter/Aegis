@@ -12,6 +12,7 @@ import dev.aegis.documents.domain.Subject;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
+import dev.aegis.shared.NotFoundException;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -111,6 +112,43 @@ class DocumentQueryServiceTest {
         repository.save(document);
         assertThatThrownBy(() -> service.original(new Actor(ben), document.id()))
                 .isInstanceOf(OriginalUnavailableException.class);
+    }
+
+    @Test
+    void aPhotoIsServedAsTheOriginalItIsAndItsArchivePdfSeparately() throws Exception {
+        byte[] jpeg = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 1, 2, 3};
+        DocumentId id = DocumentId.random();
+        var staged = store.store(id, new ByteArrayInputStream(jpeg));
+        Document photo = Document.received(id, "Brief vom Amt", "IMG_1.jpg", "image/jpeg", jpeg.length,
+                staged.checksum(), anna, NOW, Set.of(Subject.household()), staged.stagingPath());
+        repository.save(photo);
+        String stem = "Brief-vom-Amt_" + id.toString().substring(0, 8);
+
+        OriginalContent beforeArchival = service.original(new Actor(ben), id);
+        assertThat(beforeArchival.contentType()).isEqualTo("image/jpeg");
+        assertThat(beforeArchival.filename()).isEqualTo(stem + ".jpg");
+        assertThatThrownBy(() -> service.archivePdf(new Actor(ben), id)).as("not archived yet")
+                .isInstanceOf(NotFoundException.class).hasFieldOrPropertyWithValue("resource", "archivePdf");
+
+        photo.markArchived(7, NOW);
+        repository.save(photo);
+        archive.originals.put(7, jpeg);
+        byte[] searchable = "%PDF-1.7 searchable".getBytes(StandardCharsets.US_ASCII);
+        archive.archivePdfs.put(7, searchable);
+
+        assertThat(service.original(new Actor(ben), id).bytes()).isEqualTo(jpeg);
+        var pdf = service.archivePdf(new Actor(ben), id);
+        assertThat(pdf.bytes()).isEqualTo(searchable);
+        assertThat(pdf.filename()).isEqualTo(stem + ".pdf");
+        assertThatThrownBy(() -> service.archivePdf(new Actor(MemberId.random()), id))
+                .isInstanceOf(dev.aegis.shared.NotAuthorizedException.class);
+
+        archive.archivePdfs.remove(7);
+        assertThatThrownBy(() -> service.archivePdf(new Actor(ben), id)).as("the archive keeps no archive version")
+                .isInstanceOf(NotFoundException.class);
+        archive.available = false;
+        assertThatThrownBy(() -> service.archivePdf(new Actor(ben), id))
+                .isInstanceOf(dev.aegis.documents.application.ports.ArchiveUnavailableException.class);
     }
 
     @Test
