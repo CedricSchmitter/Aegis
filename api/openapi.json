@@ -3464,7 +3464,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Upload a PDF; answers only after durable storage",
+        "summary" : "Upload a PDF or a photo (JPEG, PNG, WebP, HEIC); the type is recognized from the content, and the answer comes only after durable storage",
         "tags" : [ "documents" ]
       }
     },
@@ -3720,6 +3720,42 @@
           }
         },
         "summary" : "Accept or reject/revert the generated title",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/archive-pdf" : {
+      "get" : {
+        "operationId" : "downloadArchivePdf",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "inline",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Searchable PDF the archive generated from the original, for example from a photo",
         "tags" : [ "documents" ]
       }
     },
