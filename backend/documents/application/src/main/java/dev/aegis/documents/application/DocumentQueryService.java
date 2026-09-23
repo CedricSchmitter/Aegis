@@ -123,7 +123,8 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
 
     @Override
     public DocumentSearchResult search(Actor actor, DocumentSearchRequest request) {
-        access.requireMember(actor);
+        // Open to household processes: the review reconciler reads the collection through it (ADR-0009).
+        access.requireReader(actor);
         CategoryTree tree = categories.load();
         LabelVocabulary vocabulary = labels.load();
         Criteria filters = criteria(request, tree, vocabulary);

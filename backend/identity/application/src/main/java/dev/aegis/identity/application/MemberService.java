@@ -35,7 +35,8 @@ public class MemberService implements MemberDirectory, MemberCredentialsQuery, P
 
     @Override
     public List<MemberSummary> listMembers(Actor actor) {
-        access.requireMember(actor);
+        // Open to household processes: the review reconciler notifies every active member (ADR-0009).
+        access.requireReader(actor);
         return members.findAll().stream().map(MemberService::summarize).toList();
     }
 

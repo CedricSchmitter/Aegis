@@ -7,7 +7,10 @@ import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
 import java.util.List;
 
-/** Reading contracts and their facts. Every entry point enforces household membership. */
+/**
+ * Reading contracts and their facts. Every entry point enforces household membership; {@code list} and {@code get}
+ * are also open to household processes such as the review reconciler (ADR-0009).
+ */
 public interface ContractQueries {
 
     List<ContractSummary> list(Actor actor);

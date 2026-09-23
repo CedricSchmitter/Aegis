@@ -122,7 +122,7 @@ Do not equate an implementation default with a specific owner preference. These 
 
 The owner wants one shared information space. Both authenticated members can read household documents, facts and tasks, including records associated with the other person. A record may concern one person, both people, a house, or several subjects. Subject associations are searchable metadata, never inferred access restrictions. Keep uploader, subject and task owner as distinct concepts. Individual accounts remain useful for preferences, responsibilities, audit, and action approval.
 
-Do not infer private document areas from person associations. Continue enforcing household membership and limited mirror/MCP identities. Authentication secrets and provider tokens are technical credentials, not searchable shared knowledge. The direct Paperless path must expose the same shared collection to both members.
+Do not infer private document areas from person associations. Continue enforcing household membership and limited mirror/MCP identities. A background job acts as the member who requested its work, or, when no member did, as a named household process that is never a member: it may call only the queries explicitly opened to household processes and no command ([ADR-0009](adr/ADR-0009-central-review-inbox.md)). Authentication secrets and provider tokens are technical credentials, not searchable shared knowledge. The direct Paperless path must expose the same shared collection to both members.
 
 The in-app notification inbox is durable. Delivery adapters reuse notification identity and application
 commands; notification delivery, read status and task completion are distinct states. Calendar integration

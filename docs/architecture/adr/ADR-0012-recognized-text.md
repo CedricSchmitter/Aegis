@@ -55,8 +55,8 @@ fallback does not serve, nothing told the member. The archive text is only read 
 
 - A photo that the archive could not read is visible as such right after archival, for every member and without
   AI. With AI it can also carry an analysis card (`NO_TEXT` flag, ADR-0004); the two cards name different remedies.
-- Like every review card, the card and its notice are created when the review inbox is next reconciled, which today
-  happens when a member opens it; reconciling in the background is issue #89.
+- Like every review card, the card and its notices are created when the review inbox is next reconciled: in the
+  background within about two minutes of the check, or earlier when a member opens the inbox (ADR-0009, issue #89).
 - Each archival costs one more archive request (the document's `content` field). Existing documents are caught up
   in batches of ten per minute after the upgrade; each one without text adds a review card and its notice.
 - The count measures quantity, not quality: OCR noise of 50 or more letters counts as recognized text, and a

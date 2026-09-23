@@ -52,6 +52,9 @@ public abstract class PostgresIT {
         registry.add("aegis.members.file", () -> membersFile().toString());
         registry.add("db-scheduler.polling-interval", () -> "500ms");
         registry.add("aegis.archival.max-attempts", () -> "3");
+        // The review reconciliation job runs once at startup and then only when a test triggers it, so its notices
+        // never appear in the middle of another test's notice counts (ReviewReconciliationIT).
+        registry.add("aegis.review.reconciliation-interval", () -> "12h");
         // Automatic analysis of uploads is switched on only by the tests about it (AnalysisSettings#setAutomatic).
         registry.add("aegis.documents.analysis.automatic", () -> "false");
         // AI: the real Anthropic adapter stays unconfigured (no key file); workloads use the controlled model.

@@ -16,7 +16,10 @@ public interface DocumentQueries {
     /** Documents in the trash, most recently trashed first; ordinary search never returns them. */
     List<DocumentSummary> trashed(Actor actor);
 
-    /** Text, folder and facet search with counts and pagination, evaluated in the database. */
+    /**
+     * Text, folder and facet search with counts and pagination, evaluated in the database. Also open to household
+     * processes such as the review reconciler (ADR-0009); every other query requires a member.
+     */
     DocumentSearchResult search(Actor actor, DocumentSearchRequest request);
 
     /**

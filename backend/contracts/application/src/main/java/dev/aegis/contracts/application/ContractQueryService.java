@@ -44,7 +44,8 @@ public class ContractQueryService implements ContractQueries, ContractDeadlineQu
 
     @Override
     public List<ContractSummary> list(Actor actor) {
-        access.requireMember(actor);
+        // Open to household processes, like get: the review reconciler reads contract facts (ADR-0009).
+        access.requireReader(actor);
         LocalDate today = today();
         return contracts.findAll().stream().filter(contract -> !contract.isTrashed())
                 .map(contract -> presenter.summarize(contract, today)).toList();
@@ -62,7 +63,7 @@ public class ContractQueryService implements ContractQueries, ContractDeadlineQu
 
     @Override
     public ContractView get(Actor actor, ContractId id) {
-        access.requireMember(actor);
+        access.requireReader(actor);
         return presenter.describe(load(id), today());
     }
 
