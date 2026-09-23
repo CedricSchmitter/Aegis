@@ -5,6 +5,7 @@ import type { ExportSummary, SystemStatus, VersionResponse } from "../api/types"
 import { AiSection } from "../components/AiSection";
 import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import { formatDateTime } from "../lib/format";
+import { jobInterval, needsAttention } from "../lib/jobs";
 import { problemMessage } from "../lib/problem";
 
 export function StatusPage() {
@@ -55,6 +56,7 @@ export function StatusPage() {
       {status && (
         <div className="flex flex-col gap-4">
           {!backupHealthy && <p className="alert-warn" role="note">{t("status.backupWarning")}</p>}
+          {status.jobs.some(needsAttention) && <p className="alert-warn" role="note" data-testid="jobs-warning">{t("status.jobs.warning")}</p>}
           <section aria-labelledby="integrations">
             <h2 id="integrations" className="mb-2 text-lg font-semibold">
               {t("status.integrations")}
@@ -84,6 +86,35 @@ export function StatusPage() {
                 <li key={state} className="flex flex-col">
                   <span className="text-2xl font-semibold">{count}</span>
                   <span className="text-sm text-stone-600 dark:text-stone-400">{String(t(`documents.stateShort.${state}`, { defaultValue: state }))}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section aria-labelledby="jobs">
+            <h2 id="jobs" className="mb-1 text-lg font-semibold">
+              {t("status.jobs.title")}
+            </h2>
+            <p className="mb-2 text-sm text-stone-600 dark:text-stone-400">{t("status.jobs.intro")}</p>
+            <ul className="flex flex-col gap-2">
+              {status.jobs.map((job) => (
+                <li key={job.name} className="card flex flex-wrap items-center justify-between gap-2" data-testid={`job-${job.name}`}>
+                  <div className="min-w-0">
+                    <p className="font-medium">{t(`status.jobs.name.${job.name}`, { defaultValue: job.name })}</p>
+                    <p className="text-sm text-stone-600 dark:text-stone-400">
+                      {i18n.exists(`status.jobs.purpose.${job.name}`) && <>{t(`status.jobs.purpose.${job.name}`)} </>}
+                      {t("status.jobs.runs", { interval: jobInterval(t, job.intervalSeconds) })}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      {t("status.lastSuccess", { date: job.lastSuccessAt ? formatDateTime(job.lastSuccessAt, i18n.language) : t("status.never") })}
+                      {job.nextRunAt && <> · {t("status.jobs.nextRun", { date: formatDateTime(job.nextRunAt, i18n.language) })}</>}
+                    </p>
+                    {job.consecutiveFailures > 0 && job.lastFailureAt && (
+                      <p className="text-xs text-red-700 dark:text-red-300">
+                        {t("status.jobs.lastFailure", { date: formatDateTime(job.lastFailureAt, i18n.language), count: job.consecutiveFailures })}
+                      </p>
+                    )}
+                  </div>
+                  <Badge state={`JOB_${job.state}`} label={t(`status.jobs.state.${job.state}`)} />
                 </li>
               ))}
             </ul>

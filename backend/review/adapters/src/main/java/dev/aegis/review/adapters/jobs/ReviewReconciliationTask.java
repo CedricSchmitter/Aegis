@@ -35,6 +35,11 @@ public class ReviewReconciliationTask {
         this.interval = interval;
     }
 
+    /** The configured time between two runs, reported on the status page (ADR-0013). */
+    public Duration interval() {
+        return interval;
+    }
+
     @Bean
     RecurringTask<Void> reconcileReviewInboxJob() {
         return Tasks.recurring(NAME, FixedDelay.of(interval)).execute((instance, context) -> {

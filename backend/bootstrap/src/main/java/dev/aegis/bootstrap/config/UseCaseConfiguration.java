@@ -14,6 +14,8 @@ import dev.aegis.contracts.domain.ContractRepository;
 import dev.aegis.documents.application.AnalysisSettings;
 import dev.aegis.documents.application.AnalysisTrigger;
 import dev.aegis.documents.application.AnalysisViews;
+import dev.aegis.documents.adapters.jobs.ArchiveTextCheckTask;
+import dev.aegis.documents.adapters.jobs.ReconciliationTask;
 import dev.aegis.documents.application.ArchivalService;
 import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
@@ -72,6 +74,7 @@ import dev.aegis.notifications.application.NoticeService;
 import dev.aegis.notifications.application.api.NoticeInbox;
 import dev.aegis.notifications.application.api.PublishNotice;
 import dev.aegis.notifications.domain.NoticeRepository;
+import dev.aegis.review.adapters.jobs.ReviewReconciliationTask;
 import dev.aegis.review.application.ReviewService;
 import dev.aegis.review.application.api.ReviewInbox;
 import dev.aegis.review.application.api.ReviewPortability;
@@ -81,9 +84,11 @@ import dev.aegis.review.application.ports.ReviewActionDispatcher;
 import dev.aegis.review.application.ports.ReviewProducer;
 import dev.aegis.review.domain.ReviewRepository;
 import dev.aegis.operations.application.IntegrationStatusService;
+import dev.aegis.operations.application.api.RecurringJob;
 import dev.aegis.operations.application.api.SystemStatusQuery;
 import dev.aegis.operations.application.ports.IntegrationStatusSource;
 import dev.aegis.operations.application.ports.ProcessingOverviewSource;
+import dev.aegis.operations.application.ports.RecurringJobStateSource;
 import dev.aegis.planning.application.TaskCommandService;
 import dev.aegis.planning.application.CancellationDeadlineService;
 import dev.aegis.planning.application.TaskPresenter;
@@ -503,10 +508,16 @@ public class UseCaseConfiguration {
 
     // Operations ----------------------------------------------------------------------------------------------
 
+    /** Each recurring job the status page reports (issue #92, ADR-0013) is declared with the interval it runs at. */
     @Bean
     SystemStatusQuery systemStatusQuery(List<IntegrationStatusSource> sources, ProcessingOverviewSource processing,
-            HouseholdAccess access, Clock clock) {
-        return new IntegrationStatusService(sources, processing, access, clock);
+            ReviewReconciliationTask reviewReconciliation, RecurringJobStateSource jobStates, HouseholdAccess access,
+            Clock clock) {
+        List<RecurringJob> recurringJobs = List.of(
+                new RecurringJob(ReviewReconciliationTask.NAME, reviewReconciliation.interval()),
+                new RecurringJob(ArchiveTextCheckTask.NAME, ArchiveTextCheckTask.INTERVAL),
+                new RecurringJob(ReconciliationTask.NAME, ReconciliationTask.INTERVAL));
+        return new IntegrationStatusService(sources, processing, recurringJobs, jobStates, access, clock);
     }
 
     // Portability ---------------------------------------------------------------------------------------------

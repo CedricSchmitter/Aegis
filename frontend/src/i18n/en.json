@@ -473,7 +473,42 @@
     "exportLine": "{{generation}}: {{documents}} documents, {{tasks}} tasks",
     "missingOriginals": "{{count}} originals missing from the export",
     "backupWarning": "The external backup is unavailable or out of date. Check the backup status below.",
-    "version": "Running version: {{commit}} (build {{time}})"
+    "version": "Running version: {{commit}} (build {{time}})",
+    "jobs": {
+      "title": "Background jobs",
+      "intro": "Recurring work on the server. “Stale” means no successful run for more than two intervals.",
+      "warning": "At least one background job is not running as planned. See “Background jobs” below.",
+      "runs": "Runs {{interval}}.",
+      "nextRun": "Next run: {{date}}",
+      "lastFailure": "Last failure: {{date}} ({{count}} runs in a row failed)",
+      "lastFailure_one": "Last failure: {{date}}",
+      "every": {
+        "minutes": "every {{count}} minutes",
+        "minutes_one": "every minute",
+        "hours": "every {{count}} hours",
+        "hours_one": "hourly",
+        "days": "every {{count}} days",
+        "days_one": "daily"
+      },
+      "state": {
+        "OK": "Healthy",
+        "PENDING": "Waiting for the first run",
+        "FAILING": "Last run failed",
+        "STALE": "Stale",
+        "NOT_SCHEDULED": "Not scheduled",
+        "UNKNOWN": "Unknown"
+      },
+      "name": {
+        "reconcile-review-inbox": "Review inbox reconciliation",
+        "check-archive-text": "Recognized text check",
+        "reconcile-documents": "Document processing reconciliation"
+      },
+      "purpose": {
+        "reconcile-review-inbox": "Adds new items to the review inbox and notifies the members.",
+        "check-archive-text": "Checks whether the archive recognized text in archived documents.",
+        "reconcile-documents": "Resumes interrupted archival and cleans up staging files."
+      }
+    }
   },
   "ai": {
     "title": "AI execution",

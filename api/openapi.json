@@ -1276,6 +1276,40 @@
         "required" : [ "name", "state" ],
         "type" : "object"
       },
+      "JobHealthDto" : {
+        "description" : "Whether a recurring background job still runs; names the job only, never its data",
+        "properties" : {
+          "consecutiveFailures" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "intervalSeconds" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "lastFailureAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "lastSuccessAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "nextRunAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "state" : {
+            "enum" : [ "OK", "FAILING", "STALE", "PENDING", "NOT_SCHEDULED", "UNKNOWN" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "consecutiveFailures", "intervalSeconds", "name", "state" ],
+        "type" : "object"
+      },
       "LabelChipDto" : {
         "properties" : {
           "builtinKey" : {
@@ -2181,9 +2215,15 @@
               "$ref" : "#/components/schemas/IntegrationStatusDto"
             },
             "type" : "array"
+          },
+          "jobs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/JobHealthDto"
+            },
+            "type" : "array"
           }
         },
-        "required" : [ "documentProcessing", "generatedAt", "integrations" ],
+        "required" : [ "documentProcessing", "generatedAt", "integrations", "jobs" ],
         "type" : "object"
       },
       "TaskDto" : {
@@ -4981,7 +5021,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Integration and processing status with last success times",
+        "summary" : "Integration, processing and recurring job status with last success times",
         "tags" : [ "status" ]
       }
     },

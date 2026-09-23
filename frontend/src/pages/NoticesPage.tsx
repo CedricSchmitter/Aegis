@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import type { NoticeSummary } from "../api/types";
 import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
-import { formatDate, formatDateTime } from "../lib/format";
+import { formatDateTime } from "../lib/format";
+import { noticeText } from "../lib/notices";
 import { problemMessage } from "../lib/problem";
 
 function linkTarget(notice: NoticeSummary): string | null {
@@ -84,20 +85,9 @@ export function NoticesPage() {
           {notices.map((notice) => {
             const target = linkTarget(notice);
             const unread = !notice.readAt;
-            const params = notice.kind === "CONTRACT_CANCELLATION_REMINDER"
-              ? {
-                  ...(notice.params ?? {}),
-                  cancellationDeadline: notice.params?.cancellationDeadline
-                    ? formatDate(notice.params.cancellationDeadline, i18n.language)
-                    : "",
-                  contractEnd: notice.params?.contractEnd
-                    ? formatDate(notice.params.contractEnd, i18n.language)
-                    : "",
-                }
-              : (notice.params ?? {});
             return (
               <li key={notice.id} className={`card flex flex-col gap-1 ${unread ? "border-sky-400 dark:border-sky-600" : ""}`} data-testid="notice" data-unread={unread}>
-                <p className={unread ? "font-semibold" : ""}>{String(t(`notices.kind.${notice.kind}`, { ...params, defaultValue: notice.kind }))}</p>
+                <p className={unread ? "font-semibold" : ""}>{noticeText(t, notice, i18n.language)}</p>
                 <p className="text-xs text-stone-500">
                   {formatDateTime(notice.createdAt, i18n.language)}
                   {notice.readAt && <> · {t("notices.readAt", { date: formatDateTime(notice.readAt, i18n.language) })}</>}

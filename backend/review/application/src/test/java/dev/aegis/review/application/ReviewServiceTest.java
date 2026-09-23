@@ -82,6 +82,23 @@ class ReviewServiceTest {
     }
 
     @Test
+    void theNoticeNamesItsCardWithTheCardsKeyAndParametersInsteadOfTranslatedText() {
+        producer.items = List.of(new ReviewItem.Candidate("no-text:7:42", "documents", "DOCUMENT", "7", 3,
+                "PROCESSING_FAILURE", "NO_TEXT_RECOGNIZED", "NORMAL", "review.noText",
+                Map.of("title", "Brief der Stadtwerke", "titleKey", "review.spoofed"), "DOCUMENT", "7", List.of()));
+
+        service.reconcile(RECONCILER);
+
+        ReviewItem card = repo.findByFingerprint("no-text:7:42").orElseThrow();
+        assertThat(notices).hasSize(2).allSatisfy(notice -> {
+            // The source title stays in its original language; the card's key wins over a colliding parameter.
+            assertThat(notice.params()).containsExactlyInAnyOrderEntriesOf(
+                    Map.of("titleKey", "review.noText", "title", "Brief der Stadtwerke"));
+            assertThat(notice.dedupKey()).isEqualTo("review:" + card.id());
+        });
+    }
+
+    @Test
     void theReconcilerMayOnlyReconcile() {
         producer.items = List.of(candidate(1));
         service.reconcile(RECONCILER);

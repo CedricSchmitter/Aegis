@@ -137,9 +137,10 @@ public class ReviewService implements ReviewInbox, ReviewReconciliation, ReviewP
             if (recipients == null) {
                 recipients = members.listMembers(actor).stream().filter(MemberSummary::active).toList();
             }
+            Map<String, String> noticeParams = noticeParams(item);
             for (MemberSummary member : recipients) {
-                notices.publish(new NoticeDraft(member.id(), "REVIEW_ITEM", "review:" + item.id(),
-                        Map.of("titleKey", item.titleKey()), "REVIEW", item.id().toString()));
+                notices.publish(new NoticeDraft(member.id(), "REVIEW_ITEM", "review:" + item.id(), noticeParams,
+                        "REVIEW", item.id().toString()));
             }
         }
         int superseded = 0;
@@ -161,6 +162,17 @@ public class ReviewService implements ReviewInbox, ReviewReconciliation, ReviewP
         } catch (StaleVersionException decided) {
             return false;
         }
+    }
+
+    /**
+     * A notice names its card the way the inbox does: the card's presentation key and its parameters, such as the
+     * document title in its original language (issue #91). Only stable keys and source values are stored; the UI
+     * localizes them. {@code titleKey} is set last so a card parameter can never replace it.
+     */
+    private static Map<String, String> noticeParams(ReviewItem item) {
+        Map<String, String> params = new LinkedHashMap<>(item.params());
+        params.put("titleKey", item.titleKey());
+        return params;
     }
 
     private static UUID cardId(String fingerprint) {

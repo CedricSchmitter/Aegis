@@ -69,6 +69,12 @@ const STATE_STYLES: Record<string, string> = {
   SUPERSEDED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
   TEXT_NONE: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
   TEXT_LITTLE: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
+  JOB_OK: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
+  JOB_PENDING: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
+  JOB_FAILING: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
+  JOB_STALE: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
+  JOB_NOT_SCHEDULED: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
+  JOB_UNKNOWN: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
 };
 
 export function Badge({ state, label }: { state: string; label: string }) {

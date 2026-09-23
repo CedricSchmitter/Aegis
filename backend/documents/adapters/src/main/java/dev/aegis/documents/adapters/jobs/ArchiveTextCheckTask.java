@@ -4,6 +4,7 @@ import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import dev.aegis.documents.application.ArchiveTextService;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +17,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class ArchiveTextCheckTask {
+    public static final String NAME = "check-archive-text";
+    public static final Duration INTERVAL = Duration.ofMinutes(1);
     private static final Logger log = LoggerFactory.getLogger(ArchiveTextCheckTask.class);
 
     private final ArchiveTextService textChecks;
@@ -26,7 +29,7 @@ public class ArchiveTextCheckTask {
 
     @Bean
     RecurringTask<Void> checkArchiveTextJob() {
-        return Tasks.recurring("check-archive-text", FixedDelay.ofMinutes(1)).execute((instance, context) -> {
+        return Tasks.recurring(NAME, FixedDelay.of(INTERVAL)).execute((instance, context) -> {
             ArchiveTextService.SweepReport report = textChecks.sweep();
             if (report.measured() > 0 || report.failed() > 0) {
                 log.info("Archive text checks: measured={} failed={}", report.measured(), report.failed());

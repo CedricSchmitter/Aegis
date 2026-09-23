@@ -105,11 +105,15 @@ class ReviewReconciliationIT extends PostgresIT {
         runJobAndAwaitCompletion();
 
         UUID card = cardFor(documentId).orElseThrow();
+        String title = anna.json(anna.get("/api/documents/" + documentId)).path("title").asText();
         for (ApiClient member : List.of(anna, ben)) {
             assertThat(member.json(member.get("/api/notices?unreadOnly=true"))).anySatisfy(notice -> {
                 assertThat(notice.path("kind").asText()).isEqualTo("REVIEW_ITEM");
                 assertThat(notice.path("linkType").asText()).isEqualTo("REVIEW");
                 assertThat(notice.path("linkId").asText()).isEqualTo(card.toString());
+                // The notice names the card (issue #91): its key and the document title, never translated text.
+                assertThat(notice.path("params").path("titleKey").asText()).isEqualTo("review.noText");
+                assertThat(notice.path("params").path("title").asText()).isEqualTo(title);
             });
         }
         assertExactlyOneNoticePerActiveMember(card);

@@ -5,6 +5,7 @@ import { api, unwrap } from "../api/client";
 import type { components } from "../api/schema";
 import { EmptyState, ErrorBox, Loading, PageTitle } from "../components/common";
 import { formatDateTime } from "../lib/format";
+import { reviewTitle } from "../lib/notices";
 import { problemMessage } from "../lib/problem";
 
 type ReviewItem = components["schemas"]["ReviewItemDto"];
@@ -62,7 +63,7 @@ export function ReviewPage() {
     {items?.length === 0 && <EmptyState>{status === "OPEN" ? t("review.empty") : t("review.emptyHistory")}</EmptyState>}
     {items && <ul className="flex flex-col gap-3" aria-live="polite">{items.map((item) => {
       const href = target(item); return <li id={`review-${item.id}`} key={item.id} className={`card border-l-4 ${focusedId === item.id ? "ring-2 ring-sky-500" : ""} ${item.priority === "HIGH" ? "border-l-red-500" : "border-l-amber-400"}`}>
-        <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold">{String(t(item.titleKey, item.params))}</p><p className="mt-1 text-sm text-stone-600 dark:text-stone-300">{t(`review.reason.${item.reason}`)}</p></div><span className="badge">{t(`review.category.${item.category}`)}{counts[item.category] ? ` · ${counts[item.category]}` : ""}</span></div>
+        <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold">{reviewTitle(t, item.titleKey, item.params)}</p><p className="mt-1 text-sm text-stone-600 dark:text-stone-300">{t(`review.reason.${item.reason}`)}</p></div><span className="badge">{t(`review.category.${item.category}`)}{counts[item.category] ? ` · ${counts[item.category]}` : ""}</span></div>
         <p className="mt-2 text-xs text-stone-500">{formatDateTime(item.updatedAt, i18n.language)} · {t(`review.status.${item.status}`)}</p>
         <div className="mt-3 flex flex-wrap gap-2">{href && <Link className="btn-secondary" to={href}>{t("review.openSource")}</Link>}{item.actions.map((action) => <button key={action} type="button" className="btn-primary" disabled={busy === item.id} onClick={() => void change(item, action)}>{t(`review.action.${action}`)}</button>)}{item.status === "OPEN" && <button type="button" className="btn-ghost" disabled={busy === item.id} onClick={() => void change(item)}>{t("review.dismiss")}</button>}</div>
       </li>;

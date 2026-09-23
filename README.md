@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts), [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders) and [ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md) (central review inbox), [ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md) (recoverable trash), [ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md) (photos as document originals) and [ADR-0012](docs/architecture/adr/ADR-0012-recognized-text.md) (whether the archive recognized text).
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts), [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders) and [ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md) (central review inbox), [ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md) (recoverable trash), [ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md) (photos as document originals), [ADR-0012](docs/architecture/adr/ADR-0012-recognized-text.md) (whether the archive recognized text) and [ADR-0013](docs/architecture/adr/ADR-0013-recurring-job-health.md) (recurring job health on the status page).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
@@ -125,7 +125,7 @@ The shared review inbox persists versioned workflow cards without copying source
 failed archival, documents without recognized text, failed or unavailable document analysis, classification
 suggestions, proposed contract facts and fact conflicts. Opening the inbox reconciles it at once, and a daily
 background job makes a new card notify both members even if nobody opens the inbox; it runs as a read-only household process that can
-neither decide cards nor change records. Retries use document application commands; confirmations and corrections stay on their source
+neither decide cards nor change records. A card's notice names its reason and source, such as the document title. Retries use document application commands; confirmations and corrections stay on their source
 screens. Dismissal, source resolution and notification read state remain separate, and both members share
 optimistic-concurrency conflict handling. Review history is included in portable export schema 7 and restore
 ([ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md)). Mail exceptions, task candidates and
@@ -149,6 +149,9 @@ in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Without either, AI is not configured. See
 [API setup](docs/operations/DEPLOYMENT.md#claude-api-with-sonnet-5) and
 [subscription fallback](docs/operations/DEPLOYMENT.md#subscription-fallback-through-claude--p).
 Scheduled review and chat workflows (#24, #25) are not connected.
+The status page also lists the recurring background jobs (review reconciliation, recognized-text check, document
+reconciliation) with their last success, next run and last failure, and marks a job stale when it has not succeeded
+for two intervals plus 10 minutes ([ADR-0013](docs/architecture/adr/ADR-0013-recurring-job-health.md)).
 Integration status evaluates credentials for every currently selected provider/model. Process startup, provider
 fallback and API-key rotation make earlier outcomes unverified until a fresh connection check succeeds.
 
