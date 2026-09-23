@@ -88,6 +88,10 @@ describe("locale catalogs", () => {
         "PROVIDER_UNAVAILABLE", "TIMEOUT", "INVALID_OUTPUT", "REFUSED", "BUDGET_EXHAUSTED", "TOOL_DENIED",
         "NOT_AUTHORIZED", "STALE_SOURCE", "SOURCE_UNAVAILABLE", "INTERRUPTED", "INTERNAL"].map((c) => `ai.failure.${c}`),
       ...["Y", "M", "D"].map((unit) => `contracts.periodUnit.${unit}`),
+      ...["NONE", "LITTLE"].map((state) => `documents.text.badge.${state}`),
+      // Keys the document review producer publishes for documents without recognized text (ADR-0012).
+      "review.noText",
+      "review.reason.NO_TEXT_RECOGNIZED",
     ];
 
     for (const key of families) {

@@ -19,12 +19,14 @@ import { LabelEditor } from "../components/LabelEditor";
 import { PlacementSuggestion } from "../components/PlacementSuggestion";
 import { SubjectList } from "../components/SubjectList";
 import { TaskForm } from "../components/TaskForm";
+import { TextRecognitionHint } from "../components/TextRecognitionHint";
 import { TaskItem } from "../components/TaskItem";
 import { MoveToTrashButton, TrashBanner } from "../components/TrashControls";
 import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
 import { suggestions } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
+import { awaitingTextCheck } from "../lib/textRecognition";
 import { isImageContentType } from "../lib/uploadFormat";
 
 export function DocumentDetailPage() {
@@ -77,7 +79,7 @@ export function DocumentDetailPage() {
     if (!document) return;
     const archiving = document.processing.state === "RECEIVED" || document.processing.state === "SUBMITTED";
     const analyzing = document.analysis.state === "PENDING" || document.analysis.state === "WAITING_FOR_ARCHIVE";
-    if (!archiving && !analyzing) return;
+    if (!archiving && !analyzing && !awaitingTextCheck(document)) return;
     const timer = window.setTimeout(() => void load(), 4000);
     return () => window.clearTimeout(timer);
   }, [document, load]);
@@ -280,6 +282,7 @@ export function DocumentDetailPage() {
             {t("documents.archivedAt", { date: formatDateTime(p.archivedAt, i18n.language) })}
           </p>
         )}
+        <TextRecognitionHint document={document} />
         {photo && (
           <p className="text-sm text-stone-600 dark:text-stone-400" data-testid="photo-hint">
             {p.state === "ARCHIVED" ? t("documents.archivePdfHint") : t("documents.archivePdfPending")}

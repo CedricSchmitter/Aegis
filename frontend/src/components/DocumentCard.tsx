@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { DocumentDto } from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { formatDate } from "../lib/format";
+import { lacksText } from "../lib/textRecognition";
 import { Badge } from "./common";
 import { LabelChips } from "./LabelChips";
 import { SubjectList } from "./SubjectList";
@@ -48,6 +49,12 @@ export function DocumentCard({ document, selected, onSelectedChange, folderName 
             <Badge
               state={document.analysis.state}
               label={t(`analysis.stateShort.${document.analysis.state}`)}
+            />
+          )}
+          {lacksText(document.textRecognition) && (
+            <Badge
+              state={`TEXT_${document.textRecognition.state}`}
+              label={t(`documents.text.badge.${document.textRecognition.state}`)}
             />
           )}
           {document.classification.placementSuggestion && (

@@ -4,7 +4,7 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import { uploadDocument } from "../api/upload";
-import type { CategoryListResponse, DocumentListResponse, LabelDto } from "../api/types";
+import type { CategoryListResponse, DocumentDto, DocumentListResponse, LabelDto } from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { DocumentCard } from "../components/DocumentCard";
@@ -25,6 +25,7 @@ import {
 } from "../lib/catalogSearch";
 import { todayIso } from "../lib/format";
 import { problemMessage } from "../lib/problem";
+import { awaitingTextCheck } from "../lib/textRecognition";
 import { CONTENT_TYPES, detectFormat, localRejection, uploadName, type UploadFormat } from "../lib/uploadFormat";
 
 /** Upper bound of one explicit analysis request; matches the server's bulk limit. */
@@ -57,6 +58,9 @@ export function DocumentsPage() {
   const [uploadSubjects, setUploadSubjects] = useState<string[]>(["HOUSEHOLD"]);
   const [uploadFolder, setUploadFolder] = useState<string | null>(null);
   const [showFolders, setShowFolders] = useState(false);
+  // "Upload a new photo" on a document without recognized text opens the upload panel; read once, so filter changes
+  // that rewrite the query never close it under the member's hands.
+  const [uploadOpen] = useState(() => params.get("upload") === "1");
 
   const apply = useCallback(
     (next: CatalogFilters) => {
@@ -98,7 +102,9 @@ export function DocumentsPage() {
   }, [filters, load]);
 
   useEffect(() => {
-    if (!list || !list.items.some((d) => d.processing.state === "RECEIVED" || d.processing.state === "SUBMITTED")) {
+    const pending = (d: DocumentDto) =>
+      d.processing.state === "RECEIVED" || d.processing.state === "SUBMITTED" || awaitingTextCheck(d);
+    if (!list || !list.items.some(pending)) {
       return;
     }
     const timer = window.setTimeout(() => void load(), 4000);
@@ -214,7 +220,7 @@ export function DocumentsPage() {
         {t("documents.title")}
       </PageTitle>
 
-      <details className="card mb-4" data-testid="upload-panel">
+      <details className="card mb-4" data-testid="upload-panel" open={uploadOpen || undefined}>
         <summary className="min-h-11 cursor-pointer font-semibold" data-testid="upload-panel-toggle">
           {t("documents.upload")}
         </summary>
