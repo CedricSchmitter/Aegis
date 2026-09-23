@@ -123,7 +123,9 @@ does not use AI, a calendar or phone push.
 
 The shared review inbox persists versioned workflow cards without copying source facts. It currently reconciles
 failed archival, documents without recognized text, failed or unavailable document analysis, classification
-suggestions, proposed contract facts and fact conflicts. Retries use document application commands; confirmations and corrections stay on their source
+suggestions, proposed contract facts and fact conflicts. A background job reconciles the inbox every two minutes, so
+a new card notifies both members without anyone opening the inbox; it runs as a read-only household process that can
+neither decide cards nor change records. Retries use document application commands; confirmations and corrections stay on their source
 screens. Dismissal, source resolution and notification read state remain separate, and both members share
 optimistic-concurrency conflict handling. Review history is included in portable export schema 7 and restore
 ([ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md)). Mail exceptions, task candidates and
