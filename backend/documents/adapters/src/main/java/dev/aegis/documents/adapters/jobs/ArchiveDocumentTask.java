@@ -13,6 +13,7 @@ import dev.aegis.documents.application.ArchivalUseCases.FailureDecision;
 import dev.aegis.documents.application.ArchivalUseCases.Finished;
 import dev.aegis.documents.application.ArchivalUseCases.Poll;
 import dev.aegis.documents.application.ArchivalUseCases.Submit;
+import dev.aegis.documents.application.ArchiveTextService;
 import dev.aegis.documents.application.ports.ArchiveRejectedException;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
 import dev.aegis.documents.application.ports.OriginalStore;
@@ -35,7 +36,9 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Durable archival job. Each execution performs at most one archive round-trip outside any database transaction and
  * records the outcome through short transactional use cases. Repeated execution is safe: the use cases decide from
- * the persisted state what to do next.
+ * the persisted state what to do next. Once the archived state is committed, the job also records whether the archive
+ * recognized text (ADR-0012); that check can neither fail nor undo archival, and the recurring text check sweep
+ * catches up when it could not run.
  */
 @Configuration
 public class ArchiveDocumentTask {
@@ -47,14 +50,16 @@ public class ArchiveDocumentTask {
     private static final Logger log = LoggerFactory.getLogger(ArchiveDocumentTask.class);
 
     private final ArchivalUseCases archival;
+    private final ArchiveTextService textChecks;
     private final PaperlessArchive archive;
     private final OriginalStore store;
     private final ArchivalSettings settings;
     private final Clock clock;
 
-    public ArchiveDocumentTask(ArchivalUseCases archival, PaperlessArchive archive, OriginalStore store,
-            ArchivalSettings settings, Clock clock) {
+    public ArchiveDocumentTask(ArchivalUseCases archival, ArchiveTextService textChecks, PaperlessArchive archive,
+            OriginalStore store, ArchivalSettings settings, Clock clock) {
         this.archival = archival;
+        this.textChecks = textChecks;
         this.archive = archive;
         this.store = store;
         this.settings = settings;
@@ -120,15 +125,27 @@ public class ArchiveDocumentTask {
             case Pending pending -> rescheduleIn(POLL_INTERVAL);
             case Completed completed -> {
                 archival.recordArchived(poll.id(), completed.paperlessDocumentId());
+                checkText(poll.id());
                 yield remove();
             }
             case Duplicate duplicate -> {
                 archival.recordArchived(poll.id(), duplicate.existingPaperlessDocumentId());
+                checkText(poll.id());
                 yield remove();
             }
             case Failed failed -> afterFailure(archival.recordFailure(poll.id(), failed.code(), failed.message(),
                     false));
         };
+    }
+
+    /** Runs after the archived state committed; whatever happens here, the archival job is finished. */
+    void checkText(DocumentId id) {
+        try {
+            textChecks.check(id);
+        } catch (RuntimeException unexpected) {
+            log.warn("Could not record whether the archive recognized text in {}; the sweep tries again: {}", id,
+                    unexpected.getMessage());
+        }
     }
 
     private CompletionHandler<ArchiveDocumentPayload> afterFailure(FailureDecision decision) {

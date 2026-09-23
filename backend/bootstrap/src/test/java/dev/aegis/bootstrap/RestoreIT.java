@@ -121,7 +121,7 @@ class RestoreIT extends PostgresIT {
         // Wipe household data (members stay, like a fresh instance provisioned with the same usernames).
         jdbc.execute("TRUNCATE TABLE scheduled_tasks, notices, tasks, document_labels, "
                 + "document_placement_suggestions, document_placement_rejections, document_classifications, "
-                + "document_analyses, document_subjects, documents");
+                + "document_analyses, document_text_checks, document_subjects, documents");
         jdbc.execute("DELETE FROM category_label_effects");
         jdbc.execute("DELETE FROM category_subject_effects");
         jdbc.execute("DELETE FROM category_implied_labels");
@@ -144,6 +144,9 @@ class RestoreIT extends PostgresIT {
                 documentQueries.get(anna, documentId).processing().state()).isEqualTo("ARCHIVED"));
         var restored = documentQueries.get(ben, documentId);
         assertThat(restored.processing().paperlessDocumentId()).as("new external id").isNotEqualTo(originalPaperlessId);
+        // Whether the archive recognized text is derived data: not exported, measured again from the new archive.
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(
+                documentQueries.get(ben, documentId).textRecognition().recognizedCharacters()).isNotNull());
         assertThat(restored.subjects()).extracting(SubjectView::memberId).containsExactly(ben.memberId());
         assertThat(documentQueries.original(ben, documentId).bytes()).isEqualTo(pdf);
         assertThat(documentQueries.original(ben, documentId).filename()).isEqualTo(friendlyName);

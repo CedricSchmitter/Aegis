@@ -63,7 +63,7 @@ class PlacementFlowTest {
         runs = new TestDoubles.RecordingRuns();
         AnalysisSettings settings = TestDoubles.analysisSettings();
         DocumentPresenter presenter = new DocumentPresenter(f.scheduler, f.views, new AnalysisViews(analyses, runs,
-                settings));
+                settings), new InMemoryArchiveTextCheckRepository());
         service = new DocumentAnalysisService(f.documents, analyses, f.classifications, f.labels, f.categories,
                 f.catalog, f.classificationService, f.labelService, f.lock, archive, runs, f.views, presenter,
                 f.access, settings, f.clock);
@@ -460,7 +460,8 @@ class PlacementFlowTest {
                 java.time.ZoneId.of("Europe/Berlin"));
         return new DocumentAnalysisService(f.documents, analyses, f.classifications, f.labels, f.categories,
                 f.catalog, f.classificationService, f.labelService, f.lock, archive, runs, f.views,
-                new DocumentPresenter(f.scheduler, f.views, new AnalysisViews(analyses, runs, settings)), f.access,
+                new DocumentPresenter(f.scheduler, f.views, new AnalysisViews(analyses, runs, settings),
+                        new InMemoryArchiveTextCheckRepository()), f.access,
                 settings, f.clock);
     }
 }

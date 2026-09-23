@@ -29,6 +29,8 @@ public class FakePaperlessArchive implements PaperlessArchive {
     }
 
     public volatile boolean available = true;
+    /** Switches off only the OCR text, as when the archive stored a document but cannot deliver its text. */
+    public volatile boolean contentAvailable = true;
     public final AtomicInteger submissions = new AtomicInteger();
     private final AtomicInteger nextId = new AtomicInteger(100);
     private final Map<Integer, Stored> documents = new ConcurrentHashMap<>();
@@ -122,6 +124,9 @@ public class FakePaperlessArchive implements PaperlessArchive {
     public String fetchContent(int paperlessDocumentId) {
         requireAvailable();
         contentReads.incrementAndGet();
+        if (!contentAvailable) {
+            throw new ArchiveUnavailableException("fake content outage");
+        }
         if (!documents.containsKey(paperlessDocumentId)) {
             throw new ArchiveUnavailableException("no document " + paperlessDocumentId);
         }

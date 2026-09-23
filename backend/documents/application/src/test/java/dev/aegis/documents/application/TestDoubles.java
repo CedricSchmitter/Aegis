@@ -113,8 +113,13 @@ final class TestDoubles {
     }
 
     static DocumentPresenter presenter(ProcessingScheduler scheduler, ClassificationViews views) {
+        return presenter(scheduler, views, new InMemoryArchiveTextCheckRepository());
+    }
+
+    static DocumentPresenter presenter(ProcessingScheduler scheduler, ClassificationViews views,
+            InMemoryArchiveTextCheckRepository textChecks) {
         return new DocumentPresenter(scheduler, views, new AnalysisViews(new InMemoryDocumentAnalysisRepository(),
-                new RecordingRuns(), analysisSettings()));
+                new RecordingRuns(), analysisSettings()), textChecks);
     }
 
     static final class FakeArchive implements PaperlessArchive {
@@ -123,10 +128,12 @@ final class TestDoubles {
         final Map<Integer, byte[]> archivePdfs = new HashMap<>();
         final Map<Integer, String> texts = new HashMap<>();
         final Map<String, List<Integer>> contentHits = new HashMap<>();
+        int contentReads;
 
         @Override
         public String fetchContent(int paperlessDocumentId) {
             requireAvailable();
+            contentReads++;
             return texts.getOrDefault(paperlessDocumentId, "");
         }
 
