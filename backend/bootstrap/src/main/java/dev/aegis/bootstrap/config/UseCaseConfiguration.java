@@ -75,6 +75,8 @@ import dev.aegis.notifications.domain.NoticeRepository;
 import dev.aegis.review.application.ReviewService;
 import dev.aegis.review.application.api.ReviewInbox;
 import dev.aegis.review.application.api.ReviewPortability;
+import dev.aegis.review.application.api.ReviewReconciliation;
+import dev.aegis.review.application.ports.ReconciliationLock;
 import dev.aegis.review.application.ports.ReviewActionDispatcher;
 import dev.aegis.review.application.ports.ReviewProducer;
 import dev.aegis.review.domain.ReviewRepository;
@@ -473,20 +475,30 @@ public class UseCaseConfiguration {
 
     // Review inbox -------------------------------------------------------------------------------------------
 
-    @Bean
-    ReviewInbox reviewInbox(ReviewRepository items, List<ReviewProducer> producers, ReviewActionDispatcher actions,
-            HouseholdAccess access, MemberDirectory members, PublishNotice notices, Clock clock,
-            PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(ReviewInbox.class,
-                new ReviewService(items, producers, actions, access, members, notices, clock), tm);
+    record ReviewServices(ReviewService service) {
     }
 
     @Bean
-    ReviewPortability reviewPortability(ReviewRepository items, List<ReviewProducer> producers,
-            ReviewActionDispatcher actions, HouseholdAccess access, MemberDirectory members, PublishNotice notices,
-            Clock clock, PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(ReviewPortability.class,
-                new ReviewService(items, producers, actions, access, members, notices, clock), tm);
+    ReviewServices reviewServices(ReviewRepository items, List<ReviewProducer> producers,
+            ReviewActionDispatcher actions, ReconciliationLock lock, HouseholdAccess access, MemberDirectory members,
+            PublishNotice notices, Clock clock) {
+        return new ReviewServices(new ReviewService(items, producers, actions, lock, access, members, notices, clock));
+    }
+
+    @Bean
+    ReviewInbox reviewInbox(ReviewServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ReviewInbox.class, services.service(), tm);
+    }
+
+    /** Background reconciliation (issue #89): one transaction per run, so a card and its notices commit together. */
+    @Bean
+    ReviewReconciliation reviewReconciliation(ReviewServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ReviewReconciliation.class, services.service(), tm);
+    }
+
+    @Bean
+    ReviewPortability reviewPortability(ReviewServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ReviewPortability.class, services.service(), tm);
     }
 
     // Operations ----------------------------------------------------------------------------------------------
