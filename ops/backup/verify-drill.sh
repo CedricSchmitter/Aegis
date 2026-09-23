@@ -1,8 +1,9 @@
 #!/bin/sh
 # Verifies a restored Aegis instance against the export it was restored from:
 # every exported document exists with the same id, becomes ARCHIVED (new Paperless id assigned by the isolated
-# archive), its original matches the exported checksum, every task keeps its source document link, and every
-# exported folder placement and label comes back on the document. Export schema 1 files carry no classification.
+# archive), its original matches the exported checksum and media type (a photo stays a photo), every task keeps
+# its source document link, and every exported folder placement and label comes back on the document. Export
+# schema 1 files carry no classification.
 # Usage: verify-drill.sh <base-url> <members-file> <export-generation-dir>
 set -eu
 BASE="$1"
@@ -31,6 +32,7 @@ documents = json.load(open(f"{source}/data/documents.json"))["documents"]
 tasks = json.load(open(f"{source}/data/tasks.json"))["tasks"]
 manifest = json.load(open(f"{source}/manifest.json"))
 problems = []
+types = {}
 for d in documents:
     if d.get("originalPath") is None:
         continue
@@ -47,6 +49,10 @@ for d in documents:
     original = get(f"/api/documents/{d['id']}/original", raw=True)
     if hashlib.sha256(original).hexdigest() != d["checksumSha256"]:
         problems.append(f"document {d['id']} original checksum mismatch")
+    if current.get("contentType") != d.get("contentType"):
+        problems.append(f"document {d['id']} came back as {current.get('contentType')}, exported as "
+                        f"{d.get('contentType')}")
+    types[d.get("contentType")] = types.get(d.get("contentType"), 0) + 1
 classified = 0
 for d in documents:
     exported = d.get("classification") or {}
@@ -67,7 +73,7 @@ for t in tasks:
     if current["status"] != t["status"] or current.get("dueDate") != t.get("dueDate"):
         problems.append(f"task {t['id']} state differs")
 print(f"verified {len(documents)} documents ({classified} with a folder or labels) and {len(tasks)} tasks "
-      f"from generation {manifest['generation']} (schema {manifest['schemaVersion']})")
+      f"from generation {manifest['generation']} (schema {manifest['schemaVersion']}); media types {types}")
 if problems:
     print("\n".join(problems))
     sys.exit(1)

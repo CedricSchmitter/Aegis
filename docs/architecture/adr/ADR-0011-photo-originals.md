@@ -36,8 +36,9 @@ and contrast.
    including documents in the trash. Archival submits the file with its verified media type. Aegis does not
    convert, compress, rotate or crop photos.
 3. **States.** Capture, archival/OCR and analysis stay separate (ADR-0004). The text for full-text search and
-   automatic classification is the archive's OCR text, as for scanned PDFs. A photo whose header is intact but
-   whose image data is damaged is reported by the archive and surfaces as failed archival with a retry.
+   automatic classification is the archive's OCR text, as for scanned PDFs. Aegis does not decode images, so it
+   cannot tell a photo whose data was cut off from a complete one: the archive decodes what it can, and a JPEG cut
+   off after 55 % was archived with the text of its readable part.
 4. **Downloads.** "Download original" serves the photo with its own media type, and readable filenames use the
    extension of the verified type (`.jpg`, `.png`, `.webp`, `.heic`). The archive's searchable PDF is offered as a
    separate download (`GET /api/documents/{id}/archive-pdf`, "Durchsuchbares PDF") once the document is archived
@@ -62,10 +63,16 @@ and contrast.
 ## Consequences
 
 - A photographed letter is searchable by its text and classified and filed like a PDF once the archive has
-  recognized its text. Recognition quality depends on light, focus and angle; poor text leads to suggestions rather
-  than applied values (ADR-0004, `POOR_OCR`).
-- Paperless sizes the archive PDF page from the photo's resolution metadata (usually 72 dpi on phones), so the page
-  is larger than A4 on screen; it is scaled when printed.
+  recognized its text. Poor text leads to suggestions rather than applied values (ADR-0004, `POOR_OCR`).
+- Measured on 2026-09-23 with synthetic photos of a letter against the deployed Paperless (its own OCR options:
+  `clean`, `deskew`, `rotate_pages`): straight shots are read completely as JPEG, PNG, WebP and HEIC, also at 55 %
+  brightness and with a keystone from a tilted phone. **Rotation is the limit**: 3 degrees were read completely,
+  5 degrees gave 14 of 60 words, 7 degrees and more gave no text. A very dark, noisy 2-megapixel photo lost all
+  text in Paperless' deskew step. Such a document is archived and keeps its title, labels and folder, but its
+  text is not searchable. Scan improvements (straightening, cropping, contrast) are assessed in #81.
+- Paperless sizes the archive PDF page from the photo's resolution metadata: a 12-megapixel photo tagged with
+  72 dpi, as phones usually do, becomes a 3000 × 4000 pt page (about 106 × 141 cm) that is scaled when printed;
+  photos without such metadata get an A4-sized page.
 - HEIC originals can only be viewed after download in an app that supports them; the searchable PDF is the way to
   read them in the browser.
 - Verification with real letters on both household phones (good light, poor light, a skewed shot) is recorded in
