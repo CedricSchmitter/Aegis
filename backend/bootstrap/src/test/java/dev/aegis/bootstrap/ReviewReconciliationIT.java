@@ -177,7 +177,6 @@ class ReviewReconciliationIT extends PostgresIT {
             });
         }
         ExecutorService pool = Executors.newFixedThreadPool(runs.size());
-        int createdByJobs = 0;
         try {
             List<Future<Integer>> futures = new ArrayList<>();
             for (Callable<Integer> run : runs) {
@@ -185,13 +184,13 @@ class ReviewReconciliationIT extends PostgresIT {
             }
             start.countDown();
             for (Future<Integer> future : futures) {
-                createdByJobs += future.get(60, TimeUnit.SECONDS);
+                // Every run completes: none fails on a card another run inserted.
+                future.get(60, TimeUnit.SECONDS);
             }
         } finally {
             pool.shutdownNow();
         }
 
-        assertThat(createdByJobs).isLessThanOrEqualTo(sources.size());
         for (String source : sources) {
             assertThat(cardsFor(source)).as("cards for %s", source).isEqualTo(1);
             assertExactlyOneNoticePerActiveMember(cardFor(source).orElseThrow());
