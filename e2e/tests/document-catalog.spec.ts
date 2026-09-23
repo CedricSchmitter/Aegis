@@ -215,6 +215,8 @@ test.describe("document folders on a phone", () => {
     await page.getByTestId("filters-toggle").click();
     await expect(page.getByTestId("facet-filters")).toBeVisible();
     await page.getByTestId("upload-panel-toggle").click();
-    await expect(page.getByTestId("upload-input")).toBeVisible();
+    // The file inputs are hidden; the camera, gallery and file buttons open them.
+    await expect(page.getByTestId("upload-take-photo")).toBeVisible();
+    await expect(page.getByTestId("upload-choose-file")).toBeVisible();
   });
 });
