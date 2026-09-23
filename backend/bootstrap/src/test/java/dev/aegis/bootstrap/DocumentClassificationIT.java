@@ -179,6 +179,32 @@ class DocumentClassificationIT extends PostgresIT {
     }
 
     @Test
+    void aPhotographedInvoiceIsClassifiedFromTheArchiveTextLikeAPdf() throws Exception {
+        ApiClient lisa = loggedIn(ANNA);
+        Invoice scanned = invoice(marker("P"));
+        byte[] marker = (" synthetic photo " + UUID.randomUUID()).getBytes(StandardCharsets.US_ASCII);
+        byte[] photo = new byte[4 + marker.length];
+        System.arraycopy(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0}, 0, photo, 0, 4);
+        System.arraycopy(marker, 0, photo, 4, marker.length);
+        Invoice invoice = new Invoice(scanned.provider(), scanned.alias(), scanned.text(), photo);
+        String organization = organization(lisa, invoice);
+        model.answer(request -> json(answer(invoice, List.of())));
+
+        String id = uploadInvoice(lisa, invoice, "IMG_20260917_101500.jpg");
+        JsonNode classified = awaitAnalysis(lisa, id, "CLASSIFIED");
+
+        // The photo stays the original; the model worked on the text the archive recognized in it.
+        assertThat(classified.path("contentType").asText()).isEqualTo("image/jpeg");
+        assertThat(classified.path("title").asText()).isEqualTo(invoice.provider()
+                + " Rechnung Internet September 2026");
+        assertThat(chip(classified, organization).path("reviewState").asText()).isEqualTo("APPLIED");
+        assertThat(chip(classified, INVOICE).path("reviewState").asText()).isEqualTo("APPLIED");
+        assertThat(classified.path("filename").path("filename").asText()).isEqualTo("2026-09-17_"
+                + invoice.provider().replace(' ', '-') + "_Rechnung_Internet_" + id.replace("-", "").substring(0, 8)
+                + ".jpg");
+    }
+
+    @Test
     void anUploadIsClassifiedAfterArchivalAndNamedForDownloadAndExport() throws Exception {
         ApiClient lisa = loggedIn(ANNA);
         ApiClient cedric = loggedIn(BEN);
