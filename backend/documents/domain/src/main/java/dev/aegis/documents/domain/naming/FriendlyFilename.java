@@ -1,5 +1,6 @@
 package dev.aegis.documents.domain.naming;
 
+import dev.aegis.documents.domain.OriginalFormat;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.InvalidInputException;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +33,7 @@ public final class FriendlyFilename {
     public static final int MAX_TOPIC = 40;
     public static final int MAX_OVERRIDE = 120;
     static final String FALLBACK = "document";
+    private static final String UNKNOWN_EXTENSION = ".bin";
 
     private static final Pattern INVISIBLE = Pattern.compile("[\\p{Cc}\\p{Cf}\\p{Co}\\p{Cn}\\p{Zl}\\p{Zp}]");
     private static final Pattern FORBIDDEN = Pattern.compile("[<>:\"/\\\\|?*]");
@@ -83,11 +85,9 @@ public final class FriendlyFilename {
         if (stem == null) {
             throw new InvalidInputException("document.filename.missing", "Filename is required");
         }
-        String value = Normalizer.normalize(stem, Normalizer.Form.NFKC).strip();
-        for (String extension : List.of(".pdf", ".bin")) {
-            if (value.toLowerCase(Locale.ROOT).endsWith(extension)) {
-                value = value.substring(0, value.length() - extension.length());
-            }
+        String value = OriginalFormat.withoutKnownExtension(Normalizer.normalize(stem, Normalizer.Form.NFKC).strip());
+        if (value.toLowerCase(Locale.ROOT).endsWith(UNKNOWN_EXTENSION)) {
+            value = value.substring(0, value.length() - UNKNOWN_EXTENSION.length());
         }
         String suffix = "_" + stableId(id);
         if (value.toLowerCase(Locale.ROOT).endsWith(suffix)) {
@@ -121,9 +121,19 @@ public final class FriendlyFilename {
         return id.value().toString().replace("-", "").substring(0, STABLE_ID_LENGTH);
     }
 
-    /** File extension of a verified media type. Aegis stores PDFs only; anything else is served as binary. */
+    /** File extension of a verified media type ({@link OriginalFormat}); anything else is served as binary. */
     public static String extensionFor(String contentType) {
-        return "application/pdf".equalsIgnoreCase(contentType) ? ".pdf" : ".bin";
+        return OriginalFormat.ofContentType(contentType).map(OriginalFormat::extension).orElse(UNKNOWN_EXTENSION);
+    }
+
+    /**
+     * The same name for another rendition of the document, for example the archive's PDF of a photo:
+     * {@code Brief_a1b2c3d4.jpg} becomes {@code Brief_a1b2c3d4.pdf}.
+     */
+    public static String withExtensionFor(String filename, String contentType) {
+        int dot = filename.lastIndexOf('.');
+        String stem = dot > 0 ? filename.substring(0, dot) : filename;
+        return stem + extensionFor(contentType);
     }
 
     /**

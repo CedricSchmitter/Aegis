@@ -21,10 +21,12 @@ discarded and never replaces a good one.
   data/reviews.json               review references, source versions, lifecycle and decision audit
   readable/documents.csv          readable table
   readable/tasks.csv              readable table with source titles
-  documents/originals/<date>_<title>_<id>.pdf   unchanged originals
+  documents/originals/<date>_<title>_<id>.pdf   unchanged originals (a photo keeps its type: .jpg, .png, .webp, .heic)
 ```
 
-Exports open without Aegis (PDF, CSV, Markdown). They are one-way views: editing the CSV changes nothing.
+Exports open without Aegis (PDF, images, CSV, Markdown). The searchable PDF that Paperless generates from a photo
+is not exported; a restore re-archives the photo and Paperless generates it again
+([ADR-0011](../architecture/adr/ADR-0011-photo-originals.md)). They are one-way views: editing the CSV changes nothing.
 
 Records in the trash ([ADR-0010](../architecture/adr/ADR-0010-recoverable-trash.md)) are exported like all
 others. Since export schema 8, `data/*.json` carries their trash record (who, when, restorable until), the readable
@@ -45,7 +47,8 @@ The script starts a disposable Compose project `aegis-drill` with its own data d
 starts Aegis with `AEGIS_IMPORT_PATH` pointing at a copy of the generation. The application imports members
 (matched by username), documents (stable ids, originals re-archived into the isolated Paperless, which assigns
 new external ids) and tasks (stable ids, source links intact). `verify-drill.sh` then checks every document is
-archived, every original matches its exported checksum and every task kept its source link and state. The stack
+archived, every original matches its exported checksum and media type (a photo comes back as the photo it was) and
+every task kept its source link and state. The stack
 is removed afterwards unless `AEGIS_DRILL_KEEP=yes`.
 
 The running household instance is never touched by the drill. The same import path is exercised in CI by

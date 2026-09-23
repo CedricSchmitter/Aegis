@@ -12,8 +12,9 @@ public interface ArchivalUseCases {
     sealed interface ArchivalStep permits Submit, Poll, Finished {
     }
 
-    /** Resubmit the retained original. */
-    record Submit(DocumentId id, String stagingPath, String title, String originalFilename) implements ArchivalStep {
+    /** Resubmit the retained original; {@code contentType} is its verified media type. */
+    record Submit(DocumentId id, String stagingPath, String title, String originalFilename, String contentType)
+            implements ArchivalStep {
     }
 
     /** Ask the archive whether the accepted submission finished. */

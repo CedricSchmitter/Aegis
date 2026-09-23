@@ -442,7 +442,7 @@ export interface paths {
         /** List or search the shared collection by text, folder and facets */
         get: operations["searchDocuments"];
         put?: never;
-        /** Upload a PDF; answers only after durable storage */
+        /** Upload a PDF or a photo (JPEG, PNG, WebP, HEIC); the type is recognized from the content, and the answer comes only after durable storage */
         post: operations["uploadDocument"];
         delete?: never;
         options?: never;
@@ -580,6 +580,23 @@ export interface paths {
         put?: never;
         /** Accept or reject/revert the generated title */
         post: operations["decideGeneratedTitle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/archive-pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Searchable PDF the archive generated from the original, for example from a photo */
+        get: operations["downloadArchivePdf"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3183,6 +3200,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    downloadArchivePdf: {
+        parameters: {
+            query?: {
+                inline?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
                 };
             };
         };

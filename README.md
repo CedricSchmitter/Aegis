@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts), [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders) and [ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md) (central review inbox).
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts), [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders) and [ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md) (central review inbox), [ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md) (recoverable trash) and [ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md) (photos as document originals).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
@@ -83,8 +83,8 @@ generated-client drift check, and a container image build. It needs no private V
 
 ## Current state
 
-Aegis supports two individual logins into one shared household, German/English UI, durable PDF capture
-with Paperless archival, document list/search/original access, a browsable folder tree with an Unsorted
+Aegis supports two individual logins into one shared household, German/English UI, durable capture of PDFs and
+photos with Paperless archival, document list/search/original access, a browsable folder tree with an Unsorted
 inbox, structured labels (document type, organization, topic, tags) with faceted search, source-linked
 tasks, deterministic Today, in-app notifications, integration status, portable exports and isolated
 recovery. Folders, labels and search work without AI. New uploads are classified automatically once archived
@@ -94,7 +94,11 @@ downloads and exports use readable filenames such as `2026-09-17_Telekom_Rechnun
 document into a matching existing folder or proposes a folder path such as `Haus / Versicherungen / Hausrat`;
 folders are only created when a member accepts a proposal
 ([ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md)). Existing documents are only
-analyzed when a member selects them. A new installation starts with an empty tree; `ops/deploy/folder-tree.json`
+analyzed when a member selects them. Photos of paper documents (JPEG, PNG, WebP, HEIC; camera, gallery or the
+Android share menu) are accepted by their content, stay the original and are archived by Paperless into a searchable
+PDF that is offered next to the photo
+([ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md)); several photos as one document are issue #81.
+A new installation starts with an empty tree; `ops/deploy/folder-tree.json`
 and `ops/deploy/seed-folder-tree.py` create the agreed starting tree on request
 ([ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md)).
 
@@ -144,8 +148,8 @@ fallback and API-key rotation make earlier outcomes unverified until a fresh con
 
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
 passed isolated recovery and runs daily at 03:30; scheduled-run evidence is recorded in #39.
-Aegis can be installed from Chrome on Android and receives PDFs from Android's Share menu into the normal durable
-upload flow ([details](docs/operations/DEPLOYMENT.md#installable-app-and-android-share-target)); real-device
+Aegis can be installed from Chrome on Android and receives PDFs and photos from Android's Share menu into the normal
+durable upload flow ([details](docs/operations/DEPLOYMENT.md#installable-app-and-android-share-target)); real-device
 verification is tracked in #33. Mail, calendar, MCP, messenger delivery and Web Push are not connected.
 For dated verification, use the relevant issues, pull requests and CI runs.
 

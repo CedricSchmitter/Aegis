@@ -2,6 +2,7 @@ package dev.aegis.documents.application;
 
 import dev.aegis.documents.application.ports.OriginalStore;
 import dev.aegis.documents.domain.Checksum;
+import dev.aegis.documents.domain.OriginalFormat;
 import dev.aegis.shared.DocumentId;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,11 +23,11 @@ public class InMemoryOriginalStore implements OriginalStore {
     @Override
     public StoredOriginal store(DocumentId id, InputStream content) throws IOException {
         byte[] bytes = content.readAllBytes();
-        String path = id + ".pdf";
+        OriginalFormat format = OriginalFormat.detect(java.util.Arrays.copyOf(bytes,
+                Math.min(bytes.length, OriginalFormat.SIGNATURE_LENGTH))).orElse(null);
+        String path = id + (format == null ? ".bin" : format.extension());
         files.put(path, bytes);
-        boolean pdf = bytes.length >= 5 && new String(bytes, 0, 5, java.nio.charset.StandardCharsets.US_ASCII)
-                .equals("%PDF-");
-        return new StoredOriginal(path, bytes.length, sha256(bytes), pdf);
+        return new StoredOriginal(path, bytes.length, sha256(bytes), format);
     }
 
     @Override

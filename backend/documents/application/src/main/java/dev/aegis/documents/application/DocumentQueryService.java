@@ -1,6 +1,7 @@
 package dev.aegis.documents.application;
 
 import dev.aegis.documents.application.api.ArchiveHealth;
+import dev.aegis.documents.application.api.ArchivePdf;
 import dev.aegis.documents.application.api.CatalogExport;
 import dev.aegis.documents.application.api.ClassificationView;
 import dev.aegis.documents.application.api.ContentSearchState;
@@ -29,6 +30,7 @@ import dev.aegis.documents.domain.analysis.DocumentAnalysis;
 import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.ProcessingState;
+import dev.aegis.documents.domain.naming.FriendlyFilename;
 import dev.aegis.documents.domain.catalog.Category;
 import dev.aegis.documents.domain.catalog.CategoryId;
 import dev.aegis.documents.domain.catalog.CategoryRepository;
@@ -154,6 +156,19 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         access.requireMember(actor);
         Document document = load(id);
         return originalOf(document, friendlyFilename(document));
+    }
+
+    @Override
+    public ArchivePdf archivePdf(Actor actor, DocumentId id) {
+        access.requireMember(actor);
+        Document document = load(id);
+        if (document.state() != ProcessingState.ARCHIVED) {
+            throw new NotFoundException("archivePdf", id.toString());
+        }
+        byte[] bytes = archive.fetchArchivePdf(document.paperlessDocumentId().orElseThrow())
+                .orElseThrow(() -> new NotFoundException("archivePdf", id.toString()));
+        return new ArchivePdf(FriendlyFilename.withExtensionFor(friendlyFilename(document), "application/pdf"),
+                bytes);
     }
 
     @Override

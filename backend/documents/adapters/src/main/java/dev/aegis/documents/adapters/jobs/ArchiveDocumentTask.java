@@ -99,7 +99,7 @@ public class ArchiveDocumentTask {
                     "staging copy " + submit.stagingPath() + " is missing", false));
         }
         PaperlessArchive.SubmissionOutcome outcome = archive.submit(store.resolve(submit.stagingPath()),
-                submit.title(), submit.originalFilename());
+                submit.title(), submit.originalFilename(), submit.contentType());
         return switch (outcome) {
             case Accepted accepted -> {
                 archival.recordSubmission(submit.id(), accepted.taskId());

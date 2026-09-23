@@ -85,6 +85,12 @@ class RestoreIT extends PostgresIT {
         var uploaded = upload.upload(anna, new UploadCommand("Restore Vertrag.pdf", "application/pdf", pdf.length,
                 new ByteArrayInputStream(pdf), List.of(new SubjectView("MEMBER", ben.memberId())))).document();
         DocumentId documentId = uploaded.id();
+        // A photographed letter travels through export and restore as the image it is (issue #80).
+        byte[] photo = new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 4, 1, 2, (byte) 0xFF,
+                (byte) 0xFE, 0, 10, 'r', 'e', 's', 't', 'o', 'r', 'e', (byte) (System.nanoTime() & 0x7F),
+                (byte) 0xFF, (byte) 0xD9};
+        DocumentId photoId = upload.upload(anna, new UploadCommand("Brief vom Amt.jpg", "image/jpeg", photo.length,
+                new ByteArrayInputStream(photo), List.of(new SubjectView("HOUSEHOLD", null)))).document().id();
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(
                 documentQueries.get(anna, documentId).processing().state()).isEqualTo("ARCHIVED"));
         int originalPaperlessId = documentQueries.get(anna, documentId).processing().paperlessDocumentId();
@@ -149,6 +155,21 @@ class RestoreIT extends PostgresIT {
         assertThat(report.analysesApplied()).isGreaterThanOrEqualTo(1);
         assertThat(Files.readAllBytes(Path.of(export.location()).resolve("documents/originals/" + friendlyName)))
                 .isEqualTo(pdf);
+        var restoredPhoto = documentQueries.get(anna, photoId);
+        assertThat(restoredPhoto.contentType()).isEqualTo("image/jpeg");
+        assertThat(restoredPhoto.originalFilename()).isEqualTo("Brief vom Amt.jpg");
+        var photoOriginal = documentQueries.original(anna, photoId);
+        assertThat(photoOriginal.bytes()).isEqualTo(photo);
+        assertThat(photoOriginal.contentType()).isEqualTo("image/jpeg");
+        assertThat(photoOriginal.filename()).endsWith(".jpg");
+        String photoStableId = photoId.toString().substring(0, 8);
+        try (var exported = Files.list(Path.of(export.location()).resolve("documents/originals"))) {
+            assertThat(exported.filter(file -> file.getFileName().toString().contains(photoStableId)))
+                    .singleElement().satisfies(file -> {
+                        assertThat(file.getFileName().toString()).endsWith(".jpg");
+                        assertThat(Files.readAllBytes(file)).isEqualTo(photo);
+                    });
+        }
         TaskSummary restoredTask = taskQueries.get(ben, task.id());
         assertThat(restoredTask.source().documentId()).isEqualTo(documentId);
         assertThat(restoredTask.source().documentTitle()).isEqualTo("Restore Vertrag");

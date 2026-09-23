@@ -120,6 +120,7 @@ final class TestDoubles {
     static final class FakeArchive implements PaperlessArchive {
         boolean available = true;
         final Map<Integer, byte[]> originals = new HashMap<>();
+        final Map<Integer, byte[]> archivePdfs = new HashMap<>();
         final Map<Integer, String> texts = new HashMap<>();
         final Map<String, List<Integer>> contentHits = new HashMap<>();
 
@@ -130,7 +131,7 @@ final class TestDoubles {
         }
 
         @Override
-        public SubmissionOutcome submit(Path file, String title, String originalFilename) {
+        public SubmissionOutcome submit(Path file, String title, String originalFilename, String contentType) {
             requireAvailable();
             return new Accepted("task-" + title);
         }
@@ -149,6 +150,15 @@ final class TestDoubles {
                 throw new ArchiveUnavailableException("missing " + paperlessDocumentId);
             }
             return new OriginalContent("x.pdf", "application/pdf", bytes, OriginalContent.SOURCE_ARCHIVE);
+        }
+
+        @Override
+        public java.util.Optional<byte[]> fetchArchivePdf(int paperlessDocumentId) {
+            requireAvailable();
+            if (!originals.containsKey(paperlessDocumentId)) {
+                throw new ArchiveUnavailableException("missing " + paperlessDocumentId);
+            }
+            return java.util.Optional.ofNullable(archivePdfs.get(paperlessDocumentId));
         }
 
         @Override

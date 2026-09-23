@@ -25,6 +25,7 @@ import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../com
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
 import { suggestions } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
+import { isImageContentType } from "../lib/uploadFormat";
 
 export function DocumentDetailPage() {
   const { id = "" } = useParams();
@@ -233,6 +234,7 @@ export function DocumentDetailPage() {
   const folderName = (folderId: string) => categories.find((category) => category.id === folderId)?.name ?? "";
   const pending = suggestions(document.classification.labels);
   const trashed = !!document.trash;
+  const photo = isImageContentType(document.contentType);
 
   return (
     <>
@@ -278,6 +280,12 @@ export function DocumentDetailPage() {
             {t("documents.archivedAt", { date: formatDateTime(p.archivedAt, i18n.language) })}
           </p>
         )}
+        {photo && (
+          <p className="text-sm text-stone-600 dark:text-stone-400" data-testid="photo-hint">
+            {p.state === "ARCHIVED" ? t("documents.archivePdfHint") : t("documents.archivePdfPending")}
+            {document.contentType === "image/heic" && ` ${t("documents.heicHint")}`}
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           {document.originalAvailable ? (
             <>
@@ -296,6 +304,17 @@ export function DocumentDetailPage() {
             </>
           ) : (
             <p className="text-sm text-stone-500">{t("documents.originalUnavailable")}</p>
+          )}
+          {photo && p.state === "ARCHIVED" && (
+            <a
+              className="btn-secondary"
+              href={`/api/documents/${document.id}/archive-pdf?inline=true`}
+              target="_blank"
+              rel="noreferrer"
+              data-testid="open-archive-pdf"
+            >
+              {t("documents.archivePdf")}
+            </a>
           )}
           {p.state === "FAILED" && !trashed && (
             <button type="button" className="btn-secondary" onClick={retry} data-testid="retry-archival">

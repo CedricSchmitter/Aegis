@@ -5,10 +5,14 @@ import { expect, test, type Page } from "@playwright/test";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.resolve(here, "../../fixtures/synthetic-contract.pdf");
+const PHOTO_FIXTURE = path.resolve(here, "../../fixtures/synthetic-letter-photo.jpg");
 const runId = Date.now().toString(36);
 // Unique bytes per run, so the first save is new and the repeated share is recognized as the same file.
 const RUN_PDF = Buffer.concat([readFileSync(FIXTURE), Buffer.from(`\n%% e2e share ${runId}\n`, "latin1")]);
 const PDF_NAME = `Geteilt e2e ${runId}.pdf`;
+// Decoders ignore bytes after the JPEG end marker; they only make this run's photo unique.
+const RUN_PHOTO = Buffer.concat([readFileSync(PHOTO_FIXTURE), Buffer.from(`e2e share ${runId}`, "latin1")]);
+const PHOTO_NAME = `Brief e2e ${runId}.jpg`;
 
 const user = { username: process.env.AEGIS_USER_A ?? "anna", password: process.env.AEGIS_PASSWORD_A ?? "" };
 
@@ -43,7 +47,9 @@ async function signIn(page: Page) {
 }
 
 const pdf: SharedPayload = { name: PDF_NAME, type: "application/pdf", base64: RUN_PDF.toString("base64") };
-const photo: SharedPayload = { name: "Foto.jpg", type: "image/jpeg", base64: Buffer.from("not a pdf").toString("base64") };
+const photo: SharedPayload = { name: PHOTO_NAME, type: "image/jpeg", base64: RUN_PHOTO.toString("base64") };
+// Named and typed like a photo, but the content is not one: only the content counts.
+const fakePhoto: SharedPayload = { name: "Foto.jpg", type: "image/jpeg", base64: Buffer.from("not a photo").toString("base64") };
 
 test.describe("Android share target", () => {
   test.skip(!user.password, "AEGIS_PASSWORD_A must be set");
@@ -64,22 +70,24 @@ test.describe("Android share target", () => {
     expect(worker.headers()["content-type"]).toContain("javascript");
   });
 
-  test("a shared PDF survives the login, is saved once and a repeated share creates no duplicate", async ({ page, context }) => {
+  test("a shared PDF and photo survive the login, are saved once and a repeated share creates no duplicate", async ({ page, context }) => {
     // Not signed in: the share is kept and the login page explains why it appears.
     await page.goto("/login");
-    const target = await share(page, [pdf, photo]);
-    expect(target).toBe("/share?received=2");
+    const target = await share(page, [pdf, photo, fakePhoto]);
+    expect(target).toBe("/share?received=3");
     await page.goto(target);
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByRole("status")).toContainText(/geteilten Dateien|files you shared/);
     await signIn(page);
-    await expect(page).toHaveURL(/\/share\?received=2$/);
+    await expect(page).toHaveURL(/\/share\?received=3$/);
 
     const files = page.getByTestId("share-file");
-    await expect(files).toHaveCount(2);
+    await expect(files).toHaveCount(3);
     const shared = files.filter({ hasText: PDF_NAME });
+    const sharedPhoto = files.filter({ hasText: PHOTO_NAME });
     const rejected = files.filter({ hasText: "Foto.jpg" });
-    await expect(rejected.getByRole("alert")).toContainText(/Nur PDF|Only PDF/);
+    await expect(rejected.getByRole("alert")).toContainText(/PDF-Dateien und Fotos|PDF files and photos/);
+    await expect(sharedPhoto.getByRole("alert")).toHaveCount(0);
 
     // An expired server session during the save keeps the file and returns here after the next login.
     await context.clearCookies({ name: "AEGIS_SESSION" });
@@ -92,6 +100,8 @@ test.describe("Android share target", () => {
     await page.getByTestId("share-save").click();
     await expect(shared.locator("[data-state=SUCCEEDED]")).toBeVisible();
     await expect(shared).toContainText(/Gespeichert als|Stored as/);
+    await expect(sharedPhoto.locator("[data-state=SUCCEEDED]")).toBeVisible();
+    await expect(sharedPhoto).toContainText(`Brief e2e ${runId}`);
     await expect(page.getByTestId("share-done")).toBeVisible();
 
     // Reloading does not upload again: saved files have left the inbox; the rejected one waits to be discarded.

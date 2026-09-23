@@ -101,6 +101,27 @@ class FriendlyFilenameTest {
     }
 
     @Test
+    void photosKeepTheExtensionOfTheirVerifiedTypeAndTheArchivePdfSharesTheName() {
+        Components letter = new Components(LocalDate.of(2026, 9, 22), "Stadtwerke", "Rechnung", "Wasser");
+
+        assertThat(FriendlyFilename.render(ID, letter, "x", "image/jpeg"))
+                .isEqualTo("2026-09-22_Stadtwerke_Rechnung_Wasser_a1b2c3d4.jpg");
+        assertThat(FriendlyFilename.render(ID, letter, "x", "image/png")).endsWith("_a1b2c3d4.png");
+        assertThat(FriendlyFilename.render(ID, letter, "x", "image/webp")).endsWith("_a1b2c3d4.webp");
+        assertThat(FriendlyFilename.render(ID, letter, "x", "image/heic")).endsWith("_a1b2c3d4.heic");
+        assertThat(FriendlyFilename.withExtensionFor("Brief_a1b2c3d4.heic", PDF)).isEqualTo("Brief_a1b2c3d4.pdf");
+        assertThat(FriendlyFilename.withExtensionFor("Brief_a1b2c3d4", PDF)).isEqualTo("Brief_a1b2c3d4.pdf");
+    }
+
+    @Test
+    void aMemberTypingThePhotoExtensionDoesNotDoubleIt() {
+        assertThat(FriendlyFilename.renderOverride(ID, "Brief vom Amt.JPG", "image/jpeg"))
+                .isEqualTo("Brief-vom-Amt_a1b2c3d4.jpg");
+        assertThat(FriendlyFilename.renderOverride(ID, "Brief_a1b2c3d4.heic", "image/heic"))
+                .isEqualTo("Brief_a1b2c3d4.heic");
+    }
+
+    @Test
     void renderingIsDeterministic() {
         Components components = new Components(LocalDate.of(2026, 1, 2), "Allianz", "Versicherungspolice",
                 "Hausrat");

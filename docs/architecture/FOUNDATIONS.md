@@ -135,7 +135,7 @@ workload and executed with the requesting member's authorization; results applie
 
 | Data | Source of truth | Portability rule |
 |---|---|---|
-| Original documents, archive renditions and OCR full text | Paperless | Preserve original bytes, checksums and stable Aegis references |
+| Original documents (PDFs and photos, [ADR-0011](adr/ADR-0011-photo-originals.md)), archive renditions and OCR full text | Paperless | Preserve original bytes, their media type, checksums and stable Aegis references; archive renditions are regenerated from the originals |
 | Document title, folder tree, labels and their assignments | Aegis PostgreSQL ([ADR-0002](adr/ADR-0002-document-tree-and-labels.md)) | Stable folder/label IDs, aliases, provenance and review state in the versioned export; Paperless classification fields are not written. Folder names follow the [naming rules](adr/ADR-0002-document-tree-and-labels.md#folder-naming-rules); the built-in label vocabulary is seeded by migration while the starting tree is a tracked `ops/` seed ([ADR-0006](adr/ADR-0006-starting-folder-tree.md)) |
 | Automatic analysis results, title origin and friendly filenames | Aegis PostgreSQL ([ADR-0004](adr/ADR-0004-automatic-document-classification.md)) | Generated values with run/model provenance, review decisions, filename override and history in the versioned export; originals keep their bytes and upload filename |
 | Folder placement origin and pending placement proposals | Aegis PostgreSQL ([ADR-0005](adr/ADR-0005-automatic-folder-placement.md)) | Placement origin and the proposal a member has not decided on in the versioned export; folders are only created by a member accepting a proposal |
