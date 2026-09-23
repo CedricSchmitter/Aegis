@@ -21,10 +21,12 @@ discarded and never replaces a good one.
   data/reviews.json               review references, source versions, lifecycle and decision audit
   readable/documents.csv          readable table
   readable/tasks.csv              readable table with source titles
-  documents/originals/<date>_<title>_<id>.pdf   unchanged originals
+  documents/originals/<date>_<title>_<id>.pdf   unchanged originals (a photo keeps its type: .jpg, .png, .webp, .heic)
 ```
 
-Exports open without Aegis (PDF, CSV, Markdown). They are one-way views: editing the CSV changes nothing.
+Exports open without Aegis (PDF, images, CSV, Markdown). The searchable PDF that Paperless generates from a photo
+is not exported; a restore re-archives the photo and Paperless generates it again
+([ADR-0011](../architecture/adr/ADR-0011-photo-originals.md)). They are one-way views: editing the CSV changes nothing.
 
 Records in the trash ([ADR-0010](../architecture/adr/ADR-0010-recoverable-trash.md)) are exported like all
 others. Since export schema 8, `data/*.json` carries their trash record (who, when, restorable until), the readable

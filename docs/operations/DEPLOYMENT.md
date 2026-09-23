@@ -209,7 +209,7 @@ Deleting the key file disables new calls; calls already in flight may finish.
 
 The frontend ships a web app manifest (`frontend/public/manifest.webmanifest`), app icons (`frontend/public/icons/`)
 and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint, Chrome on Android offers
-"Install app"; the installed Aegis then appears in Android's Share menu for PDF files.
+"Install app"; the installed Aegis then appears in Android's Share menu for PDF files and photos.
 
 - A share is a multipart POST to `/share-target`. The service worker answers it without contacting the server: it
   keeps the shared files in a local inbox on the phone (Cache Storage, `aegis-share-inbox-v1`) and redirects to
@@ -222,9 +222,10 @@ and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint,
   member to share once more. This redirect is the only endpoint exempt from CSRF protection.
 - The share target accepts **any** file type. Chrome silently drops files whose type does not match the manifest's
   `accept` list, and Android apps often report a PDF as `application/octet-stream` or without an extension, which
-  ended in an empty share. The share page decides instead: it identifies a PDF by its `%PDF-` signature, like the
-  server, and rejects everything else with a localized message. Aegis therefore also appears in the Share menu for
-  images and other files, which are then refused.
+  ended in an empty share. The share page decides instead: like the server, it identifies PDFs and photos (JPEG, PNG,
+  WebP, HEIC) by their content signature ([ADR-0011](../architecture/adr/ADR-0011-photo-originals.md)) and rejects
+  everything else with a localized message. Aegis therefore also appears in the Share menu for other files, which
+  are then refused. Photos needed no manifest change, so installed apps need no update for them.
 - Changing `share_target` or `accept` only takes effect after Chrome updates the installed app (WebAPK). Reinstall
   Aegis on the phone to apply such a change immediately; a service worker or page change needs no reinstall.
 - The service worker caches no app assets or data and handles no other request; the app itself works without it.
@@ -238,7 +239,7 @@ and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint,
   TWA`; WebAPKs launch through `WebappLauncherActivity`, which did not stash verified share data. It affects any
   PWA, independent of the manifest's `accept` list (reported for Squoosh on Pixel devices:
   https://github.com/GoogleChromeLabs/squoosh/issues/1503). Until the phones run a Chrome version with the fix
-  (Chrome 154 is the first candidate), sharing PDFs into Aegis cannot work and the upload form is the way in. The
+  (Chrome 154 is the first candidate), sharing files into Aegis cannot work and the upload form is the way in. The
   share page names this case explicitly. A second reported variant, where the body does contain the file but
   `formData()` returns nothing, is handled by the worker's own multipart reader.
 - Share target and installation are Chrome features for installed apps (WebAPK). If an installation ends up as a
