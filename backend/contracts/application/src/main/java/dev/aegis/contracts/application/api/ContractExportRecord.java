@@ -3,6 +3,7 @@ package dev.aegis.contracts.application.api;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
+import dev.aegis.shared.Trash;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -11,9 +12,10 @@ import java.util.UUID;
 /**
  * A contract as it leaves and re-enters Aegis: identity, status and every observation with its value, validity,
  * review state, provenance and the relationships between observations (what supersedes or corrects what).
+ * {@code trash} is null unless the contract is in the trash.
  */
 public record ContractExportRecord(ContractId id, String name, String status, MemberId createdBy, Instant createdAt,
-        Instant updatedAt, List<FactExportRecord> facts) {
+        Instant updatedAt, List<FactExportRecord> facts, Trash trash) {
 
     public ContractExportRecord {
         facts = List.copyOf(facts);

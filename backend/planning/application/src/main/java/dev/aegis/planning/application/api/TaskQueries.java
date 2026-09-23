@@ -20,10 +20,14 @@ public interface TaskQueries {
 
     TaskSummary get(Actor actor, TaskId id);
 
-    /** {@code includeDone} false lists open tasks only. */
+    /** {@code includeDone} false lists open tasks only. Tasks in the trash are never listed. */
     List<TaskSummary> list(Actor actor, boolean includeDone);
 
+    /** Tasks linked to a document, except those in the trash. */
     List<TaskSummary> forDocument(Actor actor, DocumentId documentId);
+
+    /** Tasks in the trash, most recently trashed first. */
+    List<TaskSummary> trashed(Actor actor);
 
     TodayView today(Actor actor);
 }

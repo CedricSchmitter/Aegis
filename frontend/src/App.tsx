@@ -17,6 +17,7 @@ import { ReviewPage } from "./pages/ReviewPage";
 import { StatusPage } from "./pages/StatusPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SharePage } from "./pages/SharePage";
+import { TrashPage } from "./pages/TrashPage";
 
 export function App() {
   const { member, loading } = useSession();
@@ -56,6 +57,7 @@ export function App() {
         <Route path="/review" element={<ReviewPage />} />
         <Route path="/status" element={<StatusPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/trash" element={<TrashPage />} />
         <Route path="/share" element={<SharePage />} />
         {/* Shares arrive as POST and are answered by the service worker; a plain visit lands on the share page. */}
         <Route path="/share-target" element={<Navigate to="/share" replace />} />

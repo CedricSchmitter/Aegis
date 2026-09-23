@@ -141,6 +141,7 @@ workload and executed with the requesting member's authorization; results applie
 | Folder placement origin and pending placement proposals | Aegis PostgreSQL ([ADR-0005](adr/ADR-0005-automatic-folder-placement.md)) | Placement origin and the proposal a member has not decided on in the versioned export; folders are only created by a member accepting a proposal |
 | Tasks and confirmed contract facts | Aegis PostgreSQL | Versioned structured export with source relationships and review state |
 | Review workflow references and lifecycle | Aegis PostgreSQL ([ADR-0009](adr/ADR-0009-central-review-inbox.md)) | Stable card/source ids, lifecycle, versions and decisions in portable export schema 7; source facts stay in their owning context |
+| Trash state of documents, tasks and contracts | Aegis PostgreSQL, on each record ([ADR-0010](adr/ADR-0010-recoverable-trash.md)) | Who, when and restorable-until in portable export schema 8; the record, its original and its links are never removed by trashing |
 | Original email, when connected | Provider mailbox and unchanged local EML copy | Preserve attachment and message origins |
 | Calendar events, when connected | Selected calendar provider | Retain external identity, version and synchronization state |
 | Household prose/preferences | Versioned Markdown where appropriate; application preferences remain structured | Never include credentials |

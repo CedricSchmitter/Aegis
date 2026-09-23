@@ -53,6 +53,9 @@ public class DocumentRegistrar implements RegisterReceivedDocument {
         Document document = Document.received(command.id(), command.title(), command.titleOrigin(),
                 command.originalFilename(), command.contentType(), command.sizeBytes(), command.checksum(),
                 command.uploadedBy(), command.uploadedAt(), command.subjects(), command.stagingPath());
+        if (command.trash() != null) {
+            document.moveToTrash(command.trash());
+        }
         documents.save(document);
         DocumentClassification classification = DocumentClassification.unsorted(document.id());
         if (command.categoryId() != null) {

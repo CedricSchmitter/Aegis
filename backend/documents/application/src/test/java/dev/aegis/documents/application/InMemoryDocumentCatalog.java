@@ -78,13 +78,13 @@ public class InMemoryDocumentCatalog implements DocumentCatalog {
 
     @Override
     public long countAll() {
-        return documents.findAll().size();
+        return ordinary().size();
     }
 
     @Override
     public Map<UUID, Long> documentsPerCategory() {
         Map<UUID, Long> counts = new LinkedHashMap<>();
-        for (Document document : documents.findAll()) {
+        for (Document document : ordinary()) {
             classifications.findById(document.id()).flatMap(DocumentClassification::categoryId)
                     .ifPresent(category -> counts.merge(category.value(), 1L, Long::sum));
         }
@@ -93,14 +93,14 @@ public class InMemoryDocumentCatalog implements DocumentCatalog {
 
     @Override
     public long countUnsorted() {
-        return documents.findAll().stream().filter(document -> classifications.findById(document.id())
+        return ordinary().stream().filter(document -> classifications.findById(document.id())
                 .flatMap(DocumentClassification::categoryId).isEmpty()).count();
     }
 
     @Override
     public Map<UUID, LabelUsage> labelUsage() {
         Map<UUID, long[]> counts = new LinkedHashMap<>();
-        for (Document document : documents.findAll()) {
+        for (Document document : ordinary()) {
             DocumentClassification classification = classifications.findById(document.id()).orElse(null);
             if (classification == null) {
                 continue;
@@ -119,9 +119,20 @@ public class InMemoryDocumentCatalog implements DocumentCatalog {
         return usage;
     }
 
+    @Override
+    public Set<UUID> trashedDocumentIds() {
+        return documents.findTrashed().stream().map(document -> document.id().value())
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    /** Like the database catalog, every count and search covers documents outside the trash only. */
+    private List<Document> ordinary() {
+        return documents.findAll().stream().filter(document -> !document.isTrashed()).toList();
+    }
+
     private List<Document> matching(Criteria criteria) {
         List<Document> matching = new ArrayList<>();
-        for (Document document : documents.findAll()) {
+        for (Document document : ordinary()) {
             if (matches(document, criteria)) {
                 matching.add(document);
             }

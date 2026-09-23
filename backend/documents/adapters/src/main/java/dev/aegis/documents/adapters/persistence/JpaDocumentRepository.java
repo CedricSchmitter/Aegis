@@ -11,6 +11,7 @@ import dev.aegis.documents.domain.TitleOrigin;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
+import dev.aegis.shared.Trash;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -86,6 +87,12 @@ public class JpaDocumentRepository implements DocumentRepository {
     }
 
     @Override
+    public List<Document> findTrashed() {
+        return jpa.findByTrashedAtIsNotNullOrderByTrashedAtDesc().stream().map(JpaDocumentRepository::toDomain)
+                .toList();
+    }
+
+    @Override
     public void save(Document document) {
         DocumentEntity entity = jpa.findById(document.id().value()).orElseGet(() -> new DocumentEntity(
                 document.id().value()));
@@ -121,6 +128,9 @@ public class JpaDocumentRepository implements DocumentRepository {
         entity.setPaperlessDocumentId(document.paperlessDocumentId().orElse(null));
         entity.setSubmittedAt(document.submittedAt().orElse(null));
         entity.setArchivedAt(document.archivedAt().orElse(null));
+        Trash trash = document.trash().orElse(null);
+        entity.setTrash(trash == null ? null : trash.trashedBy().value(), trash == null ? null : trash.trashedAt(),
+                trash == null ? null : trash.restorableUntil());
         Set<SubjectEmbeddable> subjects = new LinkedHashSet<>();
         for (Subject subject : document.subjects()) {
             subjects.add(new SubjectEmbeddable(subject.kind().name(),
@@ -144,6 +154,8 @@ public class JpaDocumentRepository implements DocumentRepository {
                 e.isStagingPresent(), ProcessingState.valueOf(e.getState()), e.getAttempts(), failure,
                 e.getPaperlessTaskId(), e.getPaperlessDocumentId(), e.getSubmittedAt(), e.getArchivedAt(),
                 e.getVersion() == null ? 0 : e.getVersion(),
-                e.getTitleOrigin() == null ? TitleOrigin.MANUAL : TitleOrigin.valueOf(e.getTitleOrigin()));
+                e.getTitleOrigin() == null ? TitleOrigin.MANUAL : TitleOrigin.valueOf(e.getTitleOrigin()),
+                e.getTrashedAt() == null ? null : new Trash(new MemberId(e.getTrashedBy()), e.getTrashedAt(),
+                        e.getRestorableUntil()));
     }
 }

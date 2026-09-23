@@ -96,6 +96,10 @@ aegis:
     poll-timeout: 20m
     staging-retention: 7d
     max-upload-bytes: 52428800
+  trash:
+    # Recoverable trash (issue #48, ADR-0010): a trashed document, task or contract stays restorable at least this
+    # long; the owner chose 30 days. Nothing is deleted permanently, so it also stays restorable afterwards.
+    recovery-window: 30d
   documents:
     # Automatic classification of new uploads once archived (ADR-0004). Existing and restored documents are only
     # analyzed when a member selects them. Filenames use one household naming language, not the UI language.

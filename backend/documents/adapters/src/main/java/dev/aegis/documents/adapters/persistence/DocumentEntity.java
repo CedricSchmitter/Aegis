@@ -78,6 +78,15 @@ public class DocumentEntity {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
+    @Column(name = "trashed_by")
+    private UUID trashedBy;
+
+    @Column(name = "trashed_at")
+    private Instant trashedAt;
+
+    @Column(name = "restorable_until")
+    private Instant restorableUntil;
+
     @Version
     private Long version;
 
@@ -246,6 +255,24 @@ public class DocumentEntity {
 
     void setArchivedAt(Instant archivedAt) {
         this.archivedAt = archivedAt;
+    }
+
+    UUID getTrashedBy() {
+        return trashedBy;
+    }
+
+    Instant getTrashedAt() {
+        return trashedAt;
+    }
+
+    Instant getRestorableUntil() {
+        return restorableUntil;
+    }
+
+    void setTrash(UUID trashedBy, Instant trashedAt, Instant restorableUntil) {
+        this.trashedBy = trashedBy;
+        this.trashedAt = trashedAt;
+        this.restorableUntil = restorableUntil;
     }
 
     Long getVersion() {

@@ -24,6 +24,7 @@ import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotFoundException;
 import dev.aegis.shared.StaleVersionException;
+import dev.aegis.shared.Trash;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -43,16 +44,18 @@ public class ContractService implements ContractCommands, RecordContractObservat
     private final HouseholdAccess access;
     private final Clock clock;
     private final ContractReconciliationScheduler reconciliation;
+    private final Trash.RecoveryWindow recoveryWindow;
 
     public ContractService(ContractRepository contracts, DocumentReferenceQuery documents,
             ContractPresenter presenter, HouseholdAccess access, Clock clock,
-            ContractReconciliationScheduler reconciliation) {
+            ContractReconciliationScheduler reconciliation, Trash.RecoveryWindow recoveryWindow) {
         this.contracts = contracts;
         this.documents = documents;
         this.presenter = presenter;
         this.access = access;
         this.clock = clock;
         this.reconciliation = reconciliation;
+        this.recoveryWindow = recoveryWindow;
     }
 
     @Override
@@ -60,7 +63,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         access.requireMember(actor);
         Instant now = clock.instant();
         Contract contract = Contract.create(command.name(), actor.memberId(), now);
-        SourceReference source = ContractInputs.source(command.sourceDocumentId(), null, null, documents);
+        SourceReference source = ContractInputs.memberSource(command.sourceDocumentId(), null, null, documents);
         if (command.counterparty() != null && !command.counterparty().isBlank()) {
             contract.enter(FactType.COUNTERPARTY, new FactValue.TextValue(command.counterparty()),
                     ValidityPeriod.always(), source, null, actor.memberId(), now);
@@ -97,8 +100,8 @@ public class ContractService implements ContractCommands, RecordContractObservat
         FactType type = ContractInputs.factType(command.type());
         contract.enter(type, ContractInputs.value(type, command.value()),
                 ContractInputs.validity(command.validFrom(), command.validUntil()),
-                ContractInputs.source(command.sourceDocumentId(), command.sourcePage(), command.sourceQuote(),
-                        documents),
+                ContractInputs.memberSource(command.sourceDocumentId(), command.sourcePage(),
+                        command.sourceQuote(), documents),
                 command.note(), actor.memberId(), clock.instant());
         contracts.save(contract);
         reconcile(contract, actor);
@@ -142,6 +145,34 @@ public class ContractService implements ContractCommands, RecordContractObservat
     }
 
     @Override
+    public ContractView moveToTrash(Actor actor, ContractId id, long expectedVersion) {
+        access.requireMember(actor);
+        Contract contract = load(id);
+        if (contract.isTrashed()) {
+            return describe(id);
+        }
+        requireVersion(contract, expectedVersion);
+        contract.moveToTrash(actor.memberId(), clock.instant(), recoveryWindow);
+        contracts.save(contract);
+        reconcile(contract, actor);
+        return describe(id);
+    }
+
+    @Override
+    public ContractView restoreFromTrash(Actor actor, ContractId id, long expectedVersion) {
+        access.requireMember(actor);
+        Contract contract = load(id);
+        if (!contract.isTrashed()) {
+            return describe(id);
+        }
+        requireVersion(contract, expectedVersion);
+        contract.restoreFromTrash(clock.instant());
+        contracts.save(contract);
+        reconcile(contract, actor);
+        return describe(id);
+    }
+
+    @Override
     public ObservationResult observe(Actor actor, ContractId contractId, ObservationCommand command) {
         access.requireMember(actor);
         Contract contract = load(contractId);
@@ -174,7 +205,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         Instant createdAt = record.createdAt() == null ? clock.instant() : record.createdAt();
         Contract contract = Contract.rehydrate(record.id(), record.name(), ContractInputs.status(record.status()),
                 record.createdBy() == null ? actor.memberId() : record.createdBy(), createdAt, record.updatedAt(),
-                facts, 0);
+                facts, record.trash(), 0);
         contracts.save(contract);
         reconcile(contract, actor);
         return ImportOutcome.IMPORTED;
@@ -219,9 +250,14 @@ public class ContractService implements ContractCommands, RecordContractObservat
 
     private Contract loadVersion(ContractId id, long expectedVersion) {
         Contract contract = load(id);
-        if (contract.version() != expectedVersion) {
-            throw new StaleVersionException("contract", id.toString(), expectedVersion, contract.version());
-        }
+        requireVersion(contract, expectedVersion);
         return contract;
+    }
+
+    private static void requireVersion(Contract contract, long expectedVersion) {
+        if (contract.version() != expectedVersion) {
+            throw new StaleVersionException("contract", contract.id().toString(), expectedVersion,
+                    contract.version());
+        }
     }
 }

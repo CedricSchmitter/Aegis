@@ -7,6 +7,7 @@ import { useSession } from "../auth/SessionContext";
 import { formatDate, formatDateTime, todayIso } from "../lib/format";
 import { problemMessage } from "../lib/problem";
 import { Badge } from "./common";
+import { MoveToTrashButton, TrashBanner } from "./TrashControls";
 
 interface Props {
   task: TaskDto;
@@ -82,6 +83,9 @@ export function TaskItem({ task, onChange, detailed = false }: Props) {
               <Link to={`/documents/${task.source.documentId}`} className="text-sky-800 hover:underline dark:text-sky-300">
                 {task.source.documentTitle ? t("tasks.source", { title: task.source.documentTitle }) : t("tasks.sourceMissing")}
               </Link>
+              {task.source.documentTrashed && (
+                <span className="text-stone-600 dark:text-stone-400"> {t("trash.sourceInTrash")}</span>
+              )}
             </p>
           )}
           {cancellation && (
@@ -114,58 +118,84 @@ export function TaskItem({ task, onChange, detailed = false }: Props) {
           {t("tasks.conflict")}
         </p>
       )}
+      {task.trash && (
+        <TrashBanner
+          trash={task.trash}
+          busy={busy}
+          onRestore={() =>
+            void run(() =>
+              api.POST("/api/tasks/{id}/restore", { params: { path: { id: task.id } }, body: { expectedVersion: task.version } }),
+            )
+          }
+        />
+      )}
       {error && (
         <p className="alert-error" role="alert">
           {error}
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {task.status === "OPEN" ? (
-          <button
-            type="button"
-            className="btn-primary"
-            disabled={busy}
-            data-testid="task-complete"
-            onClick={() =>
-              run(() => api.POST("/api/tasks/{id}/complete", { params: { path: { id: task.id } }, body: { expectedVersion: task.version } }))
-            }
-          >
-            {t("tasks.complete")}
-          </button>
-        ) : task.status === "DONE" ? (
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={busy}
-            onClick={() =>
-              run(() => api.POST("/api/tasks/{id}/reopen", { params: { path: { id: task.id } }, body: { expectedVersion: task.version } }))
-            }
-          >
-            {t("tasks.reopen")}
-          </button>
-        ) : null}
-        {task.status === "OPEN" && (
-          <>
-            <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("assign"); setDraft(task.ownerId ?? ""); }} data-testid="task-assign">
-              {t("tasks.assign")}
+      {!task.trash && (
+        <div className="flex flex-wrap gap-2">
+          {task.status === "OPEN" ? (
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={busy}
+              data-testid="task-complete"
+              onClick={() =>
+                run(() => api.POST("/api/tasks/{id}/complete", { params: { path: { id: task.id } }, body: { expectedVersion: task.version } }))
+              }
+            >
+              {t("tasks.complete")}
             </button>
-            <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("plan"); setDraft(task.plannedDate ?? ""); }} data-testid="task-plan">
-              {t("tasks.plan")}
+          ) : task.status === "DONE" ? (
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={busy}
+              onClick={() =>
+                run(() => api.POST("/api/tasks/{id}/reopen", { params: { path: { id: task.id } }, body: { expectedVersion: task.version } }))
+              }
+            >
+              {t("tasks.reopen")}
             </button>
-            {!cancellation && (
-              <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("due"); setDraft(task.dueDate ?? ""); }}>
-                {t("tasks.changeDue")}
+          ) : null}
+          {task.status === "OPEN" && (
+            <>
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("assign"); setDraft(task.ownerId ?? ""); }} data-testid="task-assign">
+                {t("tasks.assign")}
               </button>
-            )}
-            {detailed && (
-              <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("edit"); setDraft(task.title); setDraftNote(task.note ?? ""); }}>
-                {t("tasks.edit")}
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("plan"); setDraft(task.plannedDate ?? ""); }} data-testid="task-plan">
+                {t("tasks.plan")}
               </button>
-            )}
-          </>
-        )}
-      </div>
+              {!cancellation && (
+                <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("due"); setDraft(task.dueDate ?? ""); }}>
+                  {t("tasks.changeDue")}
+                </button>
+              )}
+              {detailed && (
+                <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setEditing("edit"); setDraft(task.title); setDraftNote(task.note ?? ""); }}>
+                  {t("tasks.edit")}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+      {detailed && !task.trash && (
+        <div className="mt-2 border-t border-stone-200 pt-2 dark:border-stone-700">
+          <MoveToTrashButton
+            busy={busy}
+            testId="trash-task"
+            onConfirm={() =>
+              void run(() =>
+                api.POST("/api/tasks/{id}/trash", { params: { path: { id: task.id } }, body: { expectedVersion: task.version } }),
+              )
+            }
+          />
+        </div>
+      )}
 
       {editing === "assign" && (
         <form

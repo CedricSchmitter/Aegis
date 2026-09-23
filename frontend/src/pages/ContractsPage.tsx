@@ -67,15 +67,20 @@ export function ContractsPage() {
     <>
       <PageTitle
         actions={
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => setCreating((open) => !open)}
-            data-testid="new-contract-toggle"
-            aria-expanded={creating}
-          >
-            {t("contracts.new")}
-          </button>
+          <span className="flex flex-wrap items-center gap-2">
+            <Link className="btn-ghost" to="/trash">
+              {t("trash.open")}
+            </Link>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => setCreating((open) => !open)}
+              data-testid="new-contract-toggle"
+              aria-expanded={creating}
+            >
+              {t("contracts.new")}
+            </button>
+          </span>
         }
       >
         {t("contracts.title")}

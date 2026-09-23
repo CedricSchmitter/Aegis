@@ -71,6 +71,34 @@ class DocumentCaptureServiceTest {
     }
 
     @Test
+    void theSameBytesUploadedAgainAnswerWithTheTrashedDocumentInsteadOfACopy() {
+        UploadResult first = service.upload(new Actor(anna), command("scan.pdf", PDF));
+        var document = repository.findById(first.document().id()).orElseThrow();
+        document.moveToTrash(anna, Instant.parse("2026-09-13T11:00:00Z"),
+                dev.aegis.shared.Trash.RecoveryWindow.DEFAULT);
+        repository.save(document);
+
+        UploadResult again = service.upload(new Actor(ben), command("scan-again.pdf", PDF));
+
+        assertThat(again.duplicate()).isTrue();
+        assertThat(again.document().id()).isEqualTo(first.document().id());
+        assertThat(again.document().trashed()).isTrue();
+        assertThat(repository.findAll()).hasSize(1);
+    }
+
+    @Test
+    void aRestoreCarriesTheExportedTrashRecordOver() {
+        var trash = new dev.aegis.shared.Trash(anna, Instant.parse("2026-09-01T08:00:00Z"),
+                Instant.parse("2026-10-01T08:00:00Z"));
+        var id = dev.aegis.shared.DocumentId.random();
+        service.importDocument(new Actor(anna), new dev.aegis.documents.application.api.ImportDocument
+                .ImportDocumentCommand(id, "a", null, "a.pdf", "application/pdf", anna, null, List.of(),
+                        InMemoryOriginalStore.sha256(PDF).sha256Hex(), new ByteArrayInputStream(PDF), trash));
+
+        assertThat(repository.findById(id).orElseThrow().trash()).contains(trash);
+    }
+
+    @Test
     void sameContentUploadedAgainReturnsExistingRecordWithoutNewWork() {
         UploadResult first = service.upload(new Actor(anna), command("a.pdf", PDF));
         UploadResult second = service.upload(new Actor(ben), command("copy-of-a.pdf", PDF));
@@ -137,7 +165,7 @@ class DocumentCaptureServiceTest {
             dev.aegis.shared.DocumentId id, byte[] bytes) {
         return new dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand(id, "a", null, "a.pdf",
                 "application/pdf", anna, null, List.of(), InMemoryOriginalStore.sha256(bytes).sha256Hex(),
-                new ByteArrayInputStream(bytes));
+                new ByteArrayInputStream(bytes), null);
     }
 
     @Test

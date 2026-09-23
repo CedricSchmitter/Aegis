@@ -3,6 +3,7 @@ package dev.aegis.documents.application.api;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
+import dev.aegis.shared.Trash;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
@@ -16,7 +17,7 @@ public interface ImportDocument {
     /** {@code titleOrigin} is null for exports before schema 3; the title then counts as chosen by a member. */
     record ImportDocumentCommand(DocumentId id, String title, String titleOrigin, String originalFilename,
             String contentType, MemberId uploadedBy, Instant uploadedAt, List<SubjectView> subjects,
-            String expectedChecksumSha256, InputStream content) {
+            String expectedChecksumSha256, InputStream content, Trash trash) {
     }
 
     enum ImportOutcome {

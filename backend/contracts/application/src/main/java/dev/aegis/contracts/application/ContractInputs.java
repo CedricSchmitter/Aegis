@@ -8,10 +8,12 @@ import dev.aegis.contracts.domain.FactValue;
 import dev.aegis.contracts.domain.ReviewState;
 import dev.aegis.contracts.domain.SourceReference;
 import dev.aegis.contracts.domain.ValidityPeriod;
+import dev.aegis.documents.application.api.DocumentReference;
 import dev.aegis.documents.application.api.DocumentReferenceQuery;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotFoundException;
+import dev.aegis.shared.TrashedException;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -87,5 +89,18 @@ final class ContractInputs {
         documents.findReference(documentId)
                 .orElseThrow(() -> new NotFoundException("document", documentId.toString()));
         return new SourceReference(documentId, page, quote);
+    }
+
+    /**
+     * The source of a fact a member states. A member cannot cite a document that is in the trash; it is restored
+     * first. An extraction run that was already reading the document may still record its proposal.
+     */
+    static SourceReference memberSource(DocumentId documentId, Integer page, String quote,
+            DocumentReferenceQuery documents) {
+        SourceReference source = source(documentId, page, quote, documents);
+        if (source != null && documents.findReference(documentId).map(DocumentReference::trashed).orElse(false)) {
+            throw new TrashedException("document", documentId.toString());
+        }
+        return source;
     }
 }

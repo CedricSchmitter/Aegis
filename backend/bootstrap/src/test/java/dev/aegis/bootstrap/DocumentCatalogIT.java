@@ -186,8 +186,12 @@ class DocumentCatalogIT extends PostgresIT {
         for (ApiClient client : List.of(lisa, cedric)) {
             assertThat(ids(client, "/api/documents?organization=" + telekomLabelId))
                     .containsExactly(telekomDocumentId);
-            assertThat(ids(client, "/api/documents?type=" + invoiceLabelId)).containsExactly(telekomDocumentId);
-            assertThat(ids(client, "/api/documents?topic=" + internetLabelId)).containsExactly(telekomDocumentId);
+            // Built-in labels are shared with the other test classes in this database (automatic classification
+            // applies them too), so only this class's documents are asserted; the Telekom label is its own.
+            assertThat(ids(client, "/api/documents?size=100&type=" + invoiceLabelId)).contains(telekomDocumentId)
+                    .doesNotContain(unsortedDocumentId);
+            assertThat(ids(client, "/api/documents?size=100&topic=" + internetLabelId)).contains(telekomDocumentId)
+                    .doesNotContain(unsortedDocumentId);
             assertThat(ids(client, "/api/documents?subject=HOUSE")).contains(telekomDocumentId);
             assertThat(ids(client, "/api/documents?category=" + houseId)).containsExactly(telekomDocumentId);
             assertThat(ids(client, "/api/documents?category=" + houseId + "&subfolders=false")).isEmpty();
@@ -208,8 +212,9 @@ class DocumentCatalogIT extends PostgresIT {
                 .as("counts of the filtered group ignore its own filter").isEqualTo(1);
         assertThat(filtered.path("facets").path("missing").path("TAG").asLong()).isEqualTo(1);
 
-        JsonNode combined = lisa.json(lisa.get("/api/documents?query=telekom&type=" + invoiceLabelId));
-        assertThat(combined.path("items")).hasSize(1);
+        JsonNode combined = lisa.json(lisa.get("/api/documents?size=100&query=telekom&type=" + invoiceLabelId));
+        assertThat(ids(lisa, "/api/documents?size=100&query=telekom&type=" + invoiceLabelId))
+                .contains(telekomDocumentId).doesNotContain(unsortedDocumentId);
         assertThat(combined.path("contentSearch").asText()).isEqualTo("READY");
 
         JsonNode paged = lisa.json(lisa.get("/api/documents?size=1&page=0&sort=TITLE"));

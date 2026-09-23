@@ -61,6 +61,13 @@ public class InMemoryDocumentRepository implements DocumentRepository {
     }
 
     @Override
+    public List<Document> findTrashed() {
+        return store.values().stream().filter(Document::isTrashed)
+                .sorted(Comparator.comparing((Document d) -> d.trash().orElseThrow().trashedAt()).reversed())
+                .toList();
+    }
+
+    @Override
     public void save(Document document) {
         store.put(document.id(), document);
     }

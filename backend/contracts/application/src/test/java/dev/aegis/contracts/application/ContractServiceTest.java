@@ -22,8 +22,11 @@ import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotAuthorizedException;
 import dev.aegis.shared.NotFoundException;
 import dev.aegis.shared.StaleVersionException;
+import dev.aegis.shared.Trash;
+import dev.aegis.shared.TrashedException;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +41,7 @@ class ContractServiceTest {
 
     private final InMemoryContractRepository repository = new InMemoryContractRepository();
     private final KnownDocuments documents = new KnownDocuments();
+    private final List<ContractId> reconciliations = new ArrayList<>();
     private final Clock clock = ContractTestSupport.clockAt("2026-09-20T08:00:00Z");
     private ContractService commands;
     private ContractQueryService queries;
@@ -47,7 +51,7 @@ class ContractServiceTest {
     void setUp() {
         ContractPresenter presenter = new ContractPresenter(documents);
         commands = new ContractService(repository, documents, presenter, ContractTestSupport.household(), clock,
-                (contractId, requestedBy) -> { });
+                (contractId, requestedBy) -> reconciliations.add(contractId), Trash.RecoveryWindow.DEFAULT);
         queries = new ContractQueryService(repository, presenter, ContractTestSupport.household(), clock);
         contractPdf = documents.add("Fitnessstudio Vertrag");
     }
@@ -211,7 +215,8 @@ class ContractServiceTest {
         InMemoryContractRepository fresh = new InMemoryContractRepository();
         ContractPresenter presenter = new ContractPresenter(documents);
         ContractService restoreTarget = new ContractService(fresh, documents, presenter,
-                ContractTestSupport.household(), clock, (contractId, requestedBy) -> { });
+                ContractTestSupport.household(), clock, (contractId, requestedBy) -> { },
+                Trash.RecoveryWindow.DEFAULT);
         ContractQueryService restored = new ContractQueryService(fresh, presenter,
                 ContractTestSupport.household(), clock);
 

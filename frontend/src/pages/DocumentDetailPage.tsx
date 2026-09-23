@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api, unwrap } from "../api/client";
+import { api, toApiError, unwrap } from "../api/client";
 import type {
   CategoryDto,
   ContractSummaryDto,
@@ -20,6 +20,7 @@ import { PlacementSuggestion } from "../components/PlacementSuggestion";
 import { SubjectList } from "../components/SubjectList";
 import { TaskForm } from "../components/TaskForm";
 import { TaskItem } from "../components/TaskItem";
+import { MoveToTrashButton, TrashBanner } from "../components/TrashControls";
 import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
 import { suggestions } from "../lib/labels";
@@ -43,6 +44,7 @@ export function DocumentDetailPage() {
   const [titleDraft, setTitleDraft] = useState("");
   const [folderDraft, setFolderDraft] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [trashBusy, setTrashBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -78,6 +80,31 @@ export function DocumentDetailPage() {
     const timer = window.setTimeout(() => void load(), 4000);
     return () => window.clearTimeout(timer);
   }, [document, load]);
+
+  /** Trash and restore carry the version the member saw; a concurrent change reloads instead of guessing. */
+  const changeTrash = async (action: "trash" | "restore") => {
+    if (!document) return;
+    setTrashBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const options = { params: { path: { id } }, body: { expectedVersion: document.version } };
+      setDocument(
+        unwrap(
+          action === "trash"
+            ? await api.POST("/api/documents/{id}/trash", options)
+            : await api.POST("/api/documents/{id}/restore", options),
+        ),
+      );
+      setMessage(t(action === "trash" ? "trash.moved" : "trash.restored"));
+      if (action === "restore") await load();
+    } catch (failure) {
+      setError(toApiError(failure).status === 409 ? t("trash.changedMeanwhile") : problemMessage(t, failure));
+      await load();
+    } finally {
+      setTrashBusy(false);
+    }
+  };
 
   const retry = async () => {
     try {
@@ -205,6 +232,7 @@ export function DocumentDetailPage() {
   const p = document.processing;
   const folderName = (folderId: string) => categories.find((category) => category.id === folderId)?.name ?? "";
   const pending = suggestions(document.classification.labels);
+  const trashed = !!document.trash;
 
   return (
     <>
@@ -218,6 +246,9 @@ export function DocumentDetailPage() {
       </PageTitle>
       <ErrorBox message={error} />
       {message && <InfoBox>{message}</InfoBox>}
+      {document.trash && (
+        <TrashBanner trash={document.trash} busy={trashBusy} onRestore={() => void changeTrash("restore")} />
+      )}
 
       <section className="card mb-4 flex flex-col gap-2" aria-label={t(`documents.state.${p.state}`)}>
         <p className="font-medium" data-testid="processing-state">
@@ -266,7 +297,7 @@ export function DocumentDetailPage() {
           ) : (
             <p className="text-sm text-stone-500">{t("documents.originalUnavailable")}</p>
           )}
-          {p.state === "FAILED" && (
+          {p.state === "FAILED" && !trashed && (
             <button type="button" className="btn-secondary" onClick={retry} data-testid="retry-archival">
               {t("documents.retry")}
             </button>
@@ -274,7 +305,7 @@ export function DocumentDetailPage() {
         </div>
       </section>
 
-      {p.state !== "FAILED" && (
+      {p.state !== "FAILED" && !trashed && (
         <AnalysisPanel
           document={document}
           onChange={setDocument}
@@ -291,40 +322,44 @@ export function DocumentDetailPage() {
             🗂 {document.classification.path.map((step) => step.name).join(" / ") || t("documents.unsorted")}
           </span>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <FolderSelect
-            categories={categories}
-            value={folderDraft}
-            onChange={setFolderDraft}
-            label={t("documents.chooseFolder")}
-            id="document-folder-select"
-          />
-          <button type="button" className="btn-secondary" onClick={saveFolder} data-testid="save-folder">
-            {t("app.save")}
-          </button>
-        </div>
+        {!trashed && (
+          <div className="flex flex-wrap items-end gap-2">
+            <FolderSelect
+              categories={categories}
+              value={folderDraft}
+              onChange={setFolderDraft}
+              label={t("documents.chooseFolder")}
+              id="document-folder-select"
+            />
+            <button type="button" className="btn-secondary" onClick={saveFolder} data-testid="save-folder">
+              {t("app.save")}
+            </button>
+          </div>
+        )}
 
-        <PlacementSuggestion
-          document={document}
-          categories={categories}
-          onChange={setDocument}
-          onError={setError}
-          onMessage={setMessage}
-          reload={load}
-        />
+        {!trashed && (
+          <PlacementSuggestion
+            document={document}
+            categories={categories}
+            onChange={setDocument}
+            onError={setError}
+            onMessage={setMessage}
+            reload={load}
+          />
+        )}
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">{t("documents.labels")}:</span>
           <LabelChips
             chips={document.classification.labels}
             folderName={folderName}
-            onAccept={(chip) => void review(chip, "accept")}
-            onReject={(chip) => void review(chip, "reject")}
+            onAccept={trashed ? undefined : (chip) => void review(chip, "accept")}
+            onReject={trashed ? undefined : (chip) => void review(chip, "reject")}
           />
           {document.classification.labels.length === 0 && (
             <span className="text-xs text-stone-500">{t("subjects.none")}</span>
           )}
-          {!editingLabels && (
+          {!editingLabels && !trashed && (
             <button type="button" className="btn-ghost" onClick={() => setEditingLabels(true)} data-testid="edit-labels">
               {t("documents.editLabels")}
             </button>
@@ -376,17 +411,19 @@ export function DocumentDetailPage() {
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={() => {
-                setTitleDraft(document.title);
-                setEditingTitle(true);
-              }}
-              data-testid="rename-document"
-            >
-              {t("documents.renameTitle")}
-            </button>
+            !trashed && (
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => {
+                  setTitleDraft(document.title);
+                  setEditingTitle(true);
+                }}
+                data-testid="rename-document"
+              >
+                {t("documents.renameTitle")}
+              </button>
+            )
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -397,7 +434,7 @@ export function DocumentDetailPage() {
               🗂 <SubjectList subjects={document.classification.folderSubjects} />
             </span>
           )}
-          {!editingSubjects && (
+          {!editingSubjects && !trashed && (
             <button
               type="button"
               className="btn-ghost"
@@ -472,14 +509,16 @@ export function DocumentDetailPage() {
           <h2 id="linked-tasks" className="text-lg font-semibold">
             {t("documents.linkedTasks")}
           </h2>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => setShowTaskForm((value) => !value)}
-            data-testid="new-task-toggle"
-          >
-            {t("documents.newTask")}
-          </button>
+          {!trashed && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowTaskForm((value) => !value)}
+              data-testid="new-task-toggle"
+            >
+              {t("documents.newTask")}
+            </button>
+          )}
         </div>
         {showTaskForm && (
           <div className="mb-3">
@@ -509,6 +548,17 @@ export function DocumentDetailPage() {
           </div>
         )}
       </section>
+      {!trashed && (
+        <section className="mt-6 flex flex-col gap-2" aria-labelledby="document-trash">
+          <h2 id="document-trash" className="text-lg font-semibold">
+            {t("trash.section")}
+          </h2>
+          <p className="text-sm text-stone-600 dark:text-stone-400">{t("trash.documentHint")}</p>
+          <div>
+            <MoveToTrashButton busy={trashBusy} onConfirm={() => void changeTrash("trash")} testId="trash-document" />
+          </div>
+        </section>
+      )}
       <p className="mt-4 text-xs text-stone-500">{formatDate(document.uploadedAt, i18n.language)}</p>
     </>
   );

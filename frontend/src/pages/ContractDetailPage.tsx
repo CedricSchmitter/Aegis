@@ -7,7 +7,8 @@ import { useSession } from "../auth/SessionContext";
 import { ContractDeadlineCard } from "../components/ContractDeadlineCard";
 import { ContractFactCard, type FactCorrection } from "../components/ContractFactCard";
 import { ContractFactForm, type EnteredFact } from "../components/ContractFactForm";
-import { EmptyState, ErrorBox, Loading, PageTitle, Badge } from "../components/common";
+import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle, Badge } from "../components/common";
+import { MoveToTrashButton, TrashBanner } from "../components/TrashControls";
 import { CONTRACT_STATUSES, factSummary, groupFacts, isHistory } from "../lib/contracts";
 import { formatDateTime } from "../lib/format";
 import { problemMessage } from "../lib/problem";
@@ -31,6 +32,7 @@ export function ContractDetailPage() {
   const [entering, setEntering] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -46,12 +48,14 @@ export function ContractDetailPage() {
   }, [load]);
 
   /** Runs one version-checked write. A 409 means someone else decided first: reload and let the member re-judge. */
-  const run = async (call: () => Promise<Result>) => {
+  const run = async (call: () => Promise<Result>, success?: string) => {
     setBusy(true);
     setError(null);
     setStale(false);
+    setMessage(null);
     try {
       setContract(unwrap(await call()));
+      if (success) setMessage(success);
     } catch (failure) {
       if (toApiError(failure).status === 409) {
         setStale(true);
@@ -78,6 +82,17 @@ export function ContractDetailPage() {
   const groups = groupFacts(contract.facts);
   const visible = (facts: ContractFactDto[]) => (showHistory ? facts : facts.filter((fact) => !isHistory(fact)));
   const hidden = contract.facts.filter(isHistory).length;
+  const trashed = !!contract.trash;
+  const changeTrash = (action: "trash" | "restore") => {
+    const options = { params: { path: { id: contract.id } }, body: { expectedVersion: contract.version } };
+    void run(
+      () =>
+        action === "trash"
+          ? api.POST("/api/contracts/{id}/trash", options)
+          : api.POST("/api/contracts/{id}/restore", options),
+      t(action === "trash" ? "trash.moved" : "trash.restored"),
+    );
+  };
 
   const enterFact = (fact: EnteredFact) =>
     run(() =>
@@ -124,6 +139,8 @@ export function ContractDetailPage() {
         </p>
       )}
       <ErrorBox message={error} />
+      {message && <InfoBox>{message}</InfoBox>}
+      {contract.trash && <TrashBanner trash={contract.trash} busy={busy} onRestore={() => changeTrash("restore")} />}
 
       <div className="mb-4">
         <ContractDeadlineCard
@@ -192,19 +209,21 @@ export function ContractDetailPage() {
               {t("contracts.facts.showHistory", { count: hidden })}
             </label>
           )}
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => setEntering((open) => !open)}
-            data-testid="new-fact-toggle"
-            aria-expanded={entering}
-          >
-            {t("contracts.fact.new")}
-          </button>
+          {!trashed && (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => setEntering((open) => !open)}
+              data-testid="new-fact-toggle"
+              aria-expanded={entering}
+            >
+              {t("contracts.fact.new")}
+            </button>
+          )}
         </div>
       </div>
 
-      {entering && (
+      {entering && !trashed && (
         <div className="mb-4">
           <ContractFactForm
             contract={contract}
@@ -236,7 +255,7 @@ export function ContractDetailPage() {
                     fact={fact}
                     facts={contract.facts}
                     basedOn={contract.deadline.basedOn}
-                    busy={busy}
+                    busy={busy || trashed}
                     onConfirm={(target) =>
                       void run(() =>
                         api.POST("/api/contracts/{id}/facts/{factId}/confirm", {
@@ -262,84 +281,90 @@ export function ContractDetailPage() {
         })}
       </div>
 
-      <section className="mt-6 flex flex-col gap-2" aria-labelledby="contract-admin">
-        <h2 id="contract-admin" className="text-lg font-semibold">
-          {t("contracts.manage.title")}
-        </h2>
-        {renaming ? (
-          <form
-            className="card flex flex-col gap-2"
-            aria-label={t("contracts.manage.renameLabel")}
-            onSubmit={(event) => {
-              event.preventDefault();
-              setRenaming(false);
-              void run(() =>
-                api.PUT("/api/contracts/{id}", {
-                  params: { path: { id: contract.id } },
-                  body: { name: nameDraft, expectedVersion: contract.version },
-                }),
-              );
-            }}
-          >
-            <label className="label" htmlFor="contract-name">
-              {t("contracts.nameField")}
-            </label>
-            <input
-              id="contract-name"
-              type="text"
-              className="field"
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <button type="submit" className="btn-primary" disabled={busy}>
-                {t("app.save")}
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => setRenaming(false)} disabled={busy}>
-                {t("app.cancel")}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className="btn-secondary"
-              disabled={busy}
-              onClick={() => {
-                setNameDraft(contract.name);
-                setRenaming(true);
+      {!trashed && (
+        <section className="mt-6 flex flex-col gap-2" aria-labelledby="contract-admin">
+          <h2 id="contract-admin" className="text-lg font-semibold">
+            {t("contracts.manage.title")}
+          </h2>
+          {renaming ? (
+            <form
+              className="card flex flex-col gap-2"
+              aria-label={t("contracts.manage.renameLabel")}
+              onSubmit={(event) => {
+                event.preventDefault();
+                setRenaming(false);
+                void run(() =>
+                  api.PUT("/api/contracts/{id}", {
+                    params: { path: { id: contract.id } },
+                    body: { name: nameDraft, expectedVersion: contract.version },
+                  }),
+                );
               }}
             >
-              {t("contracts.manage.rename")}
-            </button>
-            <label className="label mb-0" htmlFor="contract-status">
-              {t("contracts.manage.status")}
-            </label>
-            <select
-              id="contract-status"
-              className="field w-auto"
-              value={contract.status}
-              disabled={busy}
-              onChange={(e) =>
-                void run(() =>
-                  api.POST("/api/contracts/{id}/status", {
-                    params: { path: { id: contract.id } },
-                    body: { status: e.target.value, expectedVersion: contract.version },
-                  }),
-                )
-              }
-            >
-              {CONTRACT_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {t(`contracts.status.${status}`)}
-                </option>
-              ))}
-            </select>
+              <label className="label" htmlFor="contract-name">
+                {t("contracts.nameField")}
+              </label>
+              <input
+                id="contract-name"
+                type="text"
+                className="field"
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <button type="submit" className="btn-primary" disabled={busy}>
+                  {t("app.save")}
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setRenaming(false)} disabled={busy}>
+                  {t("app.cancel")}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={busy}
+                onClick={() => {
+                  setNameDraft(contract.name);
+                  setRenaming(true);
+                }}
+              >
+                {t("contracts.manage.rename")}
+              </button>
+              <label className="label mb-0" htmlFor="contract-status">
+                {t("contracts.manage.status")}
+              </label>
+              <select
+                id="contract-status"
+                className="field w-auto"
+                value={contract.status}
+                disabled={busy}
+                onChange={(e) =>
+                  void run(() =>
+                    api.POST("/api/contracts/{id}/status", {
+                      params: { path: { id: contract.id } },
+                      body: { status: e.target.value, expectedVersion: contract.version },
+                    }),
+                  )
+                }
+              >
+                {CONTRACT_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {t(`contracts.status.${status}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <p className="text-sm text-stone-600 dark:text-stone-400">{t("contracts.manage.statusHint")}</p>
+          <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">{t("trash.contractHint")}</p>
+          <div>
+            <MoveToTrashButton busy={busy} onConfirm={() => changeTrash("trash")} testId="trash-contract" />
           </div>
-        )}
-        <p className="text-sm text-stone-600 dark:text-stone-400">{t("contracts.manage.statusHint")}</p>
-      </section>
+        </section>
+      )}
     </>
   );
 }

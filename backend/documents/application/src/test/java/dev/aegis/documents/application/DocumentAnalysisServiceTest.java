@@ -127,6 +127,27 @@ class DocumentAnalysisServiceTest {
     }
 
     @Test
+    void anUploadTrashedBeforeArchivalWaitsForItsRestoreBeforeItIsAnalyzed() {
+        Document document = f.document("Scan im Papierkorb");
+        analyses.save(DocumentAnalysis.awaitingArchive(document.id(), f.lisa, CatalogFixture.NOW));
+        DocumentCommandService commands = new DocumentCommandService(f.documents, f.scheduler, f.presenter, service,
+                f.access, dev.aegis.shared.Trash.RecoveryWindow.DEFAULT, f.clock);
+        commands.moveToTrash(f.actor, document.id(), document.version());
+        document.markArchived(PAPERLESS_IDS.incrementAndGet(), CatalogFixture.NOW);
+        f.documents.save(document);
+
+        service.archived(document);
+        assertThat(runs.requested).isEmpty();
+        long analysisVersion = analyses.findById(document.id()).orElseThrow().version();
+        assertThatThrownBy(() -> service.requestAnalysis(f.actor, document.id(), analysisVersion))
+                .isInstanceOf(InvalidInputException.class).hasFieldOrPropertyWithValue("code", "document.trashed");
+
+        commands.restoreFromTrash(f.actor, document.id(), document.version());
+
+        assertThat(runs.requested).singleElement().asString().endsWith("by " + f.lisa);
+    }
+
+    @Test
     void anUploadIsRequestedOnceWhenArchivedOnBehalfOfTheUploader() {
         Document document = f.document("Scan 0001");
         analyses.save(DocumentAnalysis.awaitingArchive(document.id(), f.lisa, CatalogFixture.NOW));

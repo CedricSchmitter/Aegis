@@ -24,8 +24,10 @@ import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.ProductLocale;
 import dev.aegis.shared.TaskId;
+import dev.aegis.shared.Trash;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -115,10 +117,11 @@ class ExportServiceTest {
                                         new DocumentExportRecord.Assignment(invoiceLabel, "DOCUMENT_TYPE",
                                                 "Invoice", "AUTOMATIC", "SUGGESTED", 0.4, "run:1", null, NOW)),
                                 new DocumentExportRecord.Placement("MANUAL", null, null, anna, NOW, true), null),
-                        null),
+                        null, null),
                         new DocumentExportRecord(lost, "Verloren", "FILENAME", "lost.pdf", "Verloren_"
                                 + lost.toString().substring(0, 8) + ".pdf", "application/pdf", 3, "a".repeat(64),
-                                anna, NOW, List.of(), "FAILED", null, null, null, null));
+                                anna, NOW, List.of(), "FAILED", null, null, null, null,
+                                new Trash(anna, NOW, NOW.plus(Duration.ofDays(30)))));
             }
 
             @Override
@@ -141,7 +144,7 @@ class ExportServiceTest {
         };
         TaskExportQuery tasks = actor -> List.of(new TaskExportRecord(TaskId.random(), "Kündigen", "", anna, "OPEN",
                 LocalDate.of(2026, 12, 31), null, contract, anna, NOW, NOW, null, null,
-                null, null, null, null, null, null));
+                null, null, null, null, null, null, null));
         ContractExportQuery contracts = actor -> List.of(new ContractExportRecord(rental, "Mietvertrag",
                 "ACTIVE", anna, NOW, NOW, List.of(
                         new FactExportRecord(endDateFact, "END_DATE", "DATE", "2028-01-01", null, null,
@@ -149,7 +152,7 @@ class ExportServiceTest {
                                 NOW, anna, NOW, null, null, ""),
                         new FactExportRecord(noticeFact, "NOTICE_PERIOD", "PERIOD", "P3M", null, null, "EXTRACTED",
                                 "AUTOMATIC", 0.8, contract, null, "Kündigungsfrist drei Monate", "run:2", null,
-                                NOW, null, null, null, null, ""))));
+                                NOW, null, null, null, null, "")), null));
         MemberDirectory members = new MemberDirectory() {
             @Override
             public List<MemberSummary> listMembers(Actor actor) {
@@ -183,12 +186,14 @@ class ExportServiceTest {
         String index = new String(store.staged.get(ExportFormat.INDEX_MD), StandardCharsets.UTF_8);
         assertThat(index).contains("[Mietvertrag Müller](" + originalPath + ")")
                 .contains("source [Mietvertrag Müller](" + originalPath + ")")
-                .contains("Verloren (original not included)").contains("### Haus / Rechnungen")
+                .contains("Verloren (original not included)")
+                .contains("state FAILED, in the trash since " + NOW).contains("### Haus / Rechnungen")
                 .contains("### (unsorted)").contains("labels Telekom");
         String documentsCsv = new String(store.staged.get(ExportFormat.DOCUMENTS_CSV), StandardCharsets.UTF_8);
         assertThat(documentsCsv).contains("id,title,originalFilename,filename,")
                 .contains("vertrag.pdf," + contractName)
-                .contains("folder,documentType,organizations,topics,tags,documentDate,analysisStatus")
+                .contains("folder,documentType,organizations,topics,tags,documentDate,analysisStatus,trashedAt")
+                .contains("NOT_REQUESTED," + NOW)
                 .contains("Haus / Rechnungen,,Telekom,,");
         String labelsCsv = new String(store.staged.get(ExportFormat.LABELS_CSV), StandardCharsets.UTF_8);
         assertThat(labelsCsv).contains("DOCUMENT_TYPE,Invoice,invoice,Rechnung; Invoice,ACTIVE,,0")
@@ -203,8 +208,8 @@ class ExportServiceTest {
         assertThat(summary.contractCount()).isEqualTo(1);
         String contractsCsv = new String(store.staged.get(ExportFormat.CONTRACTS_CSV), StandardCharsets.UTF_8);
         assertThat(contractsCsv)
-                .contains("contractId,contract,contractStatus,factId,factType,value,validFrom,validUntil,"
-                        + "reviewState,origin,confidence")
+                .contains("contractId,contract,contractStatus,contractTrashedAt,factId,factType,value,validFrom,"
+                        + "validUntil,reviewState,origin,confidence")
                 .contains("END_DATE,2028-01-01,,,CONFIRMED,MANUAL,," + contract + ",Mietvertrag Müller,2,")
                 .contains("NOTICE_PERIOD,P3M,,,EXTRACTED,AUTOMATIC,0.8,");
         // The readable index lists confirmed facts only; a proposal is not household knowledge yet.
@@ -276,6 +281,6 @@ class ExportServiceTest {
 
     private static DocumentExportRecord record(DocumentId id, String filename) {
         return new DocumentExportRecord(id, "Rechnung", "FILENAME", "scan.pdf", filename, "application/pdf", 1,
-                "b".repeat(64), MemberId.random(), NOW, List.of(), "ARCHIVED", 1, NOW, null, null);
+                "b".repeat(64), MemberId.random(), NOW, List.of(), "ARCHIVED", 1, NOW, null, null, null);
     }
 }

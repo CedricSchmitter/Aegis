@@ -549,6 +549,10 @@
           "status" : {
             "type" : "string"
           },
+          "trash" : {
+            "$ref" : "#/components/schemas/ContractTrashDto",
+            "type" : "null"
+          },
           "updatedAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -569,6 +573,9 @@
           "documentTitle" : {
             "type" : [ "string", "null" ]
           },
+          "documentTrashed" : {
+            "type" : "boolean"
+          },
           "page" : {
             "format" : "int32",
             "type" : [ "integer", "null" ]
@@ -577,7 +584,24 @@
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "documentId" ],
+        "required" : [ "documentId", "documentTrashed" ],
+        "type" : "object"
+      },
+      "ContractTrashDto" : {
+        "properties" : {
+          "restorableUntil" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "trashedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "trashedBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "restorableUntil", "trashedAt", "trashedBy" ],
         "type" : "object"
       },
       "ContractVersionRequest" : {
@@ -857,6 +881,10 @@
           "titleOrigin" : {
             "type" : "string"
           },
+          "trash" : {
+            "$ref" : "#/components/schemas/DocumentTrashDto",
+            "type" : "null"
+          },
           "uploadedAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -909,6 +937,23 @@
           }
         },
         "required" : [ "contentSearch", "facets", "items", "matchingDocuments", "notContentIndexed", "page", "size", "totalDocuments" ],
+        "type" : "object"
+      },
+      "DocumentTrashDto" : {
+        "properties" : {
+          "restorableUntil" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "trashedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "trashedBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "restorableUntil", "trashedAt", "trashedBy" ],
         "type" : "object"
       },
       "DueDateRequest" : {
@@ -1946,9 +1991,12 @@
           },
           "documentTitle" : {
             "type" : [ "string", "null" ]
+          },
+          "documentTrashed" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "documentId" ],
+        "required" : [ "documentId", "documentTrashed" ],
         "type" : "object"
       },
       "StatusRequest" : {
@@ -2096,6 +2144,10 @@
           "status" : {
             "type" : "string"
           },
+          "trash" : {
+            "$ref" : "#/components/schemas/ContractTrashDto",
+            "type" : "null"
+          },
           "updatedAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -2178,6 +2230,10 @@
           "title" : {
             "type" : "string"
           },
+          "trash" : {
+            "$ref" : "#/components/schemas/TaskTrashDto",
+            "type" : "null"
+          },
           "updatedAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -2188,6 +2244,23 @@
           }
         },
         "required" : [ "createdAt", "createdBy", "id", "note", "status", "title", "updatedAt", "version" ],
+        "type" : "object"
+      },
+      "TaskTrashDto" : {
+        "properties" : {
+          "restorableUntil" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "trashedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "trashedBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "restorableUntil", "trashedAt", "trashedBy" ],
         "type" : "object"
       },
       "TaskVersionRequest" : {
@@ -2836,6 +2909,28 @@
         "tags" : [ "contracts" ]
       }
     },
+    "/api/contracts/trash" : {
+      "get" : {
+        "operationId" : "listTrashedContracts",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/SummaryDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Contracts in the trash, most recently trashed first",
+        "tags" : [ "contracts" ]
+      }
+    },
     "/api/contracts/{id}" : {
       "get" : {
         "operationId" : "getContract",
@@ -3067,6 +3162,43 @@
         "tags" : [ "contracts" ]
       }
     },
+    "/api/contracts/{id}/restore" : {
+      "post" : {
+        "operationId" : "restoreContract",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ContractVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ContractDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Bring a contract back from the trash",
+        "tags" : [ "contracts" ]
+      }
+    },
     "/api/contracts/{id}/status" : {
       "post" : {
         "operationId" : "changeContractStatus",
@@ -3101,6 +3233,43 @@
           }
         },
         "summary" : "Record that the contract is active, cancelled or ended",
+        "tags" : [ "contracts" ]
+      }
+    },
+    "/api/contracts/{id}/trash" : {
+      "post" : {
+        "operationId" : "trashContract",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ContractVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ContractDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Move a contract to the trash; its facts stay and it can be restored",
         "tags" : [ "contracts" ]
       }
     },
@@ -3357,6 +3526,28 @@
         "tags" : [ "documents" ]
       }
     },
+    "/api/documents/trash" : {
+      "get" : {
+        "operationId" : "listTrashedDocuments",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DocumentDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Documents in the trash, most recently trashed first",
+        "tags" : [ "documents" ]
+      }
+    },
     "/api/documents/{id}" : {
       "get" : {
         "operationId" : "getDocument",
@@ -3380,7 +3571,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Document details including processing state and labels",
+        "summary" : "Document details including processing state, labels and trash state",
         "tags" : [ "documents" ]
       }
     },
@@ -3878,6 +4069,43 @@
         "tags" : [ "documents" ]
       }
     },
+    "/api/documents/{id}/restore" : {
+      "post" : {
+        "operationId" : "restoreDocument",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LabelVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Bring a document back from the trash",
+        "tags" : [ "documents" ]
+      }
+    },
     "/api/documents/{id}/retry" : {
       "post" : {
         "operationId" : "retryArchival",
@@ -3976,6 +4204,43 @@
           }
         },
         "summary" : "Change the display title of a document",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/trash" : {
+      "post" : {
+        "operationId" : "trashDocument",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LabelVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Move a document to the trash; nothing is deleted and it can be restored",
         "tags" : [ "documents" ]
       }
     },
@@ -4743,6 +5008,28 @@
         "tags" : [ "tasks" ]
       }
     },
+    "/api/tasks/trash" : {
+      "get" : {
+        "operationId" : "listTrashedTasks",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/TaskDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Tasks in the trash, most recently trashed first",
+        "tags" : [ "tasks" ]
+      }
+    },
     "/api/tasks/{id}" : {
       "get" : {
         "operationId" : "getTask",
@@ -4987,6 +5274,80 @@
           }
         },
         "summary" : "Reopen a completed task",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/restore" : {
+      "post" : {
+        "operationId" : "restoreTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TaskVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Bring a task back from the trash",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/trash" : {
+      "post" : {
+        "operationId" : "trashTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TaskVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Move a task to the trash; it leaves lists, Today and reminders and can be restored",
         "tags" : [ "tasks" ]
       }
     },

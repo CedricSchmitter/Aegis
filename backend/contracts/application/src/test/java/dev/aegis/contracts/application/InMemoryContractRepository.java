@@ -60,6 +60,6 @@ public class InMemoryContractRepository implements ContractRepository {
                     fact.supersededBy().orElse(null), fact.corrects().orElse(null), fact.note()));
         }
         return Contract.rehydrate(contract.id(), contract.name(), contract.status(), contract.createdBy(),
-                contract.createdAt(), contract.updatedAt(), facts, version);
+                contract.createdAt(), contract.updatedAt(), facts, contract.trash().orElse(null), version);
     }
 }

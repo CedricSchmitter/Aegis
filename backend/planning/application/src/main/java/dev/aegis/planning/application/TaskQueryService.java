@@ -45,13 +45,20 @@ public class TaskQueryService implements TaskQueries, TaskExportQuery {
     public List<TaskSummary> list(Actor actor, boolean includeDone) {
         access.requireMember(actor);
         List<Task> found = includeDone ? tasks.findAll() : tasks.findOpen();
-        return found.stream().map(presenter::summarize).toList();
+        return found.stream().filter(task -> !task.isTrashed()).map(presenter::summarize).toList();
     }
 
     @Override
     public List<TaskSummary> forDocument(Actor actor, DocumentId documentId) {
         access.requireMember(actor);
-        return tasks.findBySourceDocument(documentId).stream().map(presenter::summarize).toList();
+        return tasks.findBySourceDocument(documentId).stream().filter(task -> !task.isTrashed())
+                .map(presenter::summarize).toList();
+    }
+
+    @Override
+    public List<TaskSummary> trashed(Actor actor) {
+        access.requireMember(actor);
+        return tasks.findTrashed().stream().map(presenter::summarize).toList();
     }
 
     @Override

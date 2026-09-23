@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
@@ -14,11 +15,13 @@ import org.springframework.stereotype.Component;
 /**
  * Indexed search read model in PostgreSQL. Filtering, counting, sorting and paging run in the database over the
  * effective-label and effective-subject views, so results never depend on what a browser page happens to hold.
+ * Every query here covers the ordinary collection only: documents in the trash are neither found nor counted.
  */
 @Component
 public class JdbcDocumentCatalog implements DocumentCatalog {
     private static final String FROM = " FROM documents d"
             + " LEFT JOIN document_classifications dc ON dc.document_id = d.id";
+    private static final String NOT_TRASHED = "d.trashed_at IS NULL";
 
     private final JdbcClient jdbc;
 
@@ -72,8 +75,7 @@ public class JdbcDocumentCatalog implements DocumentCatalog {
         }
         Map<String, Object> missingParams = new LinkedHashMap<>(conditions.params());
         String missingCondition = missingCondition(group, missingParams);
-        Long missing = jdbc.sql("SELECT count(*)" + FROM + conditions.where()
-                        + (conditions.where().isEmpty() ? " WHERE " : " AND ") + missingCondition)
+        Long missing = jdbc.sql("SELECT count(*)" + FROM + conditions.where() + " AND " + missingCondition)
                 .params(missingParams).query(Long.class).single();
         return new GroupCounts(values, missing == null ? 0 : missing);
     }
@@ -81,15 +83,14 @@ public class JdbcDocumentCatalog implements DocumentCatalog {
     @Override
     public long countNotArchived(Criteria criteria) {
         Conditions conditions = conditions(criteria);
-        Long count = jdbc.sql("SELECT count(*)" + FROM + conditions.where()
-                        + (conditions.where().isEmpty() ? " WHERE " : " AND ") + "d.state <> 'ARCHIVED'")
+        Long count = jdbc.sql("SELECT count(*)" + FROM + conditions.where() + " AND d.state <> 'ARCHIVED'")
                 .params(conditions.params()).query(Long.class).single();
         return count == null ? 0 : count;
     }
 
     @Override
     public long countAll() {
-        Long count = jdbc.sql("SELECT count(*) FROM documents").query(Long.class).single();
+        Long count = jdbc.sql("SELECT count(*) FROM documents d WHERE " + NOT_TRASHED).query(Long.class).single();
         return count == null ? 0 : count;
     }
 
@@ -97,8 +98,10 @@ public class JdbcDocumentCatalog implements DocumentCatalog {
     public Map<UUID, Long> documentsPerCategory() {
         Map<UUID, Long> counts = new LinkedHashMap<>();
         jdbc.sql("""
-                SELECT category_id, count(*) AS total FROM document_classifications
-                 WHERE category_id IS NOT NULL GROUP BY category_id""").query((rs, row) -> {
+                SELECT dc.category_id, count(*) AS total FROM document_classifications dc
+                  JOIN documents d ON d.id = dc.document_id
+                 WHERE dc.category_id IS NOT NULL AND d.trashed_at IS NULL
+                 GROUP BY dc.category_id""").query((rs, row) -> {
             counts.put(rs.getObject("category_id", UUID.class), rs.getLong("total"));
             return Boolean.TRUE;
         }).list();
@@ -107,8 +110,8 @@ public class JdbcDocumentCatalog implements DocumentCatalog {
 
     @Override
     public long countUnsorted() {
-        Long count = jdbc.sql("SELECT count(*)" + FROM + " WHERE dc.category_id IS NULL").query(Long.class)
-                .single();
+        Long count = jdbc.sql("SELECT count(*)" + FROM + " WHERE dc.category_id IS NULL AND " + NOT_TRASHED)
+                .query(Long.class).single();
         return count == null ? 0 : count;
     }
 
@@ -116,10 +119,11 @@ public class JdbcDocumentCatalog implements DocumentCatalog {
     public Map<UUID, LabelUsage> labelUsage() {
         Map<UUID, LabelUsage> usage = new LinkedHashMap<>();
         jdbc.sql("""
-                SELECT label_id,
-                       count(*) FILTER (WHERE review_state IN ('APPLIED', 'CONFIRMED')) AS effective,
-                       count(*) FILTER (WHERE review_state = 'SUGGESTED') AS suggested
-                  FROM document_labels GROUP BY label_id""").query((rs, row) -> {
+                SELECT dl.label_id,
+                       count(*) FILTER (WHERE dl.review_state IN ('APPLIED', 'CONFIRMED')) AS effective,
+                       count(*) FILTER (WHERE dl.review_state = 'SUGGESTED') AS suggested
+                  FROM document_labels dl JOIN documents d ON d.id = dl.document_id
+                 WHERE d.trashed_at IS NULL GROUP BY dl.label_id""").query((rs, row) -> {
             usage.put(rs.getObject("label_id", UUID.class),
                     new LabelUsage(rs.getLong("effective"), rs.getLong("suggested")));
             return Boolean.TRUE;
@@ -127,11 +131,18 @@ public class JdbcDocumentCatalog implements DocumentCatalog {
         return usage;
     }
 
+    @Override
+    public Set<UUID> trashedDocumentIds() {
+        return Set.copyOf(jdbc.sql("SELECT id FROM documents WHERE trashed_at IS NOT NULL")
+                .query((rs, row) -> rs.getObject("id", UUID.class)).list());
+    }
+
     private record Conditions(String where, Map<String, Object> params) {
     }
 
     private Conditions conditions(Criteria criteria) {
         List<String> clauses = new ArrayList<>();
+        clauses.add(NOT_TRASHED);
         Map<String, Object> params = new LinkedHashMap<>();
         if (criteria.unsortedOnly()) {
             clauses.add("dc.category_id IS NULL");
@@ -180,7 +191,7 @@ public class JdbcDocumentCatalog implements DocumentCatalog {
         for (Group group : criteria.missing()) {
             clauses.add(missingCondition(group, params));
         }
-        String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses);
+        String where = " WHERE " + String.join(" AND ", clauses);
         return new Conditions(where, params);
     }
 

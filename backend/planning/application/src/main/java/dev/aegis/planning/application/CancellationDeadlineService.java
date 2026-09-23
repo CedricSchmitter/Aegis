@@ -12,6 +12,7 @@ import dev.aegis.planning.domain.CancellationReview;
 import dev.aegis.planning.domain.Task;
 import dev.aegis.planning.domain.TaskRepository;
 import dev.aegis.planning.domain.TaskSource;
+import dev.aegis.planning.domain.TaskStatus;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.HouseholdAccess;
@@ -81,11 +82,21 @@ public class CancellationDeadlineService
                     deadline.name(), deadline.cancellationDeadline(), source, review, actor.memberId(),
                     clock.instant());
             tasks.save(current);
-        } else if (!Objects.equals(current.cancellationReview().orElseThrow(), review)
-                || !Objects.equals(current.source().orElse(null), source)) {
-            current.reconcileCancellationReview(review, source, clock.instant());
-            tasks.save(current);
+        } else {
+            boolean changed = false;
+            if (!Objects.equals(current.cancellationReview().orElseThrow(), review)
+                    || !Objects.equals(current.source().orElse(null), source)) {
+                current.reconcileCancellationReview(review, source, clock.instant());
+                changed = true;
+            }
+            // The occurrence was superseded (its contract was trashed or resolved, or a correction was undone) and
+            // its deadline is current again: the same task, with the member's edits, becomes open work again.
+            changed |= current.reviveAutomatic(clock.instant());
+            if (changed) {
+                tasks.save(current);
+            }
         }
+        // A task a member moved to the trash is not open work, so it gets no reminder until it is restored.
         if (current.isOpen()) {
             reminders.schedule(current.id(), actor.memberId(), reminderInstant(review.reminderDate()));
         }
@@ -122,7 +133,9 @@ public class CancellationDeadlineService
     }
 
     private void cancelIfOpen(Task task) {
-        if (task.isOpen()) {
+        // Also supersedes an occurrence in the trash, so restoring it later does not revive work for a resolved
+        // contract.
+        if (task.status() == TaskStatus.OPEN) {
             task.cancelAutomatic(clock.instant());
             tasks.save(task);
         }

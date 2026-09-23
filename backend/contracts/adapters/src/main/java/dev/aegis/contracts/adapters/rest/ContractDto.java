@@ -6,6 +6,7 @@ import dev.aegis.contracts.application.api.ContractViews.ContractView;
 import dev.aegis.contracts.application.api.ContractViews.DeadlineView;
 import dev.aegis.contracts.application.api.ContractViews.FactView;
 import dev.aegis.contracts.application.api.ContractViews.SourceView;
+import dev.aegis.shared.Trash;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -14,10 +15,20 @@ import java.util.List;
 /**
  * HTTP representation of a contract. Enumerations and values travel as stable English codes and canonical texts;
  * the frontend renders them in German or English. Dates stay calendar dates, amounts keep their currency.
+ * {@code trash} is null unless the contract is in the trash.
  */
 public record ContractDto(String id, String name, @Schema(nullable = true) String counterparty, String status,
         String createdBy, Instant createdAt, Instant updatedAt, long version, LocalDate evaluatedOn,
-        DeadlineDto deadline, List<FactDto> facts, List<ConflictDto> conflicts, List<SourceDto> sources) {
+        DeadlineDto deadline, List<FactDto> facts, List<ConflictDto> conflicts, List<SourceDto> sources,
+        @Schema(nullable = true) ContractTrashDto trash) {
+
+    /** Who moved the contract to the trash, when, and until when it is guaranteed to stay restorable. */
+    public record ContractTrashDto(String trashedBy, Instant trashedAt, Instant restorableUntil) {
+        static ContractTrashDto from(Trash trash) {
+            return trash == null ? null : new ContractTrashDto(trash.trashedBy().toString(), trash.trashedAt(),
+                    trash.restorableUntil());
+        }
+    }
 
     /**
      * Where a fact was read. The title is null when the document is no longer available. The schema name is
@@ -25,7 +36,7 @@ public record ContractDto(String id, String name, @Schema(nullable = true) Strin
      */
     @Schema(name = "ContractSourceDto")
     public record SourceDto(String documentId, @Schema(nullable = true) String documentTitle,
-            @Schema(nullable = true) Integer page, @Schema(nullable = true) String quote) {
+            boolean documentTrashed, @Schema(nullable = true) Integer page, @Schema(nullable = true) String quote) {
     }
 
     /**
@@ -58,7 +69,7 @@ public record ContractDto(String id, String name, @Schema(nullable = true) Strin
     /** List entry with the deadline state, so the overview shows what needs attention. */
     public record SummaryDto(String id, String name, @Schema(nullable = true) String counterparty, String status,
             @Schema(nullable = true) LocalDate contractEnd, DeadlineDto deadline, int pendingFacts, int conflicts,
-            Instant updatedAt, long version) {
+            Instant updatedAt, long version, @Schema(nullable = true) ContractTrashDto trash) {
     }
 
     public static ContractDto from(ContractView view) {
@@ -66,13 +77,13 @@ public record ContractDto(String id, String name, @Schema(nullable = true) Strin
                 view.createdBy().toString(), view.createdAt(), view.updatedAt(), view.version(),
                 view.evaluatedOn(), deadline(view.deadline()), view.facts().stream().map(ContractDto::fact).toList(),
                 view.conflicts().stream().map(ContractDto::conflict).toList(),
-                view.sources().stream().map(ContractDto::source).toList());
+                view.sources().stream().map(ContractDto::source).toList(), ContractTrashDto.from(view.trash()));
     }
 
     public static SummaryDto from(ContractSummary summary) {
         return new SummaryDto(summary.id().toString(), summary.name(), summary.counterparty(), summary.status(),
                 summary.contractEnd(), deadline(summary.deadline()), summary.pendingFacts(), summary.conflicts(),
-                summary.updatedAt(), summary.version());
+                summary.updatedAt(), summary.version(), ContractTrashDto.from(summary.trash()));
     }
 
     private static FactDto fact(FactView fact) {
@@ -86,7 +97,8 @@ public record ContractDto(String id, String name, @Schema(nullable = true) Strin
     }
 
     private static SourceDto source(SourceView source) {
-        return new SourceDto(source.documentId().toString(), source.documentTitle(), source.page(), source.quote());
+        return new SourceDto(source.documentId().toString(), source.documentTitle(), source.documentTrashed(),
+                source.page(), source.quote());
     }
 
     private static ConflictDto conflict(ConflictView conflict) {

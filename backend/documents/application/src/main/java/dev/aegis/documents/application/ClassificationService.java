@@ -68,7 +68,7 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
     public DocumentSummary place(Actor actor, DocumentId id, UUID categoryId, long expectedVersion) {
         access.requireMember(actor);
         lock.shared();
-        Document document = requireDocument(id);
+        Document document = requireActiveDocument(id);
         CategoryId target = folder(categoryId);
         DocumentClassification classification = loadVersion(id, expectedVersion);
         classification.placeIn(target, actor.memberId(), clock.instant());
@@ -90,7 +90,7 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
         Instant now = clock.instant();
         int moved = 0;
         for (Placement move : moves) {
-            requireDocument(move.documentId());
+            requireActiveDocument(move.documentId());
             DocumentClassification classification = loadVersion(move.documentId(), move.expectedVersion());
             if (classification.placeIn(target, actor.memberId(), now)) {
                 moved++;
@@ -105,7 +105,7 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
     public DocumentSummary setLabels(Actor actor, DocumentId id, List<UUID> labelIds, long expectedVersion) {
         access.requireMember(actor);
         lock.shared();
-        Document document = requireDocument(id);
+        Document document = requireActiveDocument(id);
         LabelVocabulary vocabulary = labels.load();
         DocumentClassification classification = loadVersion(id, expectedVersion);
         Set<LabelId> current = classification.effectiveLabelIds();
@@ -127,7 +127,7 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
     public DocumentSummary acceptSuggestion(Actor actor, DocumentId id, UUID labelId, long expectedVersion) {
         access.requireMember(actor);
         lock.shared();
-        Document document = requireDocument(id);
+        Document document = requireActiveDocument(id);
         DocumentClassification classification = loadVersion(id, expectedVersion);
         classification.accept(new LabelId(labelId), actor.memberId(), clock.instant());
         classifications.save(classification);
@@ -138,7 +138,7 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
     public DocumentSummary rejectSuggestion(Actor actor, DocumentId id, UUID labelId, long expectedVersion) {
         access.requireMember(actor);
         lock.shared();
-        Document document = requireDocument(id);
+        Document document = requireActiveDocument(id);
         DocumentClassification classification = loadVersion(id, expectedVersion);
         classification.reject(new LabelId(labelId), actor.memberId(), clock.instant());
         classifications.save(classification);
@@ -282,6 +282,13 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
             return null;
         }
         return categories.load().require(new CategoryId(categoryId)).id();
+    }
+
+    /** A document a member may change: it exists and is not in the trash. */
+    private Document requireActiveDocument(DocumentId id) {
+        Document document = requireDocument(id);
+        document.requireNotTrashed();
+        return document;
     }
 
     private Document requireDocument(DocumentId id) {

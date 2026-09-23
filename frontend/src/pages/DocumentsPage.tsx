@@ -107,7 +107,9 @@ export function DocumentsPage() {
       const result = await uploadDocument(file, { subjects: uploadSubjects, categoryId: uploadFolder });
       setMessage(
         result.duplicate
-          ? t("documents.duplicate", { title: result.document.title })
+          ? t(result.document.trash ? "documents.duplicateTrashed" : "documents.duplicate", {
+              title: result.document.title,
+            })
           : t("documents.uploaded", { title: result.document.title }),
       );
       setFile(null);
@@ -168,6 +170,9 @@ export function DocumentsPage() {
             </Link>
             <Link className="btn-secondary" to="/documents/labels">
               {t("documents.manageLabels")}
+            </Link>
+            <Link className="btn-ghost" to="/trash" data-testid="open-trash">
+              {t("trash.open")}
             </Link>
           </span>
         }

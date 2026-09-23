@@ -10,6 +10,8 @@ import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.NotFoundException;
 import dev.aegis.shared.StaleVersionException;
+import dev.aegis.shared.Trash;
+import dev.aegis.shared.TrashedException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -37,7 +39,8 @@ class TaskCommandServiceTest {
         var presenter = new TaskPresenter(documents);
         var access = new PlanningTestSupport.Members(anna, ben);
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-        service = new TaskCommandService(repository, documents, events, presenter, access, clock);
+        service = new TaskCommandService(repository, documents, events, presenter, access, (actor, contract) -> { },
+                Trash.RecoveryWindow.DEFAULT, clock);
         queries = new TaskQueryService(repository, new PlanningTestSupport.NoCalendar(), presenter, access, clock);
     }
 

@@ -19,6 +19,7 @@ import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
+import dev.aegis.shared.Trash;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.Currency;
@@ -78,6 +79,9 @@ public class JpaContractRepository implements ContractRepository {
         entity.setCreatedBy(contract.createdBy().value());
         entity.setCreatedAt(contract.createdAt());
         entity.setUpdatedAt(contract.updatedAt());
+        Trash trash = contract.trash().orElse(null);
+        entity.setTrash(trash == null ? null : trash.trashedBy().value(), trash == null ? null : trash.trashedAt(),
+                trash == null ? null : trash.restorableUntil());
         try {
             contracts.saveAndFlush(entity);
         } catch (OptimisticLockingFailureException concurrent) {
@@ -163,6 +167,8 @@ public class JpaContractRepository implements ContractRepository {
         return Contract.rehydrate(new ContractId(entity.getId()), entity.getName(),
                 ContractStatus.valueOf(entity.getStatus()), new MemberId(entity.getCreatedBy()),
                 entity.getCreatedAt(), entity.getUpdatedAt(), domainFacts,
+                entity.getTrashedAt() == null ? null : new Trash(new MemberId(entity.getTrashedBy()),
+                        entity.getTrashedAt(), entity.getRestorableUntil()),
                 entity.getVersion() == null ? 0 : entity.getVersion());
     }
 

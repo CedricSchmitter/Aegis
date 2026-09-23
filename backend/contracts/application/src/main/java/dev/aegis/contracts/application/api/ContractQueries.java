@@ -14,6 +14,12 @@ public interface ContractQueries {
 
     ContractView get(Actor actor, ContractId id);
 
-    /** Contracts that have at least one fact from that document, for example on the document page. */
+    /**
+     * Contracts that have at least one fact from that document, for example on the document page; contracts in the
+     * trash are left out.
+     */
     List<ContractSummary> forDocument(Actor actor, DocumentId documentId);
+
+    /** Contracts in the trash, most recently trashed first. The ordinary list never contains them. */
+    List<ContractSummary> trashed(Actor actor);
 }

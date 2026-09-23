@@ -3,6 +3,8 @@ package dev.aegis.documents.domain;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.MemberId;
+import dev.aegis.shared.Trash;
+import dev.aegis.shared.TrashedException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -13,7 +15,7 @@ import java.util.Set;
 /**
  * A captured household document. Aegis owns the capture record and processing state; Paperless owns the archived
  * original. The staging copy in ingress is retained until archival is verified and the retention rule permits
- * removal.
+ * removal. A trashed document keeps all of this (ADR-0010); only member changes are refused until it is restored.
  */
 public final class Document {
     public static final int MAX_TITLE_LENGTH = 200;
@@ -38,6 +40,7 @@ public final class Document {
     private Integer paperlessDocumentId;
     private Instant submittedAt;
     private Instant archivedAt;
+    private Trash trash;
     private long version;
 
     private Document(DocumentId id, String title, String originalFilename, String contentType, long sizeBytes,
@@ -83,7 +86,7 @@ public final class Document {
             long sizeBytes, Checksum checksum, MemberId uploadedBy, Instant uploadedAt, Set<Subject> subjects,
             String stagingPath, boolean stagingPresent, ProcessingState state, int attempts,
             ProcessingFailure lastFailure, String paperlessTaskId, Integer paperlessDocumentId, Instant submittedAt,
-            Instant archivedAt, long version, TitleOrigin titleOrigin) {
+            Instant archivedAt, long version, TitleOrigin titleOrigin, Trash trash) {
         Document document = new Document(id, title, originalFilename, contentType, sizeBytes, checksum, uploadedBy,
                 uploadedAt, subjects, stagingPath);
         document.stagingPresent = stagingPresent;
@@ -96,6 +99,7 @@ public final class Document {
         document.archivedAt = archivedAt;
         document.version = version;
         document.titleOrigin = titleOrigin == null ? TitleOrigin.MANUAL : titleOrigin;
+        document.trash = trash;
         return document;
     }
 
@@ -148,6 +152,7 @@ public final class Document {
 
     /** Manual retry after exhaustion. Resets the attempt budget but keeps the failure history visible. */
     public void requestRetry() {
+        requireNotTrashed();
         if (state != ProcessingState.FAILED) {
             throw new InvalidInputException("document.retry.notFailed", "Only failed documents can be retried");
         }
@@ -157,12 +162,14 @@ public final class Document {
     }
 
     public void changeSubjects(Set<Subject> newSubjects) {
+        requireNotTrashed();
         subjects.clear();
         subjects.addAll(newSubjects);
     }
 
     /** A member chose the title; automatic classification never replaces it afterwards. */
     public void rename(String newTitle) {
+        requireNotTrashed();
         this.title = requireTitle(newTitle);
         this.titleOrigin = TitleOrigin.MANUAL;
     }
@@ -188,6 +195,54 @@ public final class Document {
             throw new IllegalStateException("staging copy must be kept until document " + id + " is archived");
         }
         this.stagingPresent = false;
+    }
+
+    /**
+     * Moves the document to the trash. Its original, archive link, metadata and relationships stay; ordinary views
+     * hide it. Archival that is still running continues, so the original still reaches the archive. Trashing a
+     * trashed document changes nothing, which makes a repeated request harmless.
+     *
+     * @return whether the document changed
+     */
+    public boolean moveToTrash(MemberId by, Instant now, Trash.RecoveryWindow window) {
+        return moveToTrash(Trash.begin(by, now, window));
+    }
+
+    /** Moves the document to the trash with a known trash record, for example one carried over by a restore. */
+    public boolean moveToTrash(Trash trashed) {
+        if (trash != null) {
+            return false;
+        }
+        trash = Objects.requireNonNull(trashed);
+        return true;
+    }
+
+    /**
+     * Brings a trashed document back exactly as it was.
+     *
+     * @return whether the document changed
+     */
+    public boolean restoreFromTrash() {
+        if (trash == null) {
+            return false;
+        }
+        trash = null;
+        return true;
+    }
+
+    /** Refuses a member change while the document is in the trash. */
+    public void requireNotTrashed() {
+        if (trash != null) {
+            throw new TrashedException("document", id.toString());
+        }
+    }
+
+    public boolean isTrashed() {
+        return trash != null;
+    }
+
+    public Optional<Trash> trash() {
+        return Optional.ofNullable(trash);
     }
 
     public DocumentId id() {

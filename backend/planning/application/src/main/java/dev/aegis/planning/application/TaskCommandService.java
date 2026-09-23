@@ -1,7 +1,9 @@
 package dev.aegis.planning.application;
 
 import dev.aegis.documents.application.api.DocumentReferenceQuery;
+import dev.aegis.documents.application.api.DocumentReference;
 import dev.aegis.planning.application.api.ImportTask;
+import dev.aegis.planning.application.api.CancellationDeadlineReconciliation;
 import dev.aegis.planning.application.api.TaskCommands;
 import dev.aegis.planning.application.api.TaskExportRecord;
 import dev.aegis.planning.application.api.TaskSummary;
@@ -19,6 +21,8 @@ import dev.aegis.shared.MemberId;
 import dev.aegis.shared.NotFoundException;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.TaskId;
+import dev.aegis.shared.Trash;
+import dev.aegis.shared.TrashedException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -30,15 +34,20 @@ public class TaskCommandService implements TaskCommands, ImportTask {
     private final PlanningEvents events;
     private final TaskPresenter presenter;
     private final HouseholdAccess access;
+    private final CancellationDeadlineReconciliation cancellations;
+    private final Trash.RecoveryWindow recoveryWindow;
     private final Clock clock;
 
     public TaskCommandService(TaskRepository tasks, DocumentReferenceQuery documents, PlanningEvents events,
-            TaskPresenter presenter, HouseholdAccess access, Clock clock) {
+            TaskPresenter presenter, HouseholdAccess access, CancellationDeadlineReconciliation cancellations,
+            Trash.RecoveryWindow recoveryWindow, Clock clock) {
         this.tasks = tasks;
         this.documents = documents;
         this.events = events;
         this.presenter = presenter;
         this.access = access;
+        this.cancellations = cancellations;
+        this.recoveryWindow = recoveryWindow;
         this.clock = clock;
     }
 
@@ -49,8 +58,11 @@ public class TaskCommandService implements TaskCommands, ImportTask {
         TaskSource source = null;
         if (command.sourceDocumentId() != null) {
             DocumentId documentId = command.sourceDocumentId();
-            documents.findReference(documentId)
+            DocumentReference reference = documents.findReference(documentId)
                     .orElseThrow(() -> new NotFoundException("document", documentId.toString()));
+            if (reference.trashed()) {
+                throw new TrashedException("document", documentId.toString());
+            }
             source = new TaskSource(documentId);
         }
         Task task = Task.create(command.title(), command.note(), command.ownerId(), command.dueDate(),
@@ -122,6 +134,35 @@ public class TaskCommandService implements TaskCommands, ImportTask {
     }
 
     @Override
+    public TaskSummary moveToTrash(Actor actor, TaskId id, long expectedVersion) {
+        access.requireMember(actor);
+        Task task = load(id);
+        if (task.isTrashed()) {
+            return presenter.summarize(task);
+        }
+        requireVersion(task, expectedVersion);
+        task.moveToTrash(actor.memberId(), clock.instant(), recoveryWindow);
+        tasks.save(task);
+        return presenter.summarize(reload(id));
+    }
+
+    @Override
+    public TaskSummary restoreFromTrash(Actor actor, TaskId id, long expectedVersion) {
+        access.requireMember(actor);
+        Task task = load(id);
+        if (!task.isTrashed()) {
+            return presenter.summarize(task);
+        }
+        requireVersion(task, expectedVersion);
+        task.restoreFromTrash(task.owner().map(this::isActiveMember).orElse(true), clock.instant());
+        tasks.save(task);
+        // A restored cancellation review is checked against its contract at once: it gets its reminder back, or is
+        // superseded when the contract was resolved or trashed in the meantime.
+        task.cancellationReview().ifPresent(review -> cancellations.reconcile(actor, review.contractId()));
+        return presenter.summarize(reload(id));
+    }
+
+    @Override
     public ImportOutcome importTask(Actor actor, TaskExportRecord record) {
         access.requireMember(actor);
         if (tasks.findById(record.id()).isPresent()) {
@@ -141,7 +182,7 @@ public class TaskCommandService implements TaskCommands, ImportTask {
                 record.dueDate(), record.plannedDate(), source, cancellation,
                 record.createdBy() == null ? actor.memberId() : record.createdBy(),
                 record.createdAt() == null ? clock.instant() : record.createdAt(), record.updatedAt(),
-                record.completedAt(), record.completedBy(), 0);
+                record.completedAt(), record.completedBy(), record.trash(), 0);
         tasks.save(task);
         return ImportOutcome.IMPORTED;
     }
@@ -152,13 +193,17 @@ public class TaskCommandService implements TaskCommands, ImportTask {
     }
 
     private void requireOwner(MemberId ownerId) {
-        if (ownerId == null) {
-            return;
-        }
-        try {
-            access.requireMember(new Actor(ownerId));
-        } catch (dev.aegis.shared.NotAuthorizedException invalidOwner) {
+        if (ownerId != null && !isActiveMember(ownerId)) {
             throw new InvalidInputException("validation.failed", "Task owner must be an active household member");
+        }
+    }
+
+    private boolean isActiveMember(MemberId memberId) {
+        try {
+            access.requireMember(new Actor(memberId));
+            return true;
+        } catch (dev.aegis.shared.NotAuthorizedException notMember) {
+            return false;
         }
     }
 
@@ -168,10 +213,18 @@ public class TaskCommandService implements TaskCommands, ImportTask {
     }
 
     private Task loadVersion(TaskId id, long expectedVersion) {
-        Task task = tasks.findById(id).orElseThrow(() -> new NotFoundException("task", id.toString()));
-        if (task.version() != expectedVersion) {
-            throw new StaleVersionException("task", id.toString(), expectedVersion, task.version());
-        }
+        Task task = load(id);
+        requireVersion(task, expectedVersion);
         return task;
+    }
+
+    private Task load(TaskId id) {
+        return tasks.findById(id).orElseThrow(() -> new NotFoundException("task", id.toString()));
+    }
+
+    private static void requireVersion(Task task, long expectedVersion) {
+        if (task.version() != expectedVersion) {
+            throw new StaleVersionException("task", task.id().toString(), expectedVersion, task.version());
+        }
     }
 }

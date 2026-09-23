@@ -28,5 +28,8 @@ public interface DocumentRepository {
     /** Archived documents whose staging copy is still present and whose archival happened before the cut-off. */
     List<Document> findArchivedWithStagingBefore(Instant archivedBefore);
 
+    /** Documents in the trash, most recently trashed first. */
+    List<Document> findTrashed();
+
     void save(Document document);
 }
