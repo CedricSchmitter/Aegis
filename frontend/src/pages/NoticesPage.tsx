@@ -13,6 +13,7 @@ function linkTarget(notice: NoticeSummary): string | null {
   if (notice.linkType === "DOCUMENT" && notice.linkId) return `/documents/${notice.linkId}`;
   if (notice.linkType === "CONTRACT" && notice.linkId) return `/contracts/${notice.linkId}`;
   if (notice.linkType === "REVIEW" && notice.linkId) return `/review?item=${encodeURIComponent(notice.linkId)}`;
+  if (notice.linkType === "STATUS") return "/status";
   return null;
 }
 

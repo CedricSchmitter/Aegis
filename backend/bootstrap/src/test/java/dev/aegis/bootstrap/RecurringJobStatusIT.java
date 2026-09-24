@@ -72,7 +72,8 @@ class RecurringJobStatusIT extends PostgresIT {
         assertThat(StreamSupport.stream(jobs.spliterator(), false).map(job -> job.path("name").asText()))
                 .containsExactlyInAnyOrderElementsOf(registered);
         assertThat(intervals(jobs)).containsEntry("reconcile-review-inbox", 12 * 3600L)
-                .containsEntry("check-archive-text", 60L).containsEntry("reconcile-documents", 300L);
+                .containsEntry("check-archive-text", 60L).containsEntry("reconcile-documents", 300L)
+                .containsEntry("watch-job-health", 12 * 3600L);
         // Names, states and times only: no job data reaches the page.
         jobs.forEach(job -> assertThat(job.propertyNames()).containsExactlyInAnyOrder("name", "state",
                 "intervalSeconds", "lastSuccessAt", "lastFailureAt", "consecutiveFailures", "nextRunAt"));

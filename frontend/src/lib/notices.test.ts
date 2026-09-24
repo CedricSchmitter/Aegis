@@ -3,6 +3,7 @@ import i18next from "i18next";
 import de from "../i18n/de.json";
 import en from "../i18n/en.json";
 import type { NoticeSummary } from "../api/types";
+import { formatDateTime } from "./format";
 import { noticeText, REVIEW_TITLE_PARAMS, reviewTitle } from "./notices";
 
 const notice = (kind: string, params: Record<string, string>): NoticeSummary => ({
@@ -113,6 +114,55 @@ describe("noticeText", () => {
       contractEnd: "2026-12-31",
     });
     expect(noticeText(english, reminder, "en")).toContain("31 Oct 2026");
+  });
+
+  it("names a stale background job by its status page name and its last success", () => {
+    const lastSuccessAt = "2026-09-22T03:30:00Z";
+    const stale = notice("JOB_STALE", { job: "reconcile-review-inbox", state: "STALE", lastSuccessAt });
+    expect(noticeText(german, stale, "de")).toBe(
+      `Der Hintergrundjob „Prüfkorb abgleichen“ läuft nicht mehr wie geplant. Letzter erfolgreicher Lauf: ${formatDateTime(lastSuccessAt, "de")}.`,
+    );
+    expect(noticeText(english, stale, "en")).toBe(
+      `The background job “Review inbox reconciliation” has stopped running as planned. Last successful run: ${formatDateTime(lastSuccessAt, "en")}.`,
+    );
+  });
+
+  it("says when a stale job never succeeded or is no longer scheduled", () => {
+    const never = notice("JOB_STALE", { job: "check-archive-text", state: "STALE" });
+    expect(noticeText(german, never, "de")).toBe(
+      "Der Hintergrundjob „Texterkennung prüfen“ läuft nicht wie geplant und war noch nie erfolgreich.",
+    );
+    const unscheduled = notice("JOB_STALE", { job: "reconcile-documents", state: "NOT_SCHEDULED" });
+    expect(noticeText(english, unscheduled, "en")).toBe(
+      "The background job “Document processing reconciliation” is no longer scheduled and does not run.",
+    );
+  });
+
+  it("keeps an unknown job's name and falls back to the generic text for an unknown state", () => {
+    const unknownJob = notice("JOB_STALE", { job: "future-job", state: "NOT_SCHEDULED" });
+    expect(noticeText(english, unknownJob, "en")).toContain("“future-job”");
+    const incomplete: Record<string, string>[] = [{ job: "reconcile-documents", state: "SOMETHING_NEW" }, {}];
+    for (const params of incomplete) {
+      expect(noticeText(german, notice("JOB_STALE", params), "de")).toBe(
+        "Ein Hintergrundjob läuft nicht wie geplant. Details stehen auf der Statusseite.",
+      );
+    }
+  });
+
+  it("uses the same variables for the job notices in both catalogs", () => {
+    const expected: Record<string, string[]> = {
+      STALE: ["job", "lastSuccess"],
+      NEVER_SUCCEEDED: ["job"],
+      NOT_SCHEDULED: ["job"],
+    };
+    for (const catalog of [de, en]) {
+      expect(Object.keys(catalog.notices.jobStale).sort()).toEqual(Object.keys(expected).sort());
+      for (const [key, variables] of Object.entries(expected)) {
+        const text = (catalog.notices.jobStale as Record<string, string>)[key];
+        const used = [...text.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((match) => match[1]).sort();
+        expect(used, key).toEqual(variables);
+      }
+    }
   });
 
   it("lists exactly the variables each review title uses in both catalogs", () => {

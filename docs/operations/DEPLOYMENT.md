@@ -256,6 +256,10 @@ and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint,
   connected) and the deliberately unconnected integrations (calendar,
   mail, Web Push, Telegram). The AI section lists workload budgets, today's spending and recent runs with cancel and
   retry.
+- Recurring jobs: the status page shows their health (ADR-0013). `watch-job-health` checks them every five minutes
+  (`aegis.operations.job-health-watch-interval`) and sends each active member one in-app `JOB_STALE` notice per
+  incident when a job becomes stale or is no longer scheduled; it waits 10 minutes after a start so that jobs due
+  during a downtime can run first (ADR-0014).
 - Logs: `sudo docker compose --env-file /srv/aegis/deploy/.env -f /srv/aegis/deploy/compose.yaml logs -f aegis`.
 - Restart application containers only: `... restart aegis caddy` (records persist in PostgreSQL, ingress and
   Paperless volumes; logins persist because sessions are stored in PostgreSQL).

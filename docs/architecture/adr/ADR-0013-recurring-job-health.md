@@ -53,7 +53,8 @@ the next `execution_time` in `scheduled_tasks`.
   reach.
 - A job that runs successfully but does no useful work (for example an archive that cannot be reached during the text
   sweep) stays `OK`; that is the corresponding integration's status, not the job's.
-- The status page shows job state but notifies nobody; a notice to the members when a job becomes stale is issue
-  #94, broader maintenance checks remain with #39.
+- The status page itself notifies nobody. Since issue #94 the recurring job `watch-job-health` sends the members a
+  notice when a job becomes stale or is no longer scheduled ([ADR-0014](ADR-0014-stale-job-notices.md)); broader
+  maintenance checks remain with #39.
 - A new recurring job must be added to the declaration in the composition root; the integration test fails until it
   is.

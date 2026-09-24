@@ -414,7 +414,13 @@
       "DOCUMENT_ARCHIVED": "„{{title}}“ wurde archiviert und ist durchsuchbar.",
       "DOCUMENT_ARCHIVAL_FAILED": "Die Archivierung von „{{title}}“ ist fehlgeschlagen: {{reason}}. Das Original bleibt gespeichert.",
       "CONTRACT_CANCELLATION_REMINDER": "Kündigung für „{{contractName}}“ bis {{cancellationDeadline}} prüfen.",
-      "REVIEW_ITEM": "Ein neuer Eintrag muss geprüft werden."
+      "REVIEW_ITEM": "Ein neuer Eintrag muss geprüft werden.",
+      "JOB_STALE": "Ein Hintergrundjob läuft nicht wie geplant. Details stehen auf der Statusseite."
+    },
+    "jobStale": {
+      "STALE": "Der Hintergrundjob „{{job}}“ läuft nicht mehr wie geplant. Letzter erfolgreicher Lauf: {{lastSuccess}}.",
+      "NEVER_SUCCEEDED": "Der Hintergrundjob „{{job}}“ läuft nicht wie geplant und war noch nie erfolgreich.",
+      "NOT_SCHEDULED": "Der Hintergrundjob „{{job}}“ ist nicht mehr eingeplant und läuft deshalb nicht."
     },
     "readAt": "Gelesen am {{date}}",
     "inAppOnly": "Hinweise werden nur hier in der App angezeigt. Push auf das Telefon ist nicht eingerichtet."
@@ -517,12 +523,14 @@
       "name": {
         "reconcile-review-inbox": "Prüfkorb abgleichen",
         "check-archive-text": "Texterkennung prüfen",
-        "reconcile-documents": "Dokumentverarbeitung abgleichen"
+        "reconcile-documents": "Dokumentverarbeitung abgleichen",
+        "watch-job-health": "Hintergrundjobs überwachen"
       },
       "purpose": {
         "reconcile-review-inbox": "Legt neue Einträge im Prüfkorb an und benachrichtigt die Mitglieder.",
         "check-archive-text": "Prüft bei archivierten Dokumenten, ob das Archiv Text erkannt hat.",
-        "reconcile-documents": "Setzt unterbrochene Archivierungen fort und räumt Zwischendateien auf."
+        "reconcile-documents": "Setzt unterbrochene Archivierungen fort und räumt Zwischendateien auf.",
+        "watch-job-health": "Benachrichtigt die Mitglieder, wenn ein anderer Hintergrundjob nicht mehr läuft."
       }
     }
   },
