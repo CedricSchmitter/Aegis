@@ -14,7 +14,8 @@ recurring job stops running.
 ## Decision
 
 1. **Stable failure codes from the script.** `backup.py` records `failureCode` instead of free text:
-   `destination.notMounted`, `destination.markerMissing`, `destination.changed`, `repository.outsideMount`,
+   `destination.notMounted`, `destination.markerMissing`, `destination.changed`, `destination.unreadable` (the
+   checks themselves fail, for example with read errors), `repository.outsideMount`,
    `repository.notInitialized`, `repository.unreadable`, `password.missing`, `capture.failed`,
    `services.restartFailed`, `check.failed`, or `unexpected` for anything else. It never records command output.
    The file carries `schemaVersion: 2`, and the script clears the old free-text `error` on every run. When the

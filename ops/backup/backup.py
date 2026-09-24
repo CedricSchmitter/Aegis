@@ -45,6 +45,14 @@ def step(code, action, *args, **kwargs):
 
 
 def destination(env):
+    try:
+        return checked_destination(env)
+    except OSError as failure:
+        # A disk with read errors, or missing permissions, makes the checks themselves fail.
+        raise BackupFailure("destination.unreadable") from failure
+
+
+def checked_destination(env):
     mount = Path(env.get("AEGIS_BACKUP_MOUNTPOINT", "")).resolve()
     if not env.get("AEGIS_BACKUP_MOUNTPOINT") or not mount.is_mount() or mount == Path("/"):
         raise BackupFailure("destination.notMounted")

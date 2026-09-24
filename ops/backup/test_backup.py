@@ -85,6 +85,12 @@ class BackupTest(unittest.TestCase):
         self.assert_fails_with("destination.markerMissing")
         self.assertEqual(self.calls, [])
 
+    def test_a_disk_that_cannot_be_read_is_named_as_such(self):
+        with patch.object(Path, "is_file", side_effect=OSError(5, "Input/output error")):
+            state = self.assert_fails_with("destination.unreadable")
+        self.assertEqual(self.calls, [])
+        self.assertEqual(state["backupDisk"]["freeBytes"], 750, "a mounted but unreadable disk is still measured")
+
     def test_symlink_and_parent_traversal_cannot_escape_destination(self):
         outside = self.root / "other"
         outside.mkdir()
