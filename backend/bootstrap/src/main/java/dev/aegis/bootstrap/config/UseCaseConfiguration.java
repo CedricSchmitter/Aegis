@@ -83,11 +83,15 @@ import dev.aegis.review.application.ports.ReconciliationLock;
 import dev.aegis.review.application.ports.ReviewActionDispatcher;
 import dev.aegis.review.application.ports.ReviewProducer;
 import dev.aegis.review.domain.ReviewRepository;
+import dev.aegis.operations.adapters.jobs.JobHealthWatchTask;
 import dev.aegis.operations.application.IntegrationStatusService;
+import dev.aegis.operations.application.JobHealthWatchService;
+import dev.aegis.operations.application.api.JobHealthWatch;
 import dev.aegis.operations.application.api.RecurringJob;
 import dev.aegis.operations.application.api.SystemStatusQuery;
 import dev.aegis.operations.application.ports.IntegrationStatusSource;
 import dev.aegis.operations.application.ports.ProcessingOverviewSource;
+import dev.aegis.operations.application.ports.JobIncidentStore;
 import dev.aegis.operations.application.ports.RecurringJobStateSource;
 import dev.aegis.planning.application.TaskCommandService;
 import dev.aegis.planning.application.CancellationDeadlineService;
@@ -115,6 +119,7 @@ import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.Trash;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -508,16 +513,35 @@ public class UseCaseConfiguration {
 
     // Operations ----------------------------------------------------------------------------------------------
 
-    /** Each recurring job the status page reports (issue #92, ADR-0013) is declared with the interval it runs at. */
+    /**
+     * Each recurring job the status page reports (issue #92, ADR-0013) is declared with the interval it runs at: the
+     * household jobs and the watch over them.
+     */
     @Bean
     SystemStatusQuery systemStatusQuery(List<IntegrationStatusSource> sources, ProcessingOverviewSource processing,
-            ReviewReconciliationTask reviewReconciliation, RecurringJobStateSource jobStates, HouseholdAccess access,
-            Clock clock) {
-        List<RecurringJob> recurringJobs = List.of(
-                new RecurringJob(ReviewReconciliationTask.NAME, reviewReconciliation.interval()),
+            ReviewReconciliationTask reviewReconciliation, JobHealthWatchTask watchTask,
+            RecurringJobStateSource jobStates, HouseholdAccess access, Clock clock) {
+        List<RecurringJob> recurringJobs = new ArrayList<>(householdJobs(reviewReconciliation));
+        recurringJobs.add(new RecurringJob(JobHealthWatchTask.NAME, watchTask.interval()));
+        return new IntegrationStatusService(sources, processing, recurringJobs, jobStates, access, clock);
+    }
+
+    /**
+     * Members are told when a household job stops running (issue #94, ADR-0014); the watch does not watch itself. It
+     * runs without a surrounding transaction: each step is idempotent, and one job's failure must not roll back the
+     * others.
+     */
+    @Bean
+    JobHealthWatch jobHealthWatch(ReviewReconciliationTask reviewReconciliation, RecurringJobStateSource jobStates,
+            JobIncidentStore incidents, MemberDirectory members, PublishNotice notices, Clock clock) {
+        return new JobHealthWatchService(householdJobs(reviewReconciliation), jobStates, incidents, members, notices,
+                clock);
+    }
+
+    private static List<RecurringJob> householdJobs(ReviewReconciliationTask reviewReconciliation) {
+        return List.of(new RecurringJob(ReviewReconciliationTask.NAME, reviewReconciliation.interval()),
                 new RecurringJob(ArchiveTextCheckTask.NAME, ArchiveTextCheckTask.INTERVAL),
                 new RecurringJob(ReconciliationTask.NAME, ReconciliationTask.INTERVAL));
-        return new IntegrationStatusService(sources, processing, recurringJobs, jobStates, access, clock);
     }
 
     // Portability ---------------------------------------------------------------------------------------------

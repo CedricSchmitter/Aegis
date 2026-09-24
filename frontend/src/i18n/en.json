@@ -414,7 +414,13 @@
       "DOCUMENT_ARCHIVED": "“{{title}}” has been archived and is searchable.",
       "DOCUMENT_ARCHIVAL_FAILED": "Archival of “{{title}}” failed: {{reason}}. The original remains stored.",
       "CONTRACT_CANCELLATION_REMINDER": "Review cancellation for “{{contractName}}” by {{cancellationDeadline}}.",
-      "REVIEW_ITEM": "A new item needs review."
+      "REVIEW_ITEM": "A new item needs review.",
+      "JOB_STALE": "A background job is not running as planned. See the status page for details."
+    },
+    "jobStale": {
+      "STALE": "The background job “{{job}}” has stopped running as planned. Last successful run: {{lastSuccess}}.",
+      "NEVER_SUCCEEDED": "The background job “{{job}}” is not running as planned and has never succeeded.",
+      "NOT_SCHEDULED": "The background job “{{job}}” is no longer scheduled and does not run."
     },
     "readAt": "Read on {{date}}",
     "inAppOnly": "Notices are shown here in the app only. Phone push is not set up."
@@ -517,12 +523,14 @@
       "name": {
         "reconcile-review-inbox": "Review inbox reconciliation",
         "check-archive-text": "Recognized text check",
-        "reconcile-documents": "Document processing reconciliation"
+        "reconcile-documents": "Document processing reconciliation",
+        "watch-job-health": "Background job watch"
       },
       "purpose": {
         "reconcile-review-inbox": "Adds new items to the review inbox and notifies the members.",
         "check-archive-text": "Checks whether the archive recognized text in archived documents.",
-        "reconcile-documents": "Resumes interrupted archival and cleans up staging files."
+        "reconcile-documents": "Resumes interrupted archival and cleans up staging files.",
+        "watch-job-health": "Notifies the members when another background job stops running."
       }
     }
   },

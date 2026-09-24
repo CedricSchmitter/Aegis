@@ -28,6 +28,7 @@ spring:
       - classpath:db/migration/notifications
       - classpath:db/migration/review
       - classpath:db/migration/assistant
+      - classpath:db/migration/operations
   servlet:
     multipart:
       max-file-size: 50MB
@@ -104,6 +105,10 @@ aegis:
     # Background reconciliation of the review inbox (issue #89, ADR-0009): a daily safety net so that new cards and
     # their notices reach the members even if nobody opens the inbox, which reconciles at once when opened.
     reconciliation-interval: 1d
+  operations:
+    # Watch over the recurring jobs (issue #94, ADR-0014): members get a notice when a job is stale or no longer
+    # scheduled. Stale thresholds are two job intervals plus 10 minutes, so five minutes adds little delay.
+    job-health-watch-interval: 5m
   documents:
     # Automatic classification of new uploads once archived (ADR-0004). Existing and restored documents are only
     # analyzed when a member selects them. Filenames use one household naming language, not the UI language.

@@ -55,6 +55,9 @@ public abstract class PostgresIT {
         // The review reconciliation job runs once at startup and then only when a test triggers it, so its notices
         // never appear in the middle of another test's notice counts (ReviewReconciliationIT).
         registry.add("aegis.review.reconciliation-interval", () -> "12h");
+        // The job health watch likewise runs only at startup, inside its start grace, so it never adds notices while
+        // other tests truncate or stage scheduler rows (JobHealthWatchIT drives its own watch).
+        registry.add("aegis.operations.job-health-watch-interval", () -> "12h");
         // Automatic analysis of uploads is switched on only by the tests about it (AnalysisSettings#setAutomatic).
         registry.add("aegis.documents.analysis.automatic", () -> "false");
         // AI: the real Anthropic adapter stays unconfigured (no key file); workloads use the controlled model.

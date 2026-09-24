@@ -2,13 +2,17 @@ package dev.aegis.notifications.domain;
 
 import java.util.Objects;
 
-/** Record the notice opens: a task or a document, identified by its stable Aegis id. */
+/**
+ * What the notice opens: a task, document, contract or review card by its stable Aegis id, or the status page with the
+ * name of the recurring job it is about.
+ */
 public record NoticeLink(LinkType type, String id) {
     public enum LinkType {
         TASK,
         DOCUMENT,
         CONTRACT,
-        REVIEW
+        REVIEW,
+        STATUS
     }
 
     public NoticeLink {

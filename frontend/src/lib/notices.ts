@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 import type { NoticeSummary } from "../api/types";
 import { failureReasonText } from "./failureReasons";
-import { formatDate } from "./format";
+import { formatDate, formatDateTime } from "./format";
 
 /**
  * Review card title keys with the parameters their text needs. A REVIEW_ITEM notice carries the card's key and
@@ -33,12 +33,29 @@ function describesReviewCard(params: Record<string, string>): boolean {
   return required !== undefined && required.every((name) => params[name] !== undefined);
 }
 
+/**
+ * A JOB_STALE notice (issue #94) names the job by its localized status page name and its state at the start of the
+ * outage: stale since the last success, stale without any success, or no longer scheduled.
+ */
+function jobStaleText(t: TFunction, params: Record<string, string>, language: string): string {
+  const job = String(t(`status.jobs.name.${params.job}`, { defaultValue: params.job }));
+  const variant = params.state === "STALE" && !params.lastSuccessAt ? "NEVER_SUCCEEDED" : params.state;
+  return String(
+    t(`notices.jobStale.${variant}`, {
+      job,
+      lastSuccess: formatDateTime(params.lastSuccessAt, language),
+      defaultValue: t("notices.kind.JOB_STALE"),
+    }),
+  );
+}
+
 /** The localized text of a notice from its stable kind and parameters. */
 export function noticeText(t: TFunction, notice: NoticeSummary, language: string): string {
   const params = notice.params ?? {};
   if (notice.kind === "REVIEW_ITEM" && describesReviewCard(params)) {
     return reviewTitle(t, params.titleKey, params);
   }
+  if (notice.kind === "JOB_STALE" && params.job && params.state) return jobStaleText(t, params, language);
   const values: Record<string, string> = { ...params };
   if (notice.kind === "CONTRACT_CANCELLATION_REMINDER") {
     values.cancellationDeadline = params.cancellationDeadline ? formatDate(params.cancellationDeadline, language) : "";
