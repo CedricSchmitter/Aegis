@@ -163,7 +163,10 @@ test.describe("first runnable test", () => {
     await expect(page.locator("[data-testid=task-item]", { hasText: `Kündigen ${runId}` })).toContainText("Erledigt");
     await page.getByRole("link", { name: "Status" }).first().click();
     await expect(page.getByTestId("integration-paperless")).toContainText(/Verbunden/);
-    await expect(page.getByTestId("integration-externalBackup")).toContainText(/Nicht eingerichtet/);
+    // The external backup and the disks have their own section with a reason (ADR-0015); CI has no backup.
+    await expect(page.getByTestId("backup-card")).toContainText(/Nicht eingerichtet/);
+    await expect(page.getByTestId("disk-data")).toContainText("Datenspeicher des Servers");
+    await expect(page.getByTestId("disk-data").locator("[data-state]")).toHaveAttribute("data-state", /^DISK_(OK|LOW)$/);
     await expect(page.getByTestId("integration-calendar")).toContainText(/Nicht eingerichtet/);
     // Recurring background jobs are scheduled and either ran successfully or wait for their first run (ADR-0013).
     for (const job of ["reconcile-review-inbox", "check-archive-text", "reconcile-documents"]) {

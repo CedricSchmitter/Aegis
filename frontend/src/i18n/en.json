@@ -415,13 +415,23 @@
       "DOCUMENT_ARCHIVAL_FAILED": "Archival of “{{title}}” failed: {{reason}}. The original remains stored.",
       "CONTRACT_CANCELLATION_REMINDER": "Review cancellation for “{{contractName}}” by {{cancellationDeadline}}.",
       "REVIEW_ITEM": "A new item needs review.",
-      "JOB_STALE": "A background job is not running as planned. See the status page for details."
+      "JOB_STALE": "A background job is not running as planned. See the status page for details.",
+      "BACKUP_FAILED": "The external backup is not working. See the status page for details.",
+      "DISK_SPACE_LOW": "Storage is running low. See the status page for details."
     },
     "jobStale": {
       "STALE": "The background job “{{job}}” has stopped running as planned. Last successful run: {{lastSuccess}}.",
       "NEVER_SUCCEEDED": "The background job “{{job}}” is not running as planned and has never succeeded.",
       "NOT_SCHEDULED": "The background job “{{job}}” is no longer scheduled and does not run."
     },
+    "backupFailed": {
+      "FAILED": "The external backup failed: {{reason}} Last successful backup: {{lastSuccess}}.",
+      "FAILED_NEVER": "The external backup failed: {{reason}}",
+      "STALE": "There has been no successful external backup since {{lastSuccess}}.",
+      "INTERRUPTED": "The external backup was started but did not finish.",
+      "UNKNOWN": "The state of the external backup cannot be read."
+    },
+    "diskSpaceLow": "“{{disk}}” is running low on space: only {{free}} of {{total}} free.",
     "readAt": "Read on {{date}}",
     "inAppOnly": "Notices are shown here in the app only. Phone push is not set up."
   },
@@ -494,7 +504,78 @@
     "noExports": "No export created yet.",
     "exportLine": "{{generation}}: {{documents}} documents, {{tasks}} tasks",
     "missingOriginals": "{{count}} originals missing from the export",
-    "backupWarning": "The external backup is unavailable or out of date. Check the backup status below.",
+    "backupWarning": "The external backup is unavailable or out of date. See “Backup and storage” below.",
+    "storageWarning": "At least one disk is running low on space. See “Backup and storage” below.",
+    "storageTitle": "Backup and storage",
+    "storageIntro": "The external backup runs every night at 03:30 to the USB disk on the server. If it fails or space runs low, every member gets a notice.",
+    "backup": {
+      "title": "External backup",
+      "lastAttempt": "Last attempt: {{date}}",
+      "runningSince": "Running since {{date}}",
+      "state": {
+        "OK": "OK",
+        "RUNNING": "Running",
+        "FAILED": "Failed",
+        "STALE": "Stale",
+        "INTERRUPTED": "Interrupted",
+        "NOT_CONFIGURED": "Not configured",
+        "UNKNOWN": "Unknown"
+      },
+      "summary": {
+        "OK": "The last backup was successful.",
+        "RUNNING": "A backup is running. Aegis is unavailable for a few minutes meanwhile.",
+        "FAILED": "The last attempt failed: {{reason}}",
+        "STALE": "There has been no successful backup for more than 26 hours.",
+        "INTERRUPTED": "A backup was started but did not finish.",
+        "NOT_CONFIGURED": "No external backup is set up.",
+        "UNKNOWN": "The backup state cannot be read."
+      },
+      "stateHint": {
+        "STALE": "The backup runs every night at 03:30. Was the server switched off overnight? Otherwise: This has to be checked on the server (guide: docs/operations/BACKUP.md).",
+        "INTERRUPTED": "This happens, for example, after a power cut during the backup. The next backup runs tonight at 03:30."
+      },
+      "reason": {
+        "notMounted": "The backup disk is not mounted.",
+        "markerMissing": "The connected disk lacks the Aegis marker.",
+        "destinationChanged": "The backup disk was disconnected during the backup.",
+        "misconfigured": "The backup settings on the server are incomplete.",
+        "repositoryMissing": "The backup archive is missing on the backup disk.",
+        "repositoryUnreadable": "The backup archive cannot be opened.",
+        "captureFailed": "An error occurred while saving the data.",
+        "restartFailed": "Not all services could be restarted after the backup.",
+        "checkFailed": "The check of the backup archive found errors.",
+        "stateUnreadable": "The backup's state file cannot be read.",
+        "unknown": "Unknown error."
+      },
+      "hint": {
+        "notMounted": "Is the USB disk connected to the server and switched on? The next backup runs tonight at 03:30.",
+        "markerMissing": "Is the right backup disk connected?",
+        "destinationChanged": "Do not unplug the USB disk during a backup. The next backup runs tonight at 03:30.",
+        "misconfigured": "This has to be checked on the server (guide: docs/operations/BACKUP.md).",
+        "repositoryMissing": "Is the right backup disk connected? Otherwise: This has to be checked on the server (guide: docs/operations/BACKUP.md).",
+        "repositoryUnreadable": "This has to be checked on the server (guide: docs/operations/BACKUP.md).",
+        "captureFailed": "The next run tonight often succeeds. If it fails again: This has to be checked on the server (guide: docs/operations/BACKUP.md).",
+        "restartFailed": "Check that documents and the archive are available again. Otherwise: This has to be checked on the server (guide: docs/operations/BACKUP.md).",
+        "checkFailed": "This has to be checked on the server (guide: docs/operations/BACKUP.md).",
+        "stateUnreadable": "This has to be checked on the server (guide: docs/operations/BACKUP.md).",
+        "unknown": "This has to be checked on the server (guide: docs/operations/BACKUP.md)."
+      }
+    },
+    "disk": {
+      "name": {
+        "data": "Server data storage",
+        "backup": "Backup disk"
+      },
+      "state": {
+        "OK": "Sufficient",
+        "LOW": "Low",
+        "UNKNOWN": "Unknown"
+      },
+      "free": "{{free}} free of {{total}}",
+      "unmeasured": "Could not be measured.",
+      "low": "Less than {{limit}} free. Clean up old exports or files that are no longer needed on the server; documents in Aegis are kept.",
+      "measuredAt": "Measured: {{date}}"
+    },
     "version": "Running version: {{commit}} (build {{time}})",
     "jobs": {
       "title": "Background jobs",
@@ -524,13 +605,13 @@
         "reconcile-review-inbox": "Review inbox reconciliation",
         "check-archive-text": "Recognized text check",
         "reconcile-documents": "Document processing reconciliation",
-        "watch-job-health": "Background job watch"
+        "watch-job-health": "Watch jobs, backup and storage"
       },
       "purpose": {
         "reconcile-review-inbox": "Adds new items to the review inbox and notifies the members.",
         "check-archive-text": "Checks whether the archive recognized text in archived documents.",
         "reconcile-documents": "Resumes interrupted archival and cleans up staging files.",
-        "watch-job-health": "Notifies the members when another background job stops running."
+        "watch-job-health": "Notifies the members when another background job stops running, the backup fails or storage runs low."
       }
     }
   },
@@ -764,7 +845,8 @@
   "format": {
     "bytes": "{{value}} B",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "gigabytes": "{{value}} GB"
   },
   "facets": {
     "DOCUMENT_TYPE": "Document type",

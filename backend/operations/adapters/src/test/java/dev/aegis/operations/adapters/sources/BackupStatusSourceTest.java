@@ -2,37 +2,55 @@ package dev.aegis.operations.adapters.sources;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import dev.aegis.operations.application.StorageHealthService;
+import dev.aegis.operations.application.StorageLimits;
+import dev.aegis.operations.application.api.IntegrationStatus;
+import dev.aegis.operations.application.ports.BackupStateSource.BackupState;
+import dev.aegis.operations.application.ports.DiskUsage;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class BackupStatusSourceTest {
-    @TempDir
-    Path dir;
+    private static final Instant NOW = Instant.parse("2026-09-13T12:00:00Z");
 
     @Test
-    void failureAndStaleSuccessCannotAppearConnected() throws Exception {
-        Path file = dir.resolve("state.json");
-        var source = new BackupStatusSource(file.toString(), JsonMapper.builder().build(),
-                Clock.fixed(Instant.parse("2026-09-13T12:00:00Z"), ZoneOffset.UTC));
-        assertThat(source.check(null).state()).isEqualTo("NOT_CONFIGURED");
-        Files.writeString(file, """
-                {"destinationVerified":true,"lastSuccessAt":"2026-09-10T12:00:00Z"}
-                """);
-        assertThat(source.check(null).state()).isEqualTo("DEGRADED");
-        Files.writeString(file, """
-                {"destinationVerified":true,"lastSuccessAt":"2026-09-13T11:00:00Z","error":"Backup failed"}
-                """);
-        assertThat(source.check(null).state()).isEqualTo("DEGRADED");
-        assertThat(source.check(null).lastSuccessAt()).isEqualTo(Instant.parse("2026-09-13T11:00:00Z"));
-        Files.writeString(file, """
-                {"destinationVerified":true,"lastSuccessAt":"2026-09-13T11:00:00Z","error":null}
-                """);
-        assertThat(source.check(null).state()).isEqualTo("CONNECTED");
+    void failureStaleSuccessAndInterruptionCannotAppearConnected() {
+        assertThat(check(null).state()).isEqualTo(IntegrationStatus.NOT_CONFIGURED);
+
+        IntegrationStatus stale = check(new BackupState(true, NOW.minus(Duration.ofDays(3)), NOW, null, null, null));
+        assertThat(stale.state()).isEqualTo(IntegrationStatus.DEGRADED);
+        assertThat(stale.detail()).isEqualTo("backup stale");
+
+        IntegrationStatus failed = check(new BackupState(true, NOW.minus(Duration.ofHours(1)), NOW, null,
+                "destination.notMounted", null));
+        assertThat(failed.state()).isEqualTo(IntegrationStatus.DEGRADED);
+        assertThat(failed.detail()).isEqualTo("backup failed: destination.notMounted");
+        assertThat(failed.lastSuccessAt()).isEqualTo(NOW.minus(Duration.ofHours(1)));
+
+        assertThat(check(new BackupState(true, NOW.minus(Duration.ofDays(1)), NOW, NOW.minus(Duration.ofHours(4)),
+                null, null)).state()).isEqualTo(IntegrationStatus.DEGRADED);
+    }
+
+    @Test
+    void aSuccessfulOrRunningBackupIsConnected() {
+        IntegrationStatus ok = check(new BackupState(true, NOW.minus(Duration.ofHours(1)), NOW, null, null, null));
+        assertThat(ok.state()).isEqualTo(IntegrationStatus.CONNECTED);
+        assertThat(ok.lastSuccessAt()).isEqualTo(NOW.minus(Duration.ofHours(1)));
+
+        IntegrationStatus running = check(new BackupState(true, NOW.minus(Duration.ofHours(24)), NOW,
+                NOW.minus(Duration.ofMinutes(1)), null, null));
+        assertThat(running.state()).isEqualTo(IntegrationStatus.CONNECTED);
+        assertThat(running.detail()).isEqualTo("backup running");
+    }
+
+    private static IntegrationStatus check(BackupState state) {
+        Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+        var storage = new StorageHealthService(() -> Optional.ofNullable(state),
+                () -> new DiskUsage(100, 50, NOW), new StorageLimits(0.1, 0), clock);
+        return new BackupStatusSource(storage, clock).check(null);
     }
 }

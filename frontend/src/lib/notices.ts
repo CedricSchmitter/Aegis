@@ -1,7 +1,8 @@
 import type { TFunction } from "i18next";
 import type { NoticeSummary } from "../api/types";
 import { failureReasonText } from "./failureReasons";
-import { formatDate, formatDateTime } from "./format";
+import { formatBytes, formatDate, formatDateTime } from "./format";
+import { backupReasonText, diskName } from "./storage";
 
 /**
  * Review card title keys with the parameters their text needs. A REVIEW_ITEM notice carries the card's key and
@@ -49,6 +50,35 @@ function jobStaleText(t: TFunction, params: Record<string, string>, language: st
   );
 }
 
+/**
+ * A BACKUP_FAILED notice (issue #100) names the backup state at the start of the incident: a failed attempt with its
+ * localized reason, no success for more than 26 hours, an interrupted run or an unreadable state.
+ */
+function backupFailedText(t: TFunction, params: Record<string, string>, language: string): string {
+  const variant = params.state === "FAILED" && !params.lastSuccessAt ? "FAILED_NEVER" : params.state;
+  return String(
+    t(`notices.backupFailed.${variant}`, {
+      reason: backupReasonText(t, params.reason),
+      lastSuccess: formatDateTime(params.lastSuccessAt, language),
+      defaultValue: t("notices.kind.BACKUP_FAILED"),
+    }),
+  );
+}
+
+/** A DISK_SPACE_LOW notice (issue #100) names the disk and its free space when the incident opened. */
+function diskSpaceLowText(t: TFunction, params: Record<string, string>, language: string): string {
+  const free = Number(params.freeBytes);
+  const total = Number(params.totalBytes);
+  if (!Number.isFinite(free) || !Number.isFinite(total)) return String(t("notices.kind.DISK_SPACE_LOW"));
+  return String(
+    t("notices.diskSpaceLow", {
+      disk: diskName(t, params.disk),
+      free: formatBytes(free, t, language),
+      total: formatBytes(total, t, language),
+    }),
+  );
+}
+
 /** The localized text of a notice from its stable kind and parameters. */
 export function noticeText(t: TFunction, notice: NoticeSummary, language: string): string {
   const params = notice.params ?? {};
@@ -56,6 +86,8 @@ export function noticeText(t: TFunction, notice: NoticeSummary, language: string
     return reviewTitle(t, params.titleKey, params);
   }
   if (notice.kind === "JOB_STALE" && params.job && params.state) return jobStaleText(t, params, language);
+  if (notice.kind === "BACKUP_FAILED" && params.state) return backupFailedText(t, params, language);
+  if (notice.kind === "DISK_SPACE_LOW" && params.disk) return diskSpaceLowText(t, params, language);
   const values: Record<string, string> = { ...params };
   if (notice.kind === "CONTRACT_CANCELLATION_REMINDER") {
     values.cancellationDeadline = params.cancellationDeadline ? formatDate(params.cancellationDeadline, language) : "";

@@ -18,21 +18,27 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-/** Composes the status page from independent probes; a failing probe never hides the others. */
+/**
+ * Composes the status page from independent probes; a failing probe never hides the others. The backup and disk
+ * section comes from the storage health (ADR-0015).
+ */
 public class IntegrationStatusService implements SystemStatusQuery {
     private final List<IntegrationStatusSource> sources;
     private final ProcessingOverviewSource processing;
     private final List<RecurringJob> jobs;
     private final RecurringJobStateSource jobStates;
+    private final StorageHealthService storage;
     private final HouseholdAccess access;
     private final Clock clock;
 
     public IntegrationStatusService(List<IntegrationStatusSource> sources, ProcessingOverviewSource processing,
-            List<RecurringJob> jobs, RecurringJobStateSource jobStates, HouseholdAccess access, Clock clock) {
+            List<RecurringJob> jobs, RecurringJobStateSource jobStates, StorageHealthService storage,
+            HouseholdAccess access, Clock clock) {
         this.sources = sources.stream().sorted(Comparator.comparingInt(IntegrationStatusSource::order)).toList();
         this.processing = processing;
         this.jobs = List.copyOf(jobs);
         this.jobStates = jobStates;
+        this.storage = storage;
         this.access = access;
         this.clock = clock;
     }
@@ -49,7 +55,8 @@ public class IntegrationStatusService implements SystemStatusQuery {
                         "probe failed: " + failure.getMessage(), null, clock.instant()));
             }
         }
-        return new SystemStatus(statuses, processing.processingCounts(actor), jobHealth(), clock.instant());
+        return new SystemStatus(statuses, processing.processingCounts(actor), jobHealth(), storage.current(),
+                clock.instant());
     }
 
     /** Every declared job in its declared order; when the scheduler state cannot be read, each one is UNKNOWN. */

@@ -86,13 +86,20 @@ import dev.aegis.review.domain.ReviewRepository;
 import dev.aegis.operations.adapters.jobs.JobHealthWatchTask;
 import dev.aegis.operations.application.IntegrationStatusService;
 import dev.aegis.operations.application.JobHealthWatchService;
+import dev.aegis.operations.application.StorageHealthService;
+import dev.aegis.operations.application.StorageHealthWatchService;
+import dev.aegis.operations.application.StorageLimits;
 import dev.aegis.operations.application.api.JobHealthWatch;
 import dev.aegis.operations.application.api.RecurringJob;
+import dev.aegis.operations.application.api.StorageHealthWatch;
 import dev.aegis.operations.application.api.SystemStatusQuery;
+import dev.aegis.operations.application.ports.BackupStateSource;
+import dev.aegis.operations.application.ports.DataStorageSource;
 import dev.aegis.operations.application.ports.IntegrationStatusSource;
 import dev.aegis.operations.application.ports.ProcessingOverviewSource;
 import dev.aegis.operations.application.ports.JobIncidentStore;
 import dev.aegis.operations.application.ports.RecurringJobStateSource;
+import dev.aegis.operations.application.ports.StorageIncidentStore;
 import dev.aegis.planning.application.TaskCommandService;
 import dev.aegis.planning.application.CancellationDeadlineService;
 import dev.aegis.planning.application.TaskPresenter;
@@ -125,6 +132,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.util.unit.DataSize;
 
 /**
  * Explicit wiring of application services. Services that mutate state are exposed through transactional proxies
@@ -520,10 +528,29 @@ public class UseCaseConfiguration {
     @Bean
     SystemStatusQuery systemStatusQuery(List<IntegrationStatusSource> sources, ProcessingOverviewSource processing,
             ReviewReconciliationTask reviewReconciliation, JobHealthWatchTask watchTask,
-            RecurringJobStateSource jobStates, HouseholdAccess access, Clock clock) {
+            RecurringJobStateSource jobStates, StorageHealthService storage, HouseholdAccess access, Clock clock) {
         List<RecurringJob> recurringJobs = new ArrayList<>(householdJobs(reviewReconciliation));
         recurringJobs.add(new RecurringJob(JobHealthWatchTask.NAME, watchTask.interval()));
-        return new IntegrationStatusService(sources, processing, recurringJobs, jobStates, access, clock);
+        return new IntegrationStatusService(sources, processing, recurringJobs, jobStates, storage, access, clock);
+    }
+
+    /** The external backup and free disk space (issue #100, ADR-0015); the owner chose 10 % and 5 GB. */
+    @Bean
+    StorageHealthService storageHealthService(BackupStateSource backupStates, DataStorageSource dataStorage,
+            @Value("${aegis.storage.low-free-fraction:0.10}") double lowFreeFraction,
+            @Value("${aegis.storage.low-free-space:5GB}") DataSize lowFreeSpace, Clock clock) {
+        return new StorageHealthService(backupStates, dataStorage,
+                new StorageLimits(lowFreeFraction, lowFreeSpace.toBytes()), clock);
+    }
+
+    /**
+     * Members are told when the external backup stops working or a disk runs low (ADR-0015). Like the job watch it
+     * runs without a surrounding transaction because each step is idempotent.
+     */
+    @Bean
+    StorageHealthWatch storageHealthWatch(StorageHealthService storage, StorageIncidentStore incidents,
+            MemberDirectory members, PublishNotice notices, Clock clock) {
+        return new StorageHealthWatchService(storage, incidents, members, notices, clock);
     }
 
     /**
