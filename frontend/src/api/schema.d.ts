@@ -1728,6 +1728,7 @@ export interface components {
         };
         DocumentDto: {
             analysis: components["schemas"]["AnalysisDto"];
+            archivePdfAvailable: boolean;
             checksumSha256: string;
             classification: components["schemas"]["ClassificationDto"];
             contentType: string;

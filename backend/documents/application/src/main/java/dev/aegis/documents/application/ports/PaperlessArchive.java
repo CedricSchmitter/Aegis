@@ -39,6 +39,13 @@ public interface PaperlessArchive {
     record ArchiveProbe(boolean reachable, String serverVersion, String detail) {
     }
 
+    /**
+     * What the archive extracted from one of its documents: the OCR text ({@code ""} when it found none) and whether
+     * it keeps a searchable archive version besides the original (ADR-0016).
+     */
+    record ArchivedText(String content, boolean archiveVersion) {
+    }
+
     /** Hands the original over for consumption; {@code contentType} is the media type Aegis verified. */
     SubmissionOutcome submit(Path file, String title, String originalFilename, String contentType);
 
@@ -55,6 +62,9 @@ public interface PaperlessArchive {
 
     /** OCR text of an archived document as extracted by the archive; empty when it found no text. */
     String fetchContent(int paperlessDocumentId);
+
+    /** The OCR text together with whether the archive keeps an archive version, read in one request. */
+    ArchivedText fetchArchivedText(int paperlessDocumentId);
 
     boolean exists(int paperlessDocumentId);
 

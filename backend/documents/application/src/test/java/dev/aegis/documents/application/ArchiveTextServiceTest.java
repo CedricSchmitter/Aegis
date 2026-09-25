@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.aegis.documents.application.ArchiveTextService.Outcome;
 import dev.aegis.documents.application.ArchiveTextService.SweepReport;
+import dev.aegis.documents.application.api.DocumentSummary;
 import dev.aegis.documents.application.api.TextRecognitionView;
 import dev.aegis.documents.domain.Checksum;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.ProcessingState;
 import dev.aegis.documents.domain.Subject;
+import dev.aegis.documents.domain.text.ArchiveTextCheck;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import java.time.Clock;
@@ -155,6 +157,50 @@ class ArchiveTextServiceTest {
         assertThat(view(first).state()).isEqualTo(TextRecognitionView.NONE);
     }
 
+    @Test
+    void theSearchablePdfIsOfferedOnlyWhenTheArchiveKeepsAnArchiveVersion() {
+        Document scanned = archived("Scan", 41, NOW.minusSeconds(10));
+        Document bornDigital = archived("Rechnung", 42, NOW.minusSeconds(20));
+        archive.texts.put(41, LETTER);
+        archive.texts.put(42, LETTER);
+        archive.archivePdfs.put(41, "%PDF-1.7 archive".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        assertThat(summary(scanned).archivePdfAvailable()).as("not checked yet").isFalse();
+
+        service.check(scanned.id());
+        service.check(bornDigital.id());
+
+        assertThat(summary(scanned).archivePdfAvailable()).isTrue();
+        assertThat(summary(bornDigital).archivePdfAvailable()).isFalse();
+        assertThat(summary(bornDigital).textRecognition().state()).isEqualTo(TextRecognitionView.RECOGNIZED);
+
+        // A check of another archive document (as after a restore) says nothing about the current one.
+        Document restored = archived("Wiederhergestellt", 43, NOW.minusSeconds(30));
+        checks.save(ArchiveTextCheck.measured(restored.id(), 41, LETTER, true, NOW));
+        assertThat(summary(restored).archivePdfAvailable()).isFalse();
+    }
+
+    @Test
+    void checksStoredBeforeTheArchiveVersionWasRecordedAreReadAgainAndKeepTheirCountMeanwhile() {
+        Document scanned = archived("Scan", 51, NOW.minusSeconds(10));
+        archive.texts.put(51, LETTER);
+        archive.archivePdfs.put(51, "%PDF-1.7 archive".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        // As the migration leaves them: the count, no archive version, due at once.
+        checks.save(new ArchiveTextCheck(scanned.id(), 51, 60, null, NOW.minusSeconds(5), 0, NOW.minusSeconds(5)));
+        assertThat(summary(scanned).textRecognition().state()).isEqualTo(TextRecognitionView.RECOGNIZED);
+        assertThat(summary(scanned).archivePdfAvailable()).isFalse();
+
+        archive.available = false;
+        assertThat(service.sweep()).isEqualTo(new SweepReport(0, 1));
+        assertThat(summary(scanned).textRecognition().state()).as("a failed re-read keeps the count")
+                .isEqualTo(TextRecognitionView.RECOGNIZED);
+
+        archive.available = true;
+        clock.advance(Duration.ofMinutes(5));
+        assertThat(service.sweep()).isEqualTo(new SweepReport(1, 0));
+        assertThat(summary(scanned).archivePdfAvailable()).isTrue();
+        assertThat(service.sweep()).isEqualTo(new SweepReport(0, 0));
+    }
+
     private Document archived(String title, int paperlessId, Instant archivedAt) {
         Document document = Document.received(DocumentId.random(), title, title + ".jpg", "image/jpeg", 10,
                 new Checksum(String.format("%064x", paperlessId)), MemberId.random(), archivedAt.minusSeconds(60),
@@ -166,8 +212,12 @@ class ArchiveTextServiceTest {
     }
 
     private TextRecognitionView view(Document document) {
+        return summary(document).textRecognition();
+    }
+
+    private DocumentSummary summary(Document document) {
         return presenter.summarizeAll(List.of(documents.findById(document.id()).orElseThrow()), java.util.Map.of())
-                .getFirst().textRecognition();
+                .getFirst();
     }
 
     private static final class MutableClock extends Clock {

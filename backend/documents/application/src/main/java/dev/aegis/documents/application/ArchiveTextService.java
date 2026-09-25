@@ -14,16 +14,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Records whether the archive recognized text in archived documents (issue #87, ADR-0012). The archival job asks
- * right after it recorded a document as archived; a recurring sweep catches up on documents archived before this
- * existed and on checks that failed. The archive is read outside any transaction and each result is one write of
+ * Records whether the archive recognized text in archived documents (issue #87, ADR-0012) and whether it keeps a
+ * searchable archive version of them (ADR-0016). The archival job asks right after it recorded a document as archived;
+ * a recurring sweep catches up on documents archived before this existed, on checks stored before the archive version
+ * was recorded, and on checks that failed. The archive is read outside any transaction and each result is one write of
  * derived data, so a check never delays, fails or rolls back archival, and repeating one is harmless.
  */
 public class ArchiveTextService {
     /** What one check did. */
     public enum Outcome {
         MEASURED,
-        /** A count for the current archive document already existed; the archive was not asked again. */
+        /** A measurement of the current archive document already existed; the archive was not asked again. */
         ALREADY_MEASURED,
         FAILED,
         /** The document is missing or not archived; there is no archive text to check. */
@@ -63,14 +64,15 @@ public class ArchiveTextService {
         if (previous.filter(check -> check.appliesTo(paperlessId) && check.isMeasured()).isPresent()) {
             return Outcome.ALREADY_MEASURED;
         }
-        String text;
+        PaperlessArchive.ArchivedText archived;
         try {
-            text = archive.fetchContent(paperlessId);
+            archived = archive.fetchArchivedText(paperlessId);
         } catch (ArchiveUnavailableException | ArchiveRejectedException unavailable) {
             checks.save(ArchiveTextCheck.failed(id, paperlessId, previous, clock.instant()));
             return Outcome.FAILED;
         }
-        checks.save(ArchiveTextCheck.measured(id, paperlessId, text, clock.instant()));
+        checks.save(ArchiveTextCheck.measured(id, paperlessId, archived.content(), archived.archiveVersion(),
+                clock.instant()));
         return Outcome.MEASURED;
     }
 

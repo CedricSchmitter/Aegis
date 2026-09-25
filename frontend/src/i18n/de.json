@@ -89,6 +89,7 @@
     "archivePdf": "Durchsuchbares PDF",
     "archivePdfHint": "Das Original ist das Foto. Das Archiv hat daraus ein durchsuchbares PDF erzeugt.",
     "archivePdfPending": "Das Original ist das Foto. Ein durchsuchbares PDF steht bereit, sobald es archiviert ist.",
+    "archivePdfScanHint": "Das Original besteht aus gescannten Seiten ohne Textebene. Im durchsuchbaren PDF hat das Archiv den erkannten Text hinterlegt, sodass du ihn markieren, kopieren und darin suchen kannst.",
     "heicHint": "HEIC-Fotos kann der Browser meist nicht anzeigen. Öffne stattdessen das durchsuchbare PDF oder lade das Original herunter.",
     "text": {
       "badge": { "NONE": "Kein Text erkannt", "LITTLE": "Kaum Text erkannt" },

@@ -16,16 +16,16 @@ class ArchiveTextCheckTest {
 
     @Test
     void anEmptyOrBlankArchiveTextMeansNoText() {
-        assertThat(ArchiveTextCheck.measured(ID, 7, "", NOW).amount()).contains(Amount.NONE);
-        assertThat(ArchiveTextCheck.measured(ID, 7, null, NOW).amount()).contains(Amount.NONE);
+        assertThat(ArchiveTextCheck.measured(ID, 7, "", false, NOW).amount()).contains(Amount.NONE);
+        assertThat(ArchiveTextCheck.measured(ID, 7, null, false, NOW).amount()).contains(Amount.NONE);
         // Stray marks OCR reads from page edges and noise are not text.
-        assertThat(ArchiveTextCheck.measured(ID, 7, " \n\t| — ~ . , ; ' \" _ \f", NOW).amount())
+        assertThat(ArchiveTextCheck.measured(ID, 7, " \n\t| — ~ . , ; ' \" _ \f", false, NOW).amount())
                 .contains(Amount.NONE);
     }
 
     @Test
     void lettersAndDigitsOfAnyScriptCount() {
-        ArchiveTextCheck check = ArchiveTextCheck.measured(ID, 7, "Straße 12, Größe: ÄÖÜ – ÉÈ 日本", NOW);
+        ArchiveTextCheck check = ArchiveTextCheck.measured(ID, 7, "Straße 12, Größe: ÄÖÜ – ÉÈ 日本", false, NOW);
         assertThat(check.recognizedCharacters()).isEqualTo(20);
         assertThat(check.checkedAt()).isEqualTo(NOW);
         assertThat(check.nextAttemptAt()).isNull();
@@ -34,10 +34,12 @@ class ArchiveTextCheckTest {
 
     @Test
     void fewerThanFiftyLettersAndDigitsAreLittleText() {
-        assertThat(ArchiveTextCheck.measured(ID, 7, "a".repeat(49), NOW).amount()).contains(Amount.LITTLE);
-        assertThat(ArchiveTextCheck.measured(ID, 7, "a".repeat(50), NOW).amount()).contains(Amount.RECOGNIZED);
+        assertThat(ArchiveTextCheck.measured(ID, 7, "a".repeat(49), false, NOW).amount())
+                .contains(Amount.LITTLE);
+        assertThat(ArchiveTextCheck.measured(ID, 7, "a".repeat(50), false, NOW).amount())
+                .contains(Amount.RECOGNIZED);
         assertThat(ArchiveTextCheck.measured(ID, 7, "Sehr geehrte Frau Muster, anbei die Rechnung Nr. 4711 für "
-                + "den Monat September.", NOW).amount()).contains(Amount.RECOGNIZED);
+                + "den Monat September.", false, NOW).amount()).contains(Amount.RECOGNIZED);
     }
 
     @Test
@@ -60,7 +62,7 @@ class ArchiveTextCheckTest {
 
     @Test
     void aFailureNeverReplacesAMeasurementOfTheSameArchiveDocument() {
-        ArchiveTextCheck measured = ArchiveTextCheck.measured(ID, 7, "", NOW);
+        ArchiveTextCheck measured = ArchiveTextCheck.measured(ID, 7, "", false, NOW);
         assertThat(ArchiveTextCheck.failed(ID, 7, Optional.of(measured), NOW.plusSeconds(60))).isEqualTo(measured);
     }
 
@@ -73,18 +75,51 @@ class ArchiveTextCheckTest {
         ArchiveTextCheck restarted = ArchiveTextCheck.failed(ID, 8, Optional.of(old), NOW);
         assertThat(restarted.failedAttempts()).isEqualTo(1);
         ArchiveTextCheck overMeasured = ArchiveTextCheck.failed(ID, 8,
-                Optional.of(ArchiveTextCheck.measured(ID, 7, "text", NOW)), NOW);
+                Optional.of(ArchiveTextCheck.measured(ID, 7, "text", false, NOW)), NOW);
         assertThat(overMeasured.isMeasured()).isFalse();
         assertThat(overMeasured.paperlessDocumentId()).isEqualTo(8);
     }
 
     @Test
+    void theCheckRecordsWhetherTheArchiveKeepsASearchableArchiveVersion() {
+        ArchiveTextCheck scanned = ArchiveTextCheck.measured(ID, 7, "Rechnung", true, NOW);
+        assertThat(scanned.archiveVersion()).isTrue();
+        assertThat(scanned.keepsArchiveVersion()).isTrue();
+        ArchiveTextCheck bornDigital = ArchiveTextCheck.measured(ID, 7, "Rechnung", false, NOW);
+        assertThat(bornDigital.archiveVersion()).isFalse();
+        assertThat(bornDigital.keepsArchiveVersion()).isFalse();
+        assertThat(ArchiveTextCheck.failed(ID, 7, Optional.empty(), NOW).keepsArchiveVersion()).isFalse();
+    }
+
+    @Test
+    void aCountReadBeforeTheArchiveVersionWasRecordedIsKeptUntilTheDocumentIsReadAgain() {
+        // Checks stored before the archive version existed carry a count and wait for their next attempt.
+        ArchiveTextCheck earlier = new ArchiveTextCheck(ID, 7, 480, null, NOW, 0, NOW);
+        assertThat(earlier.isMeasured()).isFalse();
+        assertThat(earlier.amount()).contains(Amount.RECOGNIZED);
+
+        ArchiveTextCheck failed = ArchiveTextCheck.failed(ID, 7, Optional.of(earlier), NOW.plusSeconds(60));
+        assertThat(failed.recognizedCharacters()).as("a failed re-read keeps the count").isEqualTo(480);
+        assertThat(failed.archiveVersion()).isNull();
+        assertThat(failed.failedAttempts()).isEqualTo(1);
+        assertThat(failed.nextAttemptAt()).isEqualTo(NOW.plusSeconds(60).plus(Duration.ofMinutes(5)));
+
+        assertThat(ArchiveTextCheck.failed(ID, 8, Optional.of(earlier), NOW).recognizedCharacters())
+                .as("a count of another archive document says nothing about this one").isNull();
+    }
+
+    @Test
     void aCheckIsEitherMeasuredOrWaitingForItsNextAttempt() {
-        assertThatThrownBy(() -> new ArchiveTextCheck(ID, 7, 3, NOW, 0, NOW))
+        assertThatThrownBy(() -> new ArchiveTextCheck(ID, 7, 3, false, NOW, 0, NOW))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new ArchiveTextCheck(ID, 7, null, NOW, 1, null))
+        assertThatThrownBy(() -> new ArchiveTextCheck(ID, 7, null, null, NOW, 1, null))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new ArchiveTextCheck(ID, 7, -1, NOW, 0, null))
+        assertThatThrownBy(() -> new ArchiveTextCheck(ID, 7, 3, null, NOW, 0, null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ArchiveTextCheck(ID, 7, -1, false, NOW, 0, null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ArchiveTextCheck(ID, 7, null, true, NOW, 0, null))
+                .as("the text and the archive version are read together")
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -116,6 +116,24 @@ public class PaperlessClient implements PaperlessArchive {
         }
     }
 
+    /** {@code archived_file_name} is set when Paperless keeps an archive version (see {@link #fetchArchivePdf}). */
+    @Override
+    public ArchivedText fetchArchivedText(int paperlessDocumentId) {
+        try {
+            JsonNode document = getJson("/api/documents/{id}/?fields=id,content,archived_file_name",
+                    paperlessDocumentId);
+            return new ArchivedText(document.path("content").asText(""),
+                    hasArchiveVersion(document.path("archived_file_name")));
+        } catch (ArchiveRejectedException rejected) {
+            throw new ArchiveUnavailableException("Paperless did not return the text of document "
+                    + paperlessDocumentId);
+        }
+    }
+
+    private static boolean hasArchiveVersion(JsonNode archivedFileName) {
+        return archivedFileName.isTextual() && !archivedFileName.asText().isBlank();
+    }
+
     @Override
     public OriginalContent fetchOriginal(int paperlessDocumentId) {
         try {
@@ -149,8 +167,7 @@ public class PaperlessClient implements PaperlessArchive {
         } catch (ArchiveRejectedException rejected) {
             throw new ArchiveUnavailableException("Paperless did not describe document " + paperlessDocumentId);
         }
-        JsonNode archivedName = document.path("archived_file_name");
-        if (!archivedName.isTextual() || archivedName.asText().isBlank()) {
+        if (!hasArchiveVersion(document.path("archived_file_name"))) {
             return Optional.empty();
         }
         try {

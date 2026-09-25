@@ -16,6 +16,8 @@ fallback does not serve, nothing told the member. The archive text is only read 
 1. **A separate derived record in the documents context.** `ArchiveTextCheck` (documents domain, table
    `document_text_checks`) keeps per document the Paperless document it measured, the number of letters and digits
    in that document's OCR text, when it was checked and, after a failure, the failed attempts and the next attempt.
+   Since [ADR-0016](ADR-0016-scanned-photo-pages.md) it also records, from the same request, whether the archive
+   keeps a searchable archive version of the document (`archive_version`).
    It keeps neither the text nor a copy of it and never replaces the archive's text. It is not part of the
    `Document` aggregate: writing it does not change the document's version, so it never conflicts with a member
    editing the document, and it is not exported, because it can always be measured again from the archive.

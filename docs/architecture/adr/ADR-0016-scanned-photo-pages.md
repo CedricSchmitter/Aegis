@@ -59,12 +59,22 @@ automatically with a preview and a manual correction, and that the generated PDF
 7. **Size bounds.** At most 30 pages per scan; a page is about 0.3 to 1 MB, well under the 50 MB upload limit,
    which the app checks before sending. OpenCV.js (about 10 MB, about 3 MB compressed by Caddy) is bundled into
    the scan worker, which is started for the first page only; the app bundle does not grow.
+8. **The searchable PDF is offered for scans as well.** The scanned PDF has no text layer; Paperless keeps a
+   searchable archive version of it (`archived_file_name`) as it does for photos and for any PDF without text of its
+   own, while a born-digital PDF keeps none. The text check of [ADR-0012](ADR-0012-recognized-text.md) reads
+   `archived_file_name` in the same request as the OCR text and stores whether an archive version exists
+   (`document_text_checks.archive_version`); the document read model exposes it as `archivePdfAvailable`, and the
+   document page then offers "Durchsuchbares PDF" (`GET /api/documents/{id}/archive-pdf`) with a hint that the
+   original is scanned pages without a text layer. Aegis records this for any PDF original, not only for scans made
+   in the app, so a PDF from a flatbed scanner gets the same offer. Checks stored before this existed keep their text
+   count and are read again by the text check sweep in its bounded batches; until then their page offers no
+   searchable PDF. Photos keep the offer of [ADR-0011](ADR-0011-photo-originals.md) independent of the check.
 
 ## Consequences
 
 - Photos taken through the camera and gallery buttons are no longer stored as JPEG/PNG/WebP/HEIC originals; their
   original is an image PDF without a text layer. Search uses the archive's OCR text as for any scanned PDF
-  (ADR-0012). ADR-0011 still describes photos uploaded through "Datei auswählen" or the share target.
+  (ADR-0012), and selectable text is in the archive's searchable PDF (decision 8). ADR-0011 still describes photos uploaded through "Datei auswählen" or the share target.
 - A wrong automatic crop could cut off text; the preview before saving, the corner editor and the rule "largest
   plausible sheet" address this, and "Originalfoto verwenden" always gives the whole photo back.
 - Detection is measured on synthetic photos (tilt up to 15 degrees, keystone, shadow band, dim light, light
