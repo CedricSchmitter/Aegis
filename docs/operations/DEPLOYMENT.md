@@ -249,6 +249,15 @@ and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint,
   `frontend/`, needs Pillow). To change the icon, replace that file and run the script again. Installed apps pick up
   a new icon only when Chrome updates the installed app, which can take up to a day.
 
+## Scanned pages on the phone
+
+Photos from the camera or gallery buttons are processed in the browser
+([ADR-0016](../architecture/adr/ADR-0016-scanned-photo-pages.md)). The scan worker, which bundles OpenCV.js
+(`assets/scan.worker-*.js`, about 10 MB, about 3 MB with Caddy's compression), is loaded on the first page after
+each app update; nothing is sent to the server before "Speichern". A scan in progress is kept on the phone in IndexedDB (database
+`aegis-scan`) per member until it is saved or discarded; clearing Chrome's site data for Aegis removes it. It is
+neither part of the server backup nor of an export, because the document does not exist before it is saved.
+
 ## Operations
 
 - Status page (in the app) and `GET /api/status`: database, Paperless, export, external backup, AI (not configured;

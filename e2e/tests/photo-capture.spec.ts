@@ -27,7 +27,7 @@ async function ensureGerman(page: Page) {
   }
 }
 
-test.describe("photos of paper documents", () => {
+test.describe("photos of paper documents uploaded unchanged", () => {
   test.skip(!userA.password, "AEGIS_PASSWORD_A must be set");
 
   test("a photographed letter is saved, archived with text recognition, found by its text and trashed @mobile", async ({ page }, info) => {
@@ -42,7 +42,8 @@ test.describe("photos of paper documents", () => {
     await page.goto("/documents");
     await page.getByTestId("upload-panel-toggle").click();
     await expect(page.getByTestId("upload-take-photo")).toBeVisible();
-    await page.getByTestId("upload-image-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
+    // "Datei auswählen" keeps a photo unchanged; the camera and the gallery make scanned pages (scan-capture.spec).
+    await page.getByTestId("upload-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
     await expect(page.getByTestId("upload-preview")).toBeVisible();
     await page.getByTestId("upload-submit").click();
     await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
@@ -90,7 +91,7 @@ test.describe("photos of paper documents", () => {
 
     await page.goto("/documents");
     await page.getByTestId("upload-panel-toggle").click();
-    await page.getByTestId("upload-image-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
+    await page.getByTestId("upload-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
     await page.getByTestId("upload-submit").click();
     await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
     const card = page.locator("[data-testid=document-card]", { hasText: title }).first();
