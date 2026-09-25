@@ -7,7 +7,7 @@ import { useSession } from "../auth/SessionContext";
 import { FolderSelect } from "../components/FolderSelect";
 import { LabelPicker } from "../components/LabelPicker";
 import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
-import { byId, labelName } from "../lib/labels";
+import { byId, labelName, subjectChoices, subjectKey } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
 import { buildTree, flatten, subtreeCount } from "../lib/tree";
 
@@ -22,7 +22,7 @@ const STARTER = [
 
 export function FoldersPage() {
   const { t } = useTranslation();
-  const { members } = useSession();
+  const { members, persons } = useSession();
   const [catalog, setCatalog] = useState<CategoryListResponse | null>(null);
   const [labels, setLabels] = useState<LabelDto[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -333,7 +333,7 @@ export function FoldersPage() {
                       <fieldset>
                         <legend className="text-xs text-stone-500">{t("folders.impliedSubjects")}</legend>
                         <div className="flex flex-wrap gap-3">
-                          {["HOUSEHOLD", "HOUSE", ...members.map((member) => `MEMBER:${member.id}`)].map((value) => (
+                          {subjectChoices(persons, category.impliedSubjects.map(subjectKey)).map((value) => (
                             <label key={value} className="flex items-center gap-2 text-sm">
                               <input
                                 type="checkbox"

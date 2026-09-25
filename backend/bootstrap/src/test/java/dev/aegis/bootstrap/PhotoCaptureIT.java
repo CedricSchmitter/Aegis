@@ -43,7 +43,7 @@ class PhotoCaptureIT extends PostgresIT {
 
         // The test client declares every file part as application/pdf; only the content decides.
         ApiClient.Response uploaded = anna.upload("/api/documents", "IMG_20260922_101500.jpg", photo,
-                List.of("HOUSEHOLD"));
+                List.of("HOUSE"));
         assertThat(uploaded.status()).as(uploaded.body()).isEqualTo(201);
         JsonNode document = anna.json(uploaded).path("document");
         String id = document.path("id").asText();

@@ -12,12 +12,14 @@ import java.util.Set;
  * under and the automatic analysis (generated values, member decisions, filename override and history); schema 4
  * adds where a folder placement came from and a placement a run proposed that nobody has decided on; schema 5
  * adds the contracts with every observed fact, its provenance, validity period and review state; schema 8 adds
- * the trash state of documents, tasks and contracts (ADR-0010). Older files restore without the newer parts, and
- * records from files before schema 8 come back as not trashed.
+ * the trash state of documents, tasks and contracts (ADR-0010); schema 9 adds whether a member is a person or the
+ * household's assistant account and no longer contains the subject "both" (ADR-0017). Older files restore without
+ * the newer parts, records from files before schema 8 come back as not trashed, and a {@code HOUSEHOLD} subject of
+ * an older file comes back as one subject per person.
  */
 public final class ExportFormat {
-    public static final int SCHEMA_VERSION = 8;
-    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5, 6, 7, 8);
+    public static final int SCHEMA_VERSION = 9;
+    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9);
     public static final String MANIFEST = "manifest.json";
     public static final String DOCUMENTS_JSON = "data/documents.json";
     public static final String TASKS_JSON = "data/tasks.json";
@@ -118,7 +120,9 @@ public final class ExportFormat {
             String cancellationDeadline, String reminderDate, Long contractVersion, TrashEntry trash) {
     }
 
-    public record MemberEntry(String id, String username, String displayName, String locale, boolean active) {
+    /** {@code kind} is {@code PERSON} or {@code ASSISTANT}; absent before schema 9, which means a person. */
+    public record MemberEntry(String id, String username, String displayName, String locale, boolean active,
+            String kind) {
     }
 
     /** {@code label} is the readable name; {@code builtinKey} identifies product-owned values across instances. */

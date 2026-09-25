@@ -8,7 +8,13 @@ For dated device and release verification, use the relevant issues, pull request
 
 Current usernames are `lisa`, `cedric` and `aegis-dev`. All three see the shared household collection; person
 associations do not restrict visibility. Each account has its own preferences, responsibility and session history.
-`aegis-dev` is the agent test login. Its random password is stored only on the VM at
+`aegis-dev` is the agent test login and the household's assistant account
+([ADR-0017](../architecture/adr/ADR-0017-persons-and-the-assistant-account.md)): the installation designates it
+through `AEGIS_ASSISTANT_MEMBERS=aegis-dev` in `/srv/aegis/deploy/.env` (set with
+`ops/deploy/set-assistant-member.py`, see [DEPLOYMENT.md](DEPLOYMENT.md#assistant-account)), and the app shows it as
+`Aegis`. It keeps its login username, receives every notice and can be responsible for a task, but it is not a
+person: it is never offered as what a document is about ("Betrifft"), not shown in the subject filter and not part
+of the persons the classifier receives. Lisa and Cedric are the persons. Its random password is stored only on the VM at
 `/srv/aegis/deploy/secrets/aegis-dev-login.json` (mode 0600, readable by `aegis-agent`); retrieve it through the
 verified SSH connection when needed and keep it out of Git, logs and issues. The provisioning seed was emptied again
 after the account was created, so later restarts do not retain its plaintext password.

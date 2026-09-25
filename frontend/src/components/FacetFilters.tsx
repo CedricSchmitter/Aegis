@@ -28,6 +28,12 @@ export function FacetFilters({ filters, facets, labels, members, onChange }: Pro
     return t(`subjects.${subject.kind}`);
   };
 
+  // The assistant account is never what a document is about, so the subject filter offers only persons (ADR-0017).
+  const isAssistant = (key: string) => {
+    const subject = subjectFromKey(key);
+    return subject.kind === "MEMBER" && members.find((entry) => entry.id === subject.memberId)?.kind === "ASSISTANT";
+  };
+
   const valueName = (group: FacetGroup, key: string) =>
     group === "SUBJECT" ? subjectName(key) : labelName(known.get(key), t) || key;
 
@@ -47,9 +53,9 @@ export function FacetFilters({ filters, facets, labels, members, onChange }: Pro
       {FACET_GROUPS.map((group) => {
         const counts = facets.values?.[group] ?? {};
         const selected = selectedValues(filters, group);
-        const keys = [...new Set([...Object.keys(counts), ...selected])].sort((a, b) =>
-          valueName(group, a).localeCompare(valueName(group, b)),
-        );
+        const keys = [...new Set([...Object.keys(counts), ...selected])]
+          .filter((key) => group !== "SUBJECT" || selected.includes(key) || !isAssistant(key))
+          .sort((a, b) => valueName(group, a).localeCompare(valueName(group, b)));
         const missingCount = facets.missing?.[group] ?? 0;
         if (keys.length === 0 && missingCount === 0) return null;
         return (

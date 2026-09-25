@@ -30,6 +30,9 @@ public class MemberEntity {
     @Column(nullable = false)
     private boolean active;
 
+    @Column(nullable = false, length = 20)
+    private String kind;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -40,13 +43,14 @@ public class MemberEntity {
     }
 
     MemberEntity(UUID id, String username, String displayName, String passwordHash, String locale, boolean active,
-            Instant createdAt) {
+            String kind, Instant createdAt) {
         this.id = id;
         this.username = username;
         this.displayName = displayName;
         this.passwordHash = passwordHash;
         this.locale = locale;
         this.active = active;
+        this.kind = kind;
         this.createdAt = createdAt;
     }
 
@@ -88,6 +92,14 @@ public class MemberEntity {
 
     void setActive(boolean active) {
         this.active = active;
+    }
+
+    String getKind() {
+        return kind;
+    }
+
+    void setKind(String kind) {
+        this.kind = kind;
     }
 
     Instant getCreatedAt() {

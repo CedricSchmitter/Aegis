@@ -14,6 +14,7 @@ import dev.aegis.documents.application.api.FilenameView;
 import dev.aegis.documents.application.api.LabelChip;
 import dev.aegis.documents.application.api.LabelView;
 import dev.aegis.documents.application.api.SubjectView;
+import dev.aegis.shared.MemberId;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.TitleOrigin;
 import dev.aegis.documents.domain.analysis.DocumentAnalysis;
@@ -66,7 +67,7 @@ class DocumentAnalysisServiceTest {
                 settings), new InMemoryArchiveTextCheckRepository());
         service = new DocumentAnalysisService(f.documents, analyses, f.classifications, f.labels, f.categories,
                 f.catalog, f.classificationService, f.labelService, f.lock, archive, runs, f.views, presenter,
-                f.access, settings, f.clock);
+                f.persons, f.access, settings, f.clock);
         telekom = f.label("ORGANIZATION", "Telekom");
         telekom = f.labelService.replaceAliases(f.actor, telekom.id(), List.of("Telekom Deutschland GmbH"),
                 telekom.version());
@@ -131,7 +132,7 @@ class DocumentAnalysisServiceTest {
         Document document = f.document("Scan im Papierkorb");
         analyses.save(DocumentAnalysis.awaitingArchive(document.id(), f.lisa, CatalogFixture.NOW));
         DocumentCommandService commands = new DocumentCommandService(f.documents, f.scheduler, f.presenter, service,
-                f.access, dev.aegis.shared.Trash.RecoveryWindow.DEFAULT, f.clock);
+                f.persons, f.access, dev.aegis.shared.Trash.RecoveryWindow.DEFAULT, f.clock);
         commands.moveToTrash(f.actor, document.id(), document.version());
         document.markArchived(PAPERLESS_IDS.incrementAndGet(), CatalogFixture.NOW);
         f.documents.save(document);
@@ -238,6 +239,22 @@ class DocumentAnalysisServiceTest {
         assertThat(reviewed.subjects()).contains(new SubjectView("HOUSE", null));
         assertThat(reviewed.filename().filename()).startsWith("2026-03-02_Muster-Versicherung-AG_"
                 + "Versicherungspolice_Hausrat_");
+    }
+
+    @Test
+    void subjectClaimsNameOnlyPersonsOfTheHousehold() {
+        Document document = archived("Scan 0009", INSURANCE_TEXT);
+        int generation = request(document);
+        Proposal proposal = new Proposal(generation, 0, null, null, null, null, false, null, null, List.of(), null,
+                List.of(new SubjectClaim("MEMBER", f.cedric, 0.8, "(unser Haus)"),
+                        new SubjectClaim("MEMBER", MemberId.random(), 0.8, "(unser Haus)"),
+                        new SubjectClaim("HOUSEHOLD", null, 0.8, "(unser Haus)")), null, List.of());
+
+        assessAndApply(document, proposal);
+
+        // Neither an account that is not a person nor the retired value "both" becomes a suggestion (ADR-0017).
+        assertThat(view(document).analysis().subjects()).singleElement()
+                .satisfies(subject -> assertThat(subject.subject()).isEqualTo(new SubjectView("MEMBER", f.cedric)));
     }
 
     @Test

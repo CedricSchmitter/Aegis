@@ -50,7 +50,7 @@ export function DocumentsPage() {
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [fileFormat, setFileFormat] = useState<UploadFormat | null>(null);
-  const [uploadSubjects, setUploadSubjects] = useState<string[]>(["HOUSEHOLD"]);
+  const [uploadSubjects, setUploadSubjects] = useState<string[]>([]);
   const [uploadFolder, setUploadFolder] = useState<string | null>(null);
   const [showFolders, setShowFolders] = useState(false);
   // "Upload a new photo" on a document without recognized text opens the upload panel; read once, so filter changes

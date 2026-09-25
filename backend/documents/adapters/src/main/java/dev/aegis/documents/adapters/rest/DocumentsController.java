@@ -295,7 +295,7 @@ public class DocumentsController {
         return groups;
     }
 
-    /** Subjects arrive as form or query values: HOUSE, HOUSEHOLD or MEMBER:{memberId}. */
+    /** Subjects arrive as form or query values: HOUSE or MEMBER:{memberId}. */
     static List<SubjectView> parseSubjects(List<String> raw) {
         List<SubjectView> views = new ArrayList<>();
         if (raw == null) {

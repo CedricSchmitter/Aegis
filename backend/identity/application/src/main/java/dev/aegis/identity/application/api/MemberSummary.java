@@ -2,7 +2,21 @@ package dev.aegis.identity.application.api;
 
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.ProductLocale;
+import java.util.Objects;
 
 /** Public read model of a member for other contexts and inbound adapters. Never carries credentials. */
-public record MemberSummary(MemberId id, String username, String displayName, ProductLocale locale, boolean active) {
+public record MemberSummary(MemberId id, String username, String displayName, ProductLocale locale, boolean active,
+        MemberKind kind) {
+    public MemberSummary {
+        Objects.requireNonNull(kind, "kind");
+    }
+
+    /** A person of the household, the default for members stored before member kinds existed. */
+    public MemberSummary(MemberId id, String username, String displayName, ProductLocale locale, boolean active) {
+        this(id, username, displayName, locale, active, MemberKind.PERSON);
+    }
+
+    public boolean isPerson() {
+        return kind == MemberKind.PERSON;
+    }
 }

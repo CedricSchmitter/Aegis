@@ -87,8 +87,14 @@ class ApiFlowIT extends PostgresIT {
         assertThat(session.path("member").path("locale").asText()).isEqualTo("DE");
         annaId = session.path("member").path("id").asText();
 
+        // Two persons and the assistant account, which the startup designation renamed to "Aegis" (ADR-0017).
         JsonNode members = anna.json(anna.get("/api/members"));
-        assertThat(members).hasSize(2);
+        assertThat(members).hasSize(3);
+        assertThat(members).extracting(member -> member.path("kind").asText())
+                .containsExactlyInAnyOrder("PERSON", "PERSON", "ASSISTANT");
+        assertThat(members).filteredOn(member -> "helper".equals(member.path("username").asText())).singleElement()
+                .satisfies(helper -> assertThat(helper.path("displayName").asText()).isEqualTo("Aegis"));
+        assertThat(session.path("member").path("kind").asText()).isEqualTo("PERSON");
         benId = loggedIn(BEN).json(loggedIn(BEN).get("/api/auth/session")).path("member").path("id").asText();
         assertThat(benId).isNotEqualTo(annaId);
 

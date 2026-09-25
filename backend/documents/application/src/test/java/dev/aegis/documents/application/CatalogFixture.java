@@ -37,10 +37,11 @@ final class CatalogFixture {
     final ClassificationViews views = new ClassificationViews(classifications, categories, labels, placements);
     final DocumentPresenter presenter = TestDoubles.presenter(scheduler, views);
     final TestDoubles.MembersOnly access = new TestDoubles.MembersOnly(lisa, cedric);
+    final TestDoubles.Persons persons = new TestDoubles.Persons(lisa, cedric);
     final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
     final CategoryService categoryService = new CategoryService(categories, labels, classifications, documents,
-            catalog, lock, access, clock);
+            catalog, lock, persons, access, clock);
     final LabelService labelService = new LabelService(labels, categories, classifications, catalog, lock, access,
             clock);
     final ClassificationService classificationService = new ClassificationService(classifications, documents,
@@ -63,7 +64,7 @@ final class CatalogFixture {
         DocumentId id = DocumentId.random();
         Document document = Document.received(id, title, title + ".pdf", "application/pdf", 42,
                 new Checksum(String.format("%064x", Math.abs(id.value().hashCode()))), lisa, NOW,
-                Set.of(Subject.household()), id + ".pdf");
+                Set.of(), id + ".pdf");
         documents.save(document);
         return document;
     }

@@ -58,7 +58,7 @@ export function SharePage() {
   const [inbox, setInbox] = useState<InboxCache | null | undefined>(undefined);
   const [items, setItems] = useState<Item[] | null>(null);
   const [categories, setCategories] = useState<CategoryDto[]>([]);
-  const [subjects, setSubjects] = useState<string[]>(["HOUSEHOLD"]);
+  const [subjects, setSubjects] = useState<string[]>([]);
   const [folder, setFolder] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

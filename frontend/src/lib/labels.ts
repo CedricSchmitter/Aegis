@@ -70,6 +70,15 @@ export function subjectFromKey(key: string): SubjectDto {
     : { kind: key, memberId: null };
 }
 
+/**
+ * Subject values a member can tick: the house and each person. A value the record already carries stays offered so
+ * that it can be removed, even when it is no person (for example the assistant account).
+ */
+export function subjectChoices(persons: { id: string }[], saved: string[] = []): string[] {
+  const choices = ["HOUSE", ...persons.map((person) => `MEMBER:${person.id}`)];
+  return [...choices, ...saved.filter((key) => !choices.includes(key))];
+}
+
 /** Own effective labels of a document, used as the starting point when editing. */
 export function ownLabelIds(chips: LabelChipDto[]): string[] {
   return chips

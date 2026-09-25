@@ -3,10 +3,12 @@ package dev.aegis.documents.application;
 import dev.aegis.documents.application.api.DocumentCommands;
 import dev.aegis.documents.application.api.DocumentSummary;
 import dev.aegis.documents.application.api.SubjectView;
+import dev.aegis.documents.application.ports.HouseholdPersons;
 import dev.aegis.documents.application.ports.ProcessingScheduler;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.ProcessingState;
+import dev.aegis.documents.domain.Subject;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
@@ -15,6 +17,7 @@ import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.Trash;
 import java.time.Clock;
 import java.util.List;
+import java.util.Set;
 
 /** Member commands on documents; wrapped in a transaction by the composition root. */
 public class DocumentCommandService implements DocumentCommands {
@@ -22,17 +25,19 @@ public class DocumentCommandService implements DocumentCommands {
     private final ProcessingScheduler scheduler;
     private final DocumentPresenter presenter;
     private final AnalysisTrigger analysis;
+    private final HouseholdPersons persons;
     private final HouseholdAccess access;
     private final Trash.RecoveryWindow recoveryWindow;
     private final Clock clock;
 
     public DocumentCommandService(DocumentRepository documents, ProcessingScheduler scheduler,
-            DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdAccess access,
+            DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdPersons persons, HouseholdAccess access,
             Trash.RecoveryWindow recoveryWindow, Clock clock) {
         this.documents = documents;
         this.scheduler = scheduler;
         this.presenter = presenter;
         this.analysis = analysis;
+        this.persons = persons;
         this.access = access;
         this.recoveryWindow = recoveryWindow;
         this.clock = clock;
@@ -53,7 +58,9 @@ public class DocumentCommandService implements DocumentCommands {
             long expectedVersion) {
         access.requireMember(actor);
         Document document = loadVersion(id, expectedVersion);
-        document.changeSubjects(Subjects.fromViews(subjects));
+        Set<Subject> wanted = Subjects.fromViews(subjects);
+        SubjectPersons.requirePersons(wanted, document.subjects(), persons);
+        document.changeSubjects(wanted);
         documents.save(document);
         return presenter.summarize(load(id));
     }

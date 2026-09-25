@@ -57,7 +57,7 @@ public final class AnalysisValues {
         }
     }
 
-    /** A proposed subject association (house, household or member). Always a suggestion; subjects concern people. */
+    /** A proposed subject association (the house or a person). Always a suggestion; subjects concern people. */
     public record SubjectSuggestion(Subject subject, Double confidence, String evidence, Decision decision,
             MemberId decidedBy, Instant decidedAt) {
         public SubjectSuggestion {

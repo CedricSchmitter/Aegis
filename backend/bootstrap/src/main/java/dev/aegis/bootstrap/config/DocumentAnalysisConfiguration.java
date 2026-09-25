@@ -22,6 +22,7 @@ import dev.aegis.documents.application.api.LabelCommands;
 import dev.aegis.documents.application.ports.AnalysisRuns;
 import dev.aegis.documents.application.ports.CatalogLock;
 import dev.aegis.documents.application.ports.DocumentCatalog;
+import dev.aegis.documents.application.ports.HouseholdPersons;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
@@ -109,11 +110,11 @@ public class DocumentAnalysisConfiguration {
             ClassificationRepository classifications, LabelRepository labels, CategoryRepository categories,
             DocumentCatalog catalog, UseCaseConfiguration.ClassificationServices classification,
             LabelCommands labelCommands, CatalogLock lock, PaperlessArchive archive, AnalysisRuns runs,
-            ClassificationViews classificationViews, DocumentPresenter presenter, HouseholdAccess access,
-            AnalysisSettings settings, Clock clock) {
+            ClassificationViews classificationViews, DocumentPresenter presenter, HouseholdPersons persons,
+            HouseholdAccess access, AnalysisSettings settings, Clock clock) {
         return new AnalysisServices(new DocumentAnalysisService(documents, analyses, classifications, labels,
                 categories, catalog, classification.classification(), labelCommands, lock, archive, runs,
-                classificationViews, presenter, access, settings, clock));
+                classificationViews, presenter, persons, access, settings, clock));
     }
 
     @Bean

@@ -86,6 +86,12 @@ aegis:
     dir: ${AEGIS_EXPORTS_DIR:./data/exports}
   members:
     file: ${AEGIS_MEMBERS_FILE:}
+    # Usernames of the household's assistant account (ADR-0017): a member that logs in, receives notices and can be
+    # responsible for tasks, but is never a document subject or one of the persons the classifier sees. Designated
+    # once at startup and shown under assistant-display-name; persisted in identity, so removing a name here does
+    # not turn the account back into a person.
+    assistants: ${AEGIS_ASSISTANT_MEMBERS:}
+    assistant-display-name: Aegis
   paperless:
     base-url: ${AEGIS_PAPERLESS_URL:http://localhost:8000}
     username: ${AEGIS_PAPERLESS_USERNAME:}

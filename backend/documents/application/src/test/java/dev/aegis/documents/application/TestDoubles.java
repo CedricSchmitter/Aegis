@@ -60,6 +60,20 @@ final class TestDoubles {
         }
     }
 
+    /** The persons of the household; the assistant account is never one of them (ADR-0017). */
+    static final class Persons implements dev.aegis.documents.application.ports.HouseholdPersons {
+        final List<MemberId> persons = new ArrayList<>();
+
+        Persons(MemberId... ids) {
+            persons.addAll(List.of(ids));
+        }
+
+        @Override
+        public List<MemberId> persons() {
+            return List.copyOf(persons);
+        }
+    }
+
     static final class MembersOnly implements HouseholdAccess {
         final Set<MemberId> members = new LinkedHashSet<>();
 

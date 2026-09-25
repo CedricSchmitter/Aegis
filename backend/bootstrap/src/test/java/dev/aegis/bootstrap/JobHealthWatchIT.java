@@ -135,8 +135,9 @@ class JobHealthWatchIT extends PostgresIT {
                     .params(Timestamp.from(now), job).update();
             assertThat(watch.check()).isEqualTo(new Report(0, 1, List.of()));
             assertThat(incidents.findOpen(job)).isEmpty();
+            // One notice for each active member, including the assistant account (ADR-0017).
             assertThat(jdbc.sql("SELECT count(*) FROM notices WHERE link_id = ?").param(job).query(Long.class)
-                    .single()).isEqualTo(2L);
+                    .single()).isEqualTo(3L);
         } finally {
             jdbc.sql("DELETE FROM scheduled_tasks WHERE task_name = ?").param(job).update();
             jdbc.sql("DELETE FROM job_health_incidents WHERE job_name = ?").param(job).update();

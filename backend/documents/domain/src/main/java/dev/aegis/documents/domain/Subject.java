@@ -5,8 +5,8 @@ import dev.aegis.shared.MemberId;
 import java.util.Optional;
 
 /**
- * Subject association of a document: a member, the house or the whole household. Distinct from the uploader and
- * from any task owner. A document may carry several subjects.
+ * Subject association of a document: a person of the household or the house. Distinct from the uploader and from any
+ * task owner. A document may carry several subjects, for example one per person it concerns.
  */
 public record Subject(SubjectKind kind, MemberId member) {
     public Subject {
@@ -27,10 +27,6 @@ public record Subject(SubjectKind kind, MemberId member) {
 
     public static Subject house() {
         return new Subject(SubjectKind.HOUSE, null);
-    }
-
-    public static Subject household() {
-        return new Subject(SubjectKind.HOUSEHOLD, null);
     }
 
     public Optional<MemberId> memberId() {

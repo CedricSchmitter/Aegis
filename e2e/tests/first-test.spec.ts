@@ -90,6 +90,12 @@ test.describe("first runnable test", () => {
     // Upload a synthetic PDF and wait for real archival.
     await page.getByRole("link", { name: "Dokumente" }).first().click();
     await page.getByTestId("upload-panel-toggle").click();
+    // Nothing is ticked at first and "both" is no choice: a document about both persons names each (issue #83).
+    const subjects = page.getByTestId("upload-subjects");
+    await expect(subjects.getByRole("checkbox")).not.toHaveCount(0);
+    await expect(subjects.getByRole("checkbox", { checked: true })).toHaveCount(0);
+    await expect(subjects).not.toContainText("Beide");
+    await subjects.getByRole("checkbox", { name: await memberDisplayName(page, userA.username), exact: true }).check();
     await page.getByTestId("upload-input").setInputFiles({
       name: `Stromvertrag e2e ${runId}.pdf`,
       mimeType: "application/pdf",

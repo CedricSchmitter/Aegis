@@ -16,6 +16,7 @@ import dev.aegis.documents.application.ports.ArchiveRejectedException;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
 import dev.aegis.documents.application.ports.CatalogLock;
 import dev.aegis.documents.application.ports.DocumentCatalog;
+import dev.aegis.documents.application.ports.HouseholdPersons;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.DocumentRepository;
@@ -99,6 +100,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
     private final AnalysisRuns runs;
     private final ClassificationViews classificationViews;
     private final DocumentPresenter presenter;
+    private final HouseholdPersons persons;
     private final HouseholdAccess access;
     private final AnalysisSettings settings;
     private final Clock clock;
@@ -107,7 +109,8 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
             ClassificationRepository classifications, LabelRepository labels, CategoryRepository categories,
             DocumentCatalog catalog, ProposeClassification proposals, LabelCommands labelCommands, CatalogLock lock,
             PaperlessArchive archive, AnalysisRuns runs, ClassificationViews classificationViews,
-            DocumentPresenter presenter, HouseholdAccess access, AnalysisSettings settings, Clock clock) {
+            DocumentPresenter presenter, HouseholdPersons persons, HouseholdAccess access, AnalysisSettings settings,
+            Clock clock) {
         this.documents = documents;
         this.analyses = analyses;
         this.classifications = classifications;
@@ -121,6 +124,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         this.runs = runs;
         this.classificationViews = classificationViews;
         this.presenter = presenter;
+        this.persons = persons;
         this.access = access;
         this.settings = settings;
         this.clock = clock;
@@ -295,6 +299,9 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         Document document = loadActive(id);
         DocumentAnalysis analysis = loadVersion(id, expectedVersion);
         Subject decided = Subjects.fromViews(List.of(subject)).iterator().next();
+        if (accept) {
+            SubjectPersons.requirePersons(Set.of(decided), document.subjects(), persons);
+        }
         analysis.decideSubject(decided, accept, actor.memberId(), clock.instant());
         if (accept && !document.subjects().contains(decided)) {
             Set<Subject> next = new LinkedHashSet<>(document.subjects());
@@ -392,8 +399,11 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         DocumentDate date = ClassificationPolicy.documentDate(reported, proposal.documentDateEvidence(),
                 proposal.conflictingDates(), text, LocalDate.now(clock.withZone(settings.zone())));
         List<SubjectClaim> subjects = new ArrayList<>();
+        List<MemberId> householdPersons = persons.persons();
         for (SubjectClaim claim : proposal.subjects()) {
-            Optional<Subject> subject = subject(claim);
+            // A member claim must name a person the classifier was shown; any other id is dropped.
+            Optional<Subject> subject = subject(claim).filter(s -> s.memberId().map(householdPersons::contains)
+                    .orElse(true));
             if (subject.isPresent() && !document.subjects().contains(subject.get())
                     && ClassificationPolicy.offersCandidate(confidence(claim.confidence()),
                             Evidence.quoted(claim.evidence(), text))

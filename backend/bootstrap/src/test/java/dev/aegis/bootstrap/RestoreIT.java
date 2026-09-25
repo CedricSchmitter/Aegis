@@ -90,7 +90,7 @@ class RestoreIT extends PostgresIT {
                 (byte) 0xFE, 0, 10, 'r', 'e', 's', 't', 'o', 'r', 'e', (byte) (System.nanoTime() & 0x7F),
                 (byte) 0xFF, (byte) 0xD9};
         DocumentId photoId = upload.upload(anna, new UploadCommand("Brief vom Amt.jpg", "image/jpeg", photo.length,
-                new ByteArrayInputStream(photo), List.of(new SubjectView("HOUSEHOLD", null)))).document().id();
+                new ByteArrayInputStream(photo), List.of(new SubjectView("HOUSE", null)))).document().id();
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(
                 documentQueries.get(anna, documentId).processing().state()).isEqualTo("ARCHIVED"));
         int originalPaperlessId = documentQueries.get(anna, documentId).processing().paperlessDocumentId();

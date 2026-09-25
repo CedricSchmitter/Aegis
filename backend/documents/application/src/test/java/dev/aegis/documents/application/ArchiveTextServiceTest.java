@@ -82,7 +82,7 @@ class ArchiveTextServiceTest {
     @Test
     void aDocumentThatIsNotArchivedHasNoTextToCheck() {
         Document received = Document.received(DocumentId.random(), "Neu", "neu.jpg", "image/jpeg", 10,
-                new Checksum("c".repeat(64)), MemberId.random(), NOW, Set.of(Subject.household()), "neu.jpg");
+                new Checksum("c".repeat(64)), MemberId.random(), NOW, Set.of(Subject.house()), "neu.jpg");
         documents.save(received);
 
         assertThat(service.check(received.id())).isEqualTo(Outcome.NOT_ARCHIVED);
@@ -204,7 +204,7 @@ class ArchiveTextServiceTest {
     private Document archived(String title, int paperlessId, Instant archivedAt) {
         Document document = Document.received(DocumentId.random(), title, title + ".jpg", "image/jpeg", 10,
                 new Checksum(String.format("%064x", paperlessId)), MemberId.random(), archivedAt.minusSeconds(60),
-                Set.of(Subject.household()), title + ".jpg");
+                Set.of(Subject.house()), title + ".jpg");
         document.markSubmitted("task-" + paperlessId, archivedAt.minusSeconds(30));
         document.markArchived(paperlessId, archivedAt);
         documents.save(document);

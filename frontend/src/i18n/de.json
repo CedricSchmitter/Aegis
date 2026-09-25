@@ -38,7 +38,7 @@
   },
   "login": {
     "title": "Anmelden",
-    "intro": "Melde dich mit deinem persönlichen Zugang an. Beide Mitglieder sehen dieselben Dokumente und Aufgaben.",
+    "intro": "Melde dich mit deinem persönlichen Zugang an. Alle Mitglieder des Haushalts sehen dieselben Dokumente und Aufgaben.",
     "username": "Benutzername",
     "password": "Passwort",
     "submit": "Anmelden",
@@ -185,7 +185,6 @@
   },
   "subjects": {
     "HOUSE": "Haus",
-    "HOUSEHOLD": "Beide",
     "MEMBER": "{{name}}",
     "none": "Keine Zuordnung",
     "hint": "Die Zuordnung ist Suchmetadaten. Sie schränkt nicht ein, wer das Dokument sehen darf."
@@ -759,6 +758,7 @@
     "password.current.mismatch": "Das aktuelle Passwort stimmt nicht.",
     "subject.kind.invalid": "Ungültige Zuordnung.",
     "subject.member.invalid": "Ungültiges Mitglied in der Zuordnung.",
+    "subject.member.notPerson": "Ein Dokument kann nur Personen des Haushalts zugeordnet werden, nicht dem Assistenten.",
     "internal.error": "Interner Fehler. Bitte später erneut versuchen.",
     "category.notFound": "Ordner nicht gefunden.",
     "category.name.missing": "Der Ordnername fehlt.",

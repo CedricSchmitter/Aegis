@@ -128,7 +128,7 @@ class CatalogSearchPerformanceIT extends PostgresIT {
                     java.sql.Timestamp.from(uploadedAt.plusSeconds(index))});
             labelRows.add(new Object[] {id, topics.get(index % topics.size()), "MANUAL", "CONFIRMED",
                     java.sql.Timestamp.from(uploadedAt.plusSeconds(index))});
-            subjectRows.add(new Object[] {id, index % 3 == 0 ? "HOUSEHOLD" : "HOUSE"});
+            subjectRows.add(index % 3 == 0 ? new Object[] {id, "MEMBER", uploader} : new Object[] {id, "HOUSE", null});
         }
         jdbc.batchUpdate("""
                 INSERT INTO documents (id, title, original_filename, content_type, size_bytes, checksum_sha256,
@@ -141,7 +141,7 @@ class CatalogSearchPerformanceIT extends PostgresIT {
         jdbc.batchUpdate("""
                 INSERT INTO document_labels (document_id, label_id, origin, review_state, decided_at)
                 VALUES (?, ?, ?, ?, ?)""", labelRows);
-        jdbc.batchUpdate("INSERT INTO document_subjects (document_id, kind) VALUES (?, ?)", subjectRows);
+        jdbc.batchUpdate("INSERT INTO document_subjects (document_id, kind, member_id) VALUES (?, ?, ?)", subjectRows);
         // Bulk-inserted fixture data has no statistics yet, so the planner would size these tables from their
         // physical width instead of their content and could pick a plan no production instance ever uses
         // (autovacuum analyzes there). Measuring without this would measure the fixture, not the queries.

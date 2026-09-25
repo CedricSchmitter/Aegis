@@ -28,7 +28,7 @@ Paperless is not published on the LAN, so members only reach documents through A
 | Folder tree, folder placement | Aegis PostgreSQL | `categories`, `document_classifications` |
 | Label vocabulary (types, organizations, topics, tags) incl. aliases and status | Aegis PostgreSQL | `labels`, `label_aliases`, `label_keys` |
 | Label assignments incl. origin, review state, confidence, source reference | Aegis PostgreSQL | `document_labels` |
-| House/person/household associations | Aegis PostgreSQL | Existing `document_subjects` on the document aggregate, reused as the subject facet |
+| House/person associations | Aegis PostgreSQL | Existing `document_subjects` on the document aggregate, reused as the subject facet |
 | Effective folder implications | Derived | `category_label_effects`, `category_subject_effects`; rebuilt on every tree change |
 
 Aegis does not write Paperless correspondents, document types, tags, storage paths or custom fields, and it does
@@ -87,7 +87,7 @@ The starting tree that follows these rules, and how a household gets it, are in
 | Organization (`ORGANIZATION`) | Managed vocabulary, proper names never translated or seeded | 0..n |
 | Topic (`TOPIC`) | Managed vocabulary | 0..n |
 | Tag (`TAG`) | Free-form vocabulary | 0..n |
-| Subject | Household, House, Member (existing subjects) | 0..n |
+| Subject | House, Member (one per person; "both" was retired by [ADR-0017](ADR-0017-persons-and-the-assistant-account.md)) | 0..n |
 | Folder | Tree | exactly one or Unsorted |
 
 The **effective labels** of a document are its own effective assignments plus the labels implied by its folder
