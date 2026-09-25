@@ -1190,7 +1190,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Integration, processing and recurring job status with last success times */
+        /** Integration, processing, recurring job, backup and disk space status with last success times */
         get: operations["systemStatus"];
         put?: never;
         post?: never;
@@ -1494,6 +1494,19 @@ export interface components {
             expectedVersion: number;
             ownerId?: string | null;
         };
+        /** @description The external backup as recorded by the host's backup script; codes only, never output */
+        BackupHealthDto: {
+            /** @description Stable failure code, set only when the state is FAILED or UNKNOWN */
+            failureCode?: string | null;
+            /** Format: date-time */
+            lastAttemptAt?: string | null;
+            /** Format: date-time */
+            lastSuccessAt?: string | null;
+            /** Format: date-time */
+            runningSince?: string | null;
+            /** @enum {string} */
+            state: "OK" | "RUNNING" | "FAILED" | "STALE" | "INTERRUPTED" | "NOT_CONFIGURED" | "UNKNOWN";
+        };
         BulkAnalysisRequest: {
             documentIds: string[];
         };
@@ -1694,6 +1707,24 @@ export interface components {
             labelsKept: number;
             /** Format: int32 */
             subjectsKept: number;
+        };
+        /** @description Free space of a disk Aegis depends on; byte values are null when it could not be measured */
+        DiskSpaceDto: {
+            /** Format: int64 */
+            freeBytes?: number | null;
+            /**
+             * Format: int64
+             * @description The disk is LOW below this many free bytes
+             */
+            lowBelowBytes?: number | null;
+            /** Format: date-time */
+            measuredAt: string;
+            /** @enum {string} */
+            name: "data" | "backup";
+            /** @enum {string} */
+            state: "OK" | "LOW" | "UNKNOWN";
+            /** Format: int64 */
+            totalBytes?: number | null;
         };
         DocumentDto: {
             analysis: components["schemas"]["AnalysisDto"];
@@ -2169,6 +2200,10 @@ export interface components {
             /** Format: int32 */
             seq: number;
         };
+        StorageHealthDto: {
+            backup: components["schemas"]["BackupHealthDto"];
+            disks: components["schemas"]["DiskSpaceDto"][];
+        };
         SubjectDecisionRequest: {
             accept: boolean;
             /** Format: int64 */
@@ -2217,6 +2252,7 @@ export interface components {
             generatedAt: string;
             integrations: components["schemas"]["IntegrationStatusDto"][];
             jobs: components["schemas"]["JobHealthDto"][];
+            storage: components["schemas"]["StorageHealthDto"];
         };
         TaskDto: {
             cancellationReview?: components["schemas"]["CancellationReviewDto"];

@@ -19,7 +19,8 @@ export function formatBytes(bytes: number, t: TFunction, language: string): stri
   const number = new Intl.NumberFormat(language === "en" ? "en-GB" : "de-DE", { maximumFractionDigits: 1 });
   if (bytes < 1024) return t("format.bytes", { value: number.format(bytes) });
   if (bytes < 1024 * 1024) return t("format.kilobytes", { value: number.format(bytes / 1024) });
-  return t("format.megabytes", { value: number.format(bytes / (1024 * 1024)) });
+  if (bytes < 1024 * 1024 * 1024) return t("format.megabytes", { value: number.format(bytes / (1024 * 1024)) });
+  return t("format.gigabytes", { value: number.format(bytes / (1024 * 1024 * 1024)) });
 }
 
 /** Amounts with their explicit currency; AI costs are small, so up to four decimals are shown. */

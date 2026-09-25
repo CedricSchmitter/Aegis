@@ -260,6 +260,10 @@ and a service worker (`frontend/public/sw.js`). Over the trusted HTTPS endpoint,
   (`aegis.operations.job-health-watch-interval`) and sends each active member one in-app `JOB_STALE` notice per
   incident when a job becomes stale or is no longer scheduled; it waits 10 minutes after a start so that jobs due
   during a downtime can run first (ADR-0014).
+- Backup and storage: the same watch reads `/srv/aegis/data/backup-state/state.json` (mounted read-only) and measures
+  the data disk through `aegis.storage.data-path`. A failed, stale or interrupted backup and a disk below
+  `aegis.storage.low-free-fraction` (10 %) or `aegis.storage.low-free-space` (5 GB) send one `BACKUP_FAILED` or
+  `DISK_SPACE_LOW` notice per member and incident (ADR-0015).
 - Logs: `sudo docker compose --env-file /srv/aegis/deploy/.env -f /srv/aegis/deploy/compose.yaml logs -f aegis`.
 - Restart application containers only: `... restart aegis caddy` (records persist in PostgreSQL, ingress and
   Paperless volumes; logins persist because sessions are stored in PostgreSQL).

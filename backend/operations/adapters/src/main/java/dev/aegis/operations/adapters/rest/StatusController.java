@@ -1,7 +1,10 @@
 package dev.aegis.operations.adapters.rest;
 
+import dev.aegis.operations.application.api.BackupHealth;
+import dev.aegis.operations.application.api.DiskSpace;
 import dev.aegis.operations.application.api.IntegrationStatus;
 import dev.aegis.operations.application.api.JobHealth;
+import dev.aegis.operations.application.api.StorageHealth;
 import dev.aegis.operations.application.api.SystemStatus;
 import dev.aegis.operations.application.api.SystemStatusQuery;
 import dev.aegis.shared.Actor;
@@ -45,16 +48,50 @@ public class StatusController {
         }
     }
 
+    @Schema(description = "The external backup as recorded by the host's backup script; codes only, never output")
+    public record BackupHealthDto(
+            @Schema(allowableValues = {"OK", "RUNNING", "FAILED", "STALE", "INTERRUPTED", "NOT_CONFIGURED",
+                    "UNKNOWN"}) String state,
+            @Schema(nullable = true, description = "Stable failure code, set only when the state is FAILED or UNKNOWN")
+            String failureCode,
+            @Schema(nullable = true) Instant lastSuccessAt, @Schema(nullable = true) Instant lastAttemptAt,
+            @Schema(nullable = true) Instant runningSince) {
+        static BackupHealthDto from(BackupHealth b) {
+            return new BackupHealthDto(b.state(), b.failureCode(), b.lastSuccessAt(), b.lastAttemptAt(),
+                    b.runningSince());
+        }
+    }
+
+    @Schema(description = "Free space of a disk Aegis depends on; byte values are null when it could not be measured")
+    public record DiskSpaceDto(@Schema(allowableValues = {"data", "backup"}) String name,
+            @Schema(allowableValues = {"OK", "LOW", "UNKNOWN"}) String state,
+            @Schema(nullable = true) Long totalBytes, @Schema(nullable = true) Long freeBytes,
+            @Schema(nullable = true, description = "The disk is LOW below this many free bytes") Long lowBelowBytes,
+            Instant measuredAt) {
+        static DiskSpaceDto from(DiskSpace d) {
+            return new DiskSpaceDto(d.name(), d.state(), d.totalBytes(), d.freeBytes(), d.lowBelowBytes(),
+                    d.measuredAt());
+        }
+    }
+
+    public record StorageHealthDto(BackupHealthDto backup, List<DiskSpaceDto> disks) {
+        static StorageHealthDto from(StorageHealth s) {
+            return new StorageHealthDto(BackupHealthDto.from(s.backup()),
+                    s.disks().stream().map(DiskSpaceDto::from).toList());
+        }
+    }
+
     public record SystemStatusDto(List<IntegrationStatusDto> integrations, Map<String, Long> documentProcessing,
-            List<JobHealthDto> jobs, Instant generatedAt) {
+            List<JobHealthDto> jobs, StorageHealthDto storage, Instant generatedAt) {
         static SystemStatusDto from(SystemStatus s) {
             return new SystemStatusDto(s.integrations().stream().map(IntegrationStatusDto::from).toList(),
-                    s.documentProcessing(), s.jobs().stream().map(JobHealthDto::from).toList(), s.generatedAt());
+                    s.documentProcessing(), s.jobs().stream().map(JobHealthDto::from).toList(),
+                    StorageHealthDto.from(s.storage()), s.generatedAt());
         }
     }
 
     @Operation(operationId = "systemStatus",
-            summary = "Integration, processing and recurring job status with last success times")
+            summary = "Integration, processing, recurring job, backup and disk space status with last success times")
     @GetMapping
     public SystemStatusDto status(Actor actor) {
         return SystemStatusDto.from(status.status(actor));

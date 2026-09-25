@@ -176,4 +176,55 @@ describe("noticeText", () => {
       }
     }
   });
+
+  it("names the backup failure with its localized reason and the last success", () => {
+    const lastSuccessAt = "2026-09-23T01:31:30Z";
+    const failed = notice("BACKUP_FAILED", { state: "FAILED", reason: "destination.notMounted", lastSuccessAt });
+    expect(noticeText(german, failed, "de")).toBe(
+      `Das externe Backup ist fehlgeschlagen: Die Backup-Platte ist nicht eingebunden. Letztes erfolgreiches Backup: ${formatDateTime(lastSuccessAt, "de")}.`,
+    );
+    expect(noticeText(english, failed, "en")).toBe(
+      `The external backup failed: The backup disk is not mounted. Last successful backup: ${formatDateTime(lastSuccessAt, "en")}.`,
+    );
+    const never = notice("BACKUP_FAILED", { state: "FAILED", reason: "something.new" });
+    expect(noticeText(german, never, "de")).toBe("Das externe Backup ist fehlgeschlagen: Unbekannter Fehler.");
+    const stale = notice("BACKUP_FAILED", { state: "STALE", lastSuccessAt });
+    expect(noticeText(english, stale, "en")).toBe(
+      `There has been no successful external backup since ${formatDateTime(lastSuccessAt, "en")}.`,
+    );
+    const unreadable = notice("BACKUP_FAILED", { state: "UNKNOWN", reason: "state.unreadable" });
+    expect(noticeText(german, unreadable, "de")).toBe("Der Zustand des externen Backups lässt sich nicht lesen.");
+    expect(noticeText(german, notice("BACKUP_FAILED", { state: "LATER" }), "de")).toBe(
+      "Das externe Backup funktioniert nicht. Details stehen auf der Statusseite.",
+    );
+  });
+
+  it("names the low disk with its free and total space", () => {
+    const low = notice("DISK_SPACE_LOW", { disk: "data", freeBytes: String(4 * 1024 ** 3), totalBytes: String(93 * 1024 ** 3) });
+    expect(noticeText(german, low, "de")).toBe("Auf „Datenspeicher des Servers“ wird der Platz knapp: nur noch 4 GB von 93 GB frei.");
+    expect(noticeText(english, low, "en")).toBe("“Server data storage” is running low on space: only 4 GB of 93 GB free.");
+    expect(noticeText(english, notice("DISK_SPACE_LOW", { disk: "backup", freeBytes: "x", totalBytes: "1" }), "en")).toBe(
+      "Storage is running low. See the status page for details.",
+    );
+  });
+
+  it("uses the same variables for the backup and disk notices in both catalogs", () => {
+    const expected: Record<string, string[]> = {
+      FAILED: ["lastSuccess", "reason"],
+      FAILED_NEVER: ["reason"],
+      STALE: ["lastSuccess"],
+      INTERRUPTED: [],
+      UNKNOWN: [],
+    };
+    for (const catalog of [de, en]) {
+      expect(Object.keys(catalog.notices.backupFailed).sort()).toEqual(Object.keys(expected).sort());
+      for (const [key, variables] of Object.entries(expected)) {
+        const text = (catalog.notices.backupFailed as Record<string, string>)[key];
+        const used = [...text.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((match) => match[1]).sort();
+        expect(used, key).toEqual(variables);
+      }
+      const disk = [...catalog.notices.diskSpaceLow.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((match) => match[1]).sort();
+      expect(disk).toEqual(["disk", "free", "total"]);
+    }
+  });
 });

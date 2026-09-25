@@ -58,6 +58,11 @@ public abstract class PostgresIT {
         // The job health watch likewise runs only at startup, inside its start grace, so it never adds notices while
         // other tests truncate or stage scheduler rows (JobHealthWatchIT drives its own watch).
         registry.add("aegis.operations.job-health-watch-interval", () -> "12h");
+        // The same startup run also watches disk space. The temporary data directory can sit on a small tmpfs (3.9 GB
+        // on the VM, below the 5 GB limit), so near-zero limits keep the test data disk from counting as low and
+        // opening an incident behind StorageHealthWatchIT's back; that test drives its own watch and limits.
+        registry.add("aegis.storage.low-free-space", () -> "1MB");
+        registry.add("aegis.storage.low-free-fraction", () -> "0.0001");
         // Automatic analysis of uploads is switched on only by the tests about it (AnalysisSettings#setAutomatic).
         registry.add("aegis.documents.analysis.automatic", () -> "false");
         // AI: the real Anthropic adapter stays unconfigured (no key file); workloads use the controlled model.

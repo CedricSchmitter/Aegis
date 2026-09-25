@@ -243,6 +243,33 @@
         "required" : [ "expectedVersion" ],
         "type" : "object"
       },
+      "BackupHealthDto" : {
+        "description" : "The external backup as recorded by the host's backup script; codes only, never output",
+        "properties" : {
+          "failureCode" : {
+            "description" : "Stable failure code, set only when the state is FAILED or UNKNOWN",
+            "type" : [ "string", "null" ]
+          },
+          "lastAttemptAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "lastSuccessAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "runningSince" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "state" : {
+            "enum" : [ "OK", "RUNNING", "FAILED", "STALE", "INTERRUPTED", "NOT_CONFIGURED", "UNKNOWN" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "state" ],
+        "type" : "object"
+      },
       "BulkAnalysisRequest" : {
         "properties" : {
           "documentIds" : {
@@ -834,6 +861,38 @@
           }
         },
         "required" : [ "deletedId", "documentsMoved", "foldersMoved", "labelsKept", "subjectsKept" ],
+        "type" : "object"
+      },
+      "DiskSpaceDto" : {
+        "description" : "Free space of a disk Aegis depends on; byte values are null when it could not be measured",
+        "properties" : {
+          "freeBytes" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "lowBelowBytes" : {
+            "description" : "The disk is LOW below this many free bytes",
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "measuredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "name" : {
+            "enum" : [ "data", "backup" ],
+            "type" : "string"
+          },
+          "state" : {
+            "enum" : [ "OK", "LOW", "UNKNOWN" ],
+            "type" : "string"
+          },
+          "totalBytes" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "measuredAt", "name", "state" ],
         "type" : "object"
       },
       "DocumentDto" : {
@@ -2089,6 +2148,21 @@
         "required" : [ "at", "attempt", "inputTokens", "kind", "outputTokens", "seq" ],
         "type" : "object"
       },
+      "StorageHealthDto" : {
+        "properties" : {
+          "backup" : {
+            "$ref" : "#/components/schemas/BackupHealthDto"
+          },
+          "disks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DiskSpaceDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "backup", "disks" ],
+        "type" : "object"
+      },
       "SubjectDecisionRequest" : {
         "properties" : {
           "accept" : {
@@ -2221,9 +2295,12 @@
               "$ref" : "#/components/schemas/JobHealthDto"
             },
             "type" : "array"
+          },
+          "storage" : {
+            "$ref" : "#/components/schemas/StorageHealthDto"
           }
         },
-        "required" : [ "documentProcessing", "generatedAt", "integrations", "jobs" ],
+        "required" : [ "documentProcessing", "generatedAt", "integrations", "jobs", "storage" ],
         "type" : "object"
       },
       "TaskDto" : {
@@ -5021,7 +5098,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Integration, processing and recurring job status with last success times",
+        "summary" : "Integration, processing, recurring job, backup and disk space status with last success times",
         "tags" : [ "status" ]
       }
     },

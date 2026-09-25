@@ -1,32 +1,25 @@
 package dev.aegis.operations.adapters.sources;
 
+import dev.aegis.operations.application.StorageHealthService;
+import dev.aegis.operations.application.api.BackupHealth;
 import dev.aegis.operations.application.api.IntegrationStatus;
 import dev.aegis.operations.application.ports.IntegrationStatusSource;
 import dev.aegis.shared.Actor;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Clock;
-import java.time.Instant;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 /**
- * External backup state written by the backup script (see ops/backup). Without a verified destination and a
- * successful run, the status is reported as not configured; a local restore drill never counts as a backup.
+ * The external backup in the integration list, derived from the storage health (ADR-0015); the status page shows the
+ * details and a localized reason in its backup section. Without a verified destination and a successful run it is
+ * reported as not configured; a local restore drill never counts as a backup.
  */
 @Component
 public class BackupStatusSource implements IntegrationStatusSource {
-    private final Path stateFile;
-    private final ObjectMapper mapper;
+    private final StorageHealthService storage;
     private final Clock clock;
 
-    public BackupStatusSource(@Value("${aegis.backup.state-file:}") String stateFile, ObjectMapper mapper,
-            Clock clock) {
-        this.stateFile = stateFile == null || stateFile.isBlank() ? null : Path.of(stateFile);
-        this.mapper = mapper;
+    public BackupStatusSource(StorageHealthService storage, Clock clock) {
+        this.storage = storage;
         this.clock = clock;
     }
 
@@ -37,31 +30,19 @@ public class BackupStatusSource implements IntegrationStatusSource {
 
     @Override
     public IntegrationStatus check(Actor actor) {
-        if (stateFile == null || !Files.isRegularFile(stateFile)) {
-            return IntegrationStatus.notConfigured("externalBackup",
-                    "no external backup destination verified; local export/restore drill only");
-        }
-        try {
-            JsonNode state = mapper.readTree(Files.readAllBytes(stateFile));
-            boolean verified = state.path("destinationVerified").asBoolean(false);
-            String lastSuccess = state.path("lastSuccessAt").asText(null);
-            String repository = state.path("repository").asText(null);
-            if (state.path("error").asText(null) != null || (lastSuccess != null
-                    && Instant.parse(lastSuccess).isBefore(clock.instant().minus(java.time.Duration.ofHours(26))))) {
-                return new IntegrationStatus("externalBackup", IntegrationStatus.DEGRADED,
-                        "backup failed, is running, or is older than 26 hours",
-                        lastSuccess == null ? null : Instant.parse(lastSuccess), clock.instant());
-            }
-            if (!verified || lastSuccess == null) {
-                return IntegrationStatus.notConfigured("externalBackup",
-                        "backup destination not verified or no successful run recorded");
-            }
-            return new IntegrationStatus("externalBackup", IntegrationStatus.CONNECTED,
-                    repository == null ? null : "repository " + repository, Instant.parse(lastSuccess),
-                    clock.instant());
-        } catch (IOException | RuntimeException e) {
-            return new IntegrationStatus("externalBackup", IntegrationStatus.UNAVAILABLE,
-                    "backup state unreadable: " + e.getMessage(), null, clock.instant());
-        }
+        BackupHealth backup = storage.current().backup();
+        return switch (backup.state()) {
+            case BackupHealth.NOT_CONFIGURED -> IntegrationStatus.notConfigured("externalBackup",
+                    "backup destination not verified or no successful run recorded");
+            case BackupHealth.OK, BackupHealth.RUNNING -> new IntegrationStatus("externalBackup",
+                    IntegrationStatus.CONNECTED, BackupHealth.RUNNING.equals(backup.state()) ? "backup running" : null,
+                    backup.lastSuccessAt(), clock.instant());
+            case BackupHealth.UNKNOWN -> new IntegrationStatus("externalBackup", IntegrationStatus.UNAVAILABLE,
+                    "backup state unreadable", null, clock.instant());
+            default -> new IntegrationStatus("externalBackup", IntegrationStatus.DEGRADED,
+                    backup.failureCode() == null ? "backup " + backup.state().toLowerCase()
+                            : "backup failed: " + backup.failureCode(),
+                    backup.lastSuccessAt(), clock.instant());
+        };
     }
 }

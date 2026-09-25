@@ -67,9 +67,13 @@ deployments or other operator writes concurrently. It fails closed:
 it needs `AEGIS_BACKUP_MOUNTPOINT` to be an actual mount point carrying the marker file
 `.aegis-backup-destination`, a pre-initialized `RESTIC_REPOSITORY` canonically below that mount point and
 `RESTIC_PASSWORD_FILE`. Symlink and `..` escapes are rejected. Without these it writes a failure state and
-exits before service changes. Later failures preserve the previous success timestamp but show DEGRADED;
-a success older than 26 hours is also DEGRADED. Concurrent backup runs are locked. Repository initialization
-and retention deletion are manual; this script never runs `restic init`, `forget` or `prune`.
+exits before service changes. Every failure is recorded as a stable `failureCode` (for example
+`destination.notMounted`, `check.failed`), never as command output; the previous success timestamp is kept. While a
+run is active the state carries `runningSince`; a second run that finds the lock taken exits without touching the
+state. After every attempt with the disk mounted the state also records the disk's `backupDisk.totalBytes` and
+`freeBytes`. Repository initialization and retention deletion are manual; this script never runs `restic init`,
+`forget` or `prune`. How the application reads this state is described in
+[ADR-0015](../architecture/adr/ADR-0015-backup-and-storage-health.md).
 
 Regression tests mock Restic/Compose and use temporary files. They prove destination guards, writer ordering
 and failure cleanup. The actual external recovery test below separately proves that a snapshot can restore
@@ -127,8 +131,12 @@ systemctl list-timers aegis-backup.timer
 After each run, inspect `systemctl status aegis-backup.service`, Restic snapshots and
 `/srv/aegis/data/backup-state/state.json`; the timer's enabled state alone does not prove that a backup ran.
 
-The status source preserves the previous success timestamp on a failed run and marks failures or a success
-older than 26 hours as `DEGRADED`. The Status page shows the last success and check time. No automatic
+The Status page's "Backup and storage" section shows the backup state with a localized reason and hint per failure
+code, the last success and attempt, and the free space of the data disk and the backup disk. A failed attempt, a
+success older than 26 hours, a run marked as running for more than three hours and an unreadable state file each
+give every member one in-app notice per incident, and so does a disk with less than 10 % or 5 GB free; the incident
+closes on recovery (ADR-0015). To check what members would see without touching the live state, copy the state file
+and point a test instance's `AEGIS_BACKUP_STATE_FILE` at the copy; never edit the live file. No automatic
 `restic forget`, `prune` or other retention deletion is configured. A disk attached to the same server does not cover fire, theft or simultaneous hardware loss.
 Retention and offsite work are tracked in [issue #40](https://github.com/CedricSchmitter/Aegis/issues/40);
 scheduled-run and maintenance verification are tracked in [issue #39](https://github.com/CedricSchmitter/Aegis/issues/39).

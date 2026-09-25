@@ -415,13 +415,23 @@
       "DOCUMENT_ARCHIVAL_FAILED": "Die Archivierung von „{{title}}“ ist fehlgeschlagen: {{reason}}. Das Original bleibt gespeichert.",
       "CONTRACT_CANCELLATION_REMINDER": "Kündigung für „{{contractName}}“ bis {{cancellationDeadline}} prüfen.",
       "REVIEW_ITEM": "Ein neuer Eintrag muss geprüft werden.",
-      "JOB_STALE": "Ein Hintergrundjob läuft nicht wie geplant. Details stehen auf der Statusseite."
+      "JOB_STALE": "Ein Hintergrundjob läuft nicht wie geplant. Details stehen auf der Statusseite.",
+      "BACKUP_FAILED": "Das externe Backup funktioniert nicht. Details stehen auf der Statusseite.",
+      "DISK_SPACE_LOW": "Der Speicherplatz wird knapp. Details stehen auf der Statusseite."
     },
     "jobStale": {
       "STALE": "Der Hintergrundjob „{{job}}“ läuft nicht mehr wie geplant. Letzter erfolgreicher Lauf: {{lastSuccess}}.",
       "NEVER_SUCCEEDED": "Der Hintergrundjob „{{job}}“ läuft nicht wie geplant und war noch nie erfolgreich.",
       "NOT_SCHEDULED": "Der Hintergrundjob „{{job}}“ ist nicht mehr eingeplant und läuft deshalb nicht."
     },
+    "backupFailed": {
+      "FAILED": "Das externe Backup ist fehlgeschlagen: {{reason}} Letztes erfolgreiches Backup: {{lastSuccess}}.",
+      "FAILED_NEVER": "Das externe Backup ist fehlgeschlagen: {{reason}}",
+      "STALE": "Seit {{lastSuccess}} gab es kein erfolgreiches externes Backup.",
+      "INTERRUPTED": "Das externe Backup wurde gestartet, aber nicht beendet.",
+      "UNKNOWN": "Der Zustand des externen Backups lässt sich nicht lesen."
+    },
+    "diskSpaceLow": "Auf „{{disk}}“ wird der Platz knapp: nur noch {{free}} von {{total}} frei.",
     "readAt": "Gelesen am {{date}}",
     "inAppOnly": "Hinweise werden nur hier in der App angezeigt. Push auf das Telefon ist nicht eingerichtet."
   },
@@ -494,7 +504,80 @@
     "noExports": "Noch kein Export erstellt.",
     "exportLine": "{{generation}}: {{documents}} Dokumente, {{tasks}} Aufgaben",
     "missingOriginals": "{{count}} Originale fehlen im Export",
-    "backupWarning": "Das externe Backup ist nicht betriebsbereit oder nicht aktuell. Prüfe den Backup-Status unten.",
+    "backupWarning": "Das externe Backup ist nicht betriebsbereit oder nicht aktuell. Details stehen unten unter „Backup und Speicherplatz“.",
+    "storageWarning": "Auf mindestens einem Speicher wird der Platz knapp. Details stehen unten unter „Backup und Speicherplatz“.",
+    "storageTitle": "Backup und Speicherplatz",
+    "storageIntro": "Das externe Backup läuft jede Nacht um 03:30 auf die USB-Platte am Server. Bei einem Ausfall oder knappem Speicher bekommen alle Mitglieder einen Hinweis.",
+    "backup": {
+      "title": "Externes Backup",
+      "lastAttempt": "Letzter Versuch: {{date}}",
+      "runningSince": "Läuft seit {{date}}",
+      "state": {
+        "OK": "In Ordnung",
+        "RUNNING": "Läuft",
+        "FAILED": "Fehlgeschlagen",
+        "STALE": "Veraltet",
+        "INTERRUPTED": "Unterbrochen",
+        "NOT_CONFIGURED": "Nicht eingerichtet",
+        "UNKNOWN": "Unbekannt"
+      },
+      "summary": {
+        "OK": "Das letzte Backup war erfolgreich.",
+        "RUNNING": "Gerade läuft ein Backup. Aegis ist dabei für einige Minuten nicht erreichbar.",
+        "FAILED": "Der letzte Versuch ist fehlgeschlagen: {{reason}}",
+        "STALE": "Seit mehr als 26 Stunden gab es kein erfolgreiches Backup.",
+        "INTERRUPTED": "Ein Backup wurde gestartet, aber nicht beendet.",
+        "NOT_CONFIGURED": "Es ist kein externes Backup eingerichtet.",
+        "UNKNOWN": "Der Zustand des Backups lässt sich nicht lesen."
+      },
+      "stateHint": {
+        "STALE": "Das Backup läuft jede Nacht um 03:30. War der Server nachts ausgeschaltet? Sonst: Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "INTERRUPTED": "Das passiert zum Beispiel bei einem Stromausfall während des Backups. Das nächste Backup läuft heute Nacht um 03:30."
+      },
+      "reason": {
+        "notMounted": "Die Backup-Platte ist nicht eingebunden.",
+        "markerMissing": "Auf der angeschlossenen Platte fehlt die Aegis-Markierung.",
+        "destinationChanged": "Die Backup-Platte wurde während des Backups getrennt.",
+        "destinationUnreadable": "Die Backup-Platte lässt sich nicht lesen.",
+        "misconfigured": "Die Backup-Einstellungen auf dem Server sind unvollständig.",
+        "repositoryMissing": "Auf der Backup-Platte fehlt das Backup-Archiv.",
+        "repositoryUnreadable": "Das Backup-Archiv lässt sich nicht öffnen.",
+        "captureFailed": "Beim Sichern der Daten ist ein Fehler aufgetreten.",
+        "restartFailed": "Nach dem Backup ließen sich nicht alle Dienste wieder starten.",
+        "checkFailed": "Die Prüfung des Backup-Archivs hat Fehler gefunden.",
+        "stateUnreadable": "Die Statusdatei des Backups lässt sich nicht lesen.",
+        "unknown": "Unbekannter Fehler."
+      },
+      "hint": {
+        "notMounted": "Ist die USB-Platte am Server angeschlossen und eingeschaltet? Das nächste Backup läuft heute Nacht um 03:30.",
+        "markerMissing": "Ist die richtige Backup-Platte angeschlossen?",
+        "destinationChanged": "Die USB-Platte während eines Backups nicht abziehen. Das nächste Backup läuft heute Nacht um 03:30.",
+        "destinationUnreadable": "Die USB-Platte ab- und wieder anstecken. Tritt der Fehler wieder auf, ist die Platte vielleicht defekt: Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "misconfigured": "Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "repositoryMissing": "Ist die richtige Backup-Platte angeschlossen? Sonst: Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "repositoryUnreadable": "Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "captureFailed": "Oft klappt der nächste Lauf heute Nacht. Schlägt er wieder fehl: Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "restartFailed": "Prüfe, ob Dokumente und Archiv wieder erreichbar sind. Sonst: Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "checkFailed": "Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "stateUnreadable": "Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "unknown": "Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md)."
+      }
+    },
+    "disk": {
+      "name": {
+        "data": "Datenspeicher des Servers",
+        "backup": "Backup-Platte"
+      },
+      "state": {
+        "OK": "Ausreichend",
+        "LOW": "Knapp",
+        "UNKNOWN": "Unbekannt"
+      },
+      "free": "{{free}} frei von {{total}}",
+      "unmeasured": "Konnte nicht gemessen werden.",
+      "low": "Weniger als {{limit}} frei. Alte Exporte oder nicht mehr benötigte Dateien auf dem Server aufräumen; Dokumente in Aegis bleiben erhalten.",
+      "measuredAt": "Gemessen: {{date}}"
+    },
     "version": "Laufende Version: {{commit}} (Build {{time}})",
     "jobs": {
       "title": "Hintergrundjobs",
@@ -524,13 +607,13 @@
         "reconcile-review-inbox": "Prüfkorb abgleichen",
         "check-archive-text": "Texterkennung prüfen",
         "reconcile-documents": "Dokumentverarbeitung abgleichen",
-        "watch-job-health": "Hintergrundjobs überwachen"
+        "watch-job-health": "Jobs, Backup und Speicher überwachen"
       },
       "purpose": {
         "reconcile-review-inbox": "Legt neue Einträge im Prüfkorb an und benachrichtigt die Mitglieder.",
         "check-archive-text": "Prüft bei archivierten Dokumenten, ob das Archiv Text erkannt hat.",
         "reconcile-documents": "Setzt unterbrochene Archivierungen fort und räumt Zwischendateien auf.",
-        "watch-job-health": "Benachrichtigt die Mitglieder, wenn ein anderer Hintergrundjob nicht mehr läuft."
+        "watch-job-health": "Benachrichtigt die Mitglieder, wenn ein anderer Hintergrundjob nicht mehr läuft, das Backup ausfällt oder der Speicherplatz knapp wird."
       }
     }
   },
@@ -764,7 +847,8 @@
   "format": {
     "bytes": "{{value}} B",
     "kilobytes": "{{value}} KB",
-    "megabytes": "{{value}} MB"
+    "megabytes": "{{value}} MB",
+    "gigabytes": "{{value}} GB"
   },
   "facets": {
     "DOCUMENT_TYPE": "Dokumenttyp",

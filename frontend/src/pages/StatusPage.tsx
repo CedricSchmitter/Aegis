@@ -4,9 +4,11 @@ import { api, unwrap } from "../api/client";
 import type { ExportSummary, SystemStatus, VersionResponse } from "../api/types";
 import { AiSection } from "../components/AiSection";
 import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
+import { StorageSection } from "../components/StorageSection";
 import { formatDateTime } from "../lib/format";
 import { jobInterval, needsAttention } from "../lib/jobs";
 import { problemMessage } from "../lib/problem";
+import { backupNeedsAttention } from "../lib/storage";
 
 export function StatusPage() {
   const { t, i18n } = useTranslation();
@@ -16,7 +18,8 @@ export function StatusPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
-  const backupHealthy = status?.integrations.some((integration) => integration.name === "externalBackup" && integration.state === "CONNECTED");
+  const backupHealthy = status ? !backupNeedsAttention(status.storage.backup) : false;
+  const diskLow = status?.storage.disks.some((disk) => disk.state === "LOW") ?? false;
 
   const load = useCallback(async () => {
     try {
@@ -56,13 +59,15 @@ export function StatusPage() {
       {status && (
         <div className="flex flex-col gap-4">
           {!backupHealthy && <p className="alert-warn" role="note">{t("status.backupWarning")}</p>}
+          {diskLow && <p className="alert-warn" role="note" data-testid="storage-warning">{t("status.storageWarning")}</p>}
           {status.jobs.some(needsAttention) && <p className="alert-warn" role="note" data-testid="jobs-warning">{t("status.jobs.warning")}</p>}
           <section aria-labelledby="integrations">
             <h2 id="integrations" className="mb-2 text-lg font-semibold">
               {t("status.integrations")}
             </h2>
             <ul className="flex flex-col gap-2">
-              {status.integrations.map((integration) => (
+              {/* The external backup has its own section with the reason and the disks. */}
+              {status.integrations.filter((integration) => integration.name !== "externalBackup").map((integration) => (
                 <li key={integration.name} className="card flex flex-wrap items-center justify-between gap-2" data-testid={`integration-${integration.name}`}>
                   <div>
                     <p className="font-medium">{t(`status.integration.${integration.name}`, { defaultValue: integration.name })}</p>
@@ -77,6 +82,7 @@ export function StatusPage() {
               ))}
             </ul>
           </section>
+          <StorageSection storage={status.storage} />
           <section aria-labelledby="processing">
             <h2 id="processing" className="mb-2 text-lg font-semibold">
               {t("status.processing")}

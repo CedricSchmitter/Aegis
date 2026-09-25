@@ -10,6 +10,7 @@ import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import dev.aegis.bootstrap.support.ApiClient;
 import dev.aegis.bootstrap.support.PostgresIT;
 import dev.aegis.operations.application.IntegrationStatusService;
+import dev.aegis.operations.application.StorageHealthService;
 import dev.aegis.operations.application.api.JobHealth;
 import dev.aegis.operations.application.api.RecurringJob;
 import dev.aegis.operations.application.ports.RecurringJobStateSource;
@@ -44,6 +45,9 @@ import tools.jackson.databind.JsonNode;
 class RecurringJobStatusIT extends PostgresIT {
     @LocalServerPort
     int port;
+
+    @Autowired
+    StorageHealthService storage;
 
     @Autowired
     List<RecurringTask<?>> recurringTasks;
@@ -111,7 +115,7 @@ class RecurringJobStatusIT extends PostgresIT {
                     new RecurringJob(prefix + "stale", Duration.ofDays(1)),
                     new RecurringJob(prefix + "missing", Duration.ofDays(1)));
             IntegrationStatusService status = new IntegrationStatusService(List.of(), actor -> Map.of(), declared,
-                    jobStates, actor -> {
+                    jobStates, storage, actor -> {
                     }, Clock.fixed(now, ZoneOffset.UTC));
 
             assertThat(status.status(new Actor(MemberId.random())).jobs())
