@@ -900,6 +900,9 @@
           "analysis" : {
             "$ref" : "#/components/schemas/AnalysisDto"
           },
+          "archivePdfAvailable" : {
+            "type" : "boolean"
+          },
           "checksumSha256" : {
             "type" : "string"
           },
@@ -959,7 +962,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "analysis", "checksumSha256", "classification", "contentType", "filename", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "textRecognition", "title", "titleOrigin", "uploadedAt", "uploadedBy", "version" ],
+        "required" : [ "analysis", "archivePdfAvailable", "checksumSha256", "classification", "contentType", "filename", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "textRecognition", "title", "titleOrigin", "uploadedAt", "uploadedBy", "version" ],
         "type" : "object"
       },
       "DocumentListResponse" : {

@@ -110,6 +110,10 @@ test.describe("first runnable test", () => {
     expect(original.ok()).toBeTruthy();
     expect(original.headers()["x-aegis-original-source"]).toBe("ARCHIVE");
     expect(createHash("sha256").update(await original.body()).digest("hex")).toBe(RUN_SHA256);
+    // A PDF with its own text layer has no separate searchable PDF.
+    await expect(page.getByTestId("text-pending")).toHaveCount(0, { timeout: 60_000 });
+    await expect(page.getByTestId("open-archive-pdf")).toHaveCount(0);
+    await expect(page.getByTestId("scan-hint")).toHaveCount(0);
 
     // Search by content (full text of the archive) and by title.
     await page.getByRole("link", { name: "Dokumente" }).first().click();

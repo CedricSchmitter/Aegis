@@ -117,6 +117,12 @@ test.describe("scanned photos", () => {
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });
     await expect(page.getByTestId("text-pending")).toHaveCount(0, { timeout: 60_000 });
     await expect(page.getByTestId("text-hint")).toHaveCount(0);
+    // The scan has no text layer; the archive's searchable PDF carries the recognized text.
+    await expect(page.getByTestId("scan-hint")).toBeVisible();
+    await expect(page.getByTestId("open-archive-pdf")).toBeVisible();
+    const searchable = await page.request.get(`/api/documents/${documentId}/archive-pdf`, { headers: { Accept: "*/*" } });
+    expect(searchable.ok()).toBeTruthy();
+    expect(searchable.headers()["content-type"]).toBe("application/pdf");
 
     await trash(page, documentId);
   });
