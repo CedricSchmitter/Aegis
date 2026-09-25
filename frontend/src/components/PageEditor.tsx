@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import { useTranslation } from "react-i18next";
 import type { ScanPage } from "../scan/draft";
 import { clampCorner, fullQuad, isConvex, type Quad } from "../scan/geometry";
+import { LOUPE_SIZE, LOUPE_ZOOM, loupePlacement } from "./loupe";
 import { useObjectUrl } from "./useObjectUrl";
 
 interface Props {
@@ -21,6 +22,13 @@ interface Props {
 const CORNER_KEYS = ["topLeft", "topRight", "bottomRight", "bottomLeft"] as const;
 /** Step of an arrow key on a focused corner, relative to the photo. */
 const KEY_STEP = 0.005;
+
+/** A corner being dragged, with the photo's place on screen when the drag started. */
+interface Drag {
+  index: number;
+  frame: { left: number; top: number; width: number; height: number };
+  viewport: { width: number; height: number };
+}
 
 /** Corners to start from when the photo has none: a frame slightly inside the photo, easy to grab. */
 function initialCorners(page: ScanPage): Quad {
@@ -44,7 +52,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
   const corners = edited ?? initialCorners(page);
   const touched = edited !== null;
   const frame = useRef<HTMLDivElement>(null);
-  const dragging = useRef<number | null>(null);
+  const [drag, setDrag] = useState<Drag | null>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   useEffect(() => {
@@ -70,10 +78,9 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
     setEdited((current) => (current ?? corners).map((p, i) => (i === index ? clampCorner({ x, y }) : p)) as Quad);
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const index = dragging.current;
     const box = frame.current?.getBoundingClientRect();
-    if (index === null || !box) return;
-    place(index, (event.clientX - box.left) / box.width, (event.clientY - box.top) / box.height);
+    if (drag === null || !box) return;
+    place(drag.index, (event.clientX - box.left) / box.width, (event.clientY - box.top) / box.height);
   };
 
   const onCornerKey = (index: number) => (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -130,8 +137,8 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
           ref={frame}
           className="relative touch-none select-none"
           onPointerMove={onPointerMove}
-          onPointerUp={() => (dragging.current = null)}
-          onPointerCancel={() => (dragging.current = null)}
+          onPointerUp={() => setDrag(null)}
+          onPointerCancel={() => setDrag(null)}
         >
           {url && (
             <img
@@ -143,20 +150,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
           )}
           {!searching && (
             <>
-              <svg
-                className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
-                viewBox="0 0 1 1"
-                preserveAspectRatio="none"
-                aria-hidden="true"
-              >
-                <polygon
-                  points={corners.map((p) => `${p.x},${p.y}`).join(" ")}
-                  fill={valid ? "rgba(56, 189, 248, 0.18)" : "rgba(239, 68, 68, 0.25)"}
-                  stroke={valid ? "#38bdf8" : "#ef4444"}
-                  strokeWidth={2}
-                  vectorEffect="non-scaling-stroke"
-                />
-              </svg>
+              <Outline corners={corners} valid={valid} />
               {corners.map((corner, index) => (
                 <button
                   key={CORNER_KEYS[index]}
@@ -167,7 +161,13 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
                   data-testid={`page-editor-corner-${index}`}
                   onPointerDown={(event) => {
                     event.currentTarget.setPointerCapture(event.pointerId);
-                    dragging.current = index;
+                    const box = frame.current?.getBoundingClientRect();
+                    if (!box) return;
+                    setDrag({
+                      index,
+                      frame: { left: box.left, top: box.top, width: box.width, height: box.height },
+                      viewport: { width: window.innerWidth, height: window.innerHeight },
+                    });
                   }}
                   onKeyDown={onCornerKey(index)}
                 />
@@ -176,6 +176,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
           )}
         </div>
       </div>
+      {drag && url && <Loupe url={url} corners={corners} drag={drag} valid={valid} />}
       {!searching && !valid && (
         <p className="text-sm text-red-300" role="alert">
           {t("scan.editor.invalid")}
@@ -237,6 +238,71 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** The sheet as the four corners frame it, drawn over the photo. */
+function Outline({ corners, valid }: { corners: Quad; valid: boolean }) {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+      viewBox="0 0 1 1"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <polygon
+        points={corners.map((p) => `${p.x},${p.y}`).join(" ")}
+        fill={valid ? "rgba(56, 189, 248, 0.18)" : "rgba(239, 68, 68, 0.25)"}
+        stroke={valid ? "#38bdf8" : "#ef4444"}
+        strokeWidth={2}
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Magnified view of the dragged corner, shown beside the finger that covers it. The crosshair in the middle marks
+ * exactly where the corner lands on the photo.
+ */
+function Loupe({ url, corners, drag, valid }: { url: string; corners: Quad; drag: Drag; valid: boolean }) {
+  const corner = corners[drag.index];
+  const { frame } = drag;
+  const point = { x: frame.left + corner.x * frame.width, y: frame.top + corner.y * frame.height };
+  const position = loupePlacement(point, drag.viewport);
+  return (
+    <div
+      className="pointer-events-none fixed z-10 overflow-hidden rounded-full border-2 border-white bg-stone-900 shadow-lg"
+      style={{ left: position.x, top: position.y, width: LOUPE_SIZE, height: LOUPE_SIZE }}
+      aria-hidden="true"
+      data-testid="page-editor-loupe"
+    >
+      <div
+        className="absolute"
+        style={{
+          left: LOUPE_SIZE / 2 - corner.x * frame.width * LOUPE_ZOOM,
+          top: LOUPE_SIZE / 2 - corner.y * frame.height * LOUPE_ZOOM,
+          width: frame.width * LOUPE_ZOOM,
+          height: frame.height * LOUPE_ZOOM,
+        }}
+      >
+        <img src={url} alt="" className="block h-full w-full" draggable={false} />
+        <Outline corners={corners} valid={valid} />
+      </div>
+      {/* White on a dark outline, so the crosshair stays visible on paper and on a dark desk alike. */}
+      <svg className="absolute inset-0 h-full w-full" viewBox="-1 -1 2 2" fill="none">
+        {[
+          { stroke: "rgba(0, 0, 0, 0.6)", width: 0.07 },
+          { stroke: "white", width: 0.03 },
+        ].map(({ stroke, width }) => (
+          <g key={stroke} stroke={stroke} strokeWidth={width} strokeLinecap="round">
+            <circle r={0.12} />
+            <path d="M -0.4 0 H -0.12 M 0.12 0 H 0.4 M 0 -0.4 V -0.12 M 0 0.12 V 0.4" />
+          </g>
+        ))}
+        <circle r={0.025} fill={valid ? "#38bdf8" : "#ef4444"} />
+      </svg>
     </div>
   );
 }

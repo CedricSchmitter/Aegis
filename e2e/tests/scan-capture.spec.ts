@@ -163,6 +163,19 @@ test.describe("scanned photos", () => {
     await expect(page.getByTestId("page-editor")).toBeVisible();
     const box = (await page.getByTestId("page-editor").locator("img").boundingBox())!;
     expect(box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+    // While a corner is dragged, a magnifier beside it shows where the corner lands.
+    const corner = (await page.getByTestId("page-editor-corner-2").boundingBox())!;
+    await page.mouse.move(corner.x + corner.width / 2, corner.y + corner.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(corner.x, corner.y, { steps: 3 });
+    const loupe = page.getByTestId("page-editor-loupe");
+    await expect(loupe).toBeVisible();
+    const lens = (await loupe.boundingBox())!;
+    const covers = (x: number, y: number) =>
+      x >= lens.x && x <= lens.x + lens.width && y >= lens.y && y <= lens.y + lens.height;
+    expect(covers(corner.x, corner.y)).toBe(false);
+    await page.mouse.up();
+    await expect(loupe).toHaveCount(0);
     await page.getByTestId("page-editor-keep-photo").click();
     await expect(pages.nth(1)).toHaveAttribute("data-mode", "photo", { timeout: 60_000 });
 
