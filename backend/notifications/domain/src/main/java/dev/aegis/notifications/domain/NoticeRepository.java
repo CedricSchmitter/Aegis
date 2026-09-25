@@ -3,17 +3,18 @@ package dev.aegis.notifications.domain;
 import dev.aegis.shared.MemberId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /** Persistence of the per-member inbox. */
 public interface NoticeRepository {
     Optional<Notice> findById(NoticeId id);
 
-    /** Newest first. */
-    List<Notice> findByRecipient(MemberId recipient, boolean unreadOnly);
+    /** The recipient's notices of the given kinds, newest first. */
+    List<Notice> findByRecipient(MemberId recipient, Set<NoticeKind> kinds, boolean unreadOnly);
 
     Optional<Notice> findByDedupKey(MemberId recipient, String dedupKey);
 
-    long countUnread(MemberId recipient);
+    long countUnread(MemberId recipient, Set<NoticeKind> kinds);
 
     void save(Notice notice);
 

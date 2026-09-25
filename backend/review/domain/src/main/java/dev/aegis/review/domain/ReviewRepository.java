@@ -4,6 +4,8 @@ public interface ReviewRepository {
  Optional<ReviewItem> find(UUID id); Optional<ReviewItem> findByFingerprint(String fingerprint); List<ReviewItem> findAll();
  /** Open cards only; reconciliation supersedes those whose source no longer reports them. */
  List<ReviewItem> findOpen();
+ /** Number of open cards, without reading them. */
+ long countOpen();
  /** The given fingerprints that already have a card, whatever its status. */
  Set<String> findExistingFingerprints(Collection<String> fingerprints);
  /** Inserts the card unless one with its id or fingerprint exists, also one a concurrent transaction is inserting; true when this call inserted it. */

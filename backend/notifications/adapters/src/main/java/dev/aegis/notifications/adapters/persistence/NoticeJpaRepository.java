@@ -1,5 +1,6 @@
 package dev.aegis.notifications.adapters.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,13 +11,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 interface NoticeJpaRepository extends JpaRepository<NoticeEntity, UUID> {
-    List<NoticeEntity> findByRecipientIdOrderByCreatedAtDesc(UUID recipientId);
+    List<NoticeEntity> findByRecipientIdAndKindInOrderByCreatedAtDesc(UUID recipientId, Collection<String> kinds);
 
-    List<NoticeEntity> findByRecipientIdAndReadAtIsNullOrderByCreatedAtDesc(UUID recipientId);
+    List<NoticeEntity> findByRecipientIdAndKindInAndReadAtIsNullOrderByCreatedAtDesc(UUID recipientId,
+            Collection<String> kinds);
 
     Optional<NoticeEntity> findFirstByRecipientIdAndDedupKey(UUID recipientId, String dedupKey);
 
-    long countByRecipientIdAndReadAtIsNull(UUID recipientId);
+    long countByRecipientIdAndKindInAndReadAtIsNull(UUID recipientId, Collection<String> kinds);
 
     @Modifying
     @Query(value = """

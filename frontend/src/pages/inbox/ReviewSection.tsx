@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api, unwrap } from "../api/client";
-import type { components } from "../api/schema";
-import { EmptyState, ErrorBox, Loading, PageTitle } from "../components/common";
-import { formatDateTime } from "../lib/format";
-import { reviewTitle } from "../lib/notices";
-import { problemMessage } from "../lib/problem";
+import { api, unwrap } from "../../api/client";
+import type { components } from "../../api/schema";
+import { EmptyState, ErrorBox, Loading } from "../../components/common";
+import { formatDateTime } from "../../lib/format";
+import { INBOX_CHANGED } from "../../lib/inbox";
+import { reviewTitle } from "../../lib/notices";
+import { problemMessage } from "../../lib/problem";
 
 type ReviewItem = components["schemas"]["ReviewItemDto"];
 
@@ -16,7 +17,11 @@ function target(item: ReviewItem) {
   return null;
 }
 
-export function ReviewPage() {
+/**
+ * The "To review" section of the inbox: the shared review cards (ADR-0009). Loading them reconciles, so `onLoaded`
+ * runs once the cards shown are current.
+ */
+export function ReviewSection({ onLoaded }: { onLoaded: () => void }) {
   const { t, i18n } = useTranslation();
   const [search] = useSearchParams();
   const focusedId = search.get("item");
@@ -29,8 +34,9 @@ export function ReviewPage() {
     try {
       setItems(unwrap(await api.GET("/api/reviews", { params: { query: { status, category: category || undefined } } })));
       setError(null);
+      onLoaded();
     } catch (failure) { setError(problemMessage(t, failure)); }
-  }, [category, status, t]);
+  }, [category, status, t, onLoaded]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     if (items && focusedId) document.getElementById(`review-${focusedId}`)?.scrollIntoView({ block: "center" });
@@ -43,12 +49,12 @@ export function ReviewPage() {
     try {
       if (action) await api.POST("/api/reviews/{id}/actions/{action}", { params: { path: { id: item.id, action } }, body: { expectedVersion: item.version } });
       else await api.POST("/api/reviews/{id}/dismiss", { params: { path: { id: item.id } }, body: { expectedVersion: item.version } });
-      await load(); window.dispatchEvent(new Event("aegis:notices-changed"));
+      await load(); window.dispatchEvent(new Event(INBOX_CHANGED));
     } catch (failure) { setError(problemMessage(t, failure)); await load(); }
     finally { setBusy(null); }
   };
-  return <>
-    <PageTitle>{t("review.title")}</PageTitle>
+  return <section aria-labelledby="to-review" className="mb-8" data-testid="inbox-review">
+    <h2 id="to-review" className="mb-2 text-lg font-semibold">{t("review.title")}</h2>
     <p className="mb-4 text-sm text-stone-600 dark:text-stone-300">{t("review.intro")}</p>
     <div className="mb-4 flex flex-wrap gap-3" aria-label={t("review.filters")}>
       <label className="flex items-center gap-2 text-sm">{t("review.statusLabel")}
@@ -62,11 +68,11 @@ export function ReviewPage() {
     {!items && !error && <Loading />}
     {items?.length === 0 && <EmptyState>{status === "OPEN" ? t("review.empty") : t("review.emptyHistory")}</EmptyState>}
     {items && <ul className="flex flex-col gap-3" aria-live="polite">{items.map((item) => {
-      const href = target(item); return <li id={`review-${item.id}`} key={item.id} className={`card border-l-4 ${focusedId === item.id ? "ring-2 ring-sky-500" : ""} ${item.priority === "HIGH" ? "border-l-red-500" : "border-l-amber-400"}`}>
+      const href = target(item); return <li id={`review-${item.id}`} key={item.id} data-testid="review-card" className={`card border-l-4 ${focusedId === item.id ? "ring-2 ring-sky-500" : ""} ${item.priority === "HIGH" ? "border-l-red-500" : "border-l-amber-400"}`}>
         <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold">{reviewTitle(t, item.titleKey, item.params)}</p><p className="mt-1 text-sm text-stone-600 dark:text-stone-300">{t(`review.reason.${item.reason}`)}</p></div><span className="badge">{t(`review.category.${item.category}`)}{counts[item.category] ? ` · ${counts[item.category]}` : ""}</span></div>
         <p className="mt-2 text-xs text-stone-500">{formatDateTime(item.updatedAt, i18n.language)} · {t(`review.status.${item.status}`)}</p>
         <div className="mt-3 flex flex-wrap gap-2">{href && <Link className="btn-secondary" to={href}>{t("review.openSource")}</Link>}{item.actions.map((action) => <button key={action} type="button" className="btn-primary" disabled={busy === item.id} onClick={() => void change(item, action)}>{t(`review.action.${action}`)}</button>)}{item.status === "OPEN" && <button type="button" className="btn-ghost" disabled={busy === item.id} onClick={() => void change(item)}>{t("review.dismiss")}</button>}</div>
       </li>;
     })}</ul>}
-  </>;
+  </section>;
 }

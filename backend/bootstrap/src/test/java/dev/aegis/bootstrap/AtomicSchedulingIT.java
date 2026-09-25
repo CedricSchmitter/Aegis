@@ -90,8 +90,9 @@ class AtomicSchedulingIT extends PostgresIT {
         assertThat(documents.findById(id)).isPresent();
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(
                 documents.findById(id).orElseThrow().state()).isEqualTo(ProcessingState.ARCHIVED));
-        assertThat(schedulerClient.getScheduledExecution(ArchiveDocumentTask.DESCRIPTOR.instanceId(id.toString())))
-                .as("job removed after completion").isEmpty();
+        // db-scheduler removes the execution only after the handler that committed the archived state has returned.
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(schedulerClient.getScheduledExecution(
+                ArchiveDocumentTask.DESCRIPTOR.instanceId(id.toString()))).as("job removed after completion").isEmpty());
     }
 
     @Test

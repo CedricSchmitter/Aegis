@@ -60,7 +60,6 @@ public class ArchivalService implements ArchivalUseCases {
         document.markArchived(paperlessDocumentId, clock.instant());
         documents.save(document);
         if (!alreadyArchived) {
-            events.documentArchived(id, document.title(), document.uploadedBy());
             analysis.archived(document);
         }
     }

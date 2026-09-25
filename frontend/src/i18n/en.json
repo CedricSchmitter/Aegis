@@ -21,14 +21,13 @@
     "documents": "Documents",
     "contracts": "Contracts",
     "tasks": "Tasks",
-    "review": "Review",
-    "notices": "Notices",
+    "inbox": "Inbox",
     "status": "Status",
     "settings": "Settings",
     "logout": "Log out",
     "menu": "Main navigation",
-    "unreadCount": "{{count}} unread notices",
-    "unreadCount_one": "{{count}} unread notice"
+    "pendingCount": "{{count}} open items in the inbox",
+    "pendingCount_one": "{{count}} open item in the inbox"
   },
   "language": {
     "label": "Language",
@@ -399,21 +398,21 @@
       "statusHint": "The status records what the household did with the contract. It does not change any statement or deadline."
     }
   },
+  "inbox": {
+    "title": "Inbox"
+  },
   "notices": {
-    "title": "Notices",
+    "title": "Messages",
     "unreadOnly": "Unread only",
     "markAllRead": "Mark all as read",
     "markRead": "Mark as read",
-    "empty": "No notices.",
-    "emptyUnread": "No unread notices.",
+    "empty": "No messages.",
+    "emptyUnread": "No unread messages.",
     "open": "Open",
     "kind": {
       "TASK_ASSIGNED": "You were assigned the task “{{title}}”.",
       "TASK_COMPLETED": "Your task “{{title}}” was completed.",
-      "DOCUMENT_ARCHIVED": "“{{title}}” has been archived and is searchable.",
-      "DOCUMENT_ARCHIVAL_FAILED": "Archival of “{{title}}” failed: {{reason}}. The original remains stored.",
       "CONTRACT_CANCELLATION_REMINDER": "Review cancellation for “{{contractName}}” by {{cancellationDeadline}}.",
-      "REVIEW_ITEM": "A new item needs review.",
       "JOB_STALE": "A background job is not running as planned. See the status page for details.",
       "BACKUP_FAILED": "The external backup is not working. See the status page for details.",
       "DISK_SPACE_LOW": "Storage is running low. See the status page for details."
@@ -432,10 +431,10 @@
     },
     "diskSpaceLow": "“{{disk}}” is running low on space: only {{free}} of {{total}} free.",
     "readAt": "Read on {{date}}",
-    "inAppOnly": "Notices are shown here in the app only. Phone push is not set up."
+    "inAppOnly": "Messages are shown here in the app only. Phone push is not set up."
   },
   "review": {
-    "title": "Review inbox",
+    "title": "To review",
     "intro": "One shared place for processing failures, uncertain classifications and contract statements. Opening or dismissing a card does not change its source; source actions still enforce their own rules.",
     "filters": "Review filters",
     "statusLabel": "State",
@@ -444,7 +443,7 @@
     "empty": "Nothing needs review.",
     "emptyHistory": "No items in this history view.",
     "openSource": "Review source",
-    "dismiss": "Dismiss notice",
+    "dismiss": "Dismiss",
     "archiveFailed": "Archival failed for “{{title}}”: {{reason}}.",
     "analysisFailed": "Automatic classification failed for “{{title}}”: {{reason}}.",
     "classification": "“{{title}}” has classification results awaiting review.",
@@ -506,7 +505,7 @@
     "backupWarning": "The external backup is unavailable or out of date. See “Backup and storage” below.",
     "storageWarning": "At least one disk is running low on space. See “Backup and storage” below.",
     "storageTitle": "Backup and storage",
-    "storageIntro": "The external backup runs every night at 03:30 to the USB disk on the server. If it fails or space runs low, every member gets a notice.",
+    "storageIntro": "The external backup runs every night at 03:30 to the USB disk on the server. If it fails or space runs low, every member gets a message.",
     "backup": {
       "title": "External backup",
       "lastAttempt": "Last attempt: {{date}}",
@@ -734,7 +733,7 @@
     "document.trashed": "The document is in the trash. Restore it first.",
     "task.notFound": "Task not found.",
     "member.notFound": "Member not found.",
-    "notice.notFound": "Notice not found.",
+    "notice.notFound": "Message not found.",
     "document.unsupportedType": "Only PDF files and photos (JPEG, PNG, WebP, HEIC) are accepted.",
     "document.tooLarge": "The file is too large (50 MB maximum).",
     "document.empty": "The file is empty.",

@@ -4,7 +4,6 @@ import dev.aegis.documents.application.ports.DocumentEvents;
 import dev.aegis.notifications.application.api.NoticeDraft;
 import dev.aegis.notifications.application.api.PublishNotice;
 import dev.aegis.planning.application.ports.PlanningEvents;
-import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.TaskId;
 import java.util.Map;
@@ -37,19 +36,9 @@ public class EventRouting {
 
     @Bean
     DocumentEvents documentEvents(PublishNotice notices) {
-        return new DocumentEvents() {
-            @Override
-            public void documentArchived(DocumentId id, String title, MemberId uploadedBy) {
-                notices.publish(new NoticeDraft(uploadedBy, "DOCUMENT_ARCHIVED", "document-archived:" + id,
-                        Map.of("title", title), "DOCUMENT", id.toString()));
-            }
-
-            @Override
-            public void documentArchivalFailed(DocumentId id, String title, MemberId uploadedBy,
-                    String failureCode) {
-                notices.publish(new NoticeDraft(uploadedBy, "DOCUMENT_ARCHIVAL_FAILED", "document-failed:" + id,
-                        Map.of("title", title, "code", failureCode), "DOCUMENT", id.toString()));
-            }
-        };
+        // The inbox shows the failure as its review card; the notice is the delivery trigger for other channels.
+        return (id, title, uploadedBy, failureCode) -> notices.publish(new NoticeDraft(uploadedBy,
+                "DOCUMENT_ARCHIVAL_FAILED", "document-failed:" + id, Map.of("title", title, "code", failureCode),
+                "DOCUMENT", id.toString()));
     }
 }

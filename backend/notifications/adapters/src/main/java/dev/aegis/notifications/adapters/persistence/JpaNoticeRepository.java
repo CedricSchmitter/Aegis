@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -34,9 +35,11 @@ public class JpaNoticeRepository implements NoticeRepository {
     }
 
     @Override
-    public List<Notice> findByRecipient(MemberId recipient, boolean unreadOnly) {
-        List<NoticeEntity> rows = unreadOnly ? jpa.findByRecipientIdAndReadAtIsNullOrderByCreatedAtDesc(
-                recipient.value()) : jpa.findByRecipientIdOrderByCreatedAtDesc(recipient.value());
+    public List<Notice> findByRecipient(MemberId recipient, Set<NoticeKind> kinds, boolean unreadOnly) {
+        List<String> names = names(kinds);
+        List<NoticeEntity> rows = unreadOnly
+                ? jpa.findByRecipientIdAndKindInAndReadAtIsNullOrderByCreatedAtDesc(recipient.value(), names)
+                : jpa.findByRecipientIdAndKindInOrderByCreatedAtDesc(recipient.value(), names);
         return rows.stream().map(this::toDomain).toList();
     }
 
@@ -46,8 +49,12 @@ public class JpaNoticeRepository implements NoticeRepository {
     }
 
     @Override
-    public long countUnread(MemberId recipient) {
-        return jpa.countByRecipientIdAndReadAtIsNull(recipient.value());
+    public long countUnread(MemberId recipient, Set<NoticeKind> kinds) {
+        return jpa.countByRecipientIdAndKindInAndReadAtIsNull(recipient.value(), names(kinds));
+    }
+
+    private static List<String> names(Set<NoticeKind> kinds) {
+        return kinds.stream().map(NoticeKind::name).toList();
     }
 
     @Override

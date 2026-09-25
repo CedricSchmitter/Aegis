@@ -1071,7 +1071,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the current member's notices, newest first */
+        /** List the current member's messages (notices without a review card), newest first */
         get: operations["listNotices"];
         put?: never;
         post?: never;
@@ -1098,6 +1098,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notices/review-cards/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark the notices announcing review cards as read when the inbox shows the cards */
+        post: operations["markReviewCardNoticesRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notices/unread-count": {
         parameters: {
             query?: never;
@@ -1105,7 +1122,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Number of unread notices */
+        /** Number of unread messages */
         get: operations["unreadNoticeCount"];
         put?: never;
         post?: never;
@@ -1149,6 +1166,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reviews/open-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Number of open cards, without reconciling */
+        get: operations["openReviewItemCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reviews/{id}/actions/{action}": {
         parameters: {
             query?: never;
@@ -1175,7 +1209,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Dismiss the notice without changing its source */
+        /** Dismiss the card without changing its source */
         post: operations["dismissReviewItem"];
         delete?: never;
         options?: never;
@@ -2117,6 +2151,10 @@ export interface components {
             updatedAt: string;
             /** Format: int64 */
             version: number;
+        };
+        ReviewOpenCountResponse: {
+            /** Format: int64 */
+            open: number;
         };
         ReviewVersionRequest: {
             /** Format: int64 */
@@ -4048,6 +4086,26 @@ export interface operations {
             };
         };
     };
+    markReviewCardNoticesRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarkAllReadResponse"];
+                };
+            };
+        };
+    };
     unreadNoticeCount: {
         parameters: {
             query?: never;
@@ -4109,6 +4167,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ReviewItemDto"][];
+                };
+            };
+        };
+    };
+    openReviewItemCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReviewOpenCountResponse"];
                 };
             };
         };

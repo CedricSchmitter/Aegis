@@ -21,14 +21,13 @@
     "documents": "Dokumente",
     "contracts": "Verträge",
     "tasks": "Aufgaben",
-    "review": "Prüfen",
-    "notices": "Hinweise",
+    "inbox": "Eingang",
     "status": "Status",
     "settings": "Einstellungen",
     "logout": "Abmelden",
     "menu": "Hauptnavigation",
-    "unreadCount": "{{count}} ungelesene Hinweise",
-    "unreadCount_one": "{{count}} ungelesener Hinweis"
+    "pendingCount": "{{count}} offene Einträge im Eingang",
+    "pendingCount_one": "{{count}} offener Eintrag im Eingang"
   },
   "language": {
     "label": "Sprache",
@@ -399,21 +398,21 @@
       "statusHint": "Der Status hält fest, was der Haushalt mit dem Vertrag gemacht hat. Er ändert keine Angabe und keinen Termin."
     }
   },
+  "inbox": {
+    "title": "Eingang"
+  },
   "notices": {
-    "title": "Hinweise",
+    "title": "Mitteilungen",
     "unreadOnly": "Nur ungelesene",
     "markAllRead": "Alle als gelesen markieren",
     "markRead": "Als gelesen markieren",
-    "empty": "Keine Hinweise.",
-    "emptyUnread": "Keine ungelesenen Hinweise.",
+    "empty": "Keine Mitteilungen.",
+    "emptyUnread": "Keine ungelesenen Mitteilungen.",
     "open": "Öffnen",
     "kind": {
       "TASK_ASSIGNED": "Dir wurde die Aufgabe „{{title}}“ zugewiesen.",
       "TASK_COMPLETED": "Deine Aufgabe „{{title}}“ wurde erledigt.",
-      "DOCUMENT_ARCHIVED": "„{{title}}“ wurde archiviert und ist durchsuchbar.",
-      "DOCUMENT_ARCHIVAL_FAILED": "Die Archivierung von „{{title}}“ ist fehlgeschlagen: {{reason}}. Das Original bleibt gespeichert.",
       "CONTRACT_CANCELLATION_REMINDER": "Kündigung für „{{contractName}}“ bis {{cancellationDeadline}} prüfen.",
-      "REVIEW_ITEM": "Ein neuer Eintrag muss geprüft werden.",
       "JOB_STALE": "Ein Hintergrundjob läuft nicht wie geplant. Details stehen auf der Statusseite.",
       "BACKUP_FAILED": "Das externe Backup funktioniert nicht. Details stehen auf der Statusseite.",
       "DISK_SPACE_LOW": "Der Speicherplatz wird knapp. Details stehen auf der Statusseite."
@@ -432,10 +431,10 @@
     },
     "diskSpaceLow": "Auf „{{disk}}“ wird der Platz knapp: nur noch {{free}} von {{total}} frei.",
     "readAt": "Gelesen am {{date}}",
-    "inAppOnly": "Hinweise werden nur hier in der App angezeigt. Push auf das Telefon ist nicht eingerichtet."
+    "inAppOnly": "Mitteilungen werden nur hier in der App angezeigt. Push auf das Telefon ist nicht eingerichtet."
   },
   "review": {
-    "title": "Prüfkorb",
+    "title": "Zu prüfen",
     "intro": "Ein gemeinsamer Ort für Verarbeitungsfehler, unsichere Einordnungen und Vertragsangaben. Öffnen oder Ausblenden ändert die Quelle nicht; Aktionen prüfen weiterhin deren eigene Regeln.",
     "filters": "Prüffilter",
     "statusLabel": "Status",
@@ -444,7 +443,7 @@
     "empty": "Nichts muss geprüft werden.",
     "emptyHistory": "Keine Einträge in dieser Verlaufsansicht.",
     "openSource": "Quelle prüfen",
-    "dismiss": "Hinweis ausblenden",
+    "dismiss": "Ausblenden",
     "archiveFailed": "Die Archivierung von „{{title}}“ ist fehlgeschlagen: {{reason}}.",
     "analysisFailed": "Die automatische Einordnung von „{{title}}“ ist fehlgeschlagen: {{reason}}.",
     "classification": "Für „{{title}}“ warten Einordnungsergebnisse auf eine Prüfung.",
@@ -506,7 +505,7 @@
     "backupWarning": "Das externe Backup ist nicht betriebsbereit oder nicht aktuell. Details stehen unten unter „Backup und Speicherplatz“.",
     "storageWarning": "Auf mindestens einem Speicher wird der Platz knapp. Details stehen unten unter „Backup und Speicherplatz“.",
     "storageTitle": "Backup und Speicherplatz",
-    "storageIntro": "Das externe Backup läuft jede Nacht um 03:30 auf die USB-Platte am Server. Bei einem Ausfall oder knappem Speicher bekommen alle Mitglieder einen Hinweis.",
+    "storageIntro": "Das externe Backup läuft jede Nacht um 03:30 auf die USB-Platte am Server. Bei einem Ausfall oder knappem Speicher bekommen alle Mitglieder eine Mitteilung.",
     "backup": {
       "title": "Externes Backup",
       "lastAttempt": "Letzter Versuch: {{date}}",
@@ -734,7 +733,7 @@
     "document.trashed": "Das Dokument liegt im Papierkorb. Stelle es zuerst wieder her.",
     "task.notFound": "Aufgabe nicht gefunden.",
     "member.notFound": "Mitglied nicht gefunden.",
-    "notice.notFound": "Hinweis nicht gefunden.",
+    "notice.notFound": "Mitteilung nicht gefunden.",
     "document.unsupportedType": "Nur PDF-Dateien und Fotos (JPEG, PNG, WebP, HEIC) werden angenommen.",
     "document.tooLarge": "Die Datei ist zu groß (maximal 50 MB).",
     "document.empty": "Die Datei ist leer.",

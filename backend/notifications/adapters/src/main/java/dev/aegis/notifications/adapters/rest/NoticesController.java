@@ -29,14 +29,15 @@ public class NoticesController {
     public record MarkAllReadResponse(int marked) {
     }
 
-    @Operation(operationId = "listNotices", summary = "List the current member's notices, newest first")
+    @Operation(operationId = "listNotices",
+            summary = "List the current member's messages (notices without a review card), newest first")
     @GetMapping
     public List<NoticeDto> list(Actor actor,
             @RequestParam(name = "unreadOnly", defaultValue = "false") boolean unreadOnly) {
         return inbox.list(actor, unreadOnly).stream().map(NoticeDto::from).toList();
     }
 
-    @Operation(operationId = "unreadNoticeCount", summary = "Number of unread notices")
+    @Operation(operationId = "unreadNoticeCount", summary = "Number of unread messages")
     @GetMapping("/unread-count")
     public UnreadCountResponse unreadCount(Actor actor) {
         return new UnreadCountResponse(inbox.unreadCount(actor));
@@ -52,5 +53,12 @@ public class NoticesController {
     @PostMapping("/read-all")
     public MarkAllReadResponse markAllRead(Actor actor) {
         return new MarkAllReadResponse(inbox.markAllRead(actor));
+    }
+
+    @Operation(operationId = "markReviewCardNoticesRead",
+            summary = "Mark the notices announcing review cards as read when the inbox shows the cards")
+    @PostMapping("/review-cards/read")
+    public MarkAllReadResponse markReviewCardNoticesRead(Actor actor) {
+        return new MarkAllReadResponse(inbox.markReviewCardNoticesRead(actor));
     }
 }

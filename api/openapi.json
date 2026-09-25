@@ -1943,6 +1943,16 @@
         "required" : [ "actions", "category", "createdAt", "id", "linkId", "linkType", "params", "priority", "reason", "sourceId", "sourceKind", "sourceVersion", "status", "titleKey", "updatedAt", "version" ],
         "type" : "object"
       },
+      "ReviewOpenCountResponse" : {
+        "properties" : {
+          "open" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "open" ],
+        "type" : "object"
+      },
       "ReviewVersionRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -4901,7 +4911,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "List the current member's notices, newest first",
+        "summary" : "List the current member's messages (notices without a review card), newest first",
         "tags" : [ "notices" ]
       }
     },
@@ -4924,6 +4934,25 @@
         "tags" : [ "notices" ]
       }
     },
+    "/api/notices/review-cards/read" : {
+      "post" : {
+        "operationId" : "markReviewCardNoticesRead",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MarkAllReadResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Mark the notices announcing review cards as read when the inbox shows the cards",
+        "tags" : [ "notices" ]
+      }
+    },
     "/api/notices/unread-count" : {
       "get" : {
         "operationId" : "unreadNoticeCount",
@@ -4939,7 +4968,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Number of unread notices",
+        "summary" : "Number of unread messages",
         "tags" : [ "notices" ]
       }
     },
@@ -5004,6 +5033,25 @@
           }
         },
         "summary" : "List and reconcile the shared review inbox",
+        "tags" : [ "reviews" ]
+      }
+    },
+    "/api/reviews/open-count" : {
+      "get" : {
+        "operationId" : "openReviewItemCount",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReviewOpenCountResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Number of open cards, without reconciling",
         "tags" : [ "reviews" ]
       }
     },
@@ -5086,7 +5134,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Dismiss the notice without changing its source",
+        "summary" : "Dismiss the card without changing its source",
         "tags" : [ "reviews" ]
       }
     },

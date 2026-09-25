@@ -69,6 +69,12 @@ public class ReviewService implements ReviewInbox, ReviewReconciliation, ReviewP
     }
 
     @Override
+    public long openCount(Actor actor) {
+        access.requireMember(actor);
+        return repository.countOpen();
+    }
+
+    @Override
     public Report reconcile(Actor actor) {
         if (actor != null && actor.isHouseholdProcess()) {
             if (!RECONCILER.equals(actor)) {

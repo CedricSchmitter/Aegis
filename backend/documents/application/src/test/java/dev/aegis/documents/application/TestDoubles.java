@@ -50,11 +50,6 @@ final class TestDoubles {
         final List<String> events = new ArrayList<>();
 
         @Override
-        public void documentArchived(DocumentId id, String title, MemberId uploadedBy) {
-            events.add("archived:" + id);
-        }
-
-        @Override
         public void documentArchivalFailed(DocumentId id, String title, MemberId uploadedBy, String failureCode) {
             events.add("failed:" + id + ":" + failureCode);
         }
