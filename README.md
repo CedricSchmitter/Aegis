@@ -78,8 +78,11 @@ cd e2e && npm ci && npm run install:browsers
 AEGIS_BASE_URL=https://192.168.2.159 AEGIS_USER_A=lisa AEGIS_PASSWORD_A=... AEGIS_USER_B=cedric AEGIS_PASSWORD_B=... npm test
 ```
 
-CI (`.github/workflows/ci.yml`) runs the backend verification with Testcontainers, the frontend checks with a
-generated-client drift check, and a container image build. It needs no private VM access and no live credentials.
+CI runs on pull requests only, and each workflow only when its paths change: `backend.yml` (Maven verify with
+Testcontainers), `frontend.yml` (checks, build and generated-client drift check), `ops.yml` (Python tests of the
+ops scripts) and `smoke.yml` (image build and browser smoke against the compose stack, automatically for `deploy/`
+and `e2e/` changes, otherwise started by hand with `gh workflow run smoke.yml --ref <branch>`). Every workflow can
+also be started by hand. CI needs no private VM access and no live credentials.
 
 ## Current state
 

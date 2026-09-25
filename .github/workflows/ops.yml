@@ -1,0 +1,31 @@
+name: Ops scripts
+
+on:
+  pull_request:
+    paths:
+      - ops/**
+      # test_seed_folder_tree.py checks the folder tree against the label migrations.
+      - backend/documents/adapters/src/main/resources/db/migration/**
+      - .github/workflows/ops.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ops:
+    name: Ops script tests (backup safety, deployment, host runner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Backup safety regression tests
+        run: python3 -m unittest discover -s ops/backup -p 'test_*.py'
+      - name: Deployment script tests (credential safety, folder tree seed)
+        run: python3 -m unittest discover -s ops/deploy -p 'test_*.py'
+      - name: Claude Code host runner tests
+        run: python3 -m unittest discover -s ops/claude-runner -p 'test_*.py'
