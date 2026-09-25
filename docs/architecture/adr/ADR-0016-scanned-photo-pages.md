@@ -66,7 +66,8 @@ automatically with a preview and a manual correction, and that the generated PDF
   plausible sheet" address this, and "Originalfoto verwenden" always gives the whole photo back.
 - Detection is measured on synthetic photos (tilt up to 15 degrees, keystone, shadow band, dim light, light
   surface, sheet filling the frame, a corner cut off): all were straightened except white paper on a white surface,
-  which falls back to the photo as intended. Measurements of text recognition and results with real letters on both
-  household phones are recorded in issue #81.
+  which falls back to the photo as intended. With the deployed Paperless' OCR options, the scanned pages of the
+  tilted, shadowed, dim and frame-filling photos gave 54 to 56 of 56 words where the unchanged photos gave 0 to 6.
+  Details, and the results with real letters on both household phones, are recorded in issue #81.
 - The worker needs module workers, `OffscreenCanvas` and `createImageBitmap` with orientation, available in Chrome
   on Android. Browsers without them report that the photo could not be processed and point to "Datei auswählen".
