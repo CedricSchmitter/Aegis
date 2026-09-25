@@ -87,6 +87,7 @@ test.describe("scanned photos", () => {
     await page.getByTestId("upload-image-input").setInputFiles(photoFile);
     const editor = page.getByTestId("page-editor");
     await expect(editor).toHaveAttribute("data-purpose", "check");
+    await expect(editor).not.toContainText("Blatt nicht erkannt");
     await page.getByTestId("page-editor-remove").click();
     await expect(page.getByTestId("scan-page")).toHaveCount(0);
 

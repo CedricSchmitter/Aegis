@@ -94,9 +94,11 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
   const apply = () => (!touched && page.result?.mode === "scan" ? onClose() : onApply(corners));
   const titleId = `page-editor-${page.id}`;
 
-  const title = checking
-    ? t(missing ? "scan.editor.missingTitle" : "scan.editor.checkTitle", { number })
-    : t("scan.editor.title", { number });
+  const title = !checking
+    ? t("scan.editor.title", { number })
+    : searching
+      ? t("scan.page", { number })
+      : t(missing ? "scan.editor.missingTitle" : "scan.editor.checkTitle", { number });
   const instructions = searching
     ? t("scan.editor.searching")
     : checking
@@ -199,7 +201,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
           <>
             <button
               type="button"
-              className="btn-primary"
+              className="btn-primary min-w-28"
               disabled={searching || !valid}
               onClick={apply}
               data-testid="page-editor-apply"
