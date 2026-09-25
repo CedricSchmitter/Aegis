@@ -1,5 +1,6 @@
 package dev.aegis.identity.adapters.provisioning;
 
+import dev.aegis.identity.application.api.MemberKind;
 import dev.aegis.identity.application.api.ProvisionMembers;
 import dev.aegis.identity.application.api.ProvisionMembers.ProvisionMemberCommand;
 import dev.aegis.shared.ProductLocale;
@@ -36,7 +37,9 @@ public class InitialMembersProvisioner implements ApplicationRunner {
         this.membersFile = membersFile;
     }
 
-    record MemberEntry(String username, String displayName, String initialPassword, ProductLocale locale) {
+    /** {@code kind} is optional; the restore drill passes the exported kind of each account. */
+    record MemberEntry(String username, String displayName, String initialPassword, ProductLocale locale,
+            MemberKind kind) {
     }
 
     record MembersFile(List<MemberEntry> members) {
@@ -56,7 +59,7 @@ public class InitialMembersProvisioner implements ApplicationRunner {
         MembersFile parsed = mapper.readValue(Files.readAllBytes(path), MembersFile.class);
         for (MemberEntry entry : parsed.members() == null ? List.<MemberEntry>of() : parsed.members()) {
             var outcome = provisioning.ensureMember(new ProvisionMemberCommand(entry.username(), entry.displayName(),
-                    entry.initialPassword(), entry.locale()));
+                    entry.initialPassword(), entry.locale(), entry.kind()));
             log.info("Member provisioning for '{}': {}", entry.username(), outcome);
         }
     }

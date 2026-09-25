@@ -172,7 +172,7 @@ public class ExportService implements CreateExport, ExportQueries {
                 r.createdAt(), r.updatedAt(), r.version(), r.decidedBy(), r.decidedAt())).toList();
 
         List<MemberEntry> memberEntries = memberList.stream().map(m -> new MemberEntry(m.id().toString(),
-                m.username(), m.displayName(), m.locale().name(), m.active())).toList();
+                m.username(), m.displayName(), m.locale().name(), m.active(), m.kind().name())).toList();
         List<LabelEntry> labelEntries = catalog.labels().stream().map(label -> new LabelEntry(
                 label.id().toString(), label.facet(), label.builtinKey(), label.name(), label.displayName(),
                 label.aliases(), label.status(),

@@ -40,6 +40,8 @@ services:
       AEGIS_INGRESS_DIR: /srv/aegis/ingress
       AEGIS_EXPORTS_DIR: /srv/aegis/exports
       AEGIS_MEMBERS_FILE: /run/secrets/initial-members.json
+      # The household's assistant account (ADR-0017); set per installation in .env, e.g. aegis-dev.
+      AEGIS_ASSISTANT_MEMBERS: ${AEGIS_ASSISTANT_MEMBERS:-}
       AEGIS_BACKUP_STATE_FILE: /srv/aegis/backup-state/state.json
       AEGIS_COOKIE_SECURE: "false"
       # Optional AI providers in order of preference (ADR-0003): anthropic (Console API key), then claude-code (the

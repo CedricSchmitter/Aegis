@@ -1,5 +1,6 @@
 package dev.aegis.identity.application;
 
+import dev.aegis.identity.application.api.DesignateAssistants;
 import dev.aegis.identity.application.api.MemberCredentials;
 import dev.aegis.identity.application.api.MemberCredentialsQuery;
 import dev.aegis.identity.application.api.MemberDirectory;
@@ -7,6 +8,7 @@ import dev.aegis.identity.application.api.MemberPreferences;
 import dev.aegis.identity.application.api.MemberSummary;
 import dev.aegis.identity.application.api.ProvisionMembers;
 import dev.aegis.identity.domain.Member;
+import dev.aegis.identity.domain.MemberKind;
 import dev.aegis.identity.domain.MemberRepository;
 import dev.aegis.identity.domain.PasswordHasher;
 import dev.aegis.identity.domain.Username;
@@ -16,11 +18,15 @@ import dev.aegis.shared.MemberId;
 import dev.aegis.shared.NotFoundException;
 import dev.aegis.shared.ProductLocale;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
 /** Coordinates member use cases. Framework-independent; transactions are applied by the composition root. */
-public class MemberService implements MemberDirectory, MemberCredentialsQuery, ProvisionMembers, MemberPreferences {
+public class MemberService implements MemberDirectory, MemberCredentialsQuery, ProvisionMembers, MemberPreferences,
+        DesignateAssistants {
     private final MemberRepository members;
     private final PasswordHasher hasher;
     private final HouseholdAccess access;
@@ -63,10 +69,36 @@ public class MemberService implements MemberDirectory, MemberCredentialsQuery, P
         if (members.findByUsername(username).isPresent()) {
             return ProvisioningOutcome.ALREADY_EXISTS;
         }
+        MemberKind kind = command.kind() == null ? MemberKind.PERSON : MemberKind.valueOf(command.kind().name());
         Member member = Member.register(username, command.displayName(), command.initialPassword(), hasher,
-                command.locale() == null ? ProductLocale.defaultLocale() : command.locale(), clock.instant());
+                command.locale() == null ? ProductLocale.defaultLocale() : command.locale(), kind, clock.instant());
         members.save(member);
         return ProvisioningOutcome.CREATED;
+    }
+
+    @Override
+    public List<Designation> designateAssistants(Set<String> usernames, String displayName) {
+        List<Designation> outcomes = new ArrayList<>();
+        for (String raw : new TreeSet<>(usernames)) {
+            Optional<Member> found;
+            try {
+                found = members.findByUsername(Username.of(raw));
+            } catch (RuntimeException invalid) {
+                found = Optional.empty();
+            }
+            if (found.isEmpty()) {
+                outcomes.add(new Designation(raw, Outcome.UNKNOWN_USERNAME));
+                continue;
+            }
+            Member member = found.get();
+            if (member.designateAssistant(displayName)) {
+                members.save(member);
+                outcomes.add(new Designation(member.username().value(), Outcome.DESIGNATED));
+            } else {
+                outcomes.add(new Designation(member.username().value(), Outcome.ALREADY_ASSISTANT));
+            }
+        }
+        return outcomes;
     }
 
     @Override
@@ -98,6 +130,6 @@ public class MemberService implements MemberDirectory, MemberCredentialsQuery, P
 
     static MemberSummary summarize(Member member) {
         return new MemberSummary(member.id(), member.username().value(), member.displayName(), member.locale(),
-                member.isActive());
+                member.isActive(), dev.aegis.identity.application.api.MemberKind.valueOf(member.kind().name()));
     }
 }

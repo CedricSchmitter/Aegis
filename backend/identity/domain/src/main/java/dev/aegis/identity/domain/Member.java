@@ -8,7 +8,9 @@ import java.util.Objects;
 
 /**
  * A household member with an individual login. Membership in the single shared household is implicit for this
- * release; the aggregate protects credential and preference invariants.
+ * release; the aggregate protects credential and preference invariants. A member is a person or the household's
+ * assistant account ({@link MemberKind}); a person never becomes the assistant by accident, only through
+ * {@link #designateAssistant(String)}.
  */
 public final class Member {
     public static final int MIN_PASSWORD_LENGTH = 10;
@@ -19,29 +21,37 @@ public final class Member {
     private PasswordHash passwordHash;
     private ProductLocale locale;
     private boolean active;
+    private MemberKind kind;
     private final Instant createdAt;
 
     private Member(MemberId id, Username username, String displayName, PasswordHash passwordHash, ProductLocale locale,
-            boolean active, Instant createdAt) {
+            boolean active, MemberKind kind, Instant createdAt) {
         this.id = Objects.requireNonNull(id);
         this.username = Objects.requireNonNull(username);
         this.displayName = requireDisplayName(displayName);
         this.passwordHash = Objects.requireNonNull(passwordHash);
         this.locale = Objects.requireNonNull(locale);
         this.active = active;
+        this.kind = Objects.requireNonNull(kind);
         this.createdAt = Objects.requireNonNull(createdAt);
     }
 
     public static Member register(Username username, String displayName, String plainPassword, PasswordHasher hasher,
             ProductLocale locale, Instant now) {
+        return register(username, displayName, plainPassword, hasher, locale, MemberKind.PERSON, now);
+    }
+
+    public static Member register(Username username, String displayName, String plainPassword, PasswordHasher hasher,
+            ProductLocale locale, MemberKind kind, Instant now) {
         requirePasswordPolicy(plainPassword);
-        return new Member(MemberId.random(), username, displayName, hasher.hash(plainPassword), locale, true, now);
+        return new Member(MemberId.random(), username, displayName, hasher.hash(plainPassword), locale, true, kind,
+                now);
     }
 
     /** Rehydrates a persisted member without re-validating credentials. */
     public static Member rehydrate(MemberId id, Username username, String displayName, PasswordHash passwordHash,
-            ProductLocale locale, boolean active, Instant createdAt) {
-        return new Member(id, username, displayName, passwordHash, locale, active, createdAt);
+            ProductLocale locale, boolean active, MemberKind kind, Instant createdAt) {
+        return new Member(id, username, displayName, passwordHash, locale, active, kind, createdAt);
     }
 
     public boolean passwordMatches(String plainPassword, PasswordHasher hasher) {
@@ -68,6 +78,22 @@ public final class Member {
         this.active = false;
     }
 
+    /**
+     * Makes this member the household's assistant account, shown under {@code assistantName}. Idempotent: an
+     * assistant keeps its kind and its current name, so a later rename survives repeated designation.
+     *
+     * @return whether the member changed
+     */
+    public boolean designateAssistant(String assistantName) {
+        if (kind == MemberKind.ASSISTANT) {
+            return false;
+        }
+        String name = requireDisplayName(assistantName);
+        this.kind = MemberKind.ASSISTANT;
+        this.displayName = name;
+        return true;
+    }
+
     public MemberId id() {
         return id;
     }
@@ -90,6 +116,14 @@ public final class Member {
 
     public boolean isActive() {
         return active;
+    }
+
+    public MemberKind kind() {
+        return kind;
+    }
+
+    public boolean isPerson() {
+        return kind == MemberKind.PERSON;
     }
 
     public Instant createdAt() {

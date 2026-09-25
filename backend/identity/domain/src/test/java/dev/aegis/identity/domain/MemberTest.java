@@ -61,4 +61,42 @@ class MemberTest {
 
         assertThat(member.passwordMatches("initial-secret", REVERSIBLE)).isFalse();
     }
+
+    @Test
+    void registeredMembersArePersonsUnlessRegisteredAsTheAssistant() {
+        Member person = Member.register(Username.of("lisa"), "Lisa", "initial-secret", REVERSIBLE, ProductLocale.DE,
+                Instant.EPOCH);
+        Member assistant = Member.register(Username.of("helper"), "Aegis", "initial-secret", REVERSIBLE,
+                ProductLocale.DE, MemberKind.ASSISTANT, Instant.EPOCH);
+
+        assertThat(person.kind()).isEqualTo(MemberKind.PERSON);
+        assertThat(person.isPerson()).isTrue();
+        assertThat(assistant.isPerson()).isFalse();
+    }
+
+    @Test
+    void designatingTheAssistantRenamesItOnceAndKeepsItsLogin() {
+        Member member = Member.register(Username.of("aegis-dev"), "Aegis Dev", "initial-secret", REVERSIBLE,
+                ProductLocale.DE, Instant.EPOCH);
+
+        assertThat(member.designateAssistant(" Aegis ")).isTrue();
+        assertThat(member.kind()).isEqualTo(MemberKind.ASSISTANT);
+        assertThat(member.displayName()).isEqualTo("Aegis");
+        assertThat(member.username().value()).isEqualTo("aegis-dev");
+        assertThat(member.passwordMatches("initial-secret", REVERSIBLE)).isTrue();
+
+        member.rename("Aegis Assistent");
+        assertThat(member.designateAssistant("Aegis")).isFalse();
+        assertThat(member.displayName()).isEqualTo("Aegis Assistent");
+    }
+
+    @Test
+    void designationNeedsAValidName() {
+        Member member = Member.register(Username.of("aegis-dev"), "Aegis Dev", "initial-secret", REVERSIBLE,
+                ProductLocale.DE, Instant.EPOCH);
+
+        assertThatThrownBy(() -> member.designateAssistant(" ")).isInstanceOf(InvalidInputException.class);
+        assertThat(member.kind()).isEqualTo(MemberKind.PERSON);
+        assertThat(member.displayName()).isEqualTo("Aegis Dev");
+    }
 }

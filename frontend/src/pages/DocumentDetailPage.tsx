@@ -24,7 +24,7 @@ import { TaskItem } from "../components/TaskItem";
 import { MoveToTrashButton, TrashBanner } from "../components/TrashControls";
 import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
-import { suggestions } from "../lib/labels";
+import { subjectChoices, subjectKey, suggestions } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
 import { searchablePdf } from "../lib/searchablePdf";
 import { awaitingTextCheck } from "../lib/textRecognition";
@@ -32,7 +32,7 @@ import { awaitingTextCheck } from "../lib/textRecognition";
 export function DocumentDetailPage() {
   const { id = "" } = useParams();
   const { t, i18n } = useTranslation();
-  const { members, memberName } = useSession();
+  const { persons, memberName } = useSession();
   const [document, setDocument] = useState<DocumentDto | null>(null);
   const [tasks, setTasks] = useState<TaskDto[]>([]);
   const [contracts, setContracts] = useState<ContractSummaryDto[]>([]);
@@ -480,7 +480,7 @@ export function DocumentDetailPage() {
         </div>
         {editingSubjects && (
           <div className="flex flex-wrap items-center gap-3">
-            {["HOUSEHOLD", "HOUSE", ...members.map((member) => `MEMBER:${member.id}`)].map((value) => (
+            {subjectChoices(persons, document.subjects.map(subjectKey)).map((value) => (
               <label key={value} className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"

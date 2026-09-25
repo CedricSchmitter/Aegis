@@ -144,20 +144,20 @@ class CategoryTreeTest {
     void implicationsInheritFromAncestorsAndTheNearestTypeWins() {
         tree.changeImplications(house, Set.of(CONTRACT), Set.of(Subject.house()), FACET_OF, 0, NOW);
         tree.changeImplications(invoices, Set.of(INVOICE), Set.of(), FACET_OF, 0, NOW);
-        tree.changeImplications(internet, Set.of(INTERNET), Set.of(Subject.household()), FACET_OF, 0, NOW);
+        tree.changeImplications(internet, Set.of(INTERNET), Set.of(Subject.member(LISA)), FACET_OF, 0, NOW);
 
         CategoryTree.Implications implications = tree.implications(internet, FACET_OF);
 
         assertThat(implications.labels()).containsOnly(Map.entry(INTERNET, internet), Map.entry(INVOICE, invoices));
         assertThat(implications.subjects()).containsOnly(Map.entry(Subject.house(), house),
-                Map.entry(Subject.household(), internet));
+                Map.entry(Subject.member(LISA), internet));
         assertThat(tree.implications(house, FACET_OF).labels()).containsOnlyKeys(CONTRACT);
         assertThat(tree.implications(null, FACET_OF)).isEqualTo(CategoryTree.Implications.NONE);
         assertThat(tree.effects(FACET_OF)).filteredOn(e -> e.category().equals(internet)).singleElement()
                 .satisfies(e -> {
                     assertThat(e.labels()).containsOnly(Map.entry(INTERNET, Facet.TOPIC),
                             Map.entry(INVOICE, Facet.DOCUMENT_TYPE));
-                    assertThat(e.subjects()).containsExactlyInAnyOrder(Subject.house(), Subject.household());
+                    assertThat(e.subjects()).containsExactlyInAnyOrder(Subject.house(), Subject.member(LISA));
                 });
     }
 

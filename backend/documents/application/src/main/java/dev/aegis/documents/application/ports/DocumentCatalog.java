@@ -37,7 +37,7 @@ public interface DocumentCatalog {
     }
 
     /**
-     * Selected values of one group: label ids as strings, or subject keys ({@code HOUSE}, {@code HOUSEHOLD},
+     * Selected values of one group: label ids as strings, or subject keys ({@code HOUSE} or
      * {@code MEMBER:<uuid>}). {@code matchAll} requires every value instead of any.
      */
     record ValueFilter(List<String> values, boolean matchAll) {

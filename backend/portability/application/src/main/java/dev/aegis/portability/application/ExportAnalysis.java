@@ -10,6 +10,7 @@ import dev.aegis.portability.application.ExportFormat.SubjectEntry;
 import dev.aegis.portability.application.ExportFormat.SubjectSuggestionEntry;
 import dev.aegis.shared.MemberId;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,7 +40,12 @@ final class ExportAnalysis {
                         h.completedAt(), h.title(), text(h.documentDate()), h.shortTopic())).toList());
     }
 
-    static AnalysisRecord toRecord(AnalysisEntry e, Map<String, String> members, Map<UUID, UUID> labels) {
+    /**
+     * The exported analysis with local member and label ids; a subject suggestion "both" from a file before schema 9
+     * becomes one suggestion per person ({@link LegacySubjects}).
+     */
+    static AnalysisRecord toRecord(AnalysisEntry e, Map<String, String> members, Map<UUID, UUID> labels,
+            List<MemberId> persons, List<SubjectView> documentSubjects) {
         return new AnalysisRecord(e.status(), e.generation(), e.trigger(), member(e.requestedBy(), members),
                 e.requestedAt(), e.completedAt(), e.runRef(), e.model(), e.appliedLabels(), e.suggestedLabels(),
                 e.title(), e.titleDecision(), e.titleBefore(), date(e.documentDate()), e.documentDateEvidence(),
@@ -48,12 +54,12 @@ final class ExportAnalysis {
                 e.candidates() == null ? null : e.candidates().stream().map(c -> new AnalysisRecord.Candidate(
                         c.facet(), c.name(), c.evidence(), c.confidence(), c.decision(), label(c.labelId(), labels),
                         member(c.decidedBy(), members), c.decidedAt())).toList(),
-                e.subjects() == null ? null : e.subjects().stream()
+                e.subjects() == null ? null : LegacySubjects.expandSuggestions(e.subjects().stream()
                         .filter(s -> s.subject() != null && (s.subject().memberId() == null
                                 || members.containsKey(s.subject().memberId())))
                         .map(s -> new AnalysisRecord.SubjectEntry(new SubjectView(s.subject().kind(),
                                 member(s.subject().memberId(), members)), s.confidence(), s.evidence(), s.decision(),
-                                member(s.decidedBy(), members), s.decidedAt())).toList(),
+                                member(s.decidedBy(), members), s.decidedAt())).toList(), persons, documentSubjects),
                 e.filenameOverride(), member(e.filenameBy(), members), e.filenameAt(),
                 e.history() == null ? null : e.history().stream().map(h -> new AnalysisView.Generated(
                         h.generation(), h.runRef(), h.model(), h.completedAt(), h.title(), date(h.documentDate()),

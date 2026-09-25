@@ -21,6 +21,9 @@ GENERATION="${1:-$(cat "$EXPORTS_DIR/LATEST")}"
 SOURCE="$EXPORTS_DIR/generations/$GENERATION"
 [ -d "$SOURCE" ] || { echo "Export generation not found: $SOURCE" >&2; exit 1; }
 COMMIT="$(sed -n 's/^AEGIS_COMMIT=//p' "$DEPLOY_DIR/.env")"
+# The drill designates the same assistant account as the installation (ADR-0017), so that an older export's
+# subject "both" is restored as the persons only.
+ASSISTANTS="$(sed -n 's/^AEGIS_ASSISTANT_MEMBERS=//p' "$DEPLOY_DIR/.env" | tail -n 1)"
 
 echo "drill: preparing isolated stack $PROJECT for generation $GENERATION"
 sudo -n rm -rf "$DRILL_DIR"
@@ -37,7 +40,8 @@ members = json.load(open(sys.argv[1]))['members']
 assert members, 'Export has no members'
 with open(sys.argv[2], 'w') as out:
     json.dump({'members': [{'username': m['username'], 'displayName': m['displayName'],
-                          'initialPassword': secrets.token_urlsafe(24), 'locale': m['locale']}
+                          'initialPassword': secrets.token_urlsafe(24), 'locale': m['locale'],
+                          'kind': m.get('kind')}
                          for m in members]}, out)
 EOF
 IMPORT_ACTOR="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['members'][0]['username'])" "$SOURCE/data/members.json")"
@@ -47,6 +51,7 @@ chmod 0750 "$DRILL_DIR/secrets"
 umask 077
 cat > "$DRILL_DIR/.env" <<EOF
 AEGIS_COMMIT=$COMMIT
+AEGIS_ASSISTANT_MEMBERS=$ASSISTANTS
 AEGIS_DATA_DIR=$DRILL_DIR/data
 AEGIS_EXPORTS_DIR=$DRILL_DIR/exports
 AEGIS_DB_PASSWORD=$(random 24)

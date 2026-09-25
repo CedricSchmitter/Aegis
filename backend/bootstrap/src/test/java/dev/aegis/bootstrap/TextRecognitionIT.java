@@ -209,7 +209,7 @@ class TextRecognitionIT extends PostgresIT {
 
     private static String upload(ApiClient client, byte[] photo) {
         ApiClient.Response uploaded = client.upload("/api/documents", "IMG_" + System.nanoTime() + ".jpg", photo,
-                List.of("HOUSEHOLD"));
+                List.of("HOUSE"));
         assertThat(uploaded.status()).as(uploaded.body()).isEqualTo(201);
         return client.json(uploaded).path("document").path("id").asText();
     }

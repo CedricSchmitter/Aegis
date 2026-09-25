@@ -35,7 +35,7 @@ class ArchivalServiceTest {
                 new ArchivalSettings(2, Duration.ofMinutes(5), Duration.ofDays(7), 1024),
                 Clock.fixed(NOW, ZoneOffset.UTC));
         document = Document.received(DocumentId.random(), "Rechnung", "rechnung.pdf", "application/pdf", 10,
-                new Checksum("b".repeat(64)), MemberId.random(), NOW, Set.of(Subject.household()), "x.pdf");
+                new Checksum("b".repeat(64)), MemberId.random(), NOW, Set.of(Subject.house()), "x.pdf");
         repository.save(document);
     }
 

@@ -17,7 +17,7 @@ discarded and never replaces a good one.
   manifest.json                   schema version, counts, missing originals, SHA-256 of every file
   data/documents.json             versioned records (stable Aegis ids, checksums, subjects, Paperless ids)
   data/tasks.json                 tasks with owner, due date, planned date and source document id
-  data/members.json               members (ids, usernames, display names, locale); no credentials
+  data/members.json               members (ids, usernames, display names, locale, person or assistant); no credentials
   data/reviews.json               review references, source versions, lifecycle and decision audit
   readable/documents.csv          readable table
   readable/tasks.csv              readable table with source titles
@@ -35,6 +35,13 @@ others. Since export schema 8, `data/*.json` carries their trash record (who, wh
 CSV files have a `trashedAt` column and the index marks them "in the trash". A restore keeps that state, so a
 trashed record comes back trashed. Trashing or restoring never prunes a backup or an export generation; earlier
 copies stay where they are.
+
+Since export schema 9 ([ADR-0017](../architecture/adr/ADR-0017-persons-and-the-assistant-account.md)) each member
+entry says whether it is a `PERSON` or the household's `ASSISTANT` account, and no record carries the retired subject
+`HOUSEHOLD` ("Beide"). A restore of an older generation turns that subject, on documents, folder implications and
+analysis suggestions, into one subject per person of the restoring household, like the startup migration does. The
+restore drill therefore passes each exported member's kind and the installation's `AEGIS_ASSISTANT_MEMBERS` to its
+isolated stack.
 
 ## Isolated restore drill (implemented, synthetic data only)
 

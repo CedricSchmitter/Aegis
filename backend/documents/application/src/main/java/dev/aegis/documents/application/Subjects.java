@@ -38,7 +38,7 @@ final class Subjects {
         return subjects.stream().map(s -> new SubjectView(s.kind().name(), s.member())).toList();
     }
 
-    /** Stable key used in search filters and counts: HOUSE, HOUSEHOLD or MEMBER:{uuid}. */
+    /** Stable key used in search filters and counts: HOUSE or MEMBER:{uuid}. */
     static String key(Subject subject) {
         return subject.memberId().map(member -> MEMBER_PREFIX + member).orElse(subject.kind().name());
     }

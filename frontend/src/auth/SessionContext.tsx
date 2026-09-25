@@ -5,7 +5,10 @@ import { applyLocale } from "../i18n";
 
 interface SessionState {
   member: MemberDto | null;
+  /** Every member, including the assistant account; for task responsibility and names in history. */
   members: MemberDto[];
+  /** The persons of the household: the only members a document or folder can be about. */
+  persons: MemberDto[];
   loading: boolean;
   login(username: string, password: string): Promise<void>;
   logout(): Promise<void>;
@@ -80,9 +83,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [members],
   );
 
+  const persons = useMemo(() => members.filter((entry) => entry.kind === "PERSON"), [members]);
+
   const value = useMemo<SessionState>(
-    () => ({ member, members, loading, login, logout, changeLocale, memberName, refreshMembers }),
-    [member, members, loading, login, logout, changeLocale, memberName, refreshMembers],
+    () => ({ member, members, persons, loading, login, logout, changeLocale, memberName, refreshMembers }),
+    [member, members, persons, loading, login, logout, changeLocale, memberName, refreshMembers],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

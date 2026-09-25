@@ -52,13 +52,30 @@ class DocumentCaptureServiceTest {
         analysisSettings = TestDoubles.analysisSettings();
         service = new DocumentCaptureService(store,
                 new DocumentRegistrar(repository, classifications, categories, lock, scheduler, analyses), presenter,
-                categories, new TestDoubles.MembersOnly(anna, ben), settings, analysisSettings,
+                categories, new TestDoubles.Persons(anna, ben), new TestDoubles.MembersOnly(anna, ben), settings,
+                analysisSettings,
                 Clock.fixed(Instant.parse("2026-09-13T10:00:00Z"), ZoneOffset.UTC));
     }
 
     private UploadCommand command(String filename, byte[] bytes) {
         return new UploadCommand(filename, "application/pdf", bytes.length, new ByteArrayInputStream(bytes),
                 List.of(new SubjectView("HOUSE", null)));
+    }
+
+    @Test
+    void anUploadStartsWithoutSubjectsAndNeverNamesTheAssistant() {
+        UploadResult none = service.upload(new Actor(anna), new UploadCommand("Ohne Zuordnung.pdf",
+                "application/pdf", PDF.length, new ByteArrayInputStream(PDF), List.of()));
+        assertThat(none.document().subjects()).isEmpty();
+
+        byte[] other = "%PDF-1.4 other synthetic".getBytes(StandardCharsets.US_ASCII);
+        assertThatThrownBy(() -> service.upload(new Actor(anna), new UploadCommand("Assistent.pdf",
+                "application/pdf", other.length, new ByteArrayInputStream(other),
+                List.of(new SubjectView("MEMBER", MemberId.random())))))
+                .isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "subject.member.notPerson");
+        // Refused before the file is stored, so nothing is left for reconciliation to quarantine.
+        assertThat(store.listStagingPaths()).containsExactly(none.document().id() + ".pdf");
     }
 
     @Test
@@ -171,7 +188,7 @@ class DocumentCaptureServiceTest {
 
     private UploadCommand photo(String filename, byte[] bytes) {
         return new UploadCommand(filename, "application/octet-stream", bytes.length,
-                new ByteArrayInputStream(bytes), List.of(new SubjectView("HOUSEHOLD", null)));
+                new ByteArrayInputStream(bytes), List.of(new SubjectView("HOUSE", null)));
     }
 
     @Test

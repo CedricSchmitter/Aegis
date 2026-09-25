@@ -1523,6 +1523,10 @@
           "id" : {
             "type" : "string"
           },
+          "kind" : {
+            "enum" : [ "PERSON", "ASSISTANT" ],
+            "type" : "string"
+          },
           "locale" : {
             "enum" : [ "DE", "EN" ],
             "type" : "string"
@@ -1531,7 +1535,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "displayName", "id", "locale", "username" ],
+        "required" : [ "displayName", "id", "kind", "locale", "username" ],
         "type" : "object"
       },
       "MergeRequest" : {

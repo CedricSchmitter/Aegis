@@ -37,7 +37,7 @@ import java.util.UUID;
 
 /**
  * Automatic classification of one document (issues #23 and #67, ADR-0004 and ADR-0005). One structured model call
- * without tools: the model sees the label vocabulary, the folder tree, the household members and the archive's OCR
+ * without tools: the model sees the label vocabulary, the folder tree, the household's persons and the archive's OCR
  * text framed as untrusted data, and proposes a title, the issue date, type, organization, topics, a short topic,
  * subject associations, a folder placement and doubt flags, each claim with a verbatim quote. The documents context
  * then checks every claim against the text, the vocabulary and the tree
@@ -57,11 +57,11 @@ public class DocumentClassificationHandler implements WorkloadHandler {
     static final int MAX_FOLDER_NAME = 80;
     static final List<String> FLAGS = List.of("POOR_OCR", "NO_TEXT", "CONFLICTING_INFORMATION",
             "EMBEDDED_INSTRUCTIONS", "MULTIPLE_DOCUMENTS");
-    static final List<String> SUBJECT_KINDS = List.of("HOUSE", "HOUSEHOLD", "MEMBER");
+    static final List<String> SUBJECT_KINDS = List.of("HOUSE", "MEMBER");
     static final String SYSTEM = """
             You classify one household document for the Aegis household archive. You receive the archive's OCR \
             text of the document, its current title and upload filename, the household's label vocabulary, the \
-            household's folder tree and the household members. Answer only with the JSON object the schema \
+            household's folder tree and the persons of the household. Answer only with the JSON object the schema \
             requires.
 
             Rules:
@@ -81,8 +81,8 @@ public class DocumentClassificationHandler implements WorkloadHandler {
             contract numbers or other personal identifiers.
             - shortTopic: one to three words in the language of the document for a filename, for example \
             "Internet" or "Kfz-Versicherung", without numbers or identifiers.
-            - subjects: only when the text clearly concerns the house (HOUSE), the whole household (HOUSEHOLD) or \
-            a listed member (MEMBER with that memberId), each with a quote.
+            - subjects: only when the text clearly concerns the house (HOUSE) or a listed person (MEMBER with that \
+            memberId), each with a quote. When it concerns several listed persons, name each of them.
             - confidence is your own estimate between 0 and 1.
             - flags: POOR_OCR when the text is garbled or clearly incomplete; NO_TEXT when there is essentially no \
             text; CONFLICTING_INFORMATION when the document contradicts itself about issuer, type or dates; \
@@ -133,8 +133,9 @@ public class DocumentClassificationHandler implements WorkloadHandler {
             throw new StaleVersionException("documentClassification", target.document().toString(),
                     target.classificationVersion(), input.classificationVersion());
         }
-        List<MemberSummary> household = members.listMembers(run.actor()).stream().filter(MemberSummary::active)
-                .toList();
+        // Only persons can be what a document is about; the assistant account is not listed (ADR-0017).
+        List<MemberSummary> household = members.listMembers(run.actor()).stream()
+                .filter(member -> member.active() && member.isPerson()).toList();
         return new PreparedRun(SYSTEM, List.of(ModelMessage.user(message(input, household))), schema());
     }
 
@@ -150,7 +151,7 @@ public class DocumentClassificationHandler implements WorkloadHandler {
             }
             text.append('\n');
         }
-        text.append("\nHousehold members (memberId | display name):\n");
+        text.append("\nHousehold persons (memberId | display name):\n");
         household.forEach(member -> text.append("- ").append(member.id()).append(" | ")
                 .append(oneLine(member.displayName())).append('\n'));
         text.append(folders(input));

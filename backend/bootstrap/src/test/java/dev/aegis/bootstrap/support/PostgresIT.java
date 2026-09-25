@@ -13,14 +13,17 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * Base for integration tests against a real PostgreSQL (Testcontainers) with the full Spring context, two
- * provisioned members and temporary ingress/export directories. Paperless is replaced by an in-process fake.
+ * Base for integration tests against a real PostgreSQL (Testcontainers) with the full Spring context, two provisioned
+ * persons, the household's assistant account and temporary ingress/export directories. Paperless is replaced by an
+ * in-process fake.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestArchiveConfiguration.class)
 public abstract class PostgresIT {
     public static final String ANNA = "anna";
     public static final String BEN = "ben";
+    /** Designated as the household's assistant at startup and then shown as "Aegis" (ADR-0017). */
+    public static final String HELPER = "helper";
     public static final String PASSWORD = "synthetic-test-password";
     public static final Path FIXTURE = Path.of("..", "..", "fixtures", "synthetic-contract.pdf");
 
@@ -50,6 +53,7 @@ public abstract class PostgresIT {
         registry.add("aegis.ingress.dir", () -> DATA.resolve("ingress").toString());
         registry.add("aegis.exports.dir", () -> DATA.resolve("exports").toString());
         registry.add("aegis.members.file", () -> membersFile().toString());
+        registry.add("aegis.members.assistants", () -> HELPER);
         // Short job timing keeps the suite fast; the paths are the same as in production, only the waits shrink. An
         // archival needs a submission and two consumption checks, so production's 5s check interval alone cost 10s per
         // upload. The retry base leaves ApiFlowIT's outage test seconds, not milliseconds, between failed attempts.
@@ -89,9 +93,10 @@ public abstract class PostgresIT {
                 Files.writeString(file, """
                         {"members": [
                           {"username": "anna", "displayName": "Anna", "initialPassword": "%s", "locale": "DE"},
-                          {"username": "ben", "displayName": "Ben", "initialPassword": "%s", "locale": "EN"}
+                          {"username": "ben", "displayName": "Ben", "initialPassword": "%s", "locale": "EN"},
+                          {"username": "helper", "displayName": "Helper Dev", "initialPassword": "%s", "locale": "DE"}
                         ]}
-                        """.formatted(PASSWORD, PASSWORD), StandardCharsets.UTF_8);
+                        """.formatted(PASSWORD, PASSWORD, PASSWORD), StandardCharsets.UTF_8);
             } catch (IOException e) {
                 throw new IllegalStateException(e);
             }

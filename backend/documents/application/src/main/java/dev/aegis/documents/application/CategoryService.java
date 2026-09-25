@@ -5,6 +5,7 @@ import dev.aegis.documents.application.api.CategoryView;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.application.ports.CatalogLock;
 import dev.aegis.documents.application.ports.DocumentCatalog;
+import dev.aegis.documents.application.ports.HouseholdPersons;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.Subject;
@@ -43,18 +44,20 @@ public class CategoryService implements CategoryCommands {
     private final DocumentRepository documents;
     private final DocumentCatalog catalog;
     private final CatalogLock lock;
+    private final HouseholdPersons persons;
     private final HouseholdAccess access;
     private final Clock clock;
 
     public CategoryService(CategoryRepository categories, LabelRepository labels,
             ClassificationRepository classifications, DocumentRepository documents, DocumentCatalog catalog,
-            CatalogLock lock, HouseholdAccess access, Clock clock) {
+            CatalogLock lock, HouseholdPersons persons, HouseholdAccess access, Clock clock) {
         this.categories = categories;
         this.labels = labels;
         this.classifications = classifications;
         this.documents = documents;
         this.catalog = catalog;
         this.lock = lock;
+        this.persons = persons;
         this.access = access;
         this.clock = clock;
     }
@@ -111,6 +114,8 @@ public class CategoryService implements CategoryCommands {
         LabelVocabulary vocabulary = labels.load();
         CategoryId categoryId = new CategoryId(id);
         Set<LabelId> current = tree.require(categoryId).impliedLabels();
+        Set<Subject> wantedSubjects = Subjects.fromViews(subjects);
+        SubjectPersons.requirePersons(wantedSubjects, tree.require(categoryId).impliedSubjects(), persons);
         Set<LabelId> wanted = new LinkedHashSet<>();
         for (UUID raw : labelIds == null ? List.<UUID>of() : labelIds) {
             Label label = vocabulary.resolve(new LabelId(raw));
@@ -120,7 +125,7 @@ public class CategoryService implements CategoryCommands {
             }
             wanted.add(label.id());
         }
-        tree.changeImplications(categoryId, wanted, Subjects.fromViews(subjects), vocabulary::facetOf,
+        tree.changeImplications(categoryId, wanted, wantedSubjects, vocabulary::facetOf,
                 expectedVersion, clock.instant());
         save(tree);
         return view(reload(categoryId));

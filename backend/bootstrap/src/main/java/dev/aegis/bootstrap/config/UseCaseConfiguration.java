@@ -34,6 +34,7 @@ import dev.aegis.documents.application.ClassificationViews;
 import dev.aegis.documents.application.DocumentQueryService;
 import dev.aegis.documents.application.LabelService;
 import dev.aegis.documents.application.DocumentRegistrar;
+import dev.aegis.documents.application.HouseholdSubjectMigrationService;
 import dev.aegis.documents.application.ReconciliationService;
 import dev.aegis.documents.application.RegisterReceivedDocument;
 import dev.aegis.documents.application.api.CatalogQueries;
@@ -48,11 +49,14 @@ import dev.aegis.documents.application.api.DocumentStatusQuery;
 import dev.aegis.documents.application.api.ImportCatalog;
 import dev.aegis.documents.application.api.ImportDocument;
 import dev.aegis.documents.application.api.LabelCommands;
+import dev.aegis.documents.application.api.MigrateHouseholdSubjects;
 import dev.aegis.documents.application.api.ProposeClassification;
 import dev.aegis.documents.application.api.UploadDocument;
 import dev.aegis.documents.application.ports.CatalogLock;
 import dev.aegis.documents.application.ports.DocumentCatalog;
 import dev.aegis.documents.application.ports.DocumentEvents;
+import dev.aegis.documents.application.ports.HouseholdPersons;
+import dev.aegis.documents.application.ports.LegacyHouseholdSubjects;
 import dev.aegis.documents.application.ports.OriginalStore;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.application.ports.ProcessingScheduler;
@@ -64,9 +68,11 @@ import dev.aegis.documents.domain.placement.PlacementSuggestionRepository;
 import dev.aegis.documents.domain.text.ArchiveTextCheckRepository;
 import dev.aegis.identity.application.HouseholdAccessPolicy;
 import dev.aegis.identity.application.MemberService;
+import dev.aegis.identity.application.api.DesignateAssistants;
 import dev.aegis.identity.application.api.MemberCredentialsQuery;
 import dev.aegis.identity.application.api.MemberDirectory;
 import dev.aegis.identity.application.api.MemberPreferences;
+import dev.aegis.identity.application.api.MemberSummary;
 import dev.aegis.identity.application.api.ProvisionMembers;
 import dev.aegis.identity.domain.MemberRepository;
 import dev.aegis.identity.domain.PasswordHasher;
@@ -122,6 +128,7 @@ import dev.aegis.portability.application.api.RestoreExport;
 import dev.aegis.portability.application.ports.ExportSerializer;
 import dev.aegis.portability.application.ports.ExportSourceOpener;
 import dev.aegis.portability.application.ports.ExportStore;
+import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.Trash;
 import java.time.Clock;
@@ -179,6 +186,11 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(MemberPreferences.class, services.members(), tm);
     }
 
+    @Bean
+    DesignateAssistants designateAssistants(IdentityServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(DesignateAssistants.class, services.members(), tm);
+    }
+
     /** How long a trashed document, task or contract is guaranteed to stay restorable (ADR-0010). */
     @Bean
     Trash.RecoveryWindow trashRecoveryWindow(@Value("${aegis.trash.recovery-window:30d}") Duration window) {
@@ -186,6 +198,25 @@ public class UseCaseConfiguration {
     }
 
     // Documents -----------------------------------------------------------------------------------------------
+
+    /**
+     * The persons a document can be about, read through the identity contract (ADR-0017). The documents context
+     * asks as a named household process, which the member directory is open to; the assistant is left out.
+     */
+    @Bean
+    HouseholdPersons householdPersons(MemberDirectory members) {
+        Actor process = Actor.householdProcess("document-subjects");
+        return () -> members.listMembers(process).stream().filter(member -> member.active() && member.isPerson())
+                .map(MemberSummary::id).toList();
+    }
+
+    /** Replaces the retired "both" subject once at startup, in one transaction (ADR-0017). */
+    @Bean
+    MigrateHouseholdSubjects migrateHouseholdSubjects(LegacyHouseholdSubjects legacy, HouseholdPersons persons,
+            PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(MigrateHouseholdSubjects.class,
+                new HouseholdSubjectMigrationService(legacy, persons), tm);
+    }
 
     @Bean
     ArchivalSettings archivalSettings(@Value("${aegis.archival.max-attempts:8}") int maxAttempts,
@@ -227,9 +258,9 @@ public class UseCaseConfiguration {
             DocumentRepository documents, PaperlessArchive archive, DocumentCatalog catalog,
             CategoryRepository categories, LabelRepository labels, ClassificationRepository classifications,
             ClassificationViews views, PlacementSuggestionRepository placements,
-            DocumentAnalysisRepository analyses, AnalysisSettings analysisSettings) {
+            DocumentAnalysisRepository analyses, AnalysisSettings analysisSettings, HouseholdPersons persons) {
         return new DocumentServices(
-                new DocumentCaptureService(store, registrar, presenter, categories, access, settings,
+                new DocumentCaptureService(store, registrar, presenter, categories, persons, access, settings,
                         analysisSettings, clock),
                 new DocumentQueryService(documents, archive, store, presenter, catalog, categories, labels,
                         classifications, views, placements, analyses, analysisSettings, access, clock));
@@ -245,9 +276,10 @@ public class UseCaseConfiguration {
     @Bean
     CategoryCommands categoryCommands(CategoryRepository categories, LabelRepository labels,
             ClassificationRepository classifications, DocumentRepository documents, DocumentCatalog catalog,
-            CatalogLock lock, HouseholdAccess access, Clock clock, PlatformTransactionManager tm) {
+            CatalogLock lock, HouseholdPersons persons, HouseholdAccess access, Clock clock,
+            PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(CategoryCommands.class, new CategoryService(categories, labels,
-                classifications, documents, catalog, lock, access, clock), tm);
+                classifications, documents, catalog, lock, persons, access, clock), tm);
     }
 
     @Bean
@@ -333,10 +365,10 @@ public class UseCaseConfiguration {
 
     @Bean
     DocumentCommands documentCommands(DocumentRepository documents, ProcessingScheduler scheduler,
-            DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdAccess access,
+            DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdPersons persons, HouseholdAccess access,
             Trash.RecoveryWindow recoveryWindow, Clock clock, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(DocumentCommands.class, new DocumentCommandService(documents, scheduler,
-                presenter, analysis, access, recoveryWindow, clock), tm);
+                presenter, analysis, persons, access, recoveryWindow, clock), tm);
     }
 
     @Bean

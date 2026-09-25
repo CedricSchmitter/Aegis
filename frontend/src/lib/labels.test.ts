@@ -8,6 +8,7 @@ import {
   matchLabels,
   normalizeName,
   ownLabelIds,
+  subjectChoices,
   subjectFromKey,
   subjectKey,
   suggestions,
@@ -88,7 +89,19 @@ describe("label presentation", () => {
     expect(subjectKey({ kind: "HOUSE", memberId: null })).toBe("HOUSE");
     expect(subjectKey({ kind: "MEMBER", memberId: "m-1" })).toBe("MEMBER:m-1");
     expect(subjectFromKey("MEMBER:m-1")).toEqual({ kind: "MEMBER", memberId: "m-1" });
-    expect(subjectFromKey("HOUSEHOLD")).toEqual({ kind: "HOUSEHOLD", memberId: null });
+    expect(subjectFromKey("HOUSE")).toEqual({ kind: "HOUSE", memberId: null });
+  });
+
+  it("offers the house and each person, and keeps a saved value that is no person removable", () => {
+    const persons = [{ id: "lisa" }, { id: "cedric" }];
+
+    expect(subjectChoices(persons)).toEqual(["HOUSE", "MEMBER:lisa", "MEMBER:cedric"]);
+    expect(subjectChoices(persons, ["MEMBER:cedric", "MEMBER:aegis"])).toEqual([
+      "HOUSE",
+      "MEMBER:lisa",
+      "MEMBER:cedric",
+      "MEMBER:aegis",
+    ]);
   });
 });
 

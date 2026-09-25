@@ -120,7 +120,7 @@ class DocumentQueryServiceTest {
         DocumentId id = DocumentId.random();
         var staged = store.store(id, new ByteArrayInputStream(jpeg));
         Document photo = Document.received(id, "Brief vom Amt", "IMG_1.jpg", "image/jpeg", jpeg.length,
-                staged.checksum(), anna, NOW, Set.of(Subject.household()), staged.stagingPath());
+                staged.checksum(), anna, NOW, Set.of(Subject.house()), staged.stagingPath());
         repository.save(photo);
         String stem = "Brief-vom-Amt_" + id.toString().substring(0, 8);
 

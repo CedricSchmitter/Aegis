@@ -55,6 +55,14 @@ The script ships `git archive` of the commit to `/srv/aegis/source/releases/aegi
 The script updates `DEPLOYED_COMMIT` only after readiness and running-version checks pass. The running
 commit is visible at `/api/system/version` and in the UI footer.
 
+Before deploying a commit that migrates household data, keep a restorable dump of the household database next to
+the backup staging area (on the VM, as `aegis-agent`; the file stays on the VM):
+
+```sh
+sudo -n sh -c 'cd /srv/aegis/deploy && docker compose --env-file .env -f compose.yaml exec -T postgres \
+    pg_dump -U aegis -d aegis -Fc' > /srv/aegis/backup-staging/aegis-before-<sha>.dump
+```
+
 Rollback to a previously built commit: `sh /srv/aegis/source/current/ops/deploy/rollback.sh <sha>` on the VM
 (application container only; database migrations are additive and are not undone).
 
@@ -69,6 +77,33 @@ Never print credentials in logs or Git.
 The JSON file only seeds accounts that do not exist yet. After onboarding/password changes, retire its
 plaintext values by replacing its content with `{"members": []}`; keep the bind-mounted file in place so
 later container recreation does not encounter a missing file or create a directory in its place.
+
+## Assistant account
+
+The household's assistant account ([ADR-0017](../architecture/adr/ADR-0017-persons-and-the-assistant-account.md)) is a member that logs in, reads the whole
+household, receives every notice and can be responsible for a task, but is never what a document is about: it is not
+offered as a subject, not shown in the subject filter and not among the persons the classifier receives. On this
+installation it is the agent login `aegis-dev`, shown as `Aegis`. Which account it is, is environment data in
+`/srv/aegis/deploy/.env`, set with a tracked, idempotent script:
+
+```sh
+# on the VM, as aegis-agent, from a checkout of the commit (or from the PC before deploying it:
+#   ssh <verified options> aegis-agent@192.168.2.159 'python3 - aegis-dev' < ops/deploy/set-assistant-member.py)
+python3 ops/deploy/set-assistant-member.py aegis-dev
+```
+
+The script sets `AEGIS_ASSISTANT_MEMBERS=aegis-dev`, keeps every other line and the file mode, prints nothing else
+from the file and changes nothing when the value is already set. At the next start of the application container
+(`deploy.sh`, or `docker compose ... up -d aegis`) the account is designated once and renamed to `Aegis`
+(`aegis.members.assistant-display-name`); the username `aegis-dev` and its password stay. The designation is stored
+in identity, so removing the variable later does not turn the account back into a person, and a later rename is
+kept. The log shows `Assistant designation for 'aegis-dev': DESIGNATED` once and `ALREADY_ASSISTANT` afterwards.
+
+**Order for the version that retires the subject "Beide".** Set the variable **before** that version starts for the
+first time. The same start replaces every stored "Beide" by one subject per person (log line
+`Replaced the subject 'both' by 2 persons on … documents, … folders and … analyses`); if `aegis-dev` were still a
+person at that moment, it would be added to those documents too and would have to be removed by hand on each
+document page. Later starts find nothing to replace and log nothing.
 
 ## Starting folder tree (optional, on request)
 
@@ -201,7 +236,8 @@ choice at request time described above; a failing API call is never repeated on 
 Models, prices and per-run budgets are in `aegis.ai` of `application.yml`.
 
 Deployment defaults: `AEGIS_AI_PROVIDERS=anthropic,claude-code`, `AEGIS_AI_SUBSCRIPTION_MEMBERS=` (empty: nobody may
-use the subscription), `AEGIS_AI_DAILY_COST_LIMIT=0.25`. Existing `.env` overrides
+use the subscription), `AEGIS_AI_DAILY_COST_LIMIT=0.25`, `AEGIS_ASSISTANT_MEMBERS=` (empty: every member is a person;
+this installation sets `aegis-dev`, see [Assistant account](#assistant-account)). Existing `.env` overrides
 must match these settings; changing environment settings requires recreating the application container.
 Deleting the key file disables new calls; calls already in flight may finish.
 

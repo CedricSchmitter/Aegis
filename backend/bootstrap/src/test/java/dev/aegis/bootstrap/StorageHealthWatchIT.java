@@ -151,8 +151,9 @@ class StorageHealthWatchIT extends PostgresIT {
             assertThat(watch.check()).isEqualTo(new Report(0, 2, List.of()));
             assertThat(incidents.findOpen("backup")).isEmpty();
             assertThat(incidents.findOpen("disk:data")).isEmpty();
+            // Two incidents, each noticed by every active member including the assistant account (ADR-0017).
             assertThat(jdbc.sql("SELECT count(*) FROM notices WHERE kind IN ('BACKUP_FAILED', 'DISK_SPACE_LOW')")
-                    .query(Long.class).single()).isEqualTo(4L);
+                    .query(Long.class).single()).isEqualTo(6L);
         } finally {
             removeBackupAndDataDiskIncidents();
         }

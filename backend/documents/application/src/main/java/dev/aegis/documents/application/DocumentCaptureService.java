@@ -2,6 +2,7 @@ package dev.aegis.documents.application;
 
 import dev.aegis.documents.application.api.ImportDocument;
 import dev.aegis.documents.application.api.UploadDocument;
+import dev.aegis.documents.application.ports.HouseholdPersons;
 import dev.aegis.documents.application.ports.OriginalStore;
 import dev.aegis.documents.domain.catalog.CategoryId;
 import dev.aegis.documents.domain.catalog.CategoryRepository;
@@ -32,18 +33,20 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
     private final RegisterReceivedDocument registrar;
     private final DocumentPresenter presenter;
     private final CategoryRepository categories;
+    private final HouseholdPersons persons;
     private final HouseholdAccess access;
     private final ArchivalSettings settings;
     private final AnalysisSettings analysis;
     private final Clock clock;
 
     public DocumentCaptureService(OriginalStore store, RegisterReceivedDocument registrar,
-            DocumentPresenter presenter, CategoryRepository categories, HouseholdAccess access,
-            ArchivalSettings settings, AnalysisSettings analysis, Clock clock) {
+            DocumentPresenter presenter, CategoryRepository categories, HouseholdPersons persons,
+            HouseholdAccess access, ArchivalSettings settings, AnalysisSettings analysis, Clock clock) {
         this.store = store;
         this.registrar = registrar;
         this.presenter = presenter;
         this.categories = categories;
+        this.persons = persons;
         this.access = access;
         this.settings = settings;
         this.analysis = analysis;
@@ -61,9 +64,10 @@ public class DocumentCaptureService implements UploadDocument, ImportDocument {
             // Rejected before the file is stored: a chosen folder that does not exist is a client error.
             categories.load().require(new CategoryId(command.categoryId()));
         }
+        Set<Subject> subjects = Subjects.fromViews(command.subjects());
+        SubjectPersons.requirePersons(subjects, Set.of(), persons);
         DocumentId id = DocumentId.random();
         StoredOriginal stored = storeValidated(id, command.content());
-        Set<Subject> subjects = Subjects.fromViews(command.subjects());
         var registration = registrar.register(new RegisterReceivedDocument.RegistrationCommand(id, titleFrom(filename),
                 TitleOrigin.FILENAME, filename, stored.format().contentType(), stored.sizeBytes(), stored.checksum(),
                 actor.memberId(), clock.instant(), subjects, stored.stagingPath(), command.categoryId(),

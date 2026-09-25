@@ -1964,6 +1964,8 @@ export interface components {
             displayName: string;
             id: string;
             /** @enum {string} */
+            kind: "PERSON" | "ASSISTANT";
+            /** @enum {string} */
             locale: "DE" | "EN";
             username: string;
         };

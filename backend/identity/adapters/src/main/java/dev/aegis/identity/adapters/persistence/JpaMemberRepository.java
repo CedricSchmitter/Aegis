@@ -1,6 +1,7 @@
 package dev.aegis.identity.adapters.persistence;
 
 import dev.aegis.identity.domain.Member;
+import dev.aegis.identity.domain.MemberKind;
 import dev.aegis.identity.domain.MemberRepository;
 import dev.aegis.identity.domain.PasswordHash;
 import dev.aegis.identity.domain.Username;
@@ -39,19 +40,22 @@ public class JpaMemberRepository implements MemberRepository {
         MemberEntity entity = jpa.findById(member.id().value()).orElse(null);
         if (entity == null) {
             jpa.save(new MemberEntity(member.id().value(), member.username().value(), member.displayName(),
-                    member.passwordHash().value(), member.locale().name(), member.isActive(), member.createdAt()));
+                    member.passwordHash().value(), member.locale().name(), member.isActive(), member.kind().name(),
+                    member.createdAt()));
             return;
         }
         entity.setDisplayName(member.displayName());
         entity.setPasswordHash(member.passwordHash().value());
         entity.setLocale(member.locale().name());
         entity.setActive(member.isActive());
+        entity.setKind(member.kind().name());
         jpa.save(entity);
     }
 
     private static Member toDomain(MemberEntity entity) {
         return Member.rehydrate(new MemberId(entity.getId()), new Username(entity.getUsername()),
                 entity.getDisplayName(), new PasswordHash(entity.getPasswordHash()),
-                ProductLocale.valueOf(entity.getLocale()), entity.isActive(), entity.getCreatedAt());
+                ProductLocale.valueOf(entity.getLocale()), entity.isActive(), MemberKind.valueOf(entity.getKind()),
+                entity.getCreatedAt());
     }
 }

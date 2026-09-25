@@ -38,7 +38,7 @@
   },
   "login": {
     "title": "Sign in",
-    "intro": "Sign in with your personal login. Both members see the same documents and tasks.",
+    "intro": "Sign in with your personal login. All members of the household see the same documents and tasks.",
     "username": "Username",
     "password": "Password",
     "submit": "Sign in",
@@ -185,7 +185,6 @@
   },
   "subjects": {
     "HOUSE": "House",
-    "HOUSEHOLD": "Both",
     "MEMBER": "{{name}}",
     "none": "No assignment",
     "hint": "The assignment is search metadata. It does not restrict who can see the document."
@@ -759,6 +758,7 @@
     "password.current.mismatch": "The current password does not match.",
     "subject.kind.invalid": "Invalid assignment.",
     "subject.member.invalid": "Invalid member in the assignment.",
+    "subject.member.notPerson": "A document can only be assigned to persons of the household, not to the assistant.",
     "internal.error": "Internal error. Please try again later.",
     "category.notFound": "Folder not found.",
     "category.name.missing": "The folder name is missing.",

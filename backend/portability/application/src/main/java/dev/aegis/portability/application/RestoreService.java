@@ -16,6 +16,7 @@ import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.identity.application.api.MemberDirectory;
+import dev.aegis.identity.application.api.MemberKind;
 import dev.aegis.identity.application.api.MemberSummary;
 import dev.aegis.identity.application.api.ProvisionMembers;
 import dev.aegis.identity.application.api.ProvisionMembers.ProvisionMemberCommand;
@@ -63,7 +64,8 @@ import java.util.UUID;
 /**
  * Restore into a (fresh or existing) instance. Verifies manifest checksums, maps members by username, restores the
  * shared catalog, re-imports originals under their stable ids and restores tasks and contracts with their source
- * links. An exported classification is applied only to a document that is still unclassified and an existing
+ * links. The subject "both" of an export before schema 9 becomes one subject per person of this household, the
+ * same mapping the startup migration applies (ADR-0017). An exported classification is applied only to a document that is still unclassified and an existing
  * contract is left untouched, so a repeated restore never overwrites newer local edits.
  */
 public class RestoreService implements RestoreExport {
@@ -120,9 +122,11 @@ public class RestoreService implements RestoreExport {
 
             Map<String, String> memberMapping = mapMembers(actor, read(source, ExportFormat.MEMBERS_JSON,
                     MembersFile.class), warnings);
-            CatalogImportResult catalog = restoreCatalog(actor, source, warnings);
+            List<MemberId> persons = members.listMembers(actor).stream()
+                    .filter(member -> member.active() && member.isPerson()).map(MemberSummary::id).toList();
+            CatalogImportResult catalog = restoreCatalog(actor, source, persons, warnings);
             int[] documentCounts = restoreDocuments(actor, source, read(source, ExportFormat.DOCUMENTS_JSON,
-                    DocumentsFile.class), memberMapping, catalog, warnings);
+                    DocumentsFile.class), memberMapping, persons, catalog, warnings);
             int[] taskCounts = restoreTasks(actor, read(source, ExportFormat.TASKS_JSON, TasksFile.class),
                     memberMapping);
             int[] contractCounts = restoreContracts(actor, source, memberMapping);
@@ -164,8 +168,8 @@ public class RestoreService implements RestoreExport {
     }
 
     /** Folder tree and vocabulary; absent in schema 1 exports, which restore without classifications. */
-    private CatalogImportResult restoreCatalog(Actor actor, ExportSource source, List<String> warnings)
-            throws IOException {
+    private CatalogImportResult restoreCatalog(Actor actor, ExportSource source, List<MemberId> persons,
+            List<String> warnings) throws IOException {
         if (!source.exists(ExportFormat.CATALOG_JSON)) {
             return new CatalogImportResult(Map.of(), Map.of(), 0, 0, List.of());
         }
@@ -177,8 +181,8 @@ public class RestoreService implements RestoreExport {
                 UUID.fromString(folder.id()),
                 folder.parentId() == null ? null : UUID.fromString(folder.parentId()), folder.name(),
                 folder.impliedLabelIds().stream().map(UUID::fromString).toList(),
-                folder.impliedSubjects().stream().map(s -> new SubjectView(s.kind(),
-                        s.memberId() == null ? null : MemberId.of(s.memberId()))).toList())).toList();
+                LegacySubjects.expand(folder.impliedSubjects().stream().map(s -> new SubjectView(s.kind(),
+                        s.memberId() == null ? null : MemberId.of(s.memberId()))).toList(), persons))).toList();
         CatalogImportResult result = importCatalog.importCatalog(actor, labels, folders);
         warnings.addAll(result.warnings());
         return result;
@@ -196,7 +200,8 @@ public class RestoreService implements RestoreExport {
                 random.nextBytes(secret);
                 provisioning.ensureMember(new ProvisionMemberCommand(entry.username(), entry.displayName(),
                         Base64.getUrlEncoder().withoutPadding().encodeToString(secret),
-                        entry.locale() == null ? ProductLocale.defaultLocale() : ProductLocale.valueOf(entry.locale())));
+                        entry.locale() == null ? ProductLocale.defaultLocale() : ProductLocale.valueOf(entry.locale()),
+                        entry.kind() == null ? MemberKind.PERSON : MemberKind.valueOf(entry.kind())));
                 warnings.add("created member '" + entry.username()
                         + "' with an unknown random password; set a password through provisioning before use");
                 byUsername.clear();
@@ -210,8 +215,8 @@ public class RestoreService implements RestoreExport {
 
     /** @return imported, already present, classifications applied, classifications kept, analyses applied */
     private int[] restoreDocuments(Actor actor, ExportSource source, DocumentsFile file,
-            Map<String, String> memberMapping, CatalogImportResult catalog, List<String> warnings)
-            throws IOException {
+            Map<String, String> memberMapping, List<MemberId> persons, CatalogImportResult catalog,
+            List<String> warnings) throws IOException {
         int imported = 0;
         int present = 0;
         int classificationsApplied = 0;
@@ -222,8 +227,9 @@ public class RestoreService implements RestoreExport {
                 warnings.add("document " + entry.id() + " skipped: original not included in export");
                 continue;
             }
-            List<SubjectView> subjects = entry.subjects().stream().map(s -> new SubjectView(s.kind(),
-                    s.memberId() == null ? null : mapMember(memberMapping, s.memberId()))).toList();
+            List<SubjectView> subjects = LegacySubjects.expand(entry.subjects().stream().map(s -> new SubjectView(
+                    s.kind(), s.memberId() == null ? null : mapMember(memberMapping, s.memberId()))).toList(),
+                    persons);
             var result = importDocument.importDocument(actor, new ImportDocumentCommand(DocumentId.of(entry.id()),
                     entry.title(), entry.titleOrigin(), entry.originalFilename(), entry.contentType(),
                     mapMember(memberMapping, entry.uploadedBy()), entry.uploadedAt(), subjects,
@@ -242,7 +248,8 @@ public class RestoreService implements RestoreExport {
                 }
             }
             if (entry.analysis() != null && importAnalysis.importAnalysis(actor, DocumentId.of(entry.id()),
-                    ExportAnalysis.toRecord(entry.analysis(), memberMapping, catalog.labelIds()))
+                    ExportAnalysis.toRecord(entry.analysis(), memberMapping, catalog.labelIds(), persons,
+                            subjects))
                     == ImportDocumentAnalysis.Outcome.APPLIED) {
                 analysesApplied++;
             }

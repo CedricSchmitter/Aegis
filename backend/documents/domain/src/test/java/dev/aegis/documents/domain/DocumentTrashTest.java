@@ -19,7 +19,7 @@ class DocumentTrashTest {
 
     private static Document received() {
         return Document.received(DocumentId.random(), "Mietvertrag", "mietvertrag.pdf", "application/pdf", 1234,
-                new Checksum("b".repeat(64)), MemberId.random(), NOW, Set.of(Subject.household()), "ingress/x.pdf");
+                new Checksum("b".repeat(64)), MemberId.random(), NOW, Set.of(Subject.house()), "ingress/x.pdf");
     }
 
     @Test
@@ -33,7 +33,7 @@ class DocumentTrashTest {
         assertThat(document.isTrashed()).isTrue();
         assertThat(document.trash()).contains(new Trash(LISA, NOW, NOW.plus(Duration.ofDays(30))));
         assertThat(document.title()).isEqualTo("Mietvertrag");
-        assertThat(document.subjects()).containsExactly(Subject.household());
+        assertThat(document.subjects()).containsExactly(Subject.house());
     }
 
     @Test

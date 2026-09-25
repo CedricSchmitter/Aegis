@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Starting folder tree for a household (issue #71, ADR-0002 naming rules, ADR-0006). Folder names are household data and stay in the household's language; 'labels' are built-in label keys from the V2_2 vocabulary seed and 'subjects' are HOUSE or HOUSEHOLD. A folder implies a label only when every document anywhere below it really carries it, because every implied label on the path gates ClassificationPolicy.placesAutomatically. Edit this file before seeding a household whose life areas differ.",
+  "description": "Starting folder tree for a household (issue #71, ADR-0002 naming rules, ADR-0006). Folder names are household data and stay in the household's language; 'labels' are built-in label keys from the V2_2 vocabulary seed and 'subjects' can only be HOUSE. A folder implies a label only when every document anywhere below it really carries it, because every implied label on the path gates ClassificationPolicy.placesAutomatically. Edit this file before seeding a household whose life areas differ.",
   "folders": [
     {"path": ["Wohnen"], "labels": [], "subjects": ["HOUSE"]},
     {"path": ["Wohnen", "Mietvertrag"], "labels": ["housing"], "subjects": []},
