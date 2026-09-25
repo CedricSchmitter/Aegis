@@ -16,6 +16,11 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: false,
   },
+  // The scan worker is started as a module worker and loads OpenCV.js (about 10 MB) itself, so the app bundle
+  // stays small; members download it only when they scan a page.
+  worker: {
+    format: "es",
+  },
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],

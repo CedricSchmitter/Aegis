@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
-import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import { uploadDocument } from "../api/upload";
@@ -9,9 +8,10 @@ import { useSession } from "../auth/SessionContext";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { DocumentCard } from "../components/DocumentCard";
 import { FacetFilters } from "../components/FacetFilters";
-import { FileCapture, type CaptureSource } from "../components/FileCapture";
+import { FileCapture } from "../components/FileCapture";
 import { FolderSelect } from "../components/FolderSelect";
 import { FolderTree } from "../components/FolderTree";
+import { ScanPages } from "../components/ScanPages";
 import { UploadSubjects } from "../components/UploadSubjects";
 import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import {
@@ -27,20 +27,15 @@ import { todayIso } from "../lib/format";
 import { problemMessage } from "../lib/problem";
 import { awaitingTextCheck } from "../lib/textRecognition";
 import { CONTENT_TYPES, detectFormat, localRejection, uploadName, type UploadFormat } from "../lib/uploadFormat";
+import { MAX_PAGES } from "../scan/draft";
+import { useScanDraft } from "../scan/useScanDraft";
 
 /** Upper bound of one explicit analysis request; matches the server's bulk limit. */
 const MAX_ANALYSIS_SELECTION = 10;
 
-/** "Foto 2026-09-23 10.15": the local date and time a photo was taken, as its initial name and title. */
-function photoName(t: TFunction): string {
-  const now = new Date();
-  const time = `${String(now.getHours()).padStart(2, "0")}.${String(now.getMinutes()).padStart(2, "0")}`;
-  return t("documents.photoName", { date: todayIso(), time });
-}
-
 export function DocumentsPage() {
   const { t } = useTranslation();
-  const { members } = useSession();
+  const { member, members } = useSession();
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => parseFilters(params), [params]);
   const [list, setList] = useState<DocumentListResponse | null>(null);
@@ -61,6 +56,14 @@ export function DocumentsPage() {
   // "Upload a new photo" on a document without recognized text opens the upload panel; read once, so filter changes
   // that rewrite the query never close it under the member's hands.
   const [uploadOpen] = useState(() => params.get("upload") === "1");
+  // "Scan 2026-09-25 10.15": the local date and time the first page was taken, as the initial name and title.
+  const scanName = useCallback(() => {
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, "0")}.${String(now.getMinutes()).padStart(2, "0")}`;
+    return t("scan.name", { date: todayIso(), time });
+  }, [t]);
+  const scan = useScanDraft(member?.id ?? null, scanName);
+  const scanning = scan.pages.length > 0;
 
   const apply = useCallback(
     (next: CatalogFilters) => {
@@ -115,18 +118,19 @@ export function DocumentsPage() {
   const folderName = (folderId: string) =>
     categories.find((category) => category.id === folderId)?.name ?? "";
 
-  const selectFile = async (chosen: File, source: CaptureSource) => {
+  const selectFile = async (chosen: File) => {
     setMessage(null);
     const format = await detectFormat(chosen);
-    // A camera capture has a meaningless temporary name; name it after the moment it was taken instead.
-    const named =
-      source === "camera" && format
-        ? new File([chosen], uploadName(photoName(t), "", format), { type: CONTENT_TYPES[format] })
-        : chosen;
-    const rejection = localRejection(named, format);
-    setFile(named);
+    const rejection = localRejection(chosen, format);
+    setFile(chosen);
     setFileFormat(rejection ? null : format);
     setUploadError(rejection ? t(`errors.${rejection}`) : null);
+  };
+
+  const addPhotos = (photos: File[]) => {
+    setMessage(null);
+    clearFile();
+    scan.addPhotos(photos);
   };
 
   const clearFile = () => {
@@ -135,15 +139,29 @@ export function DocumentsPage() {
     setUploadError(null);
   };
 
+  /** The scan as one PDF, or the chosen file unchanged; null (with the reason shown) when it cannot be sent. */
+  const uploadable = async (): Promise<File | null> => {
+    if (scanning) {
+      // The PDF is built again for every attempt; the same pages give the same bytes, so a retry after a lost
+      // answer is recognized by the server as the document it already stored.
+      const pdf = await scan.toPdf();
+      const rejection = localRejection(pdf, "pdf");
+      if (rejection) setUploadError(t(`errors.${rejection}`));
+      return rejection ? null : pdf;
+    }
+    if (!file || !fileFormat) return null;
+    const named = uploadName(file.name, t("share.fallbackName", { date: todayIso() }), fileFormat);
+    return named === file.name ? file : new File([file], named, { type: CONTENT_TYPES[fileFormat] });
+  };
+
   const onUpload = async (event: FormEvent) => {
     event.preventDefault();
-    if (!file || !fileFormat) return;
     setUploading(true);
     setUploadError(null);
     setMessage(null);
     try {
-      const named = uploadName(file.name, t("share.fallbackName", { date: todayIso() }), fileFormat);
-      const upload = named === file.name ? file : new File([file], named, { type: CONTENT_TYPES[fileFormat] });
+      const upload = await uploadable();
+      if (!upload) return;
       const result = await uploadDocument(upload, { subjects: uploadSubjects, categoryId: uploadFolder });
       setMessage(
         result.duplicate
@@ -153,6 +171,7 @@ export function DocumentsPage() {
           : t("documents.uploaded", { title: result.document.title }),
       );
       clearFile();
+      if (scanning) await scan.clear();
       await Promise.all([load(), loadCatalog()]);
     } catch (failure) {
       setUploadError(problemMessage(t, failure));
@@ -220,19 +239,26 @@ export function DocumentsPage() {
         {t("documents.title")}
       </PageTitle>
 
-      <details className="card mb-4" data-testid="upload-panel" open={uploadOpen || undefined}>
+      <details className="card mb-4" data-testid="upload-panel" open={uploadOpen || scanning || undefined}>
         <summary className="min-h-11 cursor-pointer font-semibold" data-testid="upload-panel-toggle">
           {t("documents.upload")}
         </summary>
         <form className="mt-3 flex flex-col gap-3" onSubmit={onUpload} data-testid="upload-form">
           <p className="text-sm text-stone-600 dark:text-stone-400">{t("documents.uploadHint")}</p>
+          {scan.restored > 0 && scanning && (
+            <InfoBox>{t("scan.restored", { count: scan.restored })}</InfoBox>
+          )}
           <FileCapture
             file={file}
             format={fileFormat}
+            pageCount={scan.pages.length}
             disabled={uploading}
-            onSelect={(chosen, source) => void selectFile(chosen, source)}
+            onPhotos={addPhotos}
+            onFile={(chosen) => void selectFile(chosen)}
             onClear={clearFile}
           />
+          {scan.problem && <ErrorBox message={t(`scan.problem.${scan.problem}`, { max: MAX_PAGES })} />}
+          {scanning && <ScanPages scan={scan} disabled={uploading} />}
           <FolderSelect
             categories={categories}
             value={uploadFolder}
@@ -246,10 +272,14 @@ export function DocumentsPage() {
             <button
               type="submit"
               className="btn-primary"
-              disabled={!file || !fileFormat || uploading}
+              disabled={uploading || (scanning ? scan.processing : !file || !fileFormat)}
               data-testid="upload-submit"
             >
-              {uploading ? t("documents.uploading") : t("documents.uploadSubmit")}
+              {uploading
+                ? t("documents.uploading")
+                : scanning
+                  ? t("scan.save", { count: scan.pages.length })
+                  : t("documents.uploadSubmit")}
             </button>
           </div>
         </form>

@@ -1,6 +1,8 @@
 # ADR-0011: A photo of a paper document stays the original; the archive supplies the searchable PDF
 
-Status: accepted and implemented for issue #80. Date: 2026-09-23.
+Status: accepted and implemented for issue #80. Date: 2026-09-23. Since 2026-09-25 photos taken through the camera
+and gallery buttons become scanned pages of one PDF ([ADR-0016](ADR-0016-scanned-photo-pages.md)); this record
+still applies to photos chosen through "Datei auswählen" and to shared photos.
 
 ## Context
 

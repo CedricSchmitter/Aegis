@@ -69,7 +69,6 @@
     "removeFile": "Remove",
     "photoPreview": "Preview of the selected photo",
     "noPreview": "There is no preview for this format here.",
-    "photoName": "Photo {{date}} {{time}}",
     "subjects": "About",
     "uploading": "Saving …",
     "uploaded": "“{{title}}” has been stored durably. Archival is in progress.",
@@ -1117,5 +1116,50 @@
     "unknownType": "unknown type",
     "inspected": "Received: {{size}}, starts with {{head}}",
     "receivedDetails": "Received: {{details}}"
+  },
+  "scan": {
+    "name": "Scan {{date}} {{time}}",
+    "hint": "Each photo becomes a page. Aegis straightens the sheet and brightens it like a scan. When saved, all pages become one PDF document. Tap a page to correct its corners.",
+    "page": "Page {{number}}",
+    "addPage": "Photograph another page",
+    "addImages": "Add more images",
+    "processing": "Processing …",
+    "edit": "Edit the corners of page {{number}}",
+    "moveEarlier": "Move page {{number}} earlier",
+    "moveLater": "Move page {{number}} later",
+    "rotate": "Rotate page {{number}}",
+    "remove": "Remove page {{number}}",
+    "sheetMissing": "No sheet found: photo unchanged",
+    "photoKept": "Original photo",
+    "sheetMissingHint": "No sheet was found on at least one photo; it is kept unchanged. Tap the page to set the corners yourself. A dark surface helps next time.",
+    "unchanged": "Saved unchanged.",
+    "save_one": "Save {{count}} page as a document",
+    "save": "Save {{count}} pages as one document",
+    "restored_one": "Your unfinished scan with {{count}} page is back.",
+    "restored": "Your unfinished scan with {{count}} pages is back.",
+    "discard": "Discard scan",
+    "discardQuestion_one": "Discard the {{count}} page?",
+    "discardQuestion": "Discard all {{count}} pages?",
+    "discardConfirm": "Yes, discard",
+    "discardCancel": "Keep",
+    "problem": {
+      "decode": "The browser cannot open this photo (for example HEIC). Use “Choose file” to upload it unchanged.",
+      "process": "The photo could not be processed. Try again or use “Choose file” to upload it unchanged.",
+      "tooMany": "A scan has at most {{max}} pages. Save these pages and scan the rest as a separate document."
+    },
+    "editor": {
+      "title": "Corners of page {{number}}",
+      "instructions": "Drag the four points onto the corners of the sheet. Everything inside is straightened.",
+      "photo": "Photo of page {{number}}",
+      "topLeft": "Top-left corner",
+      "topRight": "Top-right corner",
+      "bottomRight": "Bottom-right corner",
+      "bottomLeft": "Bottom-left corner",
+      "invalid": "The corners cross each other. Drag them into the right order.",
+      "apply": "Apply",
+      "wholePhoto": "Whole photo",
+      "keepPhoto": "Use original photo",
+      "cancel": "Cancel"
+    }
   }
 }
