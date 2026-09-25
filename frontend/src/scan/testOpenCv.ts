@@ -2,8 +2,8 @@ import { createRequire } from "node:module";
 import type { OpenCv } from "./opencv";
 
 /**
- * OpenCV.js for unit tests in Node. Vitest's module runner does not cope with the 10 MB module when it is imported
- * dynamically as the app does (see loadOpenCv), so tests load it through Node's own require.
+ * OpenCV.js for unit tests in Node, loaded through Node's own require: a dynamic import never settles because the
+ * module is thenable (see openCvReady).
  */
 export function testOpenCv(): Promise<OpenCv> {
   const cv = createRequire(import.meta.url)("@techstark/opencv-js") as OpenCv & { onRuntimeInitialized?: () => void };

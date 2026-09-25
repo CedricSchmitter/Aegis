@@ -54,8 +54,8 @@ automatically with a preview and a manual correction, and that the generated PDF
    again after a reload; pages whose processing was interrupted are processed again. Saving or discarding removes
    it. This storage is best effort: in a private window or with blocked site data the scan lives in memory only.
 7. **Size bounds.** At most 30 pages per scan; a page is about 0.3 to 1 MB, well under the 50 MB upload limit,
-   which the app checks before sending. OpenCV.js (about 10 MB, about 3 MB compressed by Caddy) is loaded by the
-   worker on the first page only; the app bundle does not grow.
+   which the app checks before sending. OpenCV.js (about 10 MB, about 3 MB compressed by Caddy) is bundled into
+   the scan worker, which is started for the first page only; the app bundle does not grow.
 
 ## Consequences
 

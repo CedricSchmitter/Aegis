@@ -1,4 +1,5 @@
-import { loadOpenCv } from "./opencv";
+import openCvModule from "@techstark/opencv-js";
+import { openCvReady } from "./opencv";
 import { processPage, type PageSettings } from "./process";
 import type { ProcessFailure, ProcessRequest, ProcessResponse } from "./processor";
 
@@ -11,6 +12,8 @@ const scope = self as unknown as {
   onmessage: ((event: MessageEvent<ProcessRequest>) => void) | null;
   postMessage(message: ProcessResponse): void;
 };
+
+const ready = openCvReady(openCvModule);
 
 /** Long side a photo is decoded at; bounds memory for 50-megapixel cameras while keeping A4 at 300 dpi possible. */
 const MAX_SOURCE_PIXELS = 4096;
@@ -32,7 +35,7 @@ class DecodeError extends Error {}
 
 async function handle(id: number, photo: Blob, settings: PageSettings): Promise<ProcessResponse> {
   const source = await decode(photo);
-  const { cv } = await loadOpenCv();
+  const { cv } = await ready;
   const mat = cv.matFromImageData(source);
   try {
     const result = processPage(cv, mat, settings);
