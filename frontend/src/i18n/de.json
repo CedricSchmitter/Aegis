@@ -1159,7 +1159,16 @@
       "apply": "Übernehmen",
       "wholePhoto": "Ganzes Foto",
       "keepPhoto": "Originalfoto verwenden",
-      "cancel": "Abbrechen"
+      "cancel": "Abbrechen",
+      "checkTitle": "Seite {{number}}: Blatt erkannt",
+      "checkInstructions": "Passt der blaue Rahmen? Sonst zieh die Ecken auf die Ecken des Blatts.",
+      "missingTitle": "Seite {{number}}: Blatt nicht erkannt",
+      "missingInstructions": "Zieh die vier Punkte auf die Ecken des Blatts oder übernimm das Foto unverändert. Eine dunkle Unterlage hilft beim nächsten Foto.",
+      "searching": "Blatt wird gesucht …",
+      "ok": "OK",
+      "applyCorners": "Ecken übernehmen",
+      "keepUnchanged": "Foto unverändert übernehmen",
+      "removePage": "Seite verwerfen"
     }
   }
 }

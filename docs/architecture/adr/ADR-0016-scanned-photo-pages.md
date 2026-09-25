@@ -37,9 +37,12 @@ automatically with a preview and a manual correction, and that the generated PDF
    shadows, uneven light and the paper tint are divided out per colour channel, so paper becomes white while ink,
    stamps and signatures keep their colours.
 3. **Fallback and correction.** Without a plausible sheet the page keeps the whole photo, only reduced to the same
-   size limit, and says so ("Blatt nicht erkannt"), with the advice to use a dark surface. Every page is shown as a
-   thumbnail before saving; tapping it opens a corner editor (drag with a finger or move with the arrow keys),
-   which also offers "Ganzes Foto" and "Originalfoto verwenden". Pages can be rotated by quarter turns, reordered
+   size limit, and says so ("Blatt nicht erkannt"), with the advice to use a dark surface. A single new photo (the
+   camera, or one image from the gallery) opens at once in a check view: the photo is shown while the sheet is
+   searched, then the detected frame, confirmed with "OK", corrected by dragging, or dropped with "Seite verwerfen";
+   without a sheet it offers "Foto unverändert übernehmen" or "Ecken übernehmen". Several gallery images at once are
+   not checked one by one. Every page is shown as a thumbnail before saving; tapping it opens the same corner editor
+   (drag with a finger or move with the arrow keys), which also offers "Ganzes Foto" and "Originalfoto verwenden". Pages can be rotated by quarter turns, reordered
    and removed. Detected corners are fixed after the first processing, so a later rotation never moves them.
 4. **The generated PDF is the original.** Saving assembles one PDF in the browser: one page per image, the page
    JPEG (quality 0.85) embedded unchanged, the long side 841.89 pt (A4), so a straightened A4 sheet prints at

@@ -64,6 +64,8 @@ export function DocumentsPage() {
   }, [t]);
   const scan = useScanDraft(member?.id ?? null, scanName);
   const scanning = scan.pages.length > 0;
+  // A single new photo (the camera, or one image from the gallery) is shown with its detected sheet right away.
+  const [checkId, setCheckId] = useState<string | null>(null);
 
   const apply = useCallback(
     (next: CatalogFilters) => {
@@ -130,7 +132,8 @@ export function DocumentsPage() {
   const addPhotos = (photos: File[]) => {
     setMessage(null);
     clearFile();
-    scan.addPhotos(photos);
+    const added = scan.addPhotos(photos);
+    setCheckId(added.length === 1 ? added[0] : null);
   };
 
   const clearFile = () => {
@@ -258,7 +261,9 @@ export function DocumentsPage() {
             onClear={clearFile}
           />
           {scan.problem && <ErrorBox message={t(`scan.problem.${scan.problem}`, { max: MAX_PAGES })} />}
-          {scanning && <ScanPages scan={scan} disabled={uploading} />}
+          {scanning && (
+            <ScanPages scan={scan} disabled={uploading} checkId={checkId} onChecked={() => setCheckId(null)} />
+          )}
           <FolderSelect
             categories={categories}
             value={uploadFolder}

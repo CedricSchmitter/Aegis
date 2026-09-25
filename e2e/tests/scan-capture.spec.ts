@@ -82,10 +82,22 @@ test.describe("scanned photos", () => {
     const photo = await markedPhoto(page, SKEWED, `${runId} ${info.project.name}`);
 
     await page.getByTestId("upload-panel-toggle").click();
-    await page.getByTestId("upload-image-input").setInputFiles({ name: "IMG_1.jpg", mimeType: "image/jpeg", buffer: photo });
+    const photoFile = { name: "IMG_1.jpg", mimeType: "image/jpeg", buffer: photo };
+    // A single new photo opens with its detected sheet right away; "Seite verwerfen" drops a failed shot.
+    await page.getByTestId("upload-image-input").setInputFiles(photoFile);
+    const editor = page.getByTestId("page-editor");
+    await expect(editor).toHaveAttribute("data-purpose", "check");
+    await page.getByTestId("page-editor-remove").click();
+    await expect(page.getByTestId("scan-page")).toHaveCount(0);
+
+    await page.getByTestId("upload-image-input").setInputFiles(photoFile);
+    // The sheet was found (OpenCV is loaded on first use, so allow for the download) and is confirmed with OK.
+    await expect(editor).toHaveAttribute("data-state", "detected", { timeout: 60_000 });
+    await expect(editor).toContainText("Seite 1: Blatt erkannt");
+    await page.getByTestId("page-editor-apply").click();
+    await expect(editor).toHaveCount(0);
     const scanned = page.getByTestId("scan-page");
     await expect(scanned).toHaveCount(1);
-    // The sheet was found and straightened (OpenCV is loaded on first use, so allow for the download).
     await expect(scanned.first()).toHaveAttribute("data-mode", "scan", { timeout: 60_000 });
     // While scanning, a file cannot be chosen: it would replace the pages.
     await expect(page.getByTestId("upload-choose-file")).toHaveCount(0);
@@ -123,6 +135,8 @@ test.describe("scanned photos", () => {
     ]);
     const pages = page.getByTestId("scan-page");
     await expect(pages).toHaveCount(2);
+    // Several photos at once are not checked one by one.
+    await expect(page.getByTestId("page-editor")).toHaveCount(0);
     for (const index of [0, 1]) {
       await expect(pages.nth(index)).toHaveAttribute("data-mode", "scan", { timeout: 60_000 });
     }

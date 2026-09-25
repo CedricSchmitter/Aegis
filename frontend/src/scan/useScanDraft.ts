@@ -18,7 +18,8 @@ export interface ScanDraftState {
   problem: ScanProblem | null;
   /** True while any page is being processed; the scan cannot be saved then. */
   processing: boolean;
-  addPhotos(photos: readonly File[]): void;
+  /** Adds the photos as pages and returns their ids (fewer than given when the page limit is reached). */
+  addPhotos(photos: readonly File[]): string[];
   rotate(id: string): void;
   move(id: string, delta: number): void;
   remove(id: string): void;
@@ -135,7 +136,7 @@ export function useScanDraft(memberId: string | null, newName: () => string): Sc
 
   const addPhotos = useCallback(
     (photos: readonly File[]) => {
-      if (!memberId || photos.length === 0) return;
+      if (!memberId || photos.length === 0) return [];
       setProblem(null);
       setRestored(0);
       const current = draftRef.current ?? { memberId, name: newName(), pages: [] };
@@ -144,9 +145,10 @@ export function useScanDraft(memberId: string | null, newName: () => string): Sc
       const added: ScanPage[] = photos
         .slice(0, room)
         .map((photo) => ({ id: crypto.randomUUID(), photo, settings: AUTOMATIC, result: null }));
-      if (added.length === 0) return;
+      if (added.length === 0) return [];
       commit({ ...current, pages: [...current.pages, ...added] }, added);
       added.forEach(processPage);
+      return added.map((page) => page.id);
     },
     [commit, memberId, newName, processPage],
   );

@@ -8,18 +8,25 @@ import { useObjectUrl } from "./useObjectUrl";
 interface Props {
   scan: ScanDraftState;
   disabled?: boolean;
+  /** A page just taken: its detected sheet is shown at once for confirmation. */
+  checkId?: string | null;
+  onChecked?: () => void;
 }
 
 /**
  * The pages of the scan in progress: each as a thumbnail that opens the corner editor, with buttons to move,
  * rotate and remove it. Everything shown here becomes one PDF document when saved.
  */
-export function ScanPages({ scan, disabled }: Props) {
+export function ScanPages({ scan, disabled, checkId = null, onChecked }: Props) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const editedIndex = scan.pages.findIndex((page) => page.id === editing);
+  // A page to check that no longer exists (its photo could not be opened) must not block the editor.
+  const checking = checkId !== null && scan.pages.some((page) => page.id === checkId);
+  const openId = checking ? checkId : editing;
+  const editedIndex = scan.pages.findIndex((page) => page.id === openId);
   const edited = editedIndex >= 0 ? scan.pages[editedIndex] : null;
+  const closeEditor = () => (checking ? onChecked?.() : setEditing(null));
 
   return (
     <div className="flex flex-col gap-3" data-testid="scan-pages">
@@ -79,17 +86,23 @@ export function ScanPages({ scan, disabled }: Props) {
       </div>
       {edited && (
         <PageEditor
+          key={edited.id}
           page={edited}
           number={editedIndex + 1}
+          purpose={checking ? "check" : "edit"}
           onApply={(corners) => {
             scan.applyCorners(edited.id, corners);
-            setEditing(null);
+            closeEditor();
           }}
           onKeepPhoto={() => {
             scan.keepPhoto(edited.id);
-            setEditing(null);
+            closeEditor();
           }}
-          onClose={() => setEditing(null)}
+          onRemove={() => {
+            scan.remove(edited.id);
+            closeEditor();
+          }}
+          onClose={closeEditor}
         />
       )}
     </div>

@@ -1159,7 +1159,16 @@
       "apply": "Apply",
       "wholePhoto": "Whole photo",
       "keepPhoto": "Use original photo",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "checkTitle": "Page {{number}}: sheet found",
+      "checkInstructions": "Does the blue frame fit? Otherwise drag the corners onto the corners of the sheet.",
+      "missingTitle": "Page {{number}}: no sheet found",
+      "missingInstructions": "Drag the four points onto the corners of the sheet, or keep the photo unchanged. A dark surface helps with the next photo.",
+      "searching": "Looking for the sheet …",
+      "ok": "OK",
+      "applyCorners": "Apply corners",
+      "keepUnchanged": "Keep photo unchanged",
+      "removePage": "Discard page"
     }
   }
 }
