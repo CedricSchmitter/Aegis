@@ -293,15 +293,15 @@ function Loupe({ url, corners, drag, valid }: { url: string; corners: Quad; drag
       {/* White on a dark outline, so the crosshair stays visible on paper and on a dark desk alike. */}
       <svg className="absolute inset-0 h-full w-full" viewBox="-1 -1 2 2" fill="none">
         {[
-          { stroke: "rgba(0, 0, 0, 0.6)", width: 0.07 },
-          { stroke: "white", width: 0.03 },
+          { stroke: "rgba(0, 0, 0, 0.6)", width: 0.04 },
+          { stroke: "white", width: 0.018 },
         ].map(({ stroke, width }) => (
           <g key={stroke} stroke={stroke} strokeWidth={width} strokeLinecap="round">
             <circle r={0.12} />
             <path d="M -0.4 0 H -0.12 M 0.12 0 H 0.4 M 0 -0.4 V -0.12 M 0 0.12 V 0.4" />
           </g>
         ))}
-        <circle r={0.025} fill={valid ? "#38bdf8" : "#ef4444"} />
+        <circle r={0.018} fill={valid ? "#38bdf8" : "#ef4444"} />
       </svg>
     </div>
   );
