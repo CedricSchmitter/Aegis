@@ -7,19 +7,21 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Whether the archive recognized text in an archived document (issue #87, ADR-0012). It is derived from the OCR text
- * of one archive document and keeps only the number of letters and digits in it, never the text itself, so it can
- * always be measured again from the archive. A check that could not read the text keeps no count and names when the
- * next automatic attempt is due; a failed attempt never replaces a count already measured for the same archive
- * document.
+ * Whether the archive recognized text in an archived document (issue #87, ADR-0012) and whether it keeps a separate
+ * searchable archive version of it (ADR-0016). Both are read from one archive document in one request. The check keeps
+ * only the number of letters and digits in the OCR text, never the text itself, so it can always be measured again
+ * from the archive. A check that could not read the archive document names when the next automatic attempt is due; a
+ * failed attempt never replaces a measurement of the same archive document.
  *
- * @param recognizedCharacters letters and digits in the archive text; null while no attempt succeeded
+ * @param recognizedCharacters letters and digits in the archive text; null while no attempt succeeded. A check waiting
+ *                             for its next attempt may keep a count from before the archive version was recorded.
+ * @param archiveVersion       whether the archive keeps a searchable archive version; null until measured
  * @param checkedAt            the latest attempt, successful or not
  * @param failedAttempts       failed attempts since the last successful one for this archive document
- * @param nextAttemptAt        when a failed check is tried again; null once measured
+ * @param nextAttemptAt        when an incomplete check is tried again; null once measured
  */
 public record ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, Integer recognizedCharacters,
-        Instant checkedAt, int failedAttempts, Instant nextAttemptAt) {
+        Boolean archiveVersion, Instant checkedAt, int failedAttempts, Instant nextAttemptAt) {
 
     /**
      * Fewer letters and digits than this count as almost no text. A one-page letter has several hundred; the rotated
@@ -47,21 +49,29 @@ public record ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, I
         if (failedAttempts < 0) {
             throw new IllegalArgumentException("failed attempts must not be negative");
         }
-        if ((recognizedCharacters == null) == (nextAttemptAt == null)) {
+        if (archiveVersion != null && recognizedCharacters == null) {
+            throw new IllegalArgumentException("the text and the archive version are read together");
+        }
+        if ((archiveVersion == null) == (nextAttemptAt == null)) {
             throw new IllegalArgumentException("a check is either measured or waiting for its next attempt");
         }
     }
 
-    /** Measures the text the archive recognized in its document {@code paperlessDocumentId}. */
+    /**
+     * Measures the text the archive recognized in its document {@code paperlessDocumentId} and records whether the
+     * archive keeps a searchable archive version of it.
+     */
     public static ArchiveTextCheck measured(DocumentId documentId, int paperlessDocumentId, String archiveText,
-            Instant now) {
-        return new ArchiveTextCheck(documentId, paperlessDocumentId, countRecognized(archiveText), now, 0, null);
+            boolean archiveVersion, Instant now) {
+        return new ArchiveTextCheck(documentId, paperlessDocumentId, countRecognized(archiveText), archiveVersion,
+                now, 0, null);
     }
 
     /**
-     * Records that the archive text could not be read. Each further failure for the same archive document waits twice
-     * as long before the next attempt, at most a day, so an archive that keeps refusing one document is asked rarely.
-     * A count already measured for this archive document stays as it is.
+     * Records that the archive document could not be read. Each further failure for the same archive document waits
+     * twice as long before the next attempt, at most a day, so an archive that keeps refusing one document is asked
+     * rarely. A measurement of this archive document stays as it is, and a count read before the archive version was
+     * recorded is kept.
      */
     public static ArchiveTextCheck failed(DocumentId documentId, int paperlessDocumentId,
             Optional<ArchiveTextCheck> previous, Instant now) {
@@ -70,7 +80,8 @@ public record ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, I
             return same.get();
         }
         int attempts = same.map(ArchiveTextCheck::failedAttempts).orElse(0) + 1;
-        return new ArchiveTextCheck(documentId, paperlessDocumentId, null, now, attempts,
+        Integer count = same.map(ArchiveTextCheck::recognizedCharacters).orElse(null);
+        return new ArchiveTextCheck(documentId, paperlessDocumentId, count, null, now, attempts,
                 now.plus(retryDelay(attempts)));
     }
 
@@ -79,8 +90,14 @@ public record ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, I
         return this.paperlessDocumentId == paperlessDocumentId;
     }
 
+    /** Whether the archive document was read completely: its text counted and its archive version recorded. */
     public boolean isMeasured() {
-        return recognizedCharacters != null;
+        return archiveVersion != null;
+    }
+
+    /** Whether the archive is known to keep a searchable archive version of the document. */
+    public boolean keepsArchiveVersion() {
+        return Boolean.TRUE.equals(archiveVersion);
     }
 
     /** The amount of recognized text, or empty while no attempt succeeded. */

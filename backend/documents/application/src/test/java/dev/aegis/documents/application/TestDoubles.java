@@ -138,6 +138,11 @@ final class TestDoubles {
         }
 
         @Override
+        public ArchivedText fetchArchivedText(int paperlessDocumentId) {
+            return new ArchivedText(fetchContent(paperlessDocumentId), archivePdfs.containsKey(paperlessDocumentId));
+        }
+
+        @Override
         public SubmissionOutcome submit(Path file, String title, String originalFilename, String contentType) {
             requireAvailable();
             return new Accepted("task-" + title);

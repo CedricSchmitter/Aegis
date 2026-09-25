@@ -14,14 +14,15 @@ public interface ArchiveTextCheckRepository {
     Map<DocumentId, ArchiveTextCheck> findAll(Collection<DocumentId> documentIds);
 
     /**
-     * Stores the check of its document. A failed check never replaces a count measured for the same archive
-     * document, also when two checks of one document race.
+     * Stores the check of its document. A failed check never replaces a measurement of the same archive document,
+     * also when two checks of one document race.
      */
     void save(ArchiveTextCheck check);
 
     /**
      * Archived documents that still need a check, most recently archived first: those without one, those whose check
-     * belongs to another archive document, and failed checks whose next attempt is due at {@code now}.
+     * belongs to another archive document, and incomplete checks (failed, or stored before the archive version was
+     * recorded) whose next attempt is due at {@code now}.
      */
     List<DocumentId> findDue(Instant now, int limit);
 }

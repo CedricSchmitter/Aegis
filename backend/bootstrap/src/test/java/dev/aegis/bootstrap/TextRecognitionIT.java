@@ -1,6 +1,7 @@
 package dev.aegis.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import dev.aegis.bootstrap.support.ApiClient;
@@ -21,6 +22,7 @@ import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
@@ -137,6 +139,39 @@ class TextRecognitionIT extends PostgresIT {
                     .isEqualTo("RECOGNIZED");
         });
         assertThat(checks.findDue(Instant.now(), 100)).doesNotContain(DocumentId.of(id));
+    }
+
+    @Test
+    void checksStoredBeforeTheArchiveVersionWasRecordedAreReadAgainByTheSweep() {
+        ApiClient anna = login(ANNA);
+        byte[] scan = ("%PDF-1.4 scan before the archive version " + System.nanoTime())
+                .getBytes(StandardCharsets.US_ASCII);
+        archive.scannedPdf(scan, LETTER);
+        ApiClient.Response uploaded = anna.upload("/api/documents", "scan.pdf", scan, List.of());
+        assertThat(uploaded.status()).as(uploaded.body()).isEqualTo(201);
+        String id = anna.json(uploaded).path("document").path("id").asText();
+        awaitTextState(anna, id, "RECOGNIZED");
+        assertThat(anna.json(anna.get("/api/documents/" + id)).path("archivePdfAvailable").asBoolean()).isTrue();
+
+        // The state V2_7 leaves a check measured before the archive version existed in: count kept, due at once.
+        jdbc.sql("UPDATE document_text_checks SET archive_version = NULL, next_attempt_at = checked_at"
+                + " WHERE document_id = ?").param(UUID.fromString(id)).update();
+        JsonNode before = anna.json(anna.get("/api/documents/" + id));
+        assertThat(before.path("textRecognition").path("state").asText()).isEqualTo("RECOGNIZED");
+        assertThat(before.path("archivePdfAvailable").asBoolean()).isFalse();
+        assertThat(checks.findDue(Instant.now(), 1_000)).contains(DocumentId.of(id));
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+            textChecks.sweep();
+            assertThat(anna.json(anna.get("/api/documents/" + id)).path("archivePdfAvailable").asBoolean())
+                    .isTrue();
+        });
+        assertThat(checks.findDue(Instant.now(), 1_000)).doesNotContain(DocumentId.of(id));
+
+        // The table refuses an archive version without the text it was read with.
+        assertThatThrownBy(() -> jdbc.sql("UPDATE document_text_checks"
+                + " SET recognized_characters = NULL WHERE document_id = ?").param(UUID.fromString(id)).update())
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test

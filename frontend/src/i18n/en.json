@@ -89,6 +89,7 @@
     "archivePdf": "Searchable PDF",
     "archivePdfHint": "The original is the photo. The archive created a searchable PDF from it.",
     "archivePdfPending": "The original is the photo. A searchable PDF is available once it is archived.",
+    "archivePdfScanHint": "The original consists of scanned pages without a text layer. In the searchable PDF the archive added the recognized text, so you can select, copy and search it.",
     "heicHint": "Browsers usually cannot display HEIC photos. Open the searchable PDF instead or download the original.",
     "text": {
       "badge": { "NONE": "No text recognized", "LITTLE": "Little text recognized" },

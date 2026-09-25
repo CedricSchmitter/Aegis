@@ -44,8 +44,9 @@ and contrast.
 4. **Downloads.** "Download original" serves the photo with its own media type, and readable filenames use the
    extension of the verified type (`.jpg`, `.png`, `.webp`, `.heic`). The archive's searchable PDF is offered as a
    separate download (`GET /api/documents/{id}/archive-pdf`, "Durchsuchbares PDF") once the document is archived
-   and the archive keeps an archive version; the web app shows it for photos. Most browsers, including Chrome on
-   Android, cannot display HEIC, and a letter is usually passed on as a PDF. The archive PDF is derived data owned
+   and the archive keeps an archive version; the web app shows it for photos and, since
+   [ADR-0016](ADR-0016-scanned-photo-pages.md), for PDFs of which the archive keeps an archive version. Most
+   browsers, including Chrome on Android, cannot display HEIC, and a letter is usually passed on as a PDF. The archive PDF is derived data owned
    by Paperless: it is served as the archive delivers it after a PDF signature check (Aegis holds no checksum for
    it), it never replaces the original, and it is not exported because the archive generates it again from the
    original.

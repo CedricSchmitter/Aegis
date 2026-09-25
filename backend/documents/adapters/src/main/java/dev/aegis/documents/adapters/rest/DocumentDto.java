@@ -14,14 +14,16 @@ import java.util.List;
  * REST representation of a document; ids are strings, enum-like values keep their stable English names.
  * {@code originalFilename} is the immutable upload name, {@code filename} the friendly download/export name,
  * {@code processing} the archival state and {@code analysis} the separate automatic classification state.
- * {@code textRecognition} tells whether the archive recognized text, independent of AI. {@code trash} is null unless
- * the document is in the trash.
+ * {@code textRecognition} tells whether the archive recognized text, independent of AI. {@code archivePdfAvailable}
+ * tells whether {@code GET /api/documents/{id}/archive-pdf} is known to have a searchable PDF: the archive keeps one
+ * for photos and for PDFs without a text layer of their own, such as scanned pages, but not for born-digital PDFs.
+ * {@code trash} is null unless the document is in the trash.
  */
 public record DocumentDto(String id, String title, String titleOrigin, String originalFilename, String contentType,
         long sizeBytes, String checksumSha256, String uploadedBy, Instant uploadedAt, List<SubjectDto> subjects,
         ProcessingDto processing, boolean originalAvailable, long version, ClassificationDto classification,
         AnalysisDto.FilenameDto filename, AnalysisDto analysis, TextRecognitionDto textRecognition,
-        @Schema(nullable = true) DocumentTrashDto trash) {
+        boolean archivePdfAvailable, @Schema(nullable = true) DocumentTrashDto trash) {
 
     /**
      * Whether the archive recognized text (ADR-0012): {@code NOT_ARCHIVED}, {@code PENDING}, {@code UNAVAILABLE}
@@ -75,6 +77,7 @@ public record DocumentDto(String id, String title, String titleOrigin, String or
                 summary.subjects().stream().map(SubjectDto::from).toList(), ProcessingDto.from(summary.processing()),
                 summary.originalAvailable(), summary.version(), ClassificationDto.from(summary.classification()),
                 AnalysisDto.FilenameDto.from(summary.filename()), AnalysisDto.from(summary.analysis()),
-                TextRecognitionDto.from(summary.textRecognition()), DocumentTrashDto.from(summary.trash()));
+                TextRecognitionDto.from(summary.textRecognition()), summary.archivePdfAvailable(),
+                DocumentTrashDto.from(summary.trash()));
     }
 }

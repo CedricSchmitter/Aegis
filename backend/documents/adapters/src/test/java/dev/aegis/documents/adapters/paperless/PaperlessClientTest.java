@@ -105,6 +105,26 @@ class PaperlessClientTest {
     }
 
     @Test
+    void theTextIsReadTogetherWithWhetherPaperlessKeepsAnArchiveVersion() {
+        String fields = "/?fields=id,content,archived_file_name";
+        server.expect(requestTo("http://paperless.test/api/documents/5" + fields))
+                .andRespond(withSuccess("{\"id\":5,\"content\":\"Rechnung\",\"archived_file_name\":\"Scan.pdf\"}",
+                        MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://paperless.test/api/documents/6" + fields))
+                .andRespond(withSuccess("{\"id\":6,\"content\":\"Vertrag\",\"archived_file_name\":null}",
+                        MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://paperless.test/api/documents/7" + fields))
+                .andRespond(withSuccess("{\"id\":7}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://paperless.test/api/documents/8" + fields))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThat(client.fetchArchivedText(5)).isEqualTo(new PaperlessArchive.ArchivedText("Rechnung", true));
+        assertThat(client.fetchArchivedText(6)).isEqualTo(new PaperlessArchive.ArchivedText("Vertrag", false));
+        assertThat(client.fetchArchivedText(7)).isEqualTo(new PaperlessArchive.ArchivedText("", false));
+        assertThatThrownBy(() -> client.fetchArchivedText(8)).isInstanceOf(ArchiveUnavailableException.class);
+    }
+
+    @Test
     void checkTaskMapsPendingSuccessDuplicateAndFailure() {
         server.expect(requestTo("http://paperless.test/api/tasks/?task_id=t1")).andRespond(withSuccess(
                 "{\"count\":1,\"results\":[{\"task_id\":\"t1\",\"status\":\"started\",\"result_data\":null}]}",

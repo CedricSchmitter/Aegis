@@ -26,8 +26,8 @@ import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../com
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
 import { suggestions } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
+import { searchablePdf } from "../lib/searchablePdf";
 import { awaitingTextCheck } from "../lib/textRecognition";
-import { isImageContentType } from "../lib/uploadFormat";
 
 export function DocumentDetailPage() {
   const { id = "" } = useParams();
@@ -236,7 +236,7 @@ export function DocumentDetailPage() {
   const folderName = (folderId: string) => categories.find((category) => category.id === folderId)?.name ?? "";
   const pending = suggestions(document.classification.labels);
   const trashed = !!document.trash;
-  const photo = isImageContentType(document.contentType);
+  const searchable = searchablePdf(document);
 
   return (
     <>
@@ -283,10 +283,15 @@ export function DocumentDetailPage() {
           </p>
         )}
         <TextRecognitionHint document={document} />
-        {photo && (
+        {(searchable === "photo" || searchable === "photoPending") && (
           <p className="text-sm text-stone-600 dark:text-stone-400" data-testid="photo-hint">
-            {p.state === "ARCHIVED" ? t("documents.archivePdfHint") : t("documents.archivePdfPending")}
+            {searchable === "photo" ? t("documents.archivePdfHint") : t("documents.archivePdfPending")}
             {document.contentType === "image/heic" && ` ${t("documents.heicHint")}`}
+          </p>
+        )}
+        {searchable === "scan" && (
+          <p className="text-sm text-stone-600 dark:text-stone-400" data-testid="scan-hint">
+            {t("documents.archivePdfScanHint")}
           </p>
         )}
         <div className="flex flex-wrap gap-2">
@@ -308,7 +313,7 @@ export function DocumentDetailPage() {
           ) : (
             <p className="text-sm text-stone-500">{t("documents.originalUnavailable")}</p>
           )}
-          {photo && p.state === "ARCHIVED" && (
+          {(searchable === "photo" || searchable === "scan") && (
             <a
               className="btn-secondary"
               href={`/api/documents/${document.id}/archive-pdf?inline=true`}

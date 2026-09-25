@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import dev.aegis.bootstrap.support.ApiClient;
+import dev.aegis.bootstrap.support.FakePaperlessArchive;
 import dev.aegis.bootstrap.support.PostgresIT;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -15,17 +16,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import tools.jackson.databind.JsonNode;
 
 /**
  * Photos of paper documents (issue #80, ADR-0011) through the HTTP API: the type comes from the content, the photo
- * stays the original with its own type, the archive's searchable PDF is served separately, duplicates are found by
- * checksum and unsupported or damaged files are refused before anything is saved.
+ * stays the original with its own type, the archive's searchable PDF is served separately (and offered for scanned
+ * PDFs, ADR-0016), duplicates are found by checksum and unsupported or damaged files are refused before anything is
+ * saved.
  */
 class PhotoCaptureIT extends PostgresIT {
     @LocalServerPort
     int port;
+
+    @Autowired
+    FakePaperlessArchive archive;
 
     @Test
     void aPhotoIsSavedArchivedAndServedWithItsOwnTypeAndAsSearchablePdf() throws Exception {
@@ -100,13 +106,61 @@ class PhotoCaptureIT extends PostgresIT {
         ApiClient.Response uploaded = anna.upload("/api/documents", "Vertrag.pdf", pdf, List.of());
         assertThat(uploaded.status()).as(uploaded.body()).isEqualTo(201);
         String id = anna.json(uploaded).path("document").path("id").asText();
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(anna.json(anna.get(
-                "/api/documents/" + id)).path("processing").path("state").asText()).isEqualTo("ARCHIVED"));
+        JsonNode checked = awaitTextChecked(anna, id);
+        assertThat(checked.path("archivePdfAvailable").asBoolean(true)).isFalse();
 
         ApiClient.Response none = anna.get("/api/documents/" + id + "/archive-pdf");
 
         assertThat(none.status()).isEqualTo(404);
         assertThat(anna.json(none).path("code").asText()).isEqualTo("archivePdf.notFound");
+    }
+
+    @Test
+    void aScannedPdfWithoutTextLayerOffersTheArchivesSearchablePdf() throws Exception {
+        ApiClient anna = new ApiClient(port);
+        assertThat(anna.login(ANNA, PASSWORD)).isTrue();
+        // Pages assembled from camera photos (ADR-0016) carry no text layer; the archive recognizes their text.
+        byte[] scan = ("%PDF-1.4 scanned pages " + System.nanoTime()).getBytes(StandardCharsets.US_ASCII);
+        archive.scannedPdf(scan, "Sehr geehrte Frau Muster, anbei die Rechnung für September.");
+        ApiClient.Response uploaded = anna.upload("/api/documents", "Scanrechnung September.pdf", scan, List.of());
+        assertThat(uploaded.status()).as(uploaded.body()).isEqualTo(201);
+        String id = anna.json(uploaded).path("document").path("id").asText();
+        assertThat(anna.json(uploaded).path("document").path("archivePdfAvailable").asBoolean(true))
+                .as("not archived yet").isFalse();
+
+        JsonNode checked = awaitTextChecked(anna, id);
+
+        assertThat(checked.path("contentType").asText()).isEqualTo("application/pdf");
+        assertThat(checked.path("archivePdfAvailable").asBoolean()).isTrue();
+        assertThat(listed(anna, id).path("archivePdfAvailable").asBoolean()).as("in the list as well").isTrue();
+        ApiClient.Response searchable = anna.get("/api/documents/" + id + "/archive-pdf?inline=true");
+        assertThat(searchable.status()).as(searchable.body()).isEqualTo(200);
+        assertThat(searchable.header("Content-Type")).isEqualTo("application/pdf");
+        assertThat(searchable.header("Content-Disposition")).startsWith("inline");
+        ApiClient.Response original = anna.get("/api/documents/" + id + "/original");
+        assertThat(original.bytes()).as("the scan stays the original").isEqualTo(scan);
+    }
+
+    /** Waits until the document is archived and its text check measured, and returns it. */
+    private static JsonNode awaitTextChecked(ApiClient client, String id) {
+        JsonNode[] document = new JsonNode[1];
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+            document[0] = client.json(client.get("/api/documents/" + id));
+            assertThat(document[0].path("processing").path("state").asText()).isEqualTo("ARCHIVED");
+            assertThat(document[0].path("textRecognition").path("state").asText())
+                    .isIn("NONE", "LITTLE", "RECOGNIZED");
+        });
+        return document[0];
+    }
+
+    private static JsonNode listed(ApiClient client, String id) {
+        JsonNode page = client.json(client.get("/api/documents?query=Scanrechnung"));
+        for (JsonNode item : page.path("items")) {
+            if (item.path("id").asText().equals(id)) {
+                return item;
+            }
+        }
+        throw new AssertionError("document " + id + " is not listed");
     }
 
     /** A minimal JPEG (SOI, APP0) with a unique comment, so every run stores new content. */

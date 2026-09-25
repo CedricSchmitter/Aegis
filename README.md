@@ -96,7 +96,8 @@ folders are only created when a member accepts a proposal
 ([ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md)). Existing documents are only
 analyzed when a member selects them. Photos from the camera or the gallery become scanned pages: the browser
 finds the sheet, straightens it, gives it a scan look and assembles all pages held before saving into one PDF,
-which is the original; pages can be corrected, rotated, reordered and survive a closed tab
+which is the original; pages can be corrected, rotated, reordered and survive a closed tab. Such a scan has no
+text layer, so its page also offers the searchable PDF the archive generated from it
 ([ADR-0016](docs/architecture/adr/ADR-0016-scanned-photo-pages.md)). Photos chosen as a file or shared from
 Android (JPEG, PNG, WebP, HEIC) are accepted by their content, stay the original and are archived by Paperless into
 a searchable PDF that is offered next to the photo ([ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md)).

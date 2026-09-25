@@ -74,7 +74,15 @@ public class DocumentPresenter {
                 document.originalFilename(), document.contentType(), document.sizeBytes(),
                 document.checksum().sha256Hex(), document.uploadedBy(), document.uploadedAt(), own, processing,
                 originalAvailable, document.version(), view, parts.filename(), parts.analysis(),
-                textRecognition(document, textCheck), document.trash().orElse(null));
+                textRecognition(document, textCheck), archivePdfAvailable(document, textCheck),
+                document.trash().orElse(null));
+    }
+
+    /** Only a check of the current archive document can tell that the archive keeps an archive version of it. */
+    static boolean archivePdfAvailable(Document document, ArchiveTextCheck check) {
+        return document.state() == ProcessingState.ARCHIVED && document.paperlessDocumentId().isPresent()
+                && check != null && check.appliesTo(document.paperlessDocumentId().get())
+                && check.keepsArchiveVersion();
     }
 
     /** The stored check only speaks for the archive document it measured; until then the check is pending. */

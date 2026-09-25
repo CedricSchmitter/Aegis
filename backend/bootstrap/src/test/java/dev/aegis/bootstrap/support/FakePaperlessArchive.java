@@ -24,7 +24,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * adapter is covered separately; the deployed stack is verified against real Paperless.
  */
 public class FakePaperlessArchive implements PaperlessArchive {
-    /** {@code archivePdf} stands in for the searchable PDF Paperless generates from an image original. */
+    /**
+     * {@code archivePdf} stands in for the searchable PDF Paperless generates from an image original or from a PDF
+     * registered with {@link #scannedPdf}.
+     */
     public record Stored(int id, String title, byte[] bytes, String checksum, String contentType, byte[] archivePdf) {
     }
 
@@ -37,6 +40,7 @@ public class FakePaperlessArchive implements PaperlessArchive {
     private final Map<String, TaskOutcome> tasks = new ConcurrentHashMap<>();
     private final Map<String, Integer> pollsRemaining = new ConcurrentHashMap<>();
     private final Map<String, String> textsByChecksum = new ConcurrentHashMap<>();
+    private final java.util.Set<String> scannedChecksums = ConcurrentHashMap.newKeySet();
     private final Map<Integer, String> texts = new ConcurrentHashMap<>();
     public final AtomicInteger contentReads = new AtomicInteger();
 
@@ -46,6 +50,15 @@ public class FakePaperlessArchive implements PaperlessArchive {
      */
     public void ocrText(byte[] bytes, String text) {
         textsByChecksum.put(sha256(bytes), text);
+    }
+
+    /**
+     * Treats a PDF with these bytes as pages without a text layer of their own, such as scanned pages: like Paperless,
+     * the fake then keeps a searchable archive version with the given OCR text.
+     */
+    public void scannedPdf(byte[] bytes, String text) {
+        ocrText(bytes, text);
+        scannedChecksums.add(sha256(bytes));
     }
 
     @Override
@@ -66,7 +79,7 @@ public class FakePaperlessArchive implements PaperlessArchive {
             tasks.put(taskId, new Duplicate(existing));
         } else {
             int id = nextId.getAndIncrement();
-            byte[] archivePdf = contentType.startsWith("image/")
+            byte[] archivePdf = contentType.startsWith("image/") || scannedChecksums.contains(checksum)
                     ? ("%PDF-1.7 archive of " + checksum).getBytes(java.nio.charset.StandardCharsets.US_ASCII)
                     : null;
             documents.put(id, new Stored(id, title, bytes, checksum, contentType, archivePdf));
@@ -131,6 +144,12 @@ public class FakePaperlessArchive implements PaperlessArchive {
             throw new ArchiveUnavailableException("no document " + paperlessDocumentId);
         }
         return texts.getOrDefault(paperlessDocumentId, "");
+    }
+
+    @Override
+    public ArchivedText fetchArchivedText(int paperlessDocumentId) {
+        String content = fetchContent(paperlessDocumentId);
+        return new ArchivedText(content, documents.get(paperlessDocumentId).archivePdf() != null);
     }
 
     @Override
