@@ -13,16 +13,18 @@ import { ReviewSection } from "./inbox/ReviewSection";
 export function InboxPage() {
   const { t } = useTranslation();
 
-  // Runs after the cards were loaded, because loading them reconciles: that may publish new card notices and open new
-  // cards, so the badge is refreshed as well.
-  const cardsShown = useCallback(() => {
-    void api.POST("/api/notices/review-cards/read").finally(() => window.dispatchEvent(new Event(INBOX_CHANGED)));
+  // Runs after every load of the cards, because loading reconciles: that may open or close cards and publish card
+  // notices, so the badge is refreshed. The card notices are read only when the open cards are what the member sees.
+  const cardsLoaded = useCallback((openShown: boolean) => {
+    const changed = () => window.dispatchEvent(new Event(INBOX_CHANGED));
+    if (openShown) void api.POST("/api/notices/review-cards/read").finally(changed);
+    else changed();
   }, []);
 
   return (
     <>
       <PageTitle>{t("inbox.title")}</PageTitle>
-      <ReviewSection onLoaded={cardsShown} />
+      <ReviewSection onLoaded={cardsLoaded} />
       <MessagesSection />
     </>
   );

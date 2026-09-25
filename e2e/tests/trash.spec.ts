@@ -45,10 +45,36 @@ test.describe("recoverable trash", () => {
     await card.getByRole("link").first().click();
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 300_000 });
 
-    // A first tap only asks; the confirmation moves the document.
+    // Someone else changed the document first: the member is told so, and the reload that follows keeps the message.
+    await page.route(
+      "**/api/documents/*/trash",
+      (route) =>
+        route.fulfill({
+          status: 409,
+          contentType: "application/problem+json",
+          body: JSON.stringify({ status: 409, title: "Conflict", code: "version.conflict", resource: "document" }),
+        }),
+      { times: 1 },
+    );
+    let conflicted = false;
+    const reloaded = page.waitForResponse((response) => {
+      const pathname = new URL(response.url()).pathname;
+      if (pathname.endsWith("/trash")) conflicted = true;
+      return conflicted && response.request().method() === "GET" && /^\/api\/documents\/[^/]+$/.test(pathname);
+    });
+    await page.getByTestId("trash-document").click();
+    await page.getByTestId("trash-document-confirm").click();
+    await reloaded;
+    // The page applies the reload right after its answers arrive; the message must survive that, not just flash.
+    await page.waitForTimeout(1_000);
+    await expect(page.getByRole("alert")).toContainText("inzwischen geändert");
+    await expect(page.getByTestId("trash-banner")).toHaveCount(0);
+
+    // A first tap only asks; the confirmation moves the document. The earlier message is gone.
     await page.getByTestId("trash-document").click();
     await page.getByTestId("trash-document-confirm").click();
     await expect(page.getByTestId("trash-banner")).toContainText("Im Papierkorb");
+    await expect(page.getByRole("alert")).toHaveCount(0);
     await expect(page.getByTestId("rename-document")).toHaveCount(0);
 
     await page.goto("/documents");

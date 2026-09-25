@@ -20,20 +20,25 @@ export function Layout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { member, logout } = useSession();
   const navigate = useNavigate();
-  // Open review cards plus unread messages (issue #83); notices announcing a card are shown as the card.
-  const [pending, setPending] = useState(0);
+  // Open review cards plus unread messages (issue #83); notices announcing a card are shown as the card. Each count
+  // is kept on its own, so one failed request leaves the other count current.
+  const [openCards, setOpenCards] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const pending = openCards + unreadMessages;
   const [version, setVersion] = useState<string>("");
 
   useEffect(() => {
     let active = true;
-    const load = async () => {
-      const [cards, messages] = await Promise.all([
-        api.GET("/api/reviews/open-count"),
-        api.GET("/api/notices/unread-count"),
-      ]);
-      if (active && cards.data && messages.data) setPending(cards.data.open + messages.data.unread);
+    const ignore = () => undefined;
+    const load = () => {
+      void api.GET("/api/reviews/open-count").then((cards) => {
+        if (active && cards.data) setOpenCards(cards.data.open);
+      }, ignore);
+      void api.GET("/api/notices/unread-count").then((messages) => {
+        if (active && messages.data) setUnreadMessages(messages.data.unread);
+      }, ignore);
     };
-    void load();
+    load();
     const timer = window.setInterval(load, 30000);
     window.addEventListener(INBOX_CHANGED, load);
     return () => {

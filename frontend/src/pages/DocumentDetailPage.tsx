@@ -38,7 +38,9 @@ export function DocumentDetailPage() {
   const [contracts, setContracts] = useState<ContractSummaryDto[]>([]);
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [labels, setLabels] = useState<LabelDto[]>([]);
+  // An action's error stays until the next action; the reload after a failed action only replaces the load error.
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [editingSubjects, setEditingSubjects] = useState(false);
   const [subjectDraft, setSubjectDraft] = useState<string[]>([]);
@@ -65,9 +67,9 @@ export function DocumentDetailPage() {
       setContracts(unwrap(related));
       setCategories(unwrap(tree).categories);
       setLabels(unwrap(vocabulary));
-      setError(null);
+      setLoadError(null);
     } catch (failure) {
-      setError(problemMessage(t, failure));
+      setLoadError(problemMessage(t, failure));
     }
   }, [id, t]);
 
@@ -110,6 +112,7 @@ export function DocumentDetailPage() {
   };
 
   const retry = async () => {
+    setError(null);
     try {
       setDocument(unwrap(await api.POST("/api/documents/{id}/retry", { params: { path: { id } } })));
       setMessage(t("documents.retryDone"));
@@ -120,6 +123,7 @@ export function DocumentDetailPage() {
 
   const saveSubjects = async () => {
     if (!document) return;
+    setError(null);
     try {
       const subjects = subjectDraft.map((value) => {
         const [kind, memberId] = value.split(":");
@@ -142,6 +146,7 @@ export function DocumentDetailPage() {
 
   const saveTitle = async () => {
     if (!document) return;
+    setError(null);
     try {
       setDocument(
         unwrap(
@@ -230,8 +235,8 @@ export function DocumentDetailPage() {
     }
   };
 
-  if (!document && !error) return <Loading />;
-  if (!document) return <ErrorBox message={error} />;
+  if (!document && !loadError) return <Loading />;
+  if (!document) return <ErrorBox message={loadError} />;
   const p = document.processing;
   const folderName = (folderId: string) => categories.find((category) => category.id === folderId)?.name ?? "";
   const pending = suggestions(document.classification.labels);
@@ -248,7 +253,7 @@ export function DocumentDetailPage() {
       <PageTitle actions={<Badge state={p.state} label={t(`documents.stateShort.${p.state}`)} />}>
         {document.title}
       </PageTitle>
-      <ErrorBox message={error} />
+      <ErrorBox message={error ?? loadError} />
       {message && <InfoBox>{message}</InfoBox>}
       {document.trash && (
         <TrashBanner trash={document.trash} busy={trashBusy} onRestore={() => void changeTrash("restore")} />

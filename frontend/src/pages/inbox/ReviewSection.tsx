@@ -5,7 +5,6 @@ import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import { EmptyState, ErrorBox, Loading } from "../../components/common";
 import { formatDateTime } from "../../lib/format";
-import { INBOX_CHANGED } from "../../lib/inbox";
 import { reviewTitle } from "../../lib/notices";
 import { problemMessage } from "../../lib/problem";
 
@@ -18,10 +17,10 @@ function target(item: ReviewItem) {
 }
 
 /**
- * The "To review" section of the inbox: the shared review cards (ADR-0009). Loading them reconciles, so `onLoaded`
- * runs once the cards shown are current.
+ * The "To review" section of the inbox: the shared review cards (ADR-0009). Loading them reconciles, which may open or
+ * close cards, so `onLoaded` runs after every load; `openShown` tells whether the member now sees the open cards.
  */
-export function ReviewSection({ onLoaded }: { onLoaded: () => void }) {
+export function ReviewSection({ onLoaded }: { onLoaded: (openShown: boolean) => void }) {
   const { t, i18n } = useTranslation();
   const [search] = useSearchParams();
   const focusedId = search.get("item");
@@ -29,13 +28,15 @@ export function ReviewSection({ onLoaded }: { onLoaded: () => void }) {
   const [status, setStatus] = useState("OPEN");
   const [category, setCategory] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  // An action's error stays until the next action; the reload after a failed action only replaces the load error.
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const load = useCallback(async () => {
     try {
       setItems(unwrap(await api.GET("/api/reviews", { params: { query: { status, category: category || undefined } } })));
-      setError(null);
-      onLoaded();
-    } catch (failure) { setError(problemMessage(t, failure)); }
+      setLoadError(null);
+      onLoaded(status === "OPEN");
+    } catch (failure) { setLoadError(problemMessage(t, failure)); }
   }, [category, status, t, onLoaded]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -46,10 +47,11 @@ export function ReviewSection({ onLoaded }: { onLoaded: () => void }) {
   }, {}), [items]);
   const change = async (item: ReviewItem, action?: string) => {
     setBusy(item.id);
+    setError(null);
     try {
       if (action) await api.POST("/api/reviews/{id}/actions/{action}", { params: { path: { id: item.id, action } }, body: { expectedVersion: item.version } });
       else await api.POST("/api/reviews/{id}/dismiss", { params: { path: { id: item.id } }, body: { expectedVersion: item.version } });
-      await load(); window.dispatchEvent(new Event(INBOX_CHANGED));
+      await load();
     } catch (failure) { setError(problemMessage(t, failure)); await load(); }
     finally { setBusy(null); }
   };
@@ -64,8 +66,8 @@ export function ReviewSection({ onLoaded }: { onLoaded: () => void }) {
         <select value={category} onChange={(e) => setCategory(e.target.value)}><option value="">{t("review.allCategories")}</option><option value="PROCESSING_FAILURE">{t("review.category.PROCESSING_FAILURE")}</option><option value="CLASSIFICATION">{t("review.category.CLASSIFICATION")}</option><option value="CONTRACT_FACT">{t("review.category.CONTRACT_FACT")}</option></select>
       </label>
     </div>
-    <ErrorBox message={error} />
-    {!items && !error && <Loading />}
+    <ErrorBox message={error ?? loadError} />
+    {!items && !loadError && <Loading />}
     {items?.length === 0 && <EmptyState>{status === "OPEN" ? t("review.empty") : t("review.emptyHistory")}</EmptyState>}
     {items && <ul className="flex flex-col gap-3" aria-live="polite">{items.map((item) => {
       const href = target(item); return <li id={`review-${item.id}`} key={item.id} data-testid="review-card" className={`card border-l-4 ${focusedId === item.id ? "ring-2 ring-sky-500" : ""} ${item.priority === "HIGH" ? "border-l-red-500" : "border-l-amber-400"}`}>
