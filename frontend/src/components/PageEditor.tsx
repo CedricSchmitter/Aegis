@@ -73,7 +73,7 @@ export function PageEditor({ page, number, onApply, onKeepPhoto, onClose }: Prop
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col gap-3 bg-stone-950/95 p-4 text-stone-100"
+      className="fixed inset-0 z-50 flex flex-col gap-3 bg-stone-950 p-4 text-stone-100"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}

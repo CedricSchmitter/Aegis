@@ -61,7 +61,7 @@
     "title": "Documents",
     "upload": "Upload document",
     "uploadSubmit": "Save",
-    "uploadHint": "PDF or photo (JPEG, PNG, WebP, HEIC), up to 50 MB. Saved means durably stored on the server. Archival and text recognition in Paperless run separately afterwards.",
+    "uploadHint": "Photos from the camera or gallery become straightened pages of one PDF document. “Choose file” uploads a PDF or photo (JPEG, PNG, WebP, HEIC, up to 50 MB) unchanged. Saved means durably stored on the server. Archival and text recognition in Paperless run separately afterwards.",
     "takePhoto": "Take photo",
     "chooseImage": "Choose image",
     "chooseFile": "Choose file",
