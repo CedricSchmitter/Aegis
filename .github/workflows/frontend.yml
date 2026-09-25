@@ -1,0 +1,43 @@
+name: Frontend
+
+on:
+  pull_request:
+    paths:
+      - frontend/**
+      - api/**
+      - .github/workflows/frontend.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend (types, lint, locale checks, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+      - name: Generated API client is up to date
+        working-directory: frontend
+        run: |
+          npm run generate:api
+          git diff --exit-code -- src/api/schema.d.ts
+      - name: Check
+        working-directory: frontend
+        run: npm run check
+      - name: Build
+        working-directory: frontend
+        run: npm run build

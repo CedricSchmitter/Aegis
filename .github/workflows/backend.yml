@@ -1,0 +1,46 @@
+name: Backend
+
+# Runs only for pull requests that touch the backend or its test inputs. Pull request runs already test the merge
+# result, so merges into main are not verified a second time.
+on:
+  pull_request:
+    paths:
+      - backend/**
+      - api/**
+      - fixtures/**
+      - .github/workflows/backend.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (domain, architecture, PostgreSQL integration)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/**/pom.xml
+      - name: Verify (unit, architecture and Testcontainers integration tests)
+        working-directory: backend
+        run: ./mvnw -B -ntp verify
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: |
+            backend/**/target/surefire-reports/*.xml
+            backend/**/target/failsafe-reports/*.xml
+          if-no-files-found: ignore
+          retention-days: 7
