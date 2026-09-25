@@ -191,8 +191,11 @@ public class UseCaseConfiguration {
     ArchivalSettings archivalSettings(@Value("${aegis.archival.max-attempts:8}") int maxAttempts,
             @Value("${aegis.archival.poll-timeout:20m}") Duration pollTimeout,
             @Value("${aegis.archival.staging-retention:7d}") Duration stagingRetention,
-            @Value("${aegis.archival.max-upload-bytes:52428800}") long maxUploadBytes) {
-        return new ArchivalSettings(maxAttempts, pollTimeout, stagingRetention, maxUploadBytes);
+            @Value("${aegis.archival.max-upload-bytes:52428800}") long maxUploadBytes,
+            @Value("${aegis.archival.poll-interval:5s}") Duration pollInterval,
+            @Value("${aegis.archival.retry-base:30s}") Duration retryBase) {
+        return new ArchivalSettings(maxAttempts, pollTimeout, stagingRetention, maxUploadBytes, pollInterval,
+                retryBase);
     }
 
     @Bean

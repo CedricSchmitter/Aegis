@@ -294,8 +294,8 @@ class ApiFlowIT extends PostgresIT {
                 assertThat(doc.path("processing").path("retryScheduled").asBoolean()).isTrue();
             });
             archive.available = true;
-            // Retry backoff starts at 30 seconds; nudge the job by requesting nothing special: reconciliation would
-            // reschedule a missing job, but here the job exists, so we wait for the scheduled retry.
+            // The job still exists, so the scheduled retry (after aegis.archival.retry-base, 2s in the tests) archives
+            // the document; nothing reschedules it by hand.
             await().atMost(Duration.ofSeconds(90)).untilAsserted(() -> assertThat(
                     anna.json(anna.get("/api/documents/" + secondId)).path("processing").path("state").asText())
                     .isEqualTo("ARCHIVED"));

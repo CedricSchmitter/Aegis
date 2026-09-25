@@ -95,6 +95,9 @@ aegis:
   archival:
     max-attempts: 8
     poll-timeout: 20m
+    # Wait between two checks of a submitted consumption task, and the first retry delay (doubling, capped at 30m).
+    poll-interval: 5s
+    retry-base: 30s
     staging-retention: 7d
     max-upload-bytes: 52428800
   trash:

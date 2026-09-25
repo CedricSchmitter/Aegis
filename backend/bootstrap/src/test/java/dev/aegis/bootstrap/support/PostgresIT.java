@@ -50,8 +50,13 @@ public abstract class PostgresIT {
         registry.add("aegis.ingress.dir", () -> DATA.resolve("ingress").toString());
         registry.add("aegis.exports.dir", () -> DATA.resolve("exports").toString());
         registry.add("aegis.members.file", () -> membersFile().toString());
-        registry.add("db-scheduler.polling-interval", () -> "500ms");
+        // Short job timing keeps the suite fast; the paths are the same as in production, only the waits shrink. An
+        // archival needs a submission and two consumption checks, so production's 5s check interval alone cost 10s per
+        // upload. The retry base leaves ApiFlowIT's outage test seconds, not milliseconds, between failed attempts.
+        registry.add("db-scheduler.polling-interval", () -> "100ms");
         registry.add("aegis.archival.max-attempts", () -> "3");
+        registry.add("aegis.archival.poll-interval", () -> "100ms");
+        registry.add("aegis.archival.retry-base", () -> "2s");
         // The review reconciliation job runs once at startup and then only when a test triggers it, so its notices
         // never appear in the middle of another test's notice counts (ReviewReconciliationIT).
         registry.add("aegis.review.reconciliation-interval", () -> "12h");
