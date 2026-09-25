@@ -44,8 +44,6 @@ import org.springframework.context.annotation.Configuration;
 public class ArchiveDocumentTask {
     public static final TaskDescriptor<ArchiveDocumentPayload> DESCRIPTOR = TaskDescriptor.of("archive-document",
             ArchiveDocumentPayload.class);
-    static final Duration POLL_INTERVAL = Duration.ofSeconds(5);
-    static final Duration RETRY_BASE = Duration.ofSeconds(30);
     static final Duration RETRY_MAX = Duration.ofMinutes(30);
     private static final Logger log = LoggerFactory.getLogger(ArchiveDocumentTask.class);
 
@@ -108,7 +106,7 @@ public class ArchiveDocumentTask {
         return switch (outcome) {
             case Accepted accepted -> {
                 archival.recordSubmission(submit.id(), accepted.taskId());
-                yield rescheduleIn(POLL_INTERVAL);
+                yield rescheduleIn(settings.pollInterval());
             }
             case Rejected rejected -> afterFailure(archival.recordFailure(submit.id(), rejected.code(),
                     rejected.message(), false));
@@ -122,7 +120,7 @@ public class ArchiveDocumentTask {
         }
         PaperlessArchive.TaskOutcome outcome = archive.checkTask(poll.taskId());
         return switch (outcome) {
-            case Pending pending -> rescheduleIn(POLL_INTERVAL);
+            case Pending pending -> rescheduleIn(settings.pollInterval());
             case Completed completed -> {
                 archival.recordArchived(poll.id(), completed.paperlessDocumentId());
                 checkText(poll.id());
@@ -149,12 +147,12 @@ public class ArchiveDocumentTask {
     }
 
     private CompletionHandler<ArchiveDocumentPayload> afterFailure(FailureDecision decision) {
-        return decision.retry() ? rescheduleIn(backoff(decision.attempts())) : remove();
+        return decision.retry() ? rescheduleIn(backoff(decision.attempts(), settings.retryBase())) : remove();
     }
 
-    static Duration backoff(int attempts) {
+    static Duration backoff(int attempts, Duration base) {
         long factor = 1L << Math.max(0, Math.min(attempts - 1, 20));
-        Duration delay = RETRY_BASE.multipliedBy(factor);
+        Duration delay = base.multipliedBy(factor);
         return delay.compareTo(RETRY_MAX) > 0 ? RETRY_MAX : delay;
     }
 
