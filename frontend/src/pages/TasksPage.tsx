@@ -36,7 +36,9 @@ export function TasksPage() {
 
   const load = useCallback(async () => {
     try {
-      setTasks(unwrap(await api.GET("/api/tasks", { params: { query: { includeDone: view === "all" } } })));
+      // Sorted once per load: a task completed with its checkbox keeps its place, so the next card does not slide
+      // under the finger.
+      setTasks(sortTasks(unwrap(await api.GET("/api/tasks", { params: { query: { includeDone: view === "all" } } }))));
       setError(null);
     } catch (failure) {
       setError(problemMessage(t, failure));
@@ -58,7 +60,7 @@ export function TasksPage() {
   );
   const { notify, toast } = useCompletionToast(replace, setError);
 
-  const visible = useMemo(() => (tasks ? sortTasks(filterByOwner(tasks, owner)) : []), [tasks, owner]);
+  const visible = useMemo(() => (tasks ? filterByOwner(tasks, owner) : []), [tasks, owner]);
   const openCount = tasks?.filter((task) => task.status === "OPEN").length ?? 0;
   const selected = panelShown ? (visible.find((task) => task.id === selectedId) ?? visible[0] ?? null) : null;
   const owners = [
