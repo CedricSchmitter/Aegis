@@ -1224,7 +1224,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Integration, processing, recurring job, backup and disk space status with last success times */
+        /** Overview of whether everything works, with processing, recurring job, backup and disk space details */
         get: operations["systemStatus"];
         put?: never;
         post?: never;
@@ -1912,20 +1912,26 @@ export interface components {
             shortTopic?: string | null;
             title?: string | null;
         };
+        /** @description One line of the overview that answers "is everything OK?"; stable codes only, the web app localizes them */
+        HealthCheckDto: {
+            /** @description Area such as database, archive, backup, storage, ai or jobs */
+            area: string;
+            /** Format: date-time */
+            lastSuccessAt?: string | null;
+            /** @description Stable values of the reason, for example failureCode, disks, jobs, provider or failure */
+            params: {
+                [key: string]: string;
+            };
+            /** @description Stable reason code such as backup.failed or ai.unchecked */
+            reason: string;
+            /** @enum {string} */
+            state: "OK" | "UNCHECKED" | "PROBLEM";
+        };
         ImplicationsRequest: {
             /** Format: int64 */
             expectedVersion: number;
             labelIds: string[];
             subjects: components["schemas"]["SubjectDto"][];
-        };
-        IntegrationStatusDto: {
-            /** Format: date-time */
-            checkedAt?: string | null;
-            detail?: string | null;
-            /** Format: date-time */
-            lastSuccessAt?: string | null;
-            name: string;
-            state: string;
         };
         /** @description Whether a recurring background job still runs; names the job only, never its data */
         JobHealthDto: {
@@ -2286,12 +2292,12 @@ export interface components {
             version: number;
         };
         SystemStatusDto: {
+            checks: components["schemas"]["HealthCheckDto"][];
             documentProcessing: {
                 [key: string]: number;
             };
             /** Format: date-time */
             generatedAt: string;
-            integrations: components["schemas"]["IntegrationStatusDto"][];
             jobs: components["schemas"]["JobHealthDto"][];
             storage: components["schemas"]["StorageHealthDto"];
         };

@@ -2,7 +2,7 @@ package dev.aegis.operations.adapters.rest;
 
 import dev.aegis.operations.application.api.BackupHealth;
 import dev.aegis.operations.application.api.DiskSpace;
-import dev.aegis.operations.application.api.IntegrationStatus;
+import dev.aegis.operations.application.api.HealthCheck;
 import dev.aegis.operations.application.api.JobHealth;
 import dev.aegis.operations.application.api.StorageHealth;
 import dev.aegis.operations.application.api.SystemStatus;
@@ -29,10 +29,17 @@ public class StatusController {
         this.status = status;
     }
 
-    public record IntegrationStatusDto(String name, String state, @Schema(nullable = true) String detail,
-            @Schema(nullable = true) Instant lastSuccessAt, @Schema(nullable = true) Instant checkedAt) {
-        static IntegrationStatusDto from(IntegrationStatus s) {
-            return new IntegrationStatusDto(s.name(), s.state(), s.detail(), s.lastSuccessAt(), s.checkedAt());
+    @Schema(description = "One line of the overview that answers \"is everything OK?\"; stable codes only, the web app "
+            + "localizes them")
+    public record HealthCheckDto(
+            @Schema(description = "Area such as database, archive, backup, storage, ai or jobs") String area,
+            @Schema(allowableValues = {"OK", "UNCHECKED", "PROBLEM"}) String state,
+            @Schema(description = "Stable reason code such as backup.failed or ai.unchecked") String reason,
+            @Schema(description = "Stable values of the reason, for example failureCode, disks, jobs, provider or "
+                    + "failure") Map<String, String> params,
+            @Schema(nullable = true) Instant lastSuccessAt) {
+        static HealthCheckDto from(HealthCheck c) {
+            return new HealthCheckDto(c.area(), c.state(), c.reason(), c.params(), c.lastSuccessAt());
         }
     }
 
@@ -81,17 +88,17 @@ public class StatusController {
         }
     }
 
-    public record SystemStatusDto(List<IntegrationStatusDto> integrations, Map<String, Long> documentProcessing,
+    public record SystemStatusDto(List<HealthCheckDto> checks, Map<String, Long> documentProcessing,
             List<JobHealthDto> jobs, StorageHealthDto storage, Instant generatedAt) {
         static SystemStatusDto from(SystemStatus s) {
-            return new SystemStatusDto(s.integrations().stream().map(IntegrationStatusDto::from).toList(),
+            return new SystemStatusDto(s.checks().stream().map(HealthCheckDto::from).toList(),
                     s.documentProcessing(), s.jobs().stream().map(JobHealthDto::from).toList(),
                     StorageHealthDto.from(s.storage()), s.generatedAt());
         }
     }
 
     @Operation(operationId = "systemStatus",
-            summary = "Integration, processing, recurring job, backup and disk space status with last success times")
+            summary = "Overview of whether everything works, with processing, recurring job, backup and disk space details")
     @GetMapping
     public SystemStatusDto status(Actor actor) {
         return SystemStatusDto.from(status.status(actor));

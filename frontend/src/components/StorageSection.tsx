@@ -10,9 +10,9 @@ export function StorageSection({ storage }: { storage: SystemStatus["storage"] }
   const { t } = useTranslation();
   return (
     <section aria-labelledby="storage" data-testid="storage-section">
-      <h2 id="storage" className="mb-1 text-lg font-semibold">
+      <h3 id="storage" className="mb-1 font-semibold">
         {t("status.storageTitle")}
-      </h2>
+      </h3>
       <p className="mb-2 text-sm text-stone-600 dark:text-stone-400">{t("status.storageIntro")}</p>
       <ul className="flex flex-col gap-2">
         <BackupCard backup={storage.backup} />

@@ -138,7 +138,8 @@ systemctl list-timers aegis-backup.timer
 After each run, inspect `systemctl status aegis-backup.service`, Restic snapshots and
 `/srv/aegis/data/backup-state/state.json`; the timer's enabled state alone does not prove that a backup ran.
 
-The Status page's "Backup and storage" section shows the backup state with a localized reason and hint per failure
+The Status page's overview names a backup or disk problem with its reason; its "Backup and storage" section under
+"Technische Details" shows the backup state with a localized reason and hint per failure
 code, the last success and attempt, and the free space of the data disk and the backup disk. A failed attempt, a
 success older than 26 hours, a run marked as running for more than three hours and an unreadable state file each
 give every member one in-app notice per incident, and so does a disk with less than 10 % or 5 GB free; the incident

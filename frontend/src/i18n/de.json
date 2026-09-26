@@ -473,28 +473,72 @@
   },
   "status": {
     "title": "Status",
-    "integrations": "Dienste und Anbindungen",
+    "overview": "Ist alles in Ordnung?",
+    "overviewOk": "Alles in Ordnung.",
+    "overviewProblems": "{{count}} Bereiche brauchen Aufmerksamkeit.",
+    "overviewProblems_one": "Ein Bereich braucht Aufmerksamkeit.",
+    "technicalDetails": "Technische Details",
+    "area": {
+      "database": "Datenbank",
+      "archive": "Archiv (Paperless)",
+      "backup": "Backup",
+      "storage": "Speicherplatz",
+      "ai": "KI",
+      "jobs": "Hintergrundjobs",
+      "other": "Dienst"
+    },
+    "checkState": {
+      "OK": "In Ordnung",
+      "UNCHECKED": "Noch nicht geprüft",
+      "PROBLEM": "Problem"
+    },
+    "check": {
+      "database": {
+        "connected": "Verbunden.",
+        "unavailable": "Die Datenbank antwortet nicht."
+      },
+      "archive": {
+        "reachable": "Erreichbar.",
+        "unavailable": "Das Archiv ist nicht erreichbar. Neue Dokumente bleiben gespeichert und werden später archiviert."
+      },
+      "backup": {
+        "ok": "Letztes erfolgreiches Backup: {{date}}.",
+        "running": "Gerade läuft ein Backup. Aegis ist dabei einige Minuten nicht erreichbar.",
+        "failed": "Das letzte Backup ist fehlgeschlagen: {{reason}}",
+        "stale": "Seit mehr als 26 Stunden gab es kein erfolgreiches Backup. Letztes erfolgreiches Backup: {{date}}.",
+        "interrupted": "Ein Backup wurde gestartet, aber nicht beendet.",
+        "notConfigured": "Es ist kein externes Backup eingerichtet.",
+        "unknown": "Der Zustand des Backups lässt sich nicht lesen: {{reason}}"
+      },
+      "storage": {
+        "ok": "Genug freier Platz.",
+        "low": "Der Platz wird knapp: {{disks}}.",
+        "unmeasured": "Konnte nicht gemessen werden: {{disks}}."
+      },
+      "ai": {
+        "connected": "Verbunden.",
+        "unchecked": "Seit dem letzten Neustart noch nicht geprüft. Das geschieht beim nächsten KI-Lauf oder mit „Verbindung prüfen“ unter „Technische Details“.",
+        "credentialsMissing": "Die Zugangsdaten für {{provider}} fehlen.",
+        "providerFailure": "Der letzte Lauf ist gescheitert: {{failure}}."
+      },
+      "jobs": {
+        "notRunning": "Läuft nicht wie geplant: {{jobs}}."
+      },
+      "probe": {
+        "failed": "Konnte nicht geprüft werden."
+      },
+      "fallback": {
+        "OK": "In Ordnung.",
+        "UNCHECKED": "Noch nicht geprüft.",
+        "PROBLEM": "Hier stimmt etwas nicht."
+      },
+      "lastOk": "Zuletzt in Ordnung: {{date}}",
+      "unknownProvider": "den KI-Anbieter",
+      "unknownFailure": "unbekannter Fehler"
+    },
     "processing": "Dokumentverarbeitung",
     "lastSuccess": "Zuletzt erfolgreich: {{date}}",
-    "checkedAt": "Geprüft: {{date}}",
     "never": "Noch nie",
-    "state": {
-      "CONNECTED": "Verbunden",
-      "DEGRADED": "Eingeschränkt",
-      "UNAVAILABLE": "Nicht erreichbar",
-      "NOT_CONFIGURED": "Nicht eingerichtet"
-    },
-    "integration": {
-      "database": "Datenbank",
-      "paperless": "Paperless-Archiv",
-      "export": "Export",
-      "externalBackup": "Externes Backup",
-      "calendar": "Kalender",
-      "mail": "E-Mail-Postfach",
-      "ai": "KI",
-      "webPush": "Push-Benachrichtigungen",
-      "telegram": "Telegram"
-    },
     "exports": "Exporte",
     "createExport": "Export jetzt erstellen",
     "exporting": "Export läuft …",
@@ -502,8 +546,6 @@
     "noExports": "Noch kein Export erstellt.",
     "exportLine": "{{generation}}: {{documents}} Dokumente, {{tasks}} Aufgaben",
     "missingOriginals": "{{count}} Originale fehlen im Export",
-    "backupWarning": "Das externe Backup ist nicht betriebsbereit oder nicht aktuell. Details stehen unten unter „Backup und Speicherplatz“.",
-    "storageWarning": "Auf mindestens einem Speicher wird der Platz knapp. Details stehen unten unter „Backup und Speicherplatz“.",
     "storageTitle": "Backup und Speicherplatz",
     "storageIntro": "Das externe Backup läuft jede Nacht um 03:30 auf die USB-Platte am Server. Bei einem Ausfall oder knappem Speicher bekommen alle Mitglieder eine Mitteilung.",
     "backup": {
@@ -580,7 +622,6 @@
     "jobs": {
       "title": "Hintergrundjobs",
       "intro": "Regelmäßige Arbeiten des Servers. „Veraltet“ heißt: seit mehr als zwei Intervallen kein erfolgreicher Lauf.",
-      "warning": "Mindestens ein Hintergrundjob läuft nicht wie geplant. Details stehen unten unter „Hintergrundjobs“.",
       "runs": "Läuft {{interval}}.",
       "nextRun": "Nächster Lauf: {{date}}",
       "lastFailure": "Letzter Fehler: {{date}} ({{count}} Läufe in Folge fehlgeschlagen)",
@@ -601,6 +642,7 @@
         "NOT_SCHEDULED": "Nicht geplant",
         "UNKNOWN": "Unbekannt"
       },
+      "unnamed": "Hintergrundjob",
       "name": {
         "reconcile-review-inbox": "Prüfkorb abgleichen",
         "check-archive-text": "Texterkennung prüfen",

@@ -1,23 +1,39 @@
 package dev.aegis.operations.adapters.sources;
 
-import dev.aegis.operations.application.api.IntegrationStatus;
-import dev.aegis.operations.application.ports.IntegrationStatusSource;
+import dev.aegis.operations.application.api.HealthCheck;
+import dev.aegis.operations.application.ports.HealthCheckSource;
 import dev.aegis.shared.Actor;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.sql.DataSource;
 import org.springframework.stereotype.Component;
 
-/** Live database probe (connection validity), independent of cached health. */
+/**
+ * Live database probe (connection validity), independent of cached health. A valid connection is a success at the
+ * time of the probe; the latest one is remembered, so an outage reports when the database last answered since the
+ * application started.
+ */
 @Component
-public class DatabaseStatusSource implements IntegrationStatusSource {
+public class DatabaseStatusSource implements HealthCheckSource {
+    static final String AREA = "database";
+
     private final DataSource dataSource;
     private final Clock clock;
+    private final AtomicReference<Instant> lastSuccess = new AtomicReference<>();
 
     public DatabaseStatusSource(DataSource dataSource, Clock clock) {
         this.dataSource = dataSource;
         this.clock = clock;
+    }
+
+    @Override
+    public String area() {
+        return AREA;
     }
 
     @Override
@@ -26,15 +42,18 @@ public class DatabaseStatusSource implements IntegrationStatusSource {
     }
 
     @Override
-    public IntegrationStatus check(Actor actor) {
+    public Optional<HealthCheck> check(Actor actor) {
+        boolean valid;
         try (Connection connection = dataSource.getConnection()) {
-            boolean valid = connection.isValid(2);
-            return new IntegrationStatus("database", valid ? IntegrationStatus.CONNECTED : IntegrationStatus.UNAVAILABLE,
-                    valid ? "PostgreSQL " + connection.getMetaData().getDatabaseProductVersion() : "connection invalid",
-                    null, clock.instant());
+            valid = connection.isValid(2);
         } catch (SQLException e) {
-            return new IntegrationStatus("database", IntegrationStatus.UNAVAILABLE, e.getMessage(), null,
-                    clock.instant());
+            valid = false;
         }
+        if (valid) {
+            Instant now = clock.instant();
+            lastSuccess.set(now);
+            return Optional.of(HealthCheck.ok(AREA, "database.connected", now));
+        }
+        return Optional.of(HealthCheck.problem(AREA, "database.unavailable", Map.of(), lastSuccess.get()));
     }
 }

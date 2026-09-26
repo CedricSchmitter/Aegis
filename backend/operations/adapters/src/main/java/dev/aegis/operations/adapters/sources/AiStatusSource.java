@@ -2,31 +2,36 @@ package dev.aegis.operations.adapters.sources;
 
 import dev.aegis.assistant.application.api.AiHealth;
 import dev.aegis.assistant.application.api.AiHealthQuery;
-import dev.aegis.operations.application.api.IntegrationStatus;
-import dev.aegis.operations.application.ports.IntegrationStatusSource;
+import dev.aegis.operations.application.api.HealthCheck;
+import dev.aegis.operations.application.ports.HealthCheckSource;
 import dev.aegis.shared.Actor;
-import java.time.Clock;
-import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
- * AI provider status from the recorded runs, judged per configured model. Without credentials the integration is not
- * configured. With credentials it is connected only when every configured model's latest outcome is a success or a
- * failure that is not the provider's fault; a model whose latest run failed for a provider reason, or that was never
- * verified, degrades it. Budget, output or permission failures of a single run do not degrade the integration.
+ * AI provider status from the recorded runs, judged per configured model. Without credentials AI is not set up and
+ * not listed. A selected model without credentials, or whose latest run failed for a provider reason, is a problem.
+ * A model without a run since the application started or its credentials changed is unchecked: a neutral state until
+ * the next run or a connection check, never a problem by itself. Budget, output or permission failures of a single run
+ * do not make the integration a problem.
  */
 @Component
-public class AiStatusSource implements IntegrationStatusSource {
+public class AiStatusSource implements HealthCheckSource {
+    static final String AREA = "ai";
     static final Set<String> PROVIDER_FAILURES = Set.of("NOT_CONFIGURED", "AUTHENTICATION", "MODEL_UNAVAILABLE",
             "INVALID_REQUEST", "RATE_LIMITED", "PROVIDER_UNAVAILABLE", "TIMEOUT");
 
     private final AiHealthQuery health;
-    private final Clock clock;
 
-    public AiStatusSource(AiHealthQuery health, Clock clock) {
+    public AiStatusSource(AiHealthQuery health) {
         this.health = health;
-        this.clock = clock;
+    }
+
+    @Override
+    public String area() {
+        return AREA;
     }
 
     @Override
@@ -35,34 +40,29 @@ public class AiStatusSource implements IntegrationStatusSource {
     }
 
     @Override
-    public IntegrationStatus check(Actor actor) {
+    public Optional<HealthCheck> check(Actor actor) {
         AiHealth ai = health.health(actor);
         if (!ai.configured()) {
-            return IntegrationStatus.notConfigured("ai",
-                    "no AI provider credentials; capture, search and planning work without AI");
+            return Optional.empty();
         }
-        List<String> missingCredentials = ai.models().stream().filter(model -> !model.credentialsAvailable())
-                .map(model -> model.provider() + "/" + model.model()).toList();
-        if (!missingCredentials.isEmpty()) {
-            return new IntegrationStatus("ai", IntegrationStatus.DEGRADED, "selected provider credentials missing for "
-                    + String.join(", ", missingCredentials), ai.lastSuccessAt(), clock.instant());
+        Optional<AiHealth.ModelHealth> missingCredentials = ai.models().stream()
+                .filter(model -> !model.credentialsAvailable()).findFirst();
+        if (missingCredentials.isPresent()) {
+            return Optional.of(HealthCheck.problem(AREA, "ai.credentialsMissing",
+                    Map.of("provider", missingCredentials.get().provider()), ai.lastSuccessAt()));
         }
-        List<String> failing = ai.models().stream()
+        Optional<AiHealth.ModelHealth> failing = ai.models().stream()
                 .filter(model -> model.lastFailureCategory() != null
-                        && PROVIDER_FAILURES.contains(model.lastFailureCategory()))
-                .map(model -> model.model() + ": " + model.lastFailureCategory()).toList();
-        if (!failing.isEmpty()) {
-            return new IntegrationStatus("ai", IntegrationStatus.DEGRADED, "latest run failed for "
-                    + String.join(", ", failing), ai.lastSuccessAt(), clock.instant());
+                        && PROVIDER_FAILURES.contains(model.lastFailureCategory())).findFirst();
+        if (failing.isPresent()) {
+            return Optional.of(HealthCheck.problem(AREA, "ai.providerFailure",
+                    Map.of("failure", failing.get().lastFailureCategory()), ai.lastSuccessAt()));
         }
-        List<String> unverified = ai.models().stream().filter(model -> model.lastState() == null)
-                .map(AiHealth.ModelHealth::model).toList();
-        if (!unverified.isEmpty() || ai.lastSuccessAt() == null) {
-            return new IntegrationStatus("ai", IntegrationStatus.DEGRADED,
-                    "credentials present; not verified yet for " + String.join(", ", unverified)
-                            + "; run the connection check", ai.lastSuccessAt(), clock.instant());
+        boolean unverified = ai.models().stream().anyMatch(model -> model.lastState() == null);
+        if (unverified || ai.lastSuccessAt() == null) {
+            return Optional.of(new HealthCheck(AREA, HealthCheck.UNCHECKED, "ai.unchecked", Map.of(),
+                    ai.lastSuccessAt()));
         }
-        return new IntegrationStatus("ai", IntegrationStatus.CONNECTED,
-                "every configured model answered its latest run", ai.lastSuccessAt(), clock.instant());
+        return Optional.of(HealthCheck.ok(AREA, "ai.connected", ai.lastSuccessAt()));
     }
 }

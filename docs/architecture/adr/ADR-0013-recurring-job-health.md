@@ -1,6 +1,8 @@
 # ADR-0013: The status page reports recurring job health from the scheduler's persisted state
 
-Status: accepted and implemented for issue #92. Date: 2026-09-23.
+Status: accepted and implemented for issue #92. Date: 2026-09-23. Amended 2026-09-26 by
+[ADR-0018](ADR-0018-status-overview.md): the job list sits in the collapsed technical details, and the overview names
+the jobs that do not run as planned instead of a general warning.
 
 ## Context
 

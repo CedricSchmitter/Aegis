@@ -231,16 +231,22 @@ class ApiFlowIT extends PostgresIT {
     void statusAndExportAreTruthful() {
         ApiClient anna = loggedIn(ANNA);
         JsonNode status = anna.json(anna.get("/api/status"));
-        assertThat(status.path("integrations")).anySatisfy(i -> {
-            assertThat(i.path("name").asText()).isEqualTo("paperless");
-            assertThat(i.path("state").asText()).isEqualTo("CONNECTED");
-        }).anySatisfy(i -> {
-            assertThat(i.path("name").asText()).isEqualTo("externalBackup");
-            assertThat(i.path("state").asText()).isEqualTo("NOT_CONFIGURED");
-        }).anySatisfy(i -> {
-            assertThat(i.path("name").asText()).isEqualTo("calendar");
-            assertThat(i.path("state").asText()).isEqualTo("NOT_CONFIGURED");
-        });
+        // The overview answers "is everything OK?" with stable codes; integrations that are not set up (calendar,
+        // mail, push) are not listed, while a missing backup is a problem (issue #83, F4). The test gateway sets up AI.
+        JsonNode checks = status.path("checks");
+        assertThat(checks).extracting(c -> c.path("area").asText())
+                .startsWith("database", "archive", "backup", "storage", "ai")
+                .doesNotContain("calendar", "mail", "webPush", "telegram", "export", "externalBackup");
+        assertThat(checks.get(0).path("state").asText()).isEqualTo("OK");
+        assertThat(checks.get(0).path("reason").asText()).isEqualTo("database.connected");
+        assertThat(checks.get(0).path("lastSuccessAt").isNull()).as("a connected database has a last success")
+                .isFalse();
+        assertThat(checks.get(1).path("state").asText()).isEqualTo("OK");
+        assertThat(checks.get(1).path("reason").asText()).isEqualTo("archive.reachable");
+        assertThat(checks.get(2).path("state").asText()).isEqualTo("PROBLEM");
+        assertThat(checks.get(2).path("reason").asText()).isEqualTo("backup.notConfigured");
+        assertThat(checks).allSatisfy(c -> assertThat(c.has("detail")).isFalse());
+        assertThat(status.has("integrations")).isFalse();
         assertThat(status.path("documentProcessing").path("ARCHIVED").asLong()).isGreaterThanOrEqualTo(1);
 
         ApiClient.Response export = anna.postJson("/api/exports", "{}");
@@ -284,9 +290,10 @@ class ApiFlowIT extends PostgresIT {
             assertThat(original.header("X-Aegis-Original-Source")).isEqualTo("STAGING");
 
             JsonNode status = anna.json(anna.get("/api/status"));
-            assertThat(status.path("integrations")).anySatisfy(i -> {
-                assertThat(i.path("name").asText()).isEqualTo("paperless");
-                assertThat(i.path("state").asText()).isEqualTo("UNAVAILABLE");
+            assertThat(status.path("checks")).anySatisfy(c -> {
+                assertThat(c.path("area").asText()).isEqualTo("archive");
+                assertThat(c.path("state").asText()).isEqualTo("PROBLEM");
+                assertThat(c.path("reason").asText()).isEqualTo("archive.unavailable");
             });
 
             byte[] second = ("%PDF-1.4\n% second synthetic document " + System.nanoTime() + "\n")

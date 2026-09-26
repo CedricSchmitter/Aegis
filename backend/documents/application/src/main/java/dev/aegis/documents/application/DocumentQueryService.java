@@ -235,8 +235,7 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         Instant lastArchival = documents.findByState(ProcessingState.ARCHIVED).stream()
                 .map(d -> d.archivedAt().orElse(null)).filter(Objects::nonNull)
                 .max(Comparator.naturalOrder()).orElse(null);
-        return new ArchiveHealth(probe.reachable(), probe.serverVersion(), probe.detail(), clock.instant(),
-                lastArchival);
+        return new ArchiveHealth(probe.reachable(), clock.instant(), lastArchival);
     }
 
     @Override

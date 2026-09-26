@@ -2,17 +2,7 @@ import { describe, expect, it } from "vitest";
 import i18next from "i18next";
 import de from "../i18n/de.json";
 import en from "../i18n/en.json";
-import { jobInterval, needsAttention, type JobHealth } from "./jobs";
-
-const job = (state: JobHealth["state"]): JobHealth => ({
-  name: "reconcile-review-inbox",
-  state,
-  intervalSeconds: 86_400,
-  lastSuccessAt: null,
-  lastFailureAt: null,
-  consecutiveFailures: 0,
-  nextRunAt: null,
-});
+import { jobInterval } from "./jobs";
 
 describe("jobInterval", () => {
   const i18n = i18next.createInstance();
@@ -30,16 +20,5 @@ describe("jobInterval", () => {
     expect(jobInterval(english, 3_600)).toBe("hourly");
     expect(jobInterval(english, 172_800)).toBe("every 2 days");
     expect(jobInterval(english, 90)).toBe("every 2 minutes");
-  });
-});
-
-describe("needsAttention", () => {
-  it("flags jobs that do not run as planned, not those that are healthy or wait for their first run", () => {
-    for (const state of ["FAILING", "STALE", "NOT_SCHEDULED", "UNKNOWN"] as const) {
-      expect(needsAttention(job(state)), state).toBe(true);
-    }
-    for (const state of ["OK", "PENDING"] as const) {
-      expect(needsAttention(job(state)), state).toBe(false);
-    }
   });
 });

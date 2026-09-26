@@ -20,10 +20,6 @@
     </dependency>
     <dependency>
       <groupId>dev.aegis</groupId>
-      <artifactId>aegis-portability-application</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>dev.aegis</groupId>
       <artifactId>aegis-assistant-application</artifactId>
     </dependency>
     <dependency>
