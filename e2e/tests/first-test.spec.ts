@@ -328,6 +328,9 @@ test.describe("first runnable test", () => {
     }
     // The camera control opens the rear camera directly on a phone.
     await expect(page.getByTestId("upload-camera-input")).toHaveAttribute("capture", "environment");
+    // The sheet is modal: the page behind it, including the avatar, is inert until it closes.
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("upload-panel")).not.toHaveAttribute("open", "");
     await logout(page);
   });
 
