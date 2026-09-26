@@ -65,7 +65,7 @@ export function LabelsPage() {
         params: { path: { id: label.id } },
         body: { name: nameDraft, expectedVersion: label.version },
       }).then(unwrap);
-      setMessage(t("labels.created", { name: nameDraft }));
+      setMessage(t("labels.renamed", { name: nameDraft }));
     });
 
   const saveAliases = (label: LabelDto) =>
@@ -78,7 +78,7 @@ export function LabelsPage() {
         params: { path: { id: label.id } },
         body: { aliases, expectedVersion: label.version },
       }).then(unwrap);
-      setMessage(t("labels.aliases"));
+      setMessage(t("labels.aliasesSaved"));
     });
 
   const setStatus = (label: LabelDto, action: "retire" | "reactivate") =>
@@ -151,7 +151,7 @@ export function LabelsPage() {
             <p className="mb-2 text-xs text-stone-500">{t(`facets.hint${facet}`)}</p>
             <div className="card mb-2 flex flex-wrap items-end gap-2">
               <label className="block flex-1">
-                <span className="label">{t("labels.create")}</span>
+                <span className="label">{t("labels.newName")}</span>
                 <input
                   className="field"
                   value={newNames[facet] ?? ""}
@@ -208,7 +208,7 @@ export function LabelsPage() {
                             data-testid={`edit-label-${label.id}`}
                             onClick={() => (editing ? setOpen(null) : startEditing(label))}
                           >
-                            {editing ? t("app.close") : t("labels.save")}
+                            {editing ? t("app.close") : t("app.edit")}
                           </button>
                         )}
                       </div>

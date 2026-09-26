@@ -27,6 +27,17 @@ async function ensureGerman(page: Page) {
   }
 }
 
+/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
+async function openUpload(page: Page) {
+  // The panel's first state follows the folder catalog, so decide only once that has loaded.
+  await expect(page.getByTestId("folder-all")).toBeAttached();
+  const panel = page.getByTestId("upload-panel");
+  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await page.getByTestId("upload-panel-toggle").click();
+  }
+  await expect(panel).toHaveAttribute("open", "");
+}
+
 test.describe("photos of paper documents uploaded unchanged", () => {
   test.skip(!userA.password, "AEGIS_PASSWORD_A must be set");
 
@@ -40,9 +51,10 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     await ensureGerman(page);
 
     await page.goto("/documents");
-    await page.getByTestId("upload-panel-toggle").click();
+    await openUpload(page);
     await expect(page.getByTestId("upload-take-photo")).toBeVisible();
-    // "Datei auswählen" keeps a photo unchanged; the camera and the gallery make scanned pages (scan-capture.spec).
+    // "Datei unverändert hochladen" keeps a photo unchanged; the camera and the gallery make scanned pages
+    // (scan-capture.spec).
     await page.getByTestId("upload-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
     await expect(page.getByTestId("upload-preview")).toBeVisible();
     await page.getByTestId("upload-submit").click();
@@ -90,7 +102,7 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     await ensureGerman(page);
 
     await page.goto("/documents");
-    await page.getByTestId("upload-panel-toggle").click();
+    await openUpload(page);
     await page.getByTestId("upload-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
     await page.getByTestId("upload-submit").click();
     await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");

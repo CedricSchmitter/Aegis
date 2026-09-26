@@ -38,6 +38,17 @@ async function ensureGerman(page: Page) {
   }
 }
 
+/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
+async function openUpload(page: Page) {
+  // The panel's first state follows the folder catalog, so decide only once that has loaded.
+  await expect(page.getByTestId("folder-all")).toBeAttached();
+  const panel = page.getByTestId("upload-panel");
+  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await page.getByTestId("upload-panel-toggle").click();
+  }
+  await expect(panel).toHaveAttribute("open", "");
+}
+
 test.describe("first runnable test", () => {
   test.skip(!userA.password || !userB.password, "AEGIS_PASSWORD_A and AEGIS_PASSWORD_B must be set");
 
@@ -89,7 +100,7 @@ test.describe("first runnable test", () => {
 
     // Upload a synthetic PDF and wait for real archival.
     await page.getByRole("link", { name: "Dokumente" }).first().click();
-    await page.getByTestId("upload-panel-toggle").click();
+    await openUpload(page);
     // Nothing is ticked at first and "both" is no choice: a document about both persons names each (issue #83).
     const subjects = page.getByTestId("upload-subjects");
     await expect(subjects.getByRole("checkbox")).not.toHaveCount(0);
@@ -230,10 +241,13 @@ test.describe("first runnable test", () => {
     await login(page, userA);
     await expect(page.getByRole("navigation").last()).toBeVisible();
     await page.getByRole("link", { name: /Dokumente|Documents/ }).last().click();
-    await page.getByTestId("upload-panel-toggle").click();
+    await openUpload(page);
     for (const control of ["upload-take-photo", "upload-choose-image", "upload-choose-file"]) {
       await expect(page.getByTestId(control)).toBeVisible();
     }
+    // The labels say which button scans and which keeps the file unchanged (issue #83, F8).
+    await expect(page.getByTestId("upload-choose-image")).toHaveText(/^(Fotos aus Galerie scannen|Scan photos from gallery)$/);
+    await expect(page.getByTestId("upload-choose-file")).toHaveText(/^(Datei unverändert hochladen|Upload file unchanged)$/);
     // The camera control opens the rear camera directly on a phone.
     await expect(page.getByTestId("upload-camera-input")).toHaveAttribute("capture", "environment");
     await logout(page);

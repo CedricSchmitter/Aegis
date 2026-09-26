@@ -81,7 +81,6 @@ describe("locale catalogs", () => {
       ]),
       ...["NEWEST", "OLDEST", "TITLE"].map((order) => `documents.sort${order}`),
       ...["ACTIVE", "RETIRED", "MERGED"].map((status) => `labels.status.${status}`),
-      ...["house", "invoices", "internet", "water", "insurance"].map((key) => `folders.structure.${key}`),
       ...["HOUSE", "MEMBER"].map((kind) => `subjects.${kind}`),
       ...["pending", "uploading", "saved", "duplicate", "failed", "rejected"].map((s) => `share.status.${s}`),
       ...["CONNECTION_CHECK", "DOCUMENT_CLASSIFICATION", "DOCUMENT_REVIEW", "CHAT"].map((w) => `ai.workload.${w}`),

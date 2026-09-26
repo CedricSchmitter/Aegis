@@ -56,6 +56,9 @@ export function DocumentsPage() {
   // "Upload a new photo" on a document without recognized text opens the upload panel; read once, so filter changes
   // that rewrite the query never close it under the member's hands.
   const [uploadOpen] = useState(() => params.get("upload") === "1");
+  // On first use the collection is empty and uploading is the only thing to do, so the panel starts open. It stays
+  // open after the first upload instead of closing under the member's hands.
+  const [firstUse, setFirstUse] = useState(false);
   // "Scan 2026-09-25 10.15": the local date and time the first page was taken, as the initial name and title.
   const scanName = useCallback(() => {
     const now = new Date();
@@ -81,7 +84,9 @@ export function DocumentsPage() {
         api.GET("/api/categories"),
         api.GET("/api/labels"),
       ]);
-      setCatalog(unwrap(categories));
+      const loaded = unwrap(categories);
+      setCatalog(loaded);
+      setFirstUse((current) => current || loaded.totalDocuments === 0);
       setLabels(unwrap(vocabulary));
     } catch (failure) {
       setError(problemMessage(t, failure));
@@ -224,30 +229,15 @@ export function DocumentsPage() {
 
   return (
     <>
-      <PageTitle
-        actions={
-          <span className="flex flex-wrap gap-2">
-            <Link className="btn-secondary" to="/documents/folders">
-              {t("documents.manageFolders")}
-            </Link>
-            <Link className="btn-secondary" to="/documents/labels">
-              {t("documents.manageLabels")}
-            </Link>
-            <Link className="btn-ghost" to="/trash" data-testid="open-trash">
-              {t("trash.open")}
-            </Link>
-          </span>
-        }
-      >
-        {t("documents.title")}
-      </PageTitle>
+      <PageTitle>{t("documents.title")}</PageTitle>
 
-      <details className="card mb-4" data-testid="upload-panel" open={uploadOpen || scanning || undefined}>
+      {/* The upload comes first (issue #83, F8); where the other controls belong is issue #108. */}
+      <details className="card mb-4" data-testid="upload-panel" open={uploadOpen || scanning || firstUse || undefined}>
         <summary className="min-h-11 cursor-pointer font-semibold" data-testid="upload-panel-toggle">
           {t("documents.upload")}
         </summary>
         <form className="mt-3 flex flex-col gap-3" onSubmit={onUpload} data-testid="upload-form">
-          <p className="text-sm text-stone-600 dark:text-stone-400">{t("documents.uploadHint")}</p>
+          {!scanning && <p className="text-sm text-stone-600 dark:text-stone-400">{t("documents.uploadHint")}</p>}
           {scan.restored > 0 && scanning && (
             <InfoBox>{t("scan.restored", { count: scan.restored })}</InfoBox>
           )}
@@ -292,6 +282,18 @@ export function DocumentsPage() {
 
       {message && <InfoBox>{message}</InfoBox>}
       <ErrorBox message={error} />
+
+      <p className="mb-4 flex flex-wrap gap-2">
+        <Link className="btn-secondary" to="/documents/folders">
+          {t("documents.manageFolders")}
+        </Link>
+        <Link className="btn-secondary" to="/documents/labels">
+          {t("documents.manageLabels")}
+        </Link>
+        <Link className="btn-ghost" to="/trash" data-testid="open-trash">
+          {t("trash.open")}
+        </Link>
+      </p>
 
       <div className="grid gap-4 md:grid-cols-[16rem_1fr]">
         <div className="flex flex-col gap-2">
