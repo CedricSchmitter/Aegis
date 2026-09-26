@@ -28,6 +28,37 @@
     "pendingCount": "{{count}} offene Einträge im Eingang",
     "pendingCount_one": "{{count}} offener Eintrag im Eingang"
   },
+  "shell": {
+    "home": "Aegis, zu Heute",
+    "sidebar": "Bereiche und Ordner",
+    "upload": "Hochladen",
+    "folders": "Ordner",
+    "household": "Haushalt",
+    "contextPanel": "Details zur Auswahl",
+    "search": {
+      "label": "Dokumente durchsuchen",
+      "shortcut": "Strg K"
+    },
+    "status": {
+      "ok": "Alles in Ordnung",
+      "unknown": "Status nicht abrufbar",
+      "oneProblem": "Problem: {{area}}",
+      "problems": "{{count}} Bereiche brauchen Aufmerksamkeit",
+      "problems_one": "{{count}} Bereich braucht Aufmerksamkeit",
+      "label": "Status: {{state}}",
+      "lastBackup": "Backup {{date}}"
+    },
+    "avatar": {
+      "label": "{{name}}: Einstellungen, Status und Papierkorb",
+      "problem": "Der Status meldet ein Problem",
+      "signedInAs": "Angemeldet als"
+    },
+    "statusBar": {
+      "documents": "{{count}} Dokumente",
+      "documents_one": "{{count}} Dokument",
+      "lastBackup": "Letztes Backup: {{date}}"
+    }
+  },
   "language": {
     "label": "Sprache",
     "de": "Deutsch",
@@ -762,7 +793,9 @@
       "nomad": "Orange und Türkis",
       "effects": "Effekte",
       "effectsHint": "Hintergrundraster, feine Zeilen und kurzes Flackern des Logos. Wenn das Gerät Bewegung reduziert, bleibt alles ruhig.",
-      "previewNote": "Vorschau: Die Auswahl wird noch nicht gespeichert. Nach dem Neuladen gilt wieder Streetkid mit Effekten."
+      "savedNote": "Gilt nur für dein Konto und wird dort gespeichert, auf jedem Gerät.",
+      "reducedMotion": "Dein Gerät reduziert Bewegung: Animationen bleiben aus, auch wenn die Effekte an sind.",
+      "saveFailed": "Die Darstellung wurde nicht gespeichert. Es gilt weiter die bisherige Auswahl."
     }
   },
   "errors": {

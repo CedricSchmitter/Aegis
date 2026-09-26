@@ -145,6 +145,7 @@ workload and executed with the requesting member's authorization; results applie
 | Review workflow references and lifecycle | Aegis PostgreSQL ([ADR-0009](adr/ADR-0009-central-review-inbox.md)) | Stable card/source ids, lifecycle, versions and decisions in portable export schema 7; source facts stay in their owning context |
 | Trash state of documents, tasks and contracts | Aegis PostgreSQL, on each record ([ADR-0010](adr/ADR-0010-recoverable-trash.md)) | Who, when and restorable-until in portable export schema 8; the record, its original and its links are never removed by trashing |
 | Member kind (person or assistant account) | Aegis PostgreSQL, identity ([ADR-0017](adr/ADR-0017-persons-and-the-assistant-account.md)) | In portable export schema 9; which account is the assistant is set per installation, and an older export's subject "both" restores as one subject per person |
+| Member appearance (palette and effects) | Aegis PostgreSQL, identity ([ADR-0019](adr/ADR-0019-design-system.md)) | A presentation preference like the locale, in portable export schema 10; it never grants or hides anything |
 | Original email, when connected | Provider mailbox and unchanged local EML copy | Preserve attachment and message origins |
 | Calendar events, when connected | Selected calendar provider | Retain external identity, version and synchronization state |
 | Household prose/preferences | Versioned Markdown where appropriate; application preferences remain structured | Never include credentials |

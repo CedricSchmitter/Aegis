@@ -28,6 +28,37 @@
     "pendingCount": "{{count}} open items in the inbox",
     "pendingCount_one": "{{count}} open item in the inbox"
   },
+  "shell": {
+    "home": "Aegis, go to Today",
+    "sidebar": "Areas and folders",
+    "upload": "Upload",
+    "folders": "Folders",
+    "household": "Household",
+    "contextPanel": "Details of the selection",
+    "search": {
+      "label": "Search documents",
+      "shortcut": "Ctrl K"
+    },
+    "status": {
+      "ok": "All systems OK",
+      "unknown": "Status unavailable",
+      "oneProblem": "Problem: {{area}}",
+      "problems": "{{count}} areas need attention",
+      "problems_one": "{{count}} area needs attention",
+      "label": "Status: {{state}}",
+      "lastBackup": "Backup {{date}}"
+    },
+    "avatar": {
+      "label": "{{name}}: settings, status and trash",
+      "problem": "The status reports a problem",
+      "signedInAs": "Signed in as"
+    },
+    "statusBar": {
+      "documents": "{{count}} documents",
+      "documents_one": "{{count}} document",
+      "lastBackup": "Last backup: {{date}}"
+    }
+  },
   "language": {
     "label": "Language",
     "de": "Deutsch",
@@ -762,7 +793,9 @@
       "nomad": "Orange and turquoise",
       "effects": "Effects",
       "effectsHint": "Background grid, fine lines and a short flicker of the logo. When the device reduces motion, everything stays still.",
-      "previewNote": "Preview: this choice is not saved yet. After reloading, Streetkid with effects applies again."
+      "savedNote": "Applies to your account only and is saved there, on every device.",
+      "reducedMotion": "Your device reduces motion: animations stay off even when effects are on.",
+      "saveFailed": "The appearance was not saved. The previous choice still applies."
     }
   },
   "errors": {

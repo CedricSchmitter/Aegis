@@ -1,6 +1,7 @@
 # ADR-0019: A dark design system with tokens, palettes, chamfers and optional effects
 
-Status: accepted; foundation implemented for issue #27 (PR 1 of 6). Date: 2026-09-26.
+Status: accepted; foundation (PR 1 of 6) and shell with per-member preferences (PR 2) implemented for issue #27.
+Date: 2026-09-26.
 
 ## Context
 
@@ -107,9 +108,16 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
    `data-effects="off"` on the root element. `prefers-reduced-motion: reduce` always stops every animation and
    transition, whatever the effects setting says; the static grid and scanlines stay.
 
-10. **Palette and effects become per-member preferences** in PR 2, stored on the member like the locale (identity
-    context, migration, API/OpenAPI, export and restore). Until then Streetkid with effects on applies; the Settings page
-    offers a preview that changes the root attributes for the current tab only.
+10. **Palette and effects are per-member preferences**, stored on the member like the locale. The identity context
+    owns them: the `Appearance` value object (`Palette` and whether effects are on) on the `Member` aggregate, migration
+    `V1_3__member_appearance` (every existing member keeps Streetkid with effects on), `PUT /api/members/me/appearance`
+    and the `appearance` next to the member in `GET /api/auth/session` and the login response. Changes use the member's
+    existing optimistic-concurrency version, like the locale. The member directory (`GET /api/members`) does not publish
+    another member's look. The web app applies the look from the session right after login, applies a change at once and
+    goes back to the stored look if saving fails; after logout the default applies again. Export schema 10 carries each
+    member's palette and effects; a restore gives them to a member it has to create, while an existing member keeps their
+    own. The preference only changes presentation, never what a member can see or do, and `prefers-reduced-motion`
+    still stops every animation whatever the setting says.
 
 11. **Plain product language.** The look borrows from the genre; the words do not. Functional text stays plain
     German and English (Hochladen, Ordner, Papierkorb), without slang, exclamation marks or "leider". Say what happened,
@@ -130,6 +138,27 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
     colour, `red` to danger (shade 100 is text on a tint, shade 900 the tint). PR 6 removes the bridge once no page uses
     these scales.
 
+14. **Shell.** The shell follows the approved mockup (issue #27, PR 2):
+    - **Phone (below 1024 px):** a header with the wordmark (a link to Today) and the avatar, and a tab bar with the five
+      areas Heute, Dokumente, Aufgaben, Verträge and Eingang (#83 F5). Tabs are at least 60 px high and carry
+      `aria-current`; the inbox count uses the action colour, because open cards ask to be looked at. Status left the tab
+      bar: a status line at the top of Today and the avatar lead to it.
+    - **Avatar:** a disclosure (not an ARIA menu) with Settings, Status (with its state), Trash and logout. It closes on
+      Escape, a click outside and navigation. A red mark on the avatar says that the status overview reports a problem.
+    - **Desktop (from 1024 px):** three columns. The sidebar (232 px) holds Upload as the one primary action, the five
+      areas with the document and inbox counts, the top-level folders and Unsorted with their document counts (including
+      subfolders) and "Ordner verwalten", and Trash and Settings at the bottom. The work area keeps the pages at their
+      previous maximum width. The context panel (340 px) appears from 1280 px only while a page renders into it through
+      `ContextPanel`; the page redesigns (PRs 3-5) fill it with the selection, and below 1280 px a page shows the same
+      content in its own flow. The header carries the wordmark, a document search that Ctrl+K (Cmd+K) focuses and that
+      opens the document list with the query, the status indicator, the inbox with its count and the avatar with the
+      member's name. A status bar (28 px) at the bottom shows the overall state, the document count, the last backup and
+      the running version.
+    - **Status indicator:** one request to the status overview (`GET /api/status`, ADR-0018) per minute while the tab is
+      visible serves the header, the avatar mark, the status bar and Today's status line. It reads "Alles in Ordnung" in
+      the data colour, "Problem: Backup" or "2 Bereiche brauchen Aufmerksamkeit" in red, and "Status nicht abrufbar" in
+      grey while the overview is not known. An unchecked AI connection stays neutral, as on the status page.
+
 ## Consequences
 
 - Every existing page is dark and uses the new fonts, frames and colours immediately, without page rewrites; pages
@@ -137,5 +166,8 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
 - New UI uses the token utilities and the base components instead of Tailwind's default colour scales.
 - A light theme would need a second token set and is not planned.
 - Fonts add about 53 kB to the first visit and nothing afterwards. They never leave the LAN.
-- The effects cost one fixed overlay and a background image; members who find them distracting switch them off (PR 2),
-  and reduced motion is honoured without any setting.
+- The effects cost one fixed overlay and a background image; members who find them distracting switch them off in
+  Settings, and reduced motion is honoured without any setting.
+- Two members on one device see their own look after login; the login page always shows the default.
+- The shell asks the status overview once a minute, which probes the archive; a household of two keeps that load
+  negligible. Pages are unchanged inside the new shell until their redesign.

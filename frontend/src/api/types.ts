@@ -4,6 +4,7 @@ import type { components } from "./schema";
 type Schemas = components["schemas"];
 
 export type MemberDto = Schemas["MemberDto"];
+export type AppearanceDto = Schemas["AppearanceDto"];
 export type DocumentDto = Schemas["DocumentDto"];
 export type SubjectDto = Schemas["SubjectDto"];
 export type ProcessingDto = Schemas["ProcessingDto"];

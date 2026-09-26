@@ -88,7 +88,12 @@ also be started by hand. CI needs no private VM access and no live credentials.
 
 The web app is dark only and follows one design system: tokens with three switchable palettes, chamfered frames,
 self-hosted fonts and an optional effects layer that yields to reduced motion
-([ADR-0019](docs/architecture/adr/ADR-0019-design-system.md)).
+([ADR-0019](docs/architecture/adr/ADR-0019-design-system.md)). Each member chooses the palette and switches the effects
+in Settings; the choice is stored on the member like the language, applied after login and carried by export schema
+10. On a phone the tab bar has five areas (Heute, Dokumente, Aufgaben, Verträge, Eingang), Settings, Status and Trash
+open from the avatar, and a status line on Today says whether everything is OK. From 1024 px a sidebar with Upload,
+the areas and the folders, a header with document search (Ctrl+K), the status and the inbox, and a status bar frame the
+page; from 1280 px a context panel is reserved for the selection, which the page redesigns fill (#27).
 
 Aegis supports individual logins into one shared household (the two persons and an assistant account that
 receives notices and can own tasks but is never what a document is about,
