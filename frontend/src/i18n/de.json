@@ -11,8 +11,6 @@
     "yes": "Ja",
     "no": "Nein",
     "unknownMember": "Unbekanntes Mitglied",
-    "previewNotice": "LAN-Vorschau über HTTP: keine verschlüsselte Verbindung, keine Push-Benachrichtigungen. Nur für den ersten Test mit synthetischen Daten.",
-    "pilotNotice": "Haushaltstest über HTTPS im Heimnetz. Push-Benachrichtigungen sind nicht eingerichtet. Den aktuellen Backup-Status findest du unter Status.",
     "version": "Version {{commit}}",
     "skipToContent": "Zum Inhalt springen"
   },
@@ -52,9 +50,7 @@
     "plannedToday": "Heute geplant",
     "upcoming": "Nächste 7 Tage",
     "unassigned": "Niemand zuständig",
-    "empty": "Nichts für heute. Neue Aufgaben entstehen aus Dokumenten oder direkt in der Aufgabenliste.",
-    "calendarNotConnected": "Kein Kalender verbunden. Termine erscheinen hier erst nach einer geprüften Kalenderanbindung; es werden keine Termine simuliert.",
-    "onDemand": "Diese Übersicht wird bei jedem Aufruf aus den gespeicherten Aufgaben berechnet."
+    "empty": "Nichts für heute. Neue Aufgaben entstehen aus Dokumenten oder direkt in der Aufgabenliste."
   },
   "documents": {
     "title": "Dokumente",
@@ -105,6 +101,7 @@
     "retry": "Archivierung erneut anstoßen",
     "retryDone": "Die Archivierung wurde neu eingeplant.",
     "checksum": "SHA-256",
+    "technicalDetails": "Technische Angaben",
     "size": "{{size}}",
     "paperlessId": "Paperless-Nr. {{id}}",
     "archivedAt": "Archiviert am {{date}}",
@@ -430,8 +427,7 @@
       "UNKNOWN": "Der Zustand des externen Backups lässt sich nicht lesen."
     },
     "diskSpaceLow": "Auf „{{disk}}“ wird der Platz knapp: nur noch {{free}} von {{total}} frei.",
-    "readAt": "Gelesen am {{date}}",
-    "inAppOnly": "Mitteilungen werden nur hier in der App angezeigt. Push auf das Telefon ist nicht eingerichtet."
+    "readAt": "Gelesen am {{date}}"
   },
   "review": {
     "title": "Zu prüfen",
@@ -1199,7 +1195,7 @@
       "bottomLeft": "Ecke unten links",
       "invalid": "Die Ecken überkreuzen sich. Zieh sie in die richtige Reihenfolge.",
       "apply": "Übernehmen",
-      "wholePhoto": "Ganzes Foto",
+      "wholePhoto": "Rahmen auf ganzes Foto",
       "keepPhoto": "Originalfoto verwenden",
       "cancel": "Abbrechen",
       "checkTitle": "Seite {{number}}: Blatt erkannt",

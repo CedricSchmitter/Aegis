@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../../api/client";
 import type { NoticeSummary } from "../../api/types";
-import { EmptyState, ErrorBox, InfoBox, Loading } from "../../components/common";
+import { EmptyState, ErrorBox, Loading } from "../../components/common";
 import { formatDateTime } from "../../lib/format";
 import { INBOX_CHANGED, MESSAGES_ANCHOR, noticeTarget } from "../../lib/inbox";
 import { noticeText } from "../../lib/notices";
@@ -75,9 +75,6 @@ export function MessagesSection() {
             {t("notices.markAllRead")}
           </button>
         </div>
-      </div>
-      <div className="mb-3">
-        <InfoBox>{t("notices.inAppOnly")}</InfoBox>
       </div>
       <ErrorBox message={error} />
       {!notices && !error && <Loading />}

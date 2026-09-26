@@ -25,15 +25,28 @@ async function login(page: Page, user: { username: string; password: string }) {
   await expect(page).not.toHaveURL(/\/login$/);
 }
 
+/** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
 async function ensureGerman(page: Page) {
+  const back = page.url();
+  await openSettings(page);
   if ((await page.getByTestId("language-switch").textContent())?.trim() === "DE") {
     await switchLanguage(page);
     await expect(page.getByTestId("language-switch")).toHaveText("EN");
   }
+  await page.goto(back);
 }
 
-/** Toggles the language and waits until the member preference is stored, so a following navigation keeps it. */
+async function openSettings(page: Page) {
+  await page.goto("/settings");
+  await expect(page.getByText(/Angemeldet als|Signed in as/)).toBeVisible();
+}
+
+/**
+ * Toggles the language in Settings and waits until the member preference is stored, so a following navigation
+ * keeps it. The caller navigates on afterwards.
+ */
 async function switchLanguage(page: Page) {
+  await openSettings(page);
   const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/locale") && response.ok());
   await page.getByTestId("language-switch").click();
   await saved;

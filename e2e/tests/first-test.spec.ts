@@ -31,11 +31,17 @@ async function logout(page: Page) {
   await expect(page).toHaveURL(/\/login$/);
 }
 
+/** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
 async function ensureGerman(page: Page) {
+  const back = page.url();
+  await page.goto("/settings");
+  await expect(page.getByText(/Angemeldet als|Signed in as/)).toBeVisible();
   if ((await page.getByTestId("language-switch").textContent())?.trim() === "DE") {
+    const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/locale") && response.ok());
     await page.getByTestId("language-switch").click();
-    await expect(page.getByTestId("language-switch")).toHaveText("EN");
+    await saved;
   }
+  await page.goto(back);
 }
 
 test.describe("first runnable test", () => {
@@ -62,23 +68,26 @@ test.describe("first runnable test", () => {
   test("language switch persists per member and does not change stored data", async ({ page }) => {
     await login(page, userA);
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/Heute|Today/);
-    const current = await page.getByTestId("language-switch").textContent();
-    // Reload only after the member preference is stored; otherwise the reload can race the request.
-    const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/locale") && response.ok());
-    await page.getByTestId("language-switch").click();
-    await saved;
-    if (current?.trim() === "EN") {
-      await expect(page.getByRole("heading", { level: 1 })).toContainText("Today");
-      await page.reload();
-      await expect(page.getByRole("heading", { level: 1 })).toContainText("Today");
-      await page.getByTestId("language-switch").click();
-    } else {
-      await expect(page.getByRole("heading", { level: 1 })).toContainText("Heute");
-      await page.reload();
-      await expect(page.getByRole("heading", { level: 1 })).toContainText("Heute");
-      await page.getByTestId("language-switch").click();
-    }
-    await expect(page.getByRole("heading", { level: 1 })).toContainText(/Heute|Today/);
+    // The header has no language switch any more; it sits in Settings only (issue #83, F7).
+    await expect(page.getByTestId("language-switch")).toHaveCount(0);
+    await page.goto("/settings");
+    const toggle = page.getByTestId("language-switch");
+    const current = (await toggle.textContent())?.trim();
+    const switchLanguage = async () => {
+      // Reload only after the member preference is stored; otherwise the reload can race the request.
+      const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/locale") && response.ok());
+      await toggle.click();
+      await saved;
+    };
+    await switchLanguage();
+    const heading = current === "EN" ? "Settings" : "Einstellungen";
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(heading);
+    await page.goto("/today");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(current === "EN" ? "Today" : "Heute");
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(heading);
+    await switchLanguage();
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(current === "EN" ? "Einstellungen" : "Settings");
     await logout(page);
   });
 
@@ -109,6 +118,9 @@ test.describe("first runnable test", () => {
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 300_000 });
     const documentUrl = page.url();
     const documentId = documentUrl.split("/").pop()!;
+    // Technical data sits in a collapsed section (issue #83, F15).
+    await expect(page.getByTestId("checksum")).toBeHidden();
+    await page.getByTestId("technical-details").locator("summary").click();
     await expect(page.getByTestId("checksum")).toContainText(RUN_SHA256);
 
     // Original bytes are unchanged (checked through the authenticated API of this browser session).
@@ -173,7 +185,9 @@ test.describe("first runnable test", () => {
     await expect(pageB.getByTestId("processing-state")).toContainText("Archiviert");
     await pageB.getByRole("link", { name: "Heute" }).first().click();
     await expect(pageB.getByRole("heading", { level: 1 })).toContainText("Heute");
-    await expect(pageB.getByText("Kein Kalender verbunden")).toBeVisible();
+    // Notes that only describe the setup are gone (issue #83, F6): no calendar note and no pilot banner.
+    await expect(pageB.getByText("Kein Kalender verbunden")).toHaveCount(0);
+    await expect(pageB.getByText("Haushaltstest über HTTPS")).toHaveCount(0);
     await contextB.close();
 
     // The first member sees the completion and the status page answers "is everything OK?" in words (issue #83).

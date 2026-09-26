@@ -6,6 +6,7 @@ import {
   facetParam,
   parseFilters,
   selectedValues,
+  showsFacetGroup,
   toApiQuery,
   toSearchParams,
   toggleValue,
@@ -76,5 +77,11 @@ describe("catalog search state", () => {
     expect(facetParam("DOCUMENT_TYPE")).toBe("type");
     expect(selectedValues(filters, "ORGANIZATION")).toEqual(["org-a", "org-b"]);
     expect(selectedValues(filters, "SUBJECT")).toEqual(["HOUSE", "MEMBER:m-1"]);
+  });
+
+  it("hides a facet group whose only choice would be \"not set\" unless that filter is active", () => {
+    expect(showsFacetGroup([], false)).toBe(false);
+    expect(showsFacetGroup([], true)).toBe(true);
+    expect(showsFacetGroup(["tag-a"], false)).toBe(true);
   });
 });

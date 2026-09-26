@@ -19,12 +19,17 @@ async function login(page: Page, user: { username: string; password: string }) {
   await expect(page).not.toHaveURL(/\/login$/);
 }
 
+/** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
 async function ensureGerman(page: Page) {
+  const back = page.url();
+  await page.goto("/settings");
+  await expect(page.getByText(/Angemeldet als|Signed in as/)).toBeVisible();
   if ((await page.getByTestId("language-switch").textContent())?.trim() === "DE") {
     const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/locale") && response.ok());
     await page.getByTestId("language-switch").click();
     await saved;
   }
+  await page.goto(back);
 }
 
 test.describe("photos of paper documents uploaded unchanged", () => {
@@ -52,6 +57,9 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     await expect(page.getByTestId("photo-hint")).toBeVisible();
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });
     const documentId = page.url().split("/").pop()!;
+    // Technical data sits in a collapsed section (issue #83, F15).
+    await expect(page.getByTestId("checksum")).toBeHidden();
+    await page.getByTestId("technical-details").locator("summary").click();
     await expect(page.getByTestId("checksum")).toContainText(sha256);
     // The archive read the letter, so there is no hint once the text check arrived.
     await expect(page.getByTestId("text-pending")).toHaveCount(0, { timeout: 60_000 });

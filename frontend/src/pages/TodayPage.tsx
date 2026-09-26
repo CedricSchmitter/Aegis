@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import type { TaskDto, TodayResponse } from "../api/types";
 import { TaskItem } from "../components/TaskItem";
-import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
+import { EmptyState, ErrorBox, Loading, PageTitle } from "../components/common";
 import { formatDate } from "../lib/format";
 import { problemMessage } from "../lib/problem";
 
@@ -48,7 +48,6 @@ export function TodayPage() {
       {!today && !error && <Loading />}
       {today && (
         <div className="flex flex-col gap-4">
-          <InfoBox>{t("today.calendarNotConnected")}</InfoBox>
           {buckets.every((b) => today[b.key].length === 0) && <EmptyState>{t("today.empty")}</EmptyState>}
           {buckets.map(
             (bucket) =>
@@ -65,7 +64,6 @@ export function TodayPage() {
                 </section>
               ),
           )}
-          <p className="text-xs text-stone-500">{t("today.onDemand")}</p>
         </div>
       )}
     </>

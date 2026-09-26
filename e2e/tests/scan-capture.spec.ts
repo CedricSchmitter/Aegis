@@ -18,12 +18,17 @@ async function login(page: Page, user: { username: string; password: string }) {
   await expect(page).not.toHaveURL(/\/login$/);
 }
 
+/** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
 async function ensureGerman(page: Page) {
+  const back = page.url();
+  await page.goto("/settings");
+  await expect(page.getByText(/Angemeldet als|Signed in as/)).toBeVisible();
   if ((await page.getByTestId("language-switch").textContent())?.trim() === "DE") {
     const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/locale") && response.ok());
     await page.getByTestId("language-switch").click();
     await saved;
   }
+  await page.goto(back);
 }
 
 /**
