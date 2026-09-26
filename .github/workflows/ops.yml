@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Backup safety regression tests
         run: python3 -m unittest discover -s ops/backup -p 'test_*.py'
-      - name: Deployment script tests (credential safety, folder tree seed)
+      - name: Deployment script tests (credential safety, folder tree seed, post-deploy cleanup)
         run: python3 -m unittest discover -s ops/deploy -p 'test_*.py'
       - name: Claude Code host runner tests
         run: python3 -m unittest discover -s ops/claude-runner -p 'test_*.py'

@@ -64,7 +64,9 @@ sudo -n sh -c 'cd /srv/aegis/deploy && docker compose --env-file .env -f compose
 ```
 
 Rollback to a previously built commit: `sh /srv/aegis/source/current/ops/deploy/rollback.sh <sha>` on the VM
-(application container only; database migrations are additive and are not undone).
+(application container only; database migrations are additive and are not undone). A successful deployment records
+the commit it replaced in `PREVIOUS_COMMIT` and then runs the bounded cleanup described in [Disk space](#disk-space):
+only the current image and the one in `PREVIOUS_COMMIT` are guaranteed to exist; older `aegis-app` images are removed.
 
 ## Onboarding the two logins
 
@@ -316,6 +318,40 @@ neither part of the server backup nor of an export, because the document does no
 - Reconciliation runs every five minutes inside the application: re-schedules pending documents without a job,
   quarantines ingress files without a record under `ingress/orphans/`, removes staging copies only after
   verified archival plus seven days.
+
+## Disk space
+
+The VM disk (100 GiB virtual) is thin-provisioned on the Proxmox pool `local-lvm`, which is smaller than that. On
+2026-09-26 the pool ran full and the VM stopped with an I/O error: every deployment had built a new image on the VM,
+leaving 17.7 GB of build cache and 7.7 GB of unused images, while the application data was about 144 MB.
+
+After a successful deployment `remote-deploy.sh` therefore runs `ops/deploy/prune-docker.sh`, which
+
+- removes `aegis-app` images except the current one, the previous deployment's (`PREVIOUS_COMMIT`, for
+  rollback) and any image a container still references (for example a stopped restore-drill container);
+- removes dangling images (`docker image prune -f`); other tagged images, such as the pinned service images, stay;
+- trims the build cache to 3 GB (`docker builder prune -f --keep-storage`, least recently used first, so the last
+  build's Maven and npm caches stay; override with `AEGIS_BUILD_CACHE_KEEP`);
+- runs `fstrim -v` on the file system of `/var/lib/docker` when its disk supports discard, so the freed blocks
+  return to the thin pool immediately instead of at the weekly `fstrim.timer`. The Proxmox disk has discard enabled
+  (`lsblk -D` inside the VM shows a non-zero `DISC-MAX`); without it the step is skipped with a note, and neither it
+  nor the timer can return space to the pool;
+- prints `docker system df`.
+
+Every step is attempted. A failed step is reported as `Cleanup warning: …` followed by a `WARNING` that the
+deployment itself succeeded; it never fails a deployment that already passed its checks.
+
+To check the space by hand (on the VM, as `aegis-agent`):
+
+```sh
+sudo -n docker system df      # Build Cache should stay near 3 GB; Images hold the stack, one older aegis-app and tools
+df -h /                       # space inside the VM; the Proxmox pool usage is only visible on the host (lvs)
+```
+
+If the build cache or unused images are large anyway (for example after builds outside `deploy.sh`), run
+`sudo -n docker builder prune -f --keep-storage 3GB`, `sudo -n docker image prune -f` and `sudo -n fstrim -v /`.
+Do not use `docker image prune -a` or `docker system prune -a`: they also remove the previous `aegis-app` image that
+rollback needs.
 
 ## Restore drill and backup
 

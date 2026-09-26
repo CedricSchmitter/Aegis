@@ -13,6 +13,12 @@ if [ "$(hostname)" != "aegis-dev" ]; then
 fi
 [ -f "$DEPLOY_DIR/.env" ] || { echo "Missing $DEPLOY_DIR/.env; run ops/deploy/init-secrets.sh first." >&2; exit 1; }
 
+# The last successfully deployed commit other than this one stays available for rollback.sh.
+PREVIOUS="$(cat "$DEPLOY_DIR/DEPLOYED_COMMIT" 2>/dev/null || true)"
+if [ "$PREVIOUS" = "$COMMIT" ]; then
+    PREVIOUS="$(cat "$DEPLOY_DIR/PREVIOUS_COMMIT" 2>/dev/null || true)"
+fi
+
 mkdir -p "$DEPLOY_DIR/postgres-init"
 # Directory for the optional AI provider key (ADR-0003). The owner places the key file there; the application
 # container (group 10001) may read it, nobody else. An empty directory means "AI not configured".
@@ -47,4 +53,12 @@ sudo -n docker compose --env-file "$DEPLOY_DIR/.env" "$@" up -d --wait --wait-ti
 sudo -n docker compose --env-file "$DEPLOY_DIR/.env" "$@" exec -T aegis \
     wget -q -O - http://localhost:8080/api/system/version | grep -F "$COMMIT" >/dev/null
 echo "$COMMIT" > "$DEPLOY_DIR/DEPLOYED_COMMIT"
+[ -z "$PREVIOUS" ] || echo "$PREVIOUS" > "$DEPLOY_DIR/PREVIOUS_COMMIT"
 sudo -n docker compose --env-file "$DEPLOY_DIR/.env" -f "$DEPLOY_DIR/compose.yaml" ps
+
+# Bound the build cache and old images (DEPLOYMENT.md, "Disk space"). The deployment has already succeeded, so a
+# failed cleanup is reported but does not fail it.
+if ! sh "$RELEASE_DIR/ops/deploy/prune-docker.sh" "$COMMIT" "$PREVIOUS"; then
+    echo "WARNING: post-deployment cleanup did not complete; the deployment itself succeeded." >&2
+    echo "WARNING: check 'sudo docker system df' on the VM before the next deployments fill the disk." >&2
+fi
