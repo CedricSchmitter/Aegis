@@ -570,6 +570,11 @@
       @apply m-auto max-w-[480px] border;
       padding-bottom: 1.25rem;
     }
+    &[data-wide] {
+      @media (width >= 48rem) {
+        max-width: 640px;
+      }
+    }
   }
 
   .ui-toast {
@@ -634,6 +639,184 @@
     }
     &[data-tone="neutral"] {
       color: var(--color-text-2);
+    }
+  }
+
+  /* ---- Document screens (issue #27, PR 3) ---- */
+
+  /* Mono section heading with an optional count or control at the right. */
+  .ui-sec {
+    @apply flex items-center justify-between gap-2.5 font-mono text-xs tracking-[0.18em] uppercase;
+    color: var(--color-text-4);
+  }
+
+  /* Toggle pill of the folder rail and the filter panel; pressed means chosen. */
+  .ui-pill {
+    @apply inline-flex min-h-11 flex-none cursor-pointer items-center gap-2 border px-3 text-sm whitespace-nowrap;
+    border-color: var(--color-line);
+    background: var(--color-surface);
+    color: var(--color-text-2);
+    &:hover {
+      border-color: var(--color-line-strong);
+      color: var(--color-text-1);
+    }
+    &[aria-pressed="true"] {
+      border-color: var(--color-action);
+      color: var(--color-action);
+      background: color-mix(in oklab, var(--color-action) 7%, transparent);
+    }
+    & .ui-pill-count {
+      @apply font-mono text-xs;
+      color: var(--color-text-4);
+    }
+    &[aria-pressed="true"] .ui-pill-count {
+      color: var(--color-text-2);
+    }
+  }
+  /* A pill that leads to a management page instead of filtering. */
+  .ui-pill-link {
+    border-style: dashed;
+    color: var(--color-data);
+  }
+
+  /* Horizontally scrolling row that reaches to the screen edges on a phone. */
+  .ui-rail {
+    @apply -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* The quiet link or drop target at the end of a list. */
+  .ui-endlink {
+    @apply mt-1.5 flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 border border-dashed px-3 text-center font-mono text-xs tracking-[0.18em] uppercase;
+    border-color: var(--color-line-strong);
+    color: var(--color-text-3);
+    &:hover,
+    &[data-over="true"] {
+      border-color: var(--color-data);
+      color: var(--color-data);
+    }
+  }
+
+  /* Target brackets mark the selection and the preview instead of a shadow. */
+  .ui-corners {
+    position: relative;
+    &::after {
+      --c: var(--color-action);
+      --s: 12px;
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(var(--c), var(--c)) left top / var(--s) 2px no-repeat,
+        linear-gradient(var(--c), var(--c)) left top / 2px var(--s) no-repeat,
+        linear-gradient(var(--c), var(--c)) right top / var(--s) 2px no-repeat,
+        linear-gradient(var(--c), var(--c)) right top / 2px var(--s) no-repeat,
+        linear-gradient(var(--c), var(--c)) left bottom / var(--s) 2px no-repeat,
+        linear-gradient(var(--c), var(--c)) left bottom / 2px var(--s) no-repeat,
+        linear-gradient(var(--c), var(--c)) right bottom / var(--s) 2px no-repeat,
+        linear-gradient(var(--c), var(--c)) right bottom / 2px var(--s) no-repeat;
+    }
+  }
+
+  /* The striped frame a page preview lies in. */
+  .ui-paper {
+    @apply grid place-items-center border p-2.5;
+    border-color: var(--color-line);
+    background: repeating-linear-gradient(135deg, var(--color-raised) 0 8px, var(--color-surface) 8px 16px);
+  }
+
+  /* A choice in a sheet: icon, name and one line of explanation. */
+  .ui-option {
+    @apply frame grid w-full cursor-pointer grid-cols-[auto_1fr] items-center gap-x-3.5 gap-y-0.5 px-3.5 py-3 text-left;
+    --frame-chamfer: var(--chamfer-lg);
+    --frame-line: var(--color-line);
+    --frame-fill: var(--color-surface);
+    & > svg {
+      grid-row: span 2;
+      color: var(--color-data);
+    }
+    & b {
+      @apply text-[15px] font-semibold;
+    }
+    & span {
+      @apply text-[13px];
+      color: var(--color-text-3);
+    }
+    &:hover:not(:disabled) {
+      --frame-line: var(--color-data);
+      --frame-fill: var(--color-raised);
+    }
+    &:focus-visible {
+      outline-offset: -4px;
+    }
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+  }
+
+  /* Drop zone for files on a desktop. */
+  .ui-drop {
+    @apply flex flex-col items-center gap-2 border border-dashed px-4 py-5 text-center;
+    border-color: var(--color-data);
+    background: color-mix(in oklab, var(--color-data) 4%, transparent);
+    & > svg {
+      color: var(--color-data);
+    }
+    &[data-over="true"] {
+      background: color-mix(in oklab, var(--color-data) 12%, transparent);
+    }
+  }
+
+  /* Phone list entry: the whole card opens the document through its title link. */
+  .doc-card {
+    @apply relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 border-b px-3 py-3;
+    border-color: var(--color-line);
+    &:hover {
+      background: var(--color-raised);
+    }
+    & .doc-link::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+    }
+    & .doc-link:focus-visible {
+      outline: none;
+    }
+    &:has(.doc-link:focus-visible) {
+      outline: 2px solid var(--color-data);
+      outline-offset: -2px;
+    }
+    /* Controls inside the card stay clickable above the stretched link. */
+    & :is(input, button, [data-above]) {
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  /* Desktop table: type, name with folder and labels, state, date. */
+  .doc-table [role="row"] {
+    @apply grid min-h-15 grid-cols-[44px_56px_minmax(0,1fr)_150px_92px] items-center gap-x-3.5 border-b px-3 py-2;
+    border-color: var(--color-line);
+  }
+  .doc-table [role="row"][data-head] {
+    @apply min-h-8 font-mono text-[11px] tracking-[0.22em] uppercase;
+    color: var(--color-text-4);
+  }
+  .doc-table [role="row"]:not([data-head]) {
+    cursor: pointer;
+    &:hover {
+      background: var(--color-raised);
+    }
+    &[data-selected="true"] {
+      background: color-mix(in oklab, var(--color-action) 5%, transparent);
+    }
+    &[data-selected="true"]::after {
+      --s: 10px;
     }
   }
 

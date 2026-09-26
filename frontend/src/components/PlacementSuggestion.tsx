@@ -119,8 +119,7 @@ export function PlacementSuggestion({ document, categories, onChange, onError, o
   if (!suggestion) {
     const estimate = percent(placement.confidence, i18n.language);
     return (
-      <div className="flex flex-col gap-2 border-t border-stone-200 pt-3 dark:border-stone-700"
-        data-testid="placement-automatic">
+      <div className="card flex flex-col gap-2" data-testid="placement-automatic">
         <p className="text-sm">
           {estimate
             ? t("placement.automaticWithConfidence", { value: estimate })
@@ -138,22 +137,21 @@ export function PlacementSuggestion({ document, categories, onChange, onError, o
 
   const estimate = percent(suggestion.confidence, i18n.language);
   return (
-    <div className="flex flex-col gap-3 border-t border-stone-200 pt-3 dark:border-stone-700"
-      data-testid="placement-suggestion">
-      <p className="text-sm font-medium">{t("placement.title")}</p>
-      <p className="text-sm" data-testid="placement-path">
-        🗂 {suggestion.path.join(" / ")}
+    <div className="card card-attention flex flex-col gap-3" data-testid="placement-suggestion">
+      <p className="ui-eyebrow text-action">{t("placement.title")}</p>
+      <p className="font-mono text-sm break-words text-text-2" data-testid="placement-path">
+        {suggestion.path.join(" / ")}
         {estimate && (
-          <span className="text-xs text-stone-500"> · {t("analysis.modelEstimate", { value: estimate })}</span>
+          <span className="text-xs text-text-3"> · {t("analysis.modelEstimate", { value: estimate })}</span>
         )}
       </p>
       {suggestion.newFolders.length > 0 && (
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-text-3">
           {t("placement.newFolders", { count: suggestion.newFolders.length })}
         </p>
       )}
       {suggestion.evidence && (
-        <p className="text-xs text-stone-500">{t("analysis.evidence", { text: suggestion.evidence })}</p>
+        <p className="text-xs text-text-3">{t("analysis.evidence", { text: suggestion.evidence })}</p>
       )}
 
       <div className="flex flex-col gap-2">
@@ -174,10 +172,10 @@ export function PlacementSuggestion({ document, categories, onChange, onError, o
             data-testid="placement-names"
           />
         </label>
-        <p className="text-xs text-stone-500">{t("placement.namesHint")}</p>
+        <p className="text-xs text-text-3">{t("placement.namesHint")}</p>
       </div>
 
-      <div className="text-xs text-stone-500" data-testid="placement-effects">
+      <div className="text-xs text-text-3" data-testid="placement-effects">
         {suggestion.impliedLabels.length === 0 && suggestion.impliedSubjects.length === 0 ? (
           t("placement.addsNothing")
         ) : (
@@ -190,10 +188,10 @@ export function PlacementSuggestion({ document, categories, onChange, onError, o
       </div>
 
       {suggestion.otherDocuments > 0 && (
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex min-h-11 items-center gap-3 text-sm">
           <input
             type="checkbox"
-            className="h-5 w-5"
+            className="ui-checkbox"
             checked={alsoForOthers}
             onChange={(event) => setAlsoForOthers(event.target.checked)}
             data-testid="placement-also-for-others"
@@ -217,7 +215,7 @@ export function PlacementSuggestion({ document, categories, onChange, onError, o
           {t("placement.reject")}
         </button>
       </div>
-      <p className="text-xs text-stone-500">{t("placement.hint")}</p>
+      <p className="text-xs text-text-3">{t("placement.hint")}</p>
     </div>
   );
 }

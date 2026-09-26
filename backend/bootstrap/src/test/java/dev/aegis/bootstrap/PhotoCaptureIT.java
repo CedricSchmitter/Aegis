@@ -67,6 +67,15 @@ class PhotoCaptureIT extends PostgresIT {
         assertThat(searchable.header("Content-Disposition")).startsWith("inline")
                 .contains("_" + id.substring(0, 8) + ".pdf");
         assertThat(new String(searchable.bytes(), 0, 5, StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
+        // The desktop viewer frames the searchable PDF from the same origin; other sites still cannot.
+        assertThat(searchable.header("X-Frame-Options")).isEqualTo("SAMEORIGIN");
+
+        // The archive's first-page image is the preview of the list and of the phone view.
+        ApiClient.Response thumbnail = ben.get("/api/documents/" + id + "/thumbnail");
+        assertThat(thumbnail.status()).as(thumbnail.body()).isEqualTo(200);
+        assertThat(thumbnail.header("Content-Type")).isEqualTo("image/webp");
+        assertThat(thumbnail.header("Cache-Control")).contains("private").contains("max-age=86400");
+        assertThat(new String(thumbnail.bytes(), 8, 4, StandardCharsets.US_ASCII)).isEqualTo("WEBP");
 
         // Sharing the same photo again finds the existing document instead of creating a copy.
         ApiClient.Response again = ben.upload("/api/documents", "image.jpg", photo, List.of());

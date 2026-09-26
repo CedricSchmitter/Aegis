@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { openDocument, openUpload, searchDocuments } from "./documents";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.resolve(here, "../../fixtures/synthetic-letter-photo.jpg");
@@ -32,17 +33,6 @@ async function ensureGerman(page: Page) {
   await page.goto(back);
 }
 
-/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
-async function openUpload(page: Page) {
-  // The panel's first state follows the folder catalog, so decide only once that has loaded.
-  await expect(page.getByTestId("folder-all")).toBeAttached();
-  const panel = page.getByTestId("upload-panel");
-  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
-    await page.getByTestId("upload-panel-toggle").click();
-  }
-  await expect(panel).toHaveAttribute("open", "");
-}
-
 test.describe("photos of paper documents uploaded unchanged", () => {
   test.skip(!userA.password, "AEGIS_PASSWORD_A must be set");
 
@@ -57,7 +47,7 @@ test.describe("photos of paper documents uploaded unchanged", () => {
 
     await page.goto("/documents");
     await openUpload(page);
-    await expect(page.getByTestId("upload-take-photo")).toBeVisible();
+    await expect(page.getByTestId("upload-choose-file")).toBeVisible();
     // "Datei unverändert hochladen" keeps a photo unchanged; the camera and the gallery make scanned pages
     // (scan-capture.spec).
     await page.getByTestId("upload-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
@@ -65,7 +55,7 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     await page.getByTestId("upload-submit").click();
     await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
     const card = page.locator("[data-testid=document-card]", { hasText: title }).first();
-    await card.getByRole("link").first().click();
+    await openDocument(card);
     await expect(page.getByTestId("photo-hint")).toBeVisible();
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });
     const documentId = page.url().split("/").pop()!;
@@ -91,8 +81,7 @@ test.describe("photos of paper documents uploaded unchanged", () => {
 
     // Only the recognized text of the photo contains this word; the title does not.
     await page.goto("/documents");
-    await page.getByTestId("search-input").fill("Ablesekarte");
-    await page.getByRole("button", { name: "Suchen" }).click();
+    await searchDocuments(page, "Ablesekarte");
     await expect(page.locator(`a[href="/documents/${documentId}"]`).first()).toBeVisible();
 
     // Leave no test document in the collection.
@@ -115,7 +104,7 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     await page.getByTestId("upload-submit").click();
     await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
     const card = page.locator("[data-testid=document-card]", { hasText: title }).first();
-    await card.getByRole("link").first().click();
+    await openDocument(card);
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });
     const documentId = page.url().split("/").pop()!;
 
@@ -135,7 +124,8 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     // "Neues Foto hochladen" opens the upload panel with the camera button.
     await page.goto(`/documents/${documentId}`);
     await page.getByTestId("text-hint-upload").click();
-    await expect(page.getByTestId("upload-take-photo")).toBeVisible();
+    await expect(page.getByTestId("upload-panel")).toHaveAttribute("open", "");
+    await expect(page.getByTestId("upload-choose-image")).toBeVisible();
 
     // Leave no test document in the collection.
     await page.goto(`/documents/${documentId}`);

@@ -71,3 +71,17 @@ export function ancestorsOf(categories: CategoryDto[], id: string | null): strin
     .slice(0, -1)
     .map((category) => category.id);
 }
+
+/**
+ * The folders the phone's folder rail offers for the selected folder: the top level when none (or Unsorted) is
+ * chosen, the subfolders of a folder that has some, and otherwise the folder's siblings, so the chosen folder stays
+ * visible among them.
+ */
+export function railFolders(categories: CategoryDto[], selected: string | null): FolderNode[] {
+  const roots = buildTree(categories);
+  const node = findNode(roots, selected);
+  if (!node) return roots;
+  if (node.children.length > 0) return node.children;
+  const parent = findNode(roots, node.category.parentId ?? null);
+  return parent ? parent.children : roots;
+}

@@ -57,9 +57,10 @@ and contrast.
 6. **Limits.** The existing 50 MB upload limit applies (`aegis.archival.max-upload-bytes`, the multipart limit and
    Caddy's 60 MB request limit). Aegis sets no pixel limit; Paperless applies Pillow's decompression limit of about
    179 megapixels, above which archival fails visibly. Typical phone photos have 12 to 50 megapixels.
-7. **Capture on the phone.** The upload panel offers "Foto aufnehmen" (`capture="environment"`, which opens the
-   rear camera on Android), "Bild auswählen" (photo picker) and "Datei auswählen" (PDFs and photos), with a
-   preview of the chosen photo. A camera capture is named "Foto <date> <time>" because the browser's temporary name
+7. **Capture on the phone.** The upload sheet offers "Foto aufnehmen" (`capture="environment"`, which opens the
+   rear camera on Android), "Fotos aus Galerie scannen" (photo picker) and "Datei unverändert hochladen" (PDFs and
+   photos), with a preview of the chosen photo. A desktop browser opens no camera, so from 1024 px the sheet offers a
+   drop zone with "Datei wählen" and "Fotos als Scan" instead (ADR-0019, decision 15). A camera capture is named "Foto <date> <time>" because the browser's temporary name
    carries no information; photos from the gallery or the share sheet keep their names. The Android share target
    already accepted every file type, so its manifest is unchanged; the share page now accepts photos by content.
 

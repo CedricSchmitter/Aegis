@@ -1,6 +1,7 @@
 # ADR-0019: A dark design system with tokens, palettes, chamfers and optional effects
 
-Status: accepted; foundation (PR 1 of 6) and shell with per-member preferences (PR 2) implemented for issue #27.
+Status: accepted; foundation (PR 1 of 6), shell with per-member preferences (PR 2) and document screens (PR 3)
+implemented for issue #27.
 Date: 2026-09-26.
 
 ## Context
@@ -159,6 +160,49 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
       the data colour, "Problem: Backup" or "2 Bereiche brauchen Aufmerksamkeit" in red, and "Status nicht abrufbar" in
       grey while the overview is not known. An unchecked AI connection stays neutral, as on the status page.
 
+15. **Documents.** The document screens follow the approved mockup (issue #27, PR 3, and the arrangement of #108):
+    - **Phone list:** the title with the total, Upload as the one primary action (it reads "Scan fortsetzen" while a
+      scan draft exists), the search, a swipeable folder rail (All, Unsorted, the folders of the current level with
+      their counts including subfolders, and "Ordner verwalten" at its end; a chosen folder with subfolders shows them,
+      a breadcrumb leads back up), the filter button with the active values as removable chips and "Filter
+      zurücksetzen", then cards. A card shows the type tag (PDF, Scan for a PDF of scanned pages, Foto), the title, the
+      date, the folder path and the labels in the data colour; the whole card opens the document. The trash link
+      closes the list. Settings, Status and Trash also stay behind the avatar.
+    - **Desktop list:** the sidebar's folders become an expandable ARIA tree (arrow keys, Home/End, Enter) with
+      Unsorted at its end and "Ordner verwalten" below; the page has no folder panel and no second search, because
+      the header search serves it. The list is a table (type, name with folder and labels, state, date). From 1280 px
+      a click selects a row, marks it with target brackets and shows the document in the context panel (preview,
+      where it stands, the text hint, the folder suggestion and label suggestions to take over or reject, "Groß
+      öffnen"); a double click, Enter on the title or "Groß öffnen" opens it. Below 1280 px the title opens it.
+      A drop target ends the list and opens the upload with the dropped file.
+    - **State badges** appear only for deviations (#83 F10) and carry `data-state`; label chips use the chip class,
+      so page checks select states by `data-state`, never by class, and never read household organization names.
+    - **Filter:** a sheet with the facet values as pills with counts, "N Treffer zeigen", "Filter zurücksetzen" and
+      "Labels verwalten". Resetting clears the facet values only; the folder and the search stay.
+    - **Upload and scan** live in one sheet (a bottom sheet on a phone, a centred panel on a desktop): camera, gallery
+      and "Datei unverändert hochladen" as options on a phone; a drop zone with "Datei wählen" and "Fotos als Scan"
+      on a desktop, where browsers open no camera. The sheet cannot be closed while the server has not answered, so a
+      failure is always seen; after a confirmed durable save it closes and the list says so. The scan draft stays in the browser
+      when the sheet closes and reopens it after a reload. The corner editor renders inside the open sheet, because a
+      modal dialog lies in the top layer above the rest of the page; its Escape closes only the editor. The sidebar's
+      "Hochladen" and "Neues Foto hochladen" on a document without text open `/documents?upload=1`; the parameter is removed
+      again, so the same link works a second time.
+    - **Document view:** back link, folder path, title, type and uploader, then "Original öffnen", "Original
+      herunterladen" and "Durchsuchbares PDF". A phone shows the preview; from 1024 px the document itself appears in
+      the browser's own viewer: a photo as an image, a PDF of scanned pages and a HEIC photo as the archive's
+      searchable PDF, any other PDF as the original. The steps Gespeichert → Archiviert → Text erkannt → Eingeordnet
+      (filed means lying in a folder), the processing state, the analysis, folder, labels, subjects, linked contracts
+      and tasks, title and technical data and the trash fill the context panel from 1280 px and follow in the page
+      below it. Content that moves between panel and page is rendered once (`ContextPanelOrFlow`), so ids and form
+      state exist a single time. "In den Papierkorb" keeps its confirmation until the trash redesign (PR 5) replaces it
+      with an undo message for documents, tasks and contracts alike.
+    - **Preview images** come from the archive: `GET /api/documents/{id}/thumbnail` serves the first-page image
+      Paperless renders for every document it stores, once the document is archived (404 before). The adapter
+      accepts only WebP, PNG or JPEG recognized from the bytes, and the browser may keep it privately for a day. It is
+      derived data like the archive PDF and is not exported. Aegis now answers `X-Frame-Options: SAMEORIGIN` instead
+      of Spring's `DENY`, so the viewer can frame originals from the same origin while other sites still cannot.
+    - After an upload or a move the page sends `aegis:catalog-changed`, so the sidebar's folder counts follow at once.
+
 ## Consequences
 
 - Every existing page is dark and uses the new fonts, frames and colours immediately, without page rewrites; pages
@@ -171,3 +215,6 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
 - Two members on one device see their own look after login; the login page always shows the default.
 - The shell asks the status overview once a minute, which probes the archive; a household of two keeps that load
   negligible. Pages are unchanged inside the new shell until their redesign.
+- A document preview costs one thumbnail request to the archive per document and day and browser; the viewer loads
+  the whole original or searchable PDF, as "Original öffnen" did before. Headless browsers without a PDF viewer show
+  an empty frame there; members' browsers (Chrome, Edge, Firefox) render it.

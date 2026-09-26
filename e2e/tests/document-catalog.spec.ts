@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { openDocument, openUpload } from "./documents";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.resolve(here, "../../fixtures/synthetic-contract.pdf");
@@ -88,17 +89,6 @@ function folderOf(page: Page) {
   return page.getByTestId("document-folder").first();
 }
 
-/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
-async function openUpload(page: Page) {
-  // The panel's first state follows the folder catalog, so decide only once that has loaded.
-  await expect(page.getByTestId("folder-all")).toBeAttached();
-  const panel = page.getByTestId("upload-panel");
-  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
-    await page.getByTestId("upload-panel-toggle").click();
-  }
-  await expect(panel).toHaveAttribute("open", "");
-}
-
 test.describe("document tree, labels and faceted search", () => {
   test.skip(!userA.password || !userB.password, "AEGIS_PASSWORD_A and AEGIS_PASSWORD_B must be set");
 
@@ -129,7 +119,7 @@ test.describe("document tree, labels and faceted search", () => {
     const card = page.locator("[data-testid=document-card]", { hasText: `Telekom Rechnung e2e ${runId}` }).first();
     await expect(card).toBeVisible();
     await expect(card.getByTestId("document-folder")).toContainText(`${ROOT} / ${INVOICES} / ${INTERNET}`);
-    await card.getByRole("link").first().click();
+    await openDocument(card);
     // The SPA changes the URL before it renders the detail page, so wait for the heading of that document.
     await expect(page.getByRole("heading", { level: 1 })).toContainText(`Telekom Rechnung e2e ${runId}`);
     const documentUrl = page.url();
@@ -270,20 +260,22 @@ test.describe("document tree, labels and faceted search", () => {
     await expect(spareRow).toHaveCount(0);
   });
 
-  test("the folder tree can be operated with the keyboard", async ({ page }) => {
+  test("the folder tree in the sidebar can be operated with the keyboard", async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) < 1024, "the sidebar starts at 1024 px");
     await login(page, userA);
     await ensureGerman(page);
     await page.goto("/documents");
 
-    await page.getByTestId("folder-all").focus();
-    await page.keyboard.press("ArrowDown");
-    await expect(page.getByTestId("folder-unsorted")).toBeFocused();
+    const items = page.getByTestId("folder-tree").getByRole("treeitem");
+    await items.first().focus();
+    await page.keyboard.press("End");
+    await expect(items.last()).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/category=unsorted/);
+    await expect(page).toHaveURL(/category=/);
+    await expect(items.last()).toHaveAttribute("aria-selected", "true");
 
-    await page.getByTestId("folder-all").focus();
-    await page.keyboard.press("Enter");
-    await expect(page).not.toHaveURL(/category=unsorted/);
+    await page.keyboard.press("Home");
+    await expect(items.first()).toBeFocused();
   });
 });
 
@@ -296,12 +288,18 @@ test.describe("document folders on a phone", () => {
     await ensureGerman(page);
     await page.goto("/documents");
 
-    await page.getByTestId("folders-toggle").click();
-    await expect(page.getByRole("tree")).toBeVisible();
-    await expect(page.getByTestId("folder-all")).toBeVisible();
-    await expect(page.getByTestId("folder-unsorted")).toBeVisible();
+    // The folder rail with "Manage folders" at its end (issue #27, #108).
+    const rail = page.getByTestId("folder-rail");
+    await expect(rail).toBeVisible();
+    await expect(rail.getByTestId("folder-all")).toHaveAttribute("aria-pressed", "true");
+    await expect(rail.getByTestId("manage-folders")).toHaveAttribute("href", "/documents/folders");
+    // "Manage labels" sits in the filter; the trash link closes the list.
     await page.getByTestId("filters-toggle").click();
     await expect(page.getByTestId("facet-filters")).toBeVisible();
+    await expect(page.getByTestId("manage-labels")).toHaveAttribute("href", "/documents/labels");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("filter-sheet")).not.toHaveAttribute("open", "");
+    await expect(page.getByTestId("open-trash")).toHaveAttribute("href", "/trash");
     await openUpload(page);
     // The file inputs are hidden; the camera, gallery and file buttons open them.
     await expect(page.getByTestId("upload-take-photo")).toBeVisible();

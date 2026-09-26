@@ -4388,6 +4388,46 @@
         "tags" : [ "documents" ]
       }
     },
+    "/api/documents/{id}/thumbnail" : {
+      "get" : {
+        "operationId" : "getDocumentThumbnail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              },
+              "image/png" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              },
+              "image/webp" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Image of the first page rendered by the archive, for previews; 404 until the document is archived",
+        "tags" : [ "documents" ]
+      }
+    },
     "/api/documents/{id}/title" : {
       "put" : {
         "operationId" : "renameDocument",

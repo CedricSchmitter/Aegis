@@ -1,9 +1,8 @@
-import { useMemo } from "react";
-import { Link, NavLink, useLocation, useSearchParams } from "react-router";
+import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { UNSORTED } from "../../lib/catalogSearch";
-import { buildTree, subtreeCount } from "../../lib/tree";
-import { Icon, Diamond, type IconName } from "./icons";
+import { EMPTY_FILTERS, parseFilters, toSearchParams } from "../../lib/catalogSearch";
+import { FolderTree } from "../FolderTree";
+import { Icon, type IconName } from "./icons";
 import { useShellData } from "./ShellData";
 
 /**
@@ -63,45 +62,40 @@ function RowCount({ value, className = "text-text-4" }: { value: number | string
   return <span className={`ml-auto font-mono text-xs ${className}`}>{value}</span>;
 }
 
-/** Top-level folders with the documents in them and below them, plus Unsorted, linked to the filtered list. */
+/**
+ * The folder tree with the documents in each folder and below it, plus Unsorted, and "Manage folders" (issue #27).
+ * Choosing a folder on the document list keeps the search and filters; elsewhere it opens the list of that folder.
+ */
 function FolderList() {
   const { t } = useTranslation();
   const { catalog } = useShellData();
   const { pathname } = useLocation();
   const [params] = useSearchParams();
-  const selected = pathname === "/documents" ? params.get("category") : null;
-  const roots = useMemo(() => buildTree(catalog?.categories ?? []), [catalog]);
-  const folders = [
-    ...roots.map((node) => ({ id: node.category.id, name: node.category.name, count: subtreeCount(node) })),
-    ...(catalog && catalog.unsortedCount > 0 ? [{ id: UNSORTED, name: t("documents.unsorted"), count: catalog.unsortedCount }] : []),
-  ];
+  const navigate = useNavigate();
+  const onList = pathname === "/documents";
+  const selected = onList ? params.get("category") : null;
+  const open = (category: string) => {
+    const filters = onList ? parseFilters(params) : EMPTY_FILTERS;
+    navigate(`/documents?${toSearchParams({ ...filters, category, page: 0 })}`);
+  };
   return (
     // Only the folders scroll, so Upload, the areas, Trash and Settings stay in view with any number of folders.
     <nav aria-label={t("shell.folders")} className="min-h-0 flex-1 overflow-y-auto" data-testid="sidebar-folders">
       <p className="px-4 pt-4 pb-1.5 font-mono text-[11px] tracking-[0.22em] text-text-4 uppercase" aria-hidden="true">
         {t("shell.folders")}
       </p>
-      <ul>
-        {folders.map((folder) => (
-          <li key={folder.id}>
-            <Link
-              to={`/documents?${new URLSearchParams({ category: folder.id })}`}
-              className={SIDE_ITEM}
-              aria-current={selected === folder.id ? "page" : undefined}
-            >
-              <Diamond className="ml-1.5 h-1.5 w-1.5 text-data" />
-              <span className="min-w-0 truncate">{folder.name}</span>
-              <RowCount value={folder.count} />
-            </Link>
-          </li>
-        ))}
-        <li>
-          <Link to="/documents/folders" className={`${SIDE_ITEM} text-data`}>
-            <span aria-hidden="true" className="w-4 text-center">+</span>
-            {t("documents.manageFolders")}
-          </Link>
-        </li>
-      </ul>
+      {catalog && (
+        <FolderTree
+          categories={catalog.categories}
+          unsortedCount={catalog.unsortedCount}
+          selected={selected}
+          onSelect={open}
+        />
+      )}
+      <Link to="/documents/folders" className={`${SIDE_ITEM} text-data`} data-testid="sidebar-manage-folders">
+        <span aria-hidden="true" className="w-4 text-center">+</span>
+        {t("documents.manageFolders")}
+      </Link>
     </nav>
   );
 }

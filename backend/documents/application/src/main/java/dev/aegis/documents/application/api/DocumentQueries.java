@@ -37,4 +37,12 @@ public interface DocumentQueries {
      * @throws dev.aegis.shared.NotFoundException with resource {@code archivePdf} when there is none (yet)
      */
     ArchivePdf archivePdf(Actor actor, DocumentId id);
+
+    /**
+     * The archive's image of the first page, for previews in the list and on phones. It exists once the document is
+     * archived; until then the web app shows a placeholder.
+     *
+     * @throws dev.aegis.shared.NotFoundException with resource {@code thumbnail} while the document is not archived
+     */
+    DocumentThumbnail thumbnail(Actor actor, DocumentId id);
 }

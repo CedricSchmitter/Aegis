@@ -19,11 +19,12 @@ export function UploadSubjects({ value, onChange }: { value: string[]; onChange:
   return (
     <fieldset data-testid="upload-subjects">
       <legend className="label">{t("documents.subjects")}</legend>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-x-5">
         {options.map((option) => (
-          <label key={option.subject} className="flex min-h-11 items-center gap-2 text-sm">
+          <label key={option.subject} className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
             <input
               type="checkbox"
+              className="ui-checkbox"
               data-testid={`upload-subject-${option.subject}`}
               checked={value.includes(option.subject)}
               onChange={() => toggle(option.subject)}
@@ -32,7 +33,7 @@ export function UploadSubjects({ value, onChange }: { value: string[]; onChange:
           </label>
         ))}
       </div>
-      <p className="mt-1 text-xs text-stone-500">{t("subjects.hint")}</p>
+      <p className="mt-1 text-xs text-text-3">{t("subjects.hint")}</p>
     </fieldset>
   );
 }

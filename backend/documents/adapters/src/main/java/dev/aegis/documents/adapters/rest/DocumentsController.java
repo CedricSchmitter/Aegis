@@ -9,6 +9,7 @@ import dev.aegis.documents.application.api.DocumentCommands;
 import dev.aegis.documents.application.api.DocumentQueries;
 import dev.aegis.documents.application.api.DocumentSearchRequest;
 import dev.aegis.documents.application.api.DocumentSearchResult;
+import dev.aegis.documents.application.api.DocumentThumbnail;
 import dev.aegis.documents.application.api.FacetCounts;
 import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.api.SubjectView;
@@ -29,11 +30,13 @@ import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -204,6 +207,20 @@ public class DocumentsController {
         ArchivePdf pdf = queries.archivePdf(actor, DocumentId.of(id));
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(inline,
                 pdf.filename())).contentType(MediaType.APPLICATION_PDF).body(pdf.bytes());
+    }
+
+    /**
+     * The archive's image of the first page. It never changes for a document, so the browser may keep it privately
+     * for a day instead of asking the archive again for every list it appears in.
+     */
+    @Operation(operationId = "getDocumentThumbnail",
+            summary = "Image of the first page rendered by the archive, for previews; 404 until the document is archived")
+    @GetMapping(value = "/{id}/thumbnail", produces = {"image/webp", MediaType.IMAGE_PNG_VALUE,
+            MediaType.IMAGE_JPEG_VALUE})
+    public ResponseEntity<byte[]> thumbnail(Actor actor, @PathVariable("id") String id) {
+        DocumentThumbnail thumbnail = queries.thumbnail(actor, DocumentId.of(id));
+        return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePrivate())
+                .contentType(MediaType.parseMediaType(thumbnail.contentType())).body(thumbnail.bytes());
     }
 
     @Operation(operationId = "retryArchival", summary = "Re-queue archival of a failed document")

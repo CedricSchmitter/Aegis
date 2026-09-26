@@ -107,8 +107,12 @@ self-hosted fonts and an optional effects layer that yields to reduced motion
 in Settings; the choice is stored on the member like the language, applied after login and carried by export schema
 10. On a phone the tab bar has five areas (Heute, Dokumente, Aufgaben, Verträge, Eingang), Settings, Status and Trash
 open from the avatar, and a status line on Today says whether everything is OK. From 1024 px a sidebar with Upload,
-the areas and the folders, a header with document search (Ctrl+K), the status and the inbox, and a status bar frame the
-page; from 1280 px a context panel is reserved for the selection, which the page redesigns fill (#27).
+the areas and the folder tree, a header with document search (Ctrl+K), the status and the inbox, and a status bar
+frame the page; from 1280 px a context panel shows the selection. The document screens follow the redesign (#27): on a
+phone a list of cards with search, a folder rail ending in "Ordner verwalten", a filter sheet with "Labels verwalten"
+and the trash link at the end of the list; on a desktop a table whose selection shows its preview and suggestions in the
+context panel, and a document view with the browser's PDF viewer. Upload and scan open in a sheet, with a drop target on
+a desktop. Previews are the archive's first-page image (`GET /api/documents/{id}/thumbnail`).
 
 Aegis supports individual logins into one shared household (the two persons and an assistant account that
 receives notices and can own tasks but is never what a document is about,

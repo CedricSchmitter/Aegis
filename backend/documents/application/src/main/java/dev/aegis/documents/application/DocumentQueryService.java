@@ -14,6 +14,7 @@ import dev.aegis.documents.application.api.DocumentSearchRequest;
 import dev.aegis.documents.application.api.DocumentSearchResult;
 import dev.aegis.documents.application.api.DocumentStatusQuery;
 import dev.aegis.documents.application.api.DocumentSummary;
+import dev.aegis.documents.application.api.DocumentThumbnail;
 import dev.aegis.documents.application.api.FacetCounts;
 import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.api.OriginalUnavailableException;
@@ -170,6 +171,16 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
                 .orElseThrow(() -> new NotFoundException("archivePdf", id.toString()));
         return new ArchivePdf(FriendlyFilename.withExtensionFor(friendlyFilename(document), "application/pdf"),
                 bytes);
+    }
+
+    @Override
+    public DocumentThumbnail thumbnail(Actor actor, DocumentId id) {
+        access.requireMember(actor);
+        Document document = load(id);
+        if (document.state() != ProcessingState.ARCHIVED) {
+            throw new NotFoundException("thumbnail", id.toString());
+        }
+        return archive.fetchThumbnail(document.paperlessDocumentId().orElseThrow());
     }
 
     @Override

@@ -88,7 +88,6 @@
     "title": "Dokumente",
     "upload": "Dokument hochladen",
     "uploadSubmit": "Speichern",
-    "uploadHint": "Fotos werden zu Seiten eines PDF; eine Datei (PDF oder Foto, bis 50 MB) bleibt unverändert.",
     "takePhoto": "Foto aufnehmen",
     "chooseImage": "Fotos aus Galerie scannen",
     "chooseFile": "Datei unverändert hochladen",
@@ -106,8 +105,6 @@
     "contentSearchUnavailable": "Das Archiv ist gerade nicht erreichbar: Es werden nur Titeltreffer angezeigt, die Liste kann unvollständig sein.",
     "empty": "Noch keine Dokumente. Lade das erste PDF hoch oder fotografiere einen Brief.",
     "noResults": "Keine Treffer für „{{query}}“.",
-    "count": "{{count}} Dokumente",
-    "count_one": "{{count}} Dokument",
     "uploadedBy": "Hochgeladen von {{name}} am {{date}}",
     "original": "Original öffnen",
     "download": "Original herunterladen",
@@ -133,8 +130,6 @@
     "retryDone": "Die Archivierung wurde neu eingeplant.",
     "checksum": "SHA-256",
     "technicalDetails": "Technische Angaben",
-    "size": "{{size}}",
-    "paperlessId": "Paperless-Nr. {{id}}",
     "archivedAt": "Archiviert am {{date}}",
     "attempts": "Versuche: {{count}}",
     "nextAttempt": "Nächster Versuch: {{date}}",
@@ -159,7 +154,6 @@
     "folders": "Ordner",
     "manageFolders": "Ordner verwalten",
     "manageLabels": "Labels verwalten",
-    "allDocuments": "Alle Dokumente",
     "unsorted": "Unsortiert",
     "unsortedHint": "Hier landen neue Uploads, solange sie keinem Ordner zugeordnet sind.",
     "filters": "Filter",
@@ -208,7 +202,48 @@
     "renameTitle": "Titel ändern",
     "renamed": "Titel geändert.",
     "inheritedFromFolder": "Aus dem Ordner übernommen; ändert sich beim Verschieben mit.",
-    "linkedContracts": "Verträge aus diesem Dokument"
+    "linkedContracts": "Verträge aus diesem Dokument",
+    "total": "{{count}} gesamt",
+    "total_one": "{{count}} gesamt",
+    "allShort": "Alle",
+    "folderPath": "Ordnerpfad",
+    "folderEmpty": "In diesem Ordner liegen keine Dokumente.",
+    "resultsFor": "für „{{query}}“",
+    "activeFilters": "Aktive Filter",
+    "showResults": "{{count}} Treffer zeigen",
+    "showResults_one": "{{count}} Treffer zeigen",
+    "continueScan": "Scan fortsetzen · {{count}} Seiten",
+    "continueScan_one": "Scan fortsetzen · {{count}} Seite",
+    "dropToUpload": "Datei hierher ziehen zum Hochladen",
+    "column": {
+      "type": "Typ",
+      "name": "Name · Ordner",
+      "state": "Zustand",
+      "date": "Datum"
+    },
+    "preview": {
+      "title": "Vorschau",
+      "alt": "Erste Seite von „{{title}}“",
+      "pending": "Die Vorschau erscheint, sobald das Dokument archiviert ist.",
+      "none": "Keine Vorschau verfügbar."
+    },
+    "viewer": "Dokument „{{title}}“",
+    "openLarge": "Groß öffnen",
+    "noLabels": "Noch keine Labels.",
+    "processing": "Verarbeitung",
+    "fromFolderShort": "Aus dem Ordner:",
+    "titleSection": "Titel und Datei",
+    "fileName": "Dateiname",
+    "fileSize": "Größe",
+    "paperlessNumber": "Paperless-Nr.",
+    "capture": {
+      "photoHint": "Wird ein gerades, gut lesbares PDF",
+      "galleryHint": "Mehrere Fotos werden Seiten eines PDF",
+      "fileHint": "PDF oder Foto, bis 50 MB. Die Datei bleibt, wie sie ist.",
+      "dropTitle": "Datei hier ablegen",
+      "chooseFile": "Datei wählen",
+      "photosAsScan": "Fotos als Scan"
+    }
   },
   "subjects": {
     "HOUSE": "Haus",
@@ -940,7 +975,14 @@
     "hintORGANIZATION": "Absender oder Anbieter, zum Beispiel Telekom.",
     "hintTOPIC": "Worum es geht, zum Beispiel Internet.",
     "hintTAG": "Freie Stichworte für alles Weitere.",
-    "hintSUBJECT": "Wen oder was es betrifft."
+    "hintSUBJECT": "Wen oder was es betrifft.",
+    "short": {
+      "DOCUMENT_TYPE": "Typ",
+      "ORGANIZATION": "Org",
+      "TOPIC": "Thema",
+      "TAG": "Stichwort",
+      "SUBJECT": "Betrifft"
+    }
   },
   "labels": {
     "title": "Labels",

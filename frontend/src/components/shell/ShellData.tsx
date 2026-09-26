@@ -7,6 +7,10 @@ import { summarizeStatus, type StatusSummary } from "../../lib/shellStatus";
 
 /** The width from which the desktop shell (sidebar, header search, status bar) replaces the phone shell. */
 export const DESKTOP_QUERY = "(min-width: 1024px)";
+/** The width from which the context panel is shown as the third column (ADR-0019, decision 14). */
+export const PANEL_QUERY = "(min-width: 1280px)";
+/** Sent after uploads and moves, so the folder counts of the sidebar follow at once. */
+export const CATALOG_CHANGED = "aegis:catalog-changed";
 
 interface ShellData {
   status: StatusSummary;
@@ -23,16 +27,21 @@ const ShellDataContext = createContext<ShellData | null>(null);
 // A failed shell request keeps the last known value; the page itself reports its own failures.
 const ignore = () => undefined;
 
-export function useDesktop(): boolean {
-  const [desktop, setDesktop] = useState(() => typeof window.matchMedia === "function" && window.matchMedia(DESKTOP_QUERY).matches);
+export function useMediaQuery(media: string): boolean {
+  const [matches, setMatches] = useState(() => typeof window.matchMedia === "function" && window.matchMedia(media).matches);
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
-    const query = window.matchMedia(DESKTOP_QUERY);
-    const update = () => setDesktop(query.matches);
+    const query = window.matchMedia(media);
+    const update = () => setMatches(query.matches);
+    update();
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
-  }, []);
-  return desktop;
+  }, [media]);
+  return matches;
+}
+
+export function useDesktop(): boolean {
+  return useMediaQuery(DESKTOP_QUERY);
 }
 
 /** Runs `load` now, on an interval while the tab is visible, and again when the tab becomes visible. */
@@ -90,7 +99,14 @@ export function ShellDataProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(INBOX_CHANGED, loadInbox);
   }, [loadInbox]);
 
-  // Folder counts change with uploads, moves and the trash, so the sidebar refreshes them on every page change.
+  // Folder counts change with uploads, moves and the trash, so the sidebar refreshes them on every page change and
+  // when a page reports a change.
+  const [catalogChanges, setCatalogChanges] = useState(0);
+  useEffect(() => {
+    const onChange = () => setCatalogChanges((count) => count + 1);
+    window.addEventListener(CATALOG_CHANGED, onChange);
+    return () => window.removeEventListener(CATALOG_CHANGED, onChange);
+  }, []);
   useEffect(() => {
     if (!desktop) return;
     let active = true;
@@ -100,7 +116,7 @@ export function ShellDataProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [desktop, pathname]);
+  }, [desktop, pathname, catalogChanges]);
 
   useEffect(() => {
     void api.GET("/api/system/version").then((result) => setVersion(result.data?.commit ?? ""), ignore);

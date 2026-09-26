@@ -133,6 +133,17 @@ public class FakePaperlessArchive implements PaperlessArchive {
         return java.util.Optional.ofNullable(stored.archivePdf());
     }
 
+    /** A WebP header stands in for the first-page image Paperless renders for every stored document. */
+    @Override
+    public dev.aegis.documents.application.api.DocumentThumbnail fetchThumbnail(int paperlessDocumentId) {
+        requireAvailable();
+        if (!documents.containsKey(paperlessDocumentId)) {
+            throw new ArchiveUnavailableException("no document " + paperlessDocumentId);
+        }
+        return new dev.aegis.documents.application.api.DocumentThumbnail("image/webp",
+                "RIFF\0\0\0\0WEBPVP8 thumbnail".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+    }
+
     @Override
     public String fetchContent(int paperlessDocumentId) {
         requireAvailable();

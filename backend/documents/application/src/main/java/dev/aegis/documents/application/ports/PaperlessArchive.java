@@ -1,5 +1,6 @@
 package dev.aegis.documents.application.ports;
 
+import dev.aegis.documents.application.api.DocumentThumbnail;
 import dev.aegis.documents.application.api.OriginalContent;
 import java.nio.file.Path;
 import java.util.List;
@@ -59,6 +60,12 @@ public interface PaperlessArchive {
      * exported, because the archive can generate it again.
      */
     Optional<byte[]> fetchArchivePdf(int paperlessDocumentId);
+
+    /**
+     * The image of the first page the archive renders for every document it stores, for previews. Only image types
+     * the adapter recognized from the bytes are returned; anything else counts as the archive being unavailable.
+     */
+    DocumentThumbnail fetchThumbnail(int paperlessDocumentId);
 
     /** OCR text of an archived document as extracted by the archive; empty when it found no text. */
     String fetchContent(int paperlessDocumentId);

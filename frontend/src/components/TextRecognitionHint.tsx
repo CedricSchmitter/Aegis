@@ -35,14 +35,14 @@ export function TextRecognitionHint({ document }: { document: DocumentDto }) {
   }
   if (recognition.state === "PENDING") {
     return (
-      <p className="text-sm text-stone-600 dark:text-stone-400" data-testid="text-pending">
+      <p className="text-sm text-text-3" data-testid="text-pending">
         {t("documents.text.pending")}
       </p>
     );
   }
   if (recognition.state === "UNAVAILABLE") {
     return (
-      <p className="text-sm text-stone-600 dark:text-stone-400" data-testid="text-unavailable">
+      <p className="text-sm text-text-3" data-testid="text-unavailable">
         {t("documents.text.unavailable", { date: formatDateTime(recognition.nextAttemptAt, i18n.language) })}
       </p>
     );

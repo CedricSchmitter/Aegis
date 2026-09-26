@@ -3,6 +3,7 @@ import {
   DEFAULT_SIZE,
   EMPTY_FILTERS,
   activeFilterCount,
+  facetFilterCount,
   facetParam,
   parseFilters,
   selectedValues,
@@ -10,6 +11,7 @@ import {
   toApiQuery,
   toSearchParams,
   toggleValue,
+  withoutFacets,
   withoutFilters,
   type CatalogFilters,
 } from "./catalogSearch";
@@ -83,5 +85,19 @@ describe("catalog search state", () => {
     expect(showsFacetGroup([], false)).toBe(false);
     expect(showsFacetGroup([], true)).toBe(true);
     expect(showsFacetGroup(["tag-a"], false)).toBe(true);
+  });
+});
+
+describe("filter panel", () => {
+  it("counts only the values chosen in the panel and clears them without leaving the folder or the search", () => {
+    expect(facetFilterCount(filters)).toBe(7);
+    expect(facetFilterCount(EMPTY_FILTERS)).toBe(0);
+    expect(withoutFacets(filters)).toEqual({
+      ...EMPTY_FILTERS,
+      query: filters.query,
+      category: filters.category,
+      subfolders: false,
+      sort: "TITLE",
+    });
   });
 });

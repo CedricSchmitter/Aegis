@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { openDocument, openUpload, searchDocuments } from "./documents";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.resolve(here, "../../fixtures/synthetic-contract.pdf");
@@ -30,17 +31,6 @@ async function ensureGerman(page: Page) {
   await page.goto(back);
 }
 
-/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
-async function openUpload(page: Page) {
-  // The panel's first state follows the folder catalog, so decide only once that has loaded.
-  await expect(page.getByTestId("folder-all")).toBeAttached();
-  const panel = page.getByTestId("upload-panel");
-  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
-    await page.getByTestId("upload-panel-toggle").click();
-  }
-  await expect(panel).toHaveAttribute("open", "");
-}
-
 test.describe("recoverable trash", () => {
   test.skip(!userA.password, "AEGIS_PASSWORD_A must be set");
 
@@ -58,7 +48,7 @@ test.describe("recoverable trash", () => {
     await page.getByTestId("upload-submit").click();
     const card = page.locator("[data-testid=document-card]", { hasText: title }).first();
     await expect(card).toBeVisible();
-    await card.getByRole("link").first().click();
+    await openDocument(card);
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 300_000 });
 
     // Someone else changed the document first: the member is told so, and the reload that follows keeps the message.
@@ -97,8 +87,7 @@ test.describe("recoverable trash", () => {
     await expect(page.getByTestId("rename-document")).toHaveCount(0);
 
     await page.goto("/documents");
-    await page.getByTestId("search-input").fill(title);
-    await page.getByRole("button", { name: "Suchen" }).click();
+    await searchDocuments(page, title);
     await expect(page.locator("[data-testid=document-card]", { hasText: title })).toHaveCount(0);
 
     await page.goto("/trash");
@@ -109,8 +98,7 @@ test.describe("recoverable trash", () => {
     await expect(page.locator("[data-testid=trash-entry]", { hasText: title })).toHaveCount(0);
 
     await page.goto("/documents");
-    await page.getByTestId("search-input").fill(title);
-    await page.getByRole("button", { name: "Suchen" }).click();
+    await searchDocuments(page, title);
     await expect(page.locator("[data-testid=document-card]", { hasText: title })).toBeVisible();
   });
 });

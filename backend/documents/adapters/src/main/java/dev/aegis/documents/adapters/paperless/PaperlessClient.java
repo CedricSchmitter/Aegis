@@ -1,5 +1,6 @@
 package dev.aegis.documents.adapters.paperless;
 
+import dev.aegis.documents.application.api.DocumentThumbnail;
 import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.ports.ArchiveRejectedException;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
@@ -188,6 +189,36 @@ public class PaperlessClient implements PaperlessArchive {
         } catch (ResourceAccessException e) {
             throw new ArchiveUnavailableException("Paperless unreachable: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Paperless renders a WebP thumbnail of the first page when it consumes a document (PNG in older versions). The
+     * type is taken from the bytes, never from the answer's header, so nothing but an image is ever served onward.
+     */
+    @Override
+    public DocumentThumbnail fetchThumbnail(int paperlessDocumentId) {
+        try {
+            byte[] bytes = client.get().uri("/api/documents/{id}/thumb/", paperlessDocumentId).retrieve()
+                    .body(byte[].class);
+            byte[] image = bytes == null ? new byte[0] : bytes;
+            return new DocumentThumbnail(thumbnailType(image).orElseThrow(() -> new ArchiveUnavailableException(
+                    "Paperless did not return an image thumbnail of document " + paperlessDocumentId)), image);
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().value() == 404) {
+                throw new ArchiveUnavailableException("Paperless no longer lists document " + paperlessDocumentId);
+            }
+            throw translate(e);
+        } catch (ResourceAccessException e) {
+            throw new ArchiveUnavailableException("Paperless unreachable: " + e.getMessage(), e);
+        }
+    }
+
+    /** WebP, PNG or JPEG by their signatures; anything else is not a thumbnail. */
+    static Optional<String> thumbnailType(byte[] bytes) {
+        return OriginalFormat.detect(Arrays.copyOf(bytes, Math.min(bytes.length, OriginalFormat.SIGNATURE_LENGTH)))
+                .filter(format -> format == OriginalFormat.WEBP || format == OriginalFormat.PNG
+                        || format == OriginalFormat.JPEG)
+                .map(OriginalFormat::contentType);
     }
 
     @Override

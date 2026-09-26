@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CategoryDto } from "../api/types";
-import { ancestorsOf, buildTree, findNode, flatten, isInSubtree, pathOf, subtreeCount, subtreeIds } from "./tree";
+import { ancestorsOf, buildTree, findNode, flatten, isInSubtree, pathOf, railFolders, subtreeCount, subtreeIds } from "./tree";
 
 function folder(id: string, parentId: string | null, name: string, documentCount = 0): CategoryDto {
   return {
@@ -59,5 +59,18 @@ describe("folder tree", () => {
     expect(isInSubtree(roots, "house", "internet")).toBe(false);
     expect(isInSubtree(roots, "house", "house")).toBe(true);
     expect(findNode(roots, "missing")).toBeNull();
+  });
+});
+
+describe("folder rail", () => {
+  const names = (selected: string | null) => railFolders(categories, selected).map((node) => node.category.name);
+
+  it("offers the top level, the subfolders of a parent and the siblings of a leaf", () => {
+    expect(names(null)).toEqual(["Auto", "Haus"]);
+    expect(names("unsorted")).toEqual(["Auto", "Haus"]);
+    expect(names("house")).toEqual(["Rechnungen"]);
+    expect(names("invoices")).toEqual(["Internet", "Wasser"]);
+    expect(names("water")).toEqual(["Internet", "Wasser"]);
+    expect(names("car")).toEqual(["Auto", "Haus"]);
   });
 });
