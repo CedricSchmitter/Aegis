@@ -62,20 +62,23 @@ test.describe("recoverable trash", () => {
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 300_000 });
 
     // Someone else changed the document first: the member is told so, and the reload that follows keeps the message.
+    // The flag is set in the route handler, which runs before the page can reload; the response event of a fulfilled
+    // route may arrive after the reload's own response.
+    let conflicted = false;
     await page.route(
       "**/api/documents/*/trash",
-      (route) =>
-        route.fulfill({
+      (route) => {
+        conflicted = true;
+        return route.fulfill({
           status: 409,
           contentType: "application/problem+json",
           body: JSON.stringify({ status: 409, title: "Conflict", code: "version.conflict", resource: "document" }),
-        }),
+        });
+      },
       { times: 1 },
     );
-    let conflicted = false;
     const reloaded = page.waitForResponse((response) => {
       const pathname = new URL(response.url()).pathname;
-      if (pathname.endsWith("/trash")) conflicted = true;
       return conflicted && response.request().method() === "GET" && /^\/api\/documents\/[^/]+$/.test(pathname);
     });
     await page.getByTestId("trash-document").click();

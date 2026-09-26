@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
@@ -6,21 +6,37 @@ import { useSession } from "../auth/SessionContext";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { ErrorBox, InfoBox, PageTitle } from "../components/common";
 import { SegmentedControl, Switch } from "../components/ui";
-import { applyAppearance, PALETTES, readAppearance, type Appearance } from "../lib/appearance";
+import { PALETTES, type Appearance } from "../lib/appearance";
 import { problemMessage } from "../lib/problem";
 
 const PALETTE_NAMES = { streetkid: "Streetkid", corpo: "Corpo", nomad: "Nomad" } as const;
 
-/** Temporary preview of palette and effects (issue #27); PR 2 stores the choice per member. */
-function AppearancePreview() {
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(
+    () => typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return reduced;
+}
+
+/** Palette and effects, stored for the member like the language (issue #27, ADR-0019). */
+function AppearanceSettings() {
   const { t } = useTranslation();
-  const [appearance, setAppearance] = useState<Appearance>(() => readAppearance(document.documentElement));
+  const { appearance, changeAppearance } = useSession();
+  const reducedMotion = usePrefersReducedMotion();
+  const [error, setError] = useState<string | null>(null);
   const change = (next: Appearance) => {
-    applyAppearance(document.documentElement, next);
-    setAppearance(next);
+    setError(null);
+    changeAppearance(next).catch(() => setError(t("settings.appearance.saveFailed")));
   };
   return (
-    <section className="card mb-4 flex flex-col gap-3" data-testid="appearance-preview">
+    <section className="card mb-4 flex flex-col gap-3" data-testid="appearance-settings">
       <h2 className="font-semibold">{t("settings.appearance.title")}</h2>
       <SegmentedControl
         label={t("settings.appearance.palette")}
@@ -39,7 +55,13 @@ function AppearancePreview() {
       <Switch checked={appearance.effects} onChange={(effects) => change({ ...appearance, effects })} description={t("settings.appearance.effectsHint")}>
         {t("settings.appearance.effects")}
       </Switch>
-      <p className="text-xs text-text-3">{t("settings.appearance.previewNote")}</p>
+      {reducedMotion && appearance.effects && (
+        <p className="text-sm text-text-3" data-testid="reduced-motion-note">
+          {t("settings.appearance.reducedMotion")}
+        </p>
+      )}
+      <ErrorBox message={error} />
+      <p className="text-xs text-text-3">{t("settings.appearance.savedNote")}</p>
     </section>
   );
 }
@@ -79,7 +101,7 @@ export function SettingsPage() {
           <span className="text-xs text-stone-500">{t("settings.localeSaved")}</span>
         </div>
       </section>
-      <AppearancePreview />
+      <AppearanceSettings />
       <section className="card mb-4 flex flex-col gap-2">
         <h2 className="font-semibold">{t("trash.title")}</h2>
         <p className="text-sm text-stone-600 dark:text-stone-400">{t("trash.intro")}</p>

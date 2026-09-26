@@ -53,9 +53,13 @@ export function DocumentsPage() {
   const [uploadSubjects, setUploadSubjects] = useState<string[]>([]);
   const [uploadFolder, setUploadFolder] = useState<string | null>(null);
   const [showFolders, setShowFolders] = useState(false);
-  // "Upload a new photo" on a document without recognized text opens the upload panel; read once, so filter changes
-  // that rewrite the query never close it under the member's hands.
-  const [uploadOpen] = useState(() => params.get("upload") === "1");
+  // "Upload a new photo" on a document without recognized text and "Hochladen" in the desktop sidebar open the upload
+  // panel. Filter changes that rewrite the query never close it under the member's hands.
+  const uploadRequested = params.get("upload") === "1";
+  const [uploadOpen, setUploadOpen] = useState(uploadRequested);
+  useEffect(() => {
+    if (uploadRequested) setUploadOpen(true);
+  }, [uploadRequested]);
   // On first use the collection is empty and uploading is the only thing to do, so the panel starts open. It stays
   // open after the first upload instead of closing under the member's hands.
   const [firstUse, setFirstUse] = useState(false);

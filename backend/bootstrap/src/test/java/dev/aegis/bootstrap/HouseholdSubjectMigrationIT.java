@@ -221,7 +221,7 @@ class HouseholdSubjectMigrationIT extends PostgresIT {
         assertThat(freshMembers.path("members")).extracting(member -> member.path("username").asText() + ":"
                 + member.path("kind").asText()).contains("anna:PERSON", "ben:PERSON", "helper:ASSISTANT");
         assertThat(json.readTree(Files.readAllBytes(Path.of(fresh.location()).resolve("manifest.json")))
-                .path("schemaVersion").asInt()).isEqualTo(9);
+                .path("schemaVersion").asInt()).isGreaterThanOrEqualTo(9);
         assertThat(Files.readString(Path.of(fresh.location()).resolve("data/documents.json")))
                 .doesNotContain("HOUSEHOLD");
     }

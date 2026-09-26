@@ -18,7 +18,14 @@ import dev.aegis.documents.application.api.LabelView;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.application.api.UploadDocument;
 import dev.aegis.documents.application.api.UploadDocument.UploadCommand;
+import dev.aegis.identity.application.api.MemberAppearance;
+import dev.aegis.identity.application.api.MemberAppearance.Palette;
 import dev.aegis.identity.application.api.MemberCredentialsQuery;
+import dev.aegis.identity.application.api.MemberDirectory;
+import dev.aegis.identity.application.api.MemberPreferences;
+import dev.aegis.identity.application.api.ProvisionMembers;
+import dev.aegis.identity.application.api.ProvisionMembers.ProvisionMemberCommand;
+import dev.aegis.shared.ProductLocale;
 import dev.aegis.planning.application.api.TaskCommands;
 import dev.aegis.planning.application.api.TaskCommands.CreateTaskCommand;
 import dev.aegis.planning.application.api.TaskQueries;
@@ -71,6 +78,12 @@ class RestoreIT extends PostgresIT {
     FakePaperlessArchive archive;
     @Autowired
     dev.aegis.documents.application.api.DocumentAnalysisCommands analysisCommands;
+    @Autowired
+    ProvisionMembers provisioning;
+    @Autowired
+    MemberPreferences preferences;
+    @Autowired
+    MemberDirectory directory;
 
     @Test
     void restoreIntoWipedInstancePreservesIdsAndSourceLinksDespiteNewExternalIds() throws Exception {
@@ -209,6 +222,40 @@ class RestoreIT extends PostgresIT {
             assertThat(documentQueries.original(ben, documentId).bytes()).isEqualTo(pdf);
         } finally {
             archive.available = true;
+        }
+    }
+
+    /**
+     * Schema 10 exports each member's palette and effects. A member the restore has to create gets the exported look;
+     * a member who already exists keeps their own choice, like their locale.
+     */
+    @Test
+    void membersCreatedByARestoreGetTheirExportedAppearanceAndExistingMembersKeepTheirs() throws Exception {
+        Actor anna = new Actor(members.findCredentials(ANNA).orElseThrow().id());
+        provisioning.ensureMember(new ProvisionMemberCommand("carla", "Carla", PASSWORD, ProductLocale.EN, null,
+                new MemberAppearance(Palette.CORPO, false)));
+        try {
+            preferences.changeAppearance(anna, new MemberAppearance(Palette.NOMAD, true));
+            ExportSummary export = createExport.export(anna);
+            String exported = Files.readString(Path.of(export.location()).resolve("data/members.json"));
+            // Pretty-printed JSON: allow spaces around the colons.
+            assertThat(exported).containsPattern("\"schemaVersion\"\\s*:\\s*10")
+                    .containsPattern("\"palette\"\\s*:\\s*\"CORPO\"")
+                    .containsPattern("\"palette\"\\s*:\\s*\"NOMAD\"")
+                    .containsPattern("\"effects\"\\s*:\\s*false");
+
+            jdbc.update("DELETE FROM members WHERE username = 'carla'");
+            preferences.changeAppearance(anna, new MemberAppearance(Palette.STREETKID, false));
+            restore.restore(anna, export.location());
+
+            var carla = directory.listMembers(anna).stream().filter(m -> m.username().equals("carla")).findFirst();
+            assertThat(carla).as("created by the restore").isPresent();
+            assertThat(carla.orElseThrow().appearance()).isEqualTo(new MemberAppearance(Palette.CORPO, false));
+            assertThat(preferences.currentMember(anna).appearance()).as("an existing member keeps their own look")
+                    .isEqualTo(new MemberAppearance(Palette.STREETKID, false));
+        } finally {
+            jdbc.update("DELETE FROM members WHERE username = 'carla'");
+            preferences.changeAppearance(anna, MemberAppearance.DEFAULT);
         }
     }
 }

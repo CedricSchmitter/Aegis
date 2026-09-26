@@ -20,17 +20,19 @@ public final class Member {
     private String displayName;
     private PasswordHash passwordHash;
     private ProductLocale locale;
+    private Appearance appearance;
     private boolean active;
     private MemberKind kind;
     private final Instant createdAt;
 
     private Member(MemberId id, Username username, String displayName, PasswordHash passwordHash, ProductLocale locale,
-            boolean active, MemberKind kind, Instant createdAt) {
+            Appearance appearance, boolean active, MemberKind kind, Instant createdAt) {
         this.id = Objects.requireNonNull(id);
         this.username = Objects.requireNonNull(username);
         this.displayName = requireDisplayName(displayName);
         this.passwordHash = Objects.requireNonNull(passwordHash);
         this.locale = Objects.requireNonNull(locale);
+        this.appearance = Objects.requireNonNull(appearance);
         this.active = active;
         this.kind = Objects.requireNonNull(kind);
         this.createdAt = Objects.requireNonNull(createdAt);
@@ -44,14 +46,14 @@ public final class Member {
     public static Member register(Username username, String displayName, String plainPassword, PasswordHasher hasher,
             ProductLocale locale, MemberKind kind, Instant now) {
         requirePasswordPolicy(plainPassword);
-        return new Member(MemberId.random(), username, displayName, hasher.hash(plainPassword), locale, true, kind,
-                now);
+        return new Member(MemberId.random(), username, displayName, hasher.hash(plainPassword), locale,
+                Appearance.DEFAULT, true, kind, now);
     }
 
     /** Rehydrates a persisted member without re-validating credentials. */
     public static Member rehydrate(MemberId id, Username username, String displayName, PasswordHash passwordHash,
-            ProductLocale locale, boolean active, MemberKind kind, Instant createdAt) {
-        return new Member(id, username, displayName, passwordHash, locale, active, kind, createdAt);
+            ProductLocale locale, Appearance appearance, boolean active, MemberKind kind, Instant createdAt) {
+        return new Member(id, username, displayName, passwordHash, locale, appearance, active, kind, createdAt);
     }
 
     public boolean passwordMatches(String plainPassword, PasswordHasher hasher) {
@@ -68,6 +70,11 @@ public final class Member {
 
     public void changeLocale(ProductLocale newLocale) {
         this.locale = Objects.requireNonNull(newLocale);
+    }
+
+    /** Palette and effects are the member's own choice, like the locale; they never affect other members. */
+    public void changeAppearance(Appearance newAppearance) {
+        this.appearance = Objects.requireNonNull(newAppearance);
     }
 
     public void rename(String newDisplayName) {
@@ -112,6 +119,10 @@ public final class Member {
 
     public ProductLocale locale() {
         return locale;
+    }
+
+    public Appearance appearance() {
+        return appearance;
     }
 
     public boolean isActive() {

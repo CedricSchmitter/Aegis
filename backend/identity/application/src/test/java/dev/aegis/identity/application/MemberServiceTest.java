@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import dev.aegis.identity.application.api.DesignateAssistants.Designation;
 import dev.aegis.identity.application.api.DesignateAssistants.Outcome;
+import dev.aegis.identity.application.api.MemberAppearance;
+import dev.aegis.identity.application.api.MemberAppearance.Palette;
 import dev.aegis.identity.application.api.MemberKind;
 import dev.aegis.identity.application.api.MemberSummary;
 import dev.aegis.identity.application.api.ProvisionMembers.ProvisionMemberCommand;
@@ -13,6 +15,7 @@ import dev.aegis.identity.application.api.ProvisionMembers.ProvisioningOutcome;
 import dev.aegis.identity.domain.PasswordHash;
 import dev.aegis.identity.domain.PasswordHasher;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.NotAuthorizedException;
 import dev.aegis.shared.ProductLocale;
@@ -118,5 +121,44 @@ class MemberServiceTest {
 
         assertThat(service.listMembers(lisa)).filteredOn(MemberSummary::isPerson).extracting(MemberSummary::username)
                 .containsExactly("lisa");
+    }
+
+    @Test
+    void appearanceIsStoredForTheActingMemberOnly() {
+        service.ensureMember(new ProvisionMemberCommand("anna", "Anna", "initial-password", ProductLocale.DE));
+        service.ensureMember(new ProvisionMemberCommand("ben", "Ben", "initial-password", ProductLocale.EN));
+        Actor anna = new Actor(service.findCredentials("anna").orElseThrow().id());
+        Actor ben = new Actor(service.findCredentials("ben").orElseThrow().id());
+        assertThat(service.currentMember(anna).appearance()).isEqualTo(MemberAppearance.DEFAULT);
+
+        var updated = service.changeAppearance(anna, new MemberAppearance(Palette.NOMAD, false));
+
+        assertThat(updated.appearance()).isEqualTo(new MemberAppearance(Palette.NOMAD, false));
+        assertThat(updated.locale()).isEqualTo(ProductLocale.DE);
+        assertThat(service.currentMember(anna).appearance()).isEqualTo(new MemberAppearance(Palette.NOMAD, false));
+        assertThat(service.currentMember(ben).appearance()).isEqualTo(MemberAppearance.DEFAULT);
+    }
+
+    @Test
+    void appearanceChangeNeedsAMemberAndAValue() {
+        service.ensureMember(new ProvisionMemberCommand("anna", "Anna", "initial-password", ProductLocale.DE));
+        Actor anna = new Actor(service.findCredentials("anna").orElseThrow().id());
+
+        assertThatThrownBy(() -> service.changeAppearance(new Actor(MemberId.random()),
+                new MemberAppearance(Palette.CORPO, true))).isInstanceOf(NotAuthorizedException.class);
+        assertThatThrownBy(() -> service.changeAppearance(anna, null)).isInstanceOf(InvalidInputException.class);
+        assertThat(service.currentMember(anna).appearance()).isEqualTo(MemberAppearance.DEFAULT);
+    }
+
+    @Test
+    void provisioningKeepsAnExportedAppearance() {
+        service.ensureMember(new ProvisionMemberCommand("carla", "Carla", "initial-password", ProductLocale.EN,
+                null, new MemberAppearance(Palette.CORPO, false)));
+        service.ensureMember(new ProvisionMemberCommand("anna", "Anna", "initial-password", ProductLocale.DE));
+        Actor anna = new Actor(service.findCredentials("anna").orElseThrow().id());
+
+        assertThat(service.listMembers(anna)).extracting(MemberSummary::username, MemberSummary::appearance)
+                .containsExactly(tuple("carla", new MemberAppearance(Palette.CORPO, false)),
+                        tuple("anna", MemberAppearance.DEFAULT));
     }
 }

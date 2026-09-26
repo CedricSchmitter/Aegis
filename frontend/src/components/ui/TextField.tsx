@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type ReactNode } from "react";
+import { useId, type ComponentProps, type InputHTMLAttributes, type ReactNode } from "react";
 
 type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: ReactNode;
@@ -33,7 +33,8 @@ export function TextField({ label, hint, error, id, className, ...props }: TextF
   );
 }
 
-type SearchFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
+/** Also takes a `ref` to the input (React 19 passes it as a prop), for example for a Ctrl+K shortcut. */
+type SearchFieldProps = Omit<ComponentProps<"input">, "type"> & {
   /** Accessible name; the field has no visible label. */
   label: string;
   /** Keyboard shortcut hint such as "Ctrl K", shown on wide screens only. */

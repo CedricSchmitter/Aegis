@@ -1,136 +1,96 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { NavLink, useNavigate } from "react-router";
+import type { ReactNode } from "react";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api } from "../api/client";
-import { useSession } from "../auth/SessionContext";
-import { INBOX_CHANGED } from "../lib/inbox";
 import { PendingShares } from "./PendingShares";
 import { Wordmark } from "./ui";
+import { AvatarMenu } from "./shell/AvatarMenu";
+import { ContextPanelColumn, ContextPanelProvider, useContextPanelSlot } from "./shell/ContextPanel";
+import { HeaderSearch } from "./shell/HeaderSearch";
+import { Icon } from "./shell/icons";
+import { BottomNav, Sidebar } from "./shell/Navigation";
+import { ShellDataProvider, useShellData } from "./shell/ShellData";
+import { StatusBar } from "./shell/StatusBar";
+import { StatusIndicator } from "./shell/StatusIndicator";
 
-const NAV = [
-  { to: "/today", key: "nav.today" },
-  { to: "/documents", key: "nav.documents" },
-  { to: "/contracts", key: "nav.contracts" },
-  { to: "/tasks", key: "nav.tasks" },
-  { to: "/inbox", key: "nav.inbox" },
-  { to: "/status", key: "nav.status" },
-] as const;
-
-export function Layout({ children }: { children: ReactNode }) {
+/** The inbox in the desktop header, with the count of open cards and unread messages. */
+function HeaderInbox() {
   const { t } = useTranslation();
-  const { member, logout } = useSession();
-  const navigate = useNavigate();
-  // Open review cards plus unread messages (issue #83); notices announcing a card are shown as the card. Each count
-  // is kept on its own, so one failed request leaves the other count current.
-  const [openCards, setOpenCards] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  const pending = openCards + unreadMessages;
-  const [version, setVersion] = useState<string>("");
+  const { pending } = useShellData();
+  return (
+    <Link
+      to="/inbox"
+      className="relative grid h-11 w-11 flex-none place-items-center text-text-2 hover:text-text-1"
+      aria-label={pending > 0 ? `${t("nav.inbox")}: ${t("nav.pendingCount", { count: pending })}` : t("nav.inbox")}
+      data-testid="header-inbox"
+    >
+      <Icon name="bell" className="h-[22px] w-[22px]" />
+      {pending > 0 && (
+        <span className="absolute top-1 right-0 grid h-[18px] min-w-[18px] place-items-center bg-action px-1 font-mono text-[11px] text-void" aria-hidden="true">
+          {pending}
+        </span>
+      )}
+    </Link>
+  );
+}
 
-  useEffect(() => {
-    let active = true;
-    const ignore = () => undefined;
-    const load = () => {
-      void api.GET("/api/reviews/open-count").then((cards) => {
-        if (active && cards.data) setOpenCards(cards.data.open);
-      }, ignore);
-      void api.GET("/api/notices/unread-count").then((messages) => {
-        if (active && messages.data) setUnreadMessages(messages.data.unread);
-      }, ignore);
-    };
-    load();
-    const timer = window.setInterval(load, 30000);
-    window.addEventListener(INBOX_CHANGED, load);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-      window.removeEventListener(INBOX_CHANGED, load);
-    };
-  }, []);
+/**
+ * The application shell (issue #27, ADR-0019). On a phone: a header with the wordmark and the avatar, the page, and a
+ * tab bar with the five areas. From 1024 px: a header with search, status and inbox, a sidebar, the work area, a
+ * context panel from 1280 px while a page fills it, and a status bar.
+ */
+export function Layout({ children }: { children: ReactNode }) {
+  return (
+    <ShellDataProvider>
+      <Shell>{children}</Shell>
+    </ShellDataProvider>
+  );
+}
 
-  useEffect(() => {
-    void api.GET("/api/system/version").then((r) => setVersion(r.data?.commit ?? ""));
-  }, []);
-
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `relative rounded-lg px-3 py-2 text-sm font-medium ${
-      isActive
-        ? "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100"
-        : "text-stone-700 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
-    }`;
+function Shell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const { slot, filled, setTarget } = useContextPanelSlot();
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-surface focus:p-2">
-        {t("app.skipToContent")}
-      </a>
-      <header className="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2">
-          <div className="flex items-center gap-3">
+    <ContextPanelProvider slot={slot}>
+      <div className="flex min-h-dvh flex-col">
+        <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-surface focus:p-2">
+          {t("app.skipToContent")}
+        </a>
+        <header className="sticky top-0 z-40 flex h-14 flex-none items-center gap-2.5 border-b border-line bg-surface px-3.5 lg:gap-4.5 lg:px-4">
+          <Link to="/today" className="flex min-h-11 items-center lg:w-[200px]" aria-label={t("shell.home")}>
             <Wordmark />
-            <nav aria-label={t("nav.menu")} className="hidden gap-1 md:flex">
-              {NAV.map((item) => (
-                <NavLink key={item.to} to={item.to} className={linkClass}>
-                  {t(item.key)}
-                  {item.to === "/inbox" && pending > 0 && (
-                    <span className="ml-1 bg-danger px-1.5 font-mono text-xs text-void" aria-label={t("nav.pendingCount", { count: pending })} data-testid="inbox-badge">
-                      {pending}
-                    </span>
-                  )}
-                </NavLink>
-              ))}
-            </nav>
+          </Link>
+          <div className="hidden flex-1 lg:block">
+            <HeaderSearch />
           </div>
-          <div className="flex items-center gap-2">
-            <NavLink to="/settings" className={linkClass} aria-label={t("nav.settings")}>
-              {member?.displayName}
-            </NavLink>
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={async () => {
-                // Leave the protected route first so the login page does not remember it as the return target.
-                navigate("/login");
-                await logout();
-              }}
-            >
-              {t("nav.logout")}
-            </button>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden lg:block">
+              <StatusIndicator />
+            </div>
+            <div className="hidden lg:block">
+              <HeaderInbox />
+            </div>
+            <AvatarMenu />
           </div>
+        </header>
+        <div
+          className="flex-1 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] xl:data-[panel=true]:grid-cols-[232px_minmax(0,1fr)_340px]"
+          data-panel={filled}
+        >
+          <Sidebar />
+          <main id="main" className="min-w-0 px-4 pt-4 pb-24 lg:px-7 lg:pt-6 lg:pb-14">
+            <div className="mx-auto w-full max-w-5xl">
+              <div className="mb-3 flex flex-col gap-2 empty:hidden">
+                <PendingShares />
+              </div>
+              {children}
+            </div>
+          </main>
+          <ContextPanelColumn filled={filled} setTarget={setTarget} />
         </div>
-      </header>
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 pt-3">
-        <PendingShares />
+        <StatusBar />
+        <BottomNav />
       </div>
-      <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-4 pb-24 md:pb-8">
-        {children}
-      </main>
-      <footer className="mx-auto w-full max-w-5xl px-4 pb-20 text-xs text-stone-500 md:pb-4">
-        {version && t("app.version", { commit: version.substring(0, 12) })}
-      </footer>
-      <nav
-        aria-label={t("nav.menu")}
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-stone-800 dark:bg-stone-900 md:hidden"
-      >
-        {NAV.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `relative flex min-h-14 flex-col items-center justify-center px-1 text-center text-xs leading-tight ${
-                isActive ? "text-sky-800 dark:text-sky-300" : "text-stone-600 dark:text-stone-400"
-              }`
-            }
-          >
-            {t(item.key)}
-            {item.to === "/inbox" && pending > 0 && (
-              <span className="absolute right-3 top-2 bg-danger px-1.5 font-mono text-[11px] text-void" aria-label={t("nav.pendingCount", { count: pending })} data-testid="inbox-badge">
-                {pending}
-              </span>
-            )}
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+    </ContextPanelProvider>
   );
 }

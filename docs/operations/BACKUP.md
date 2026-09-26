@@ -43,6 +43,11 @@ analysis suggestions, into one subject per person of the restoring household, li
 restore drill therefore passes each exported member's kind and the installation's `AEGIS_ASSISTANT_MEMBERS` to its
 isolated stack.
 
+Since export schema 10 ([ADR-0019](../architecture/adr/ADR-0019-design-system.md)) each member entry also carries the
+member's `palette` (`STREETKID`, `CORPO` or `NOMAD`) and `effects` (`true` or `false`). A restore gives a member it has
+to create that look; a member who already exists keeps their own, like their language. Older generations restore
+with Streetkid and effects on.
+
 ## Isolated restore drill (implemented, synthetic data only)
 
 ```bash

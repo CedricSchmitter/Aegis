@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { ScanPage } from "../scan/draft";
 import { clampCorner, fullQuad, isConvex, type Quad } from "../scan/geometry";
@@ -112,7 +113,9 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
       ? t(missing ? "scan.editor.missingInstructions" : "scan.editor.checkInstructions")
       : t("scan.editor.instructions");
 
-  return (
+  // The editor covers the whole screen. It is rendered at the end of <body>, because a chamfered card around the upload
+  // panel isolates its stacking context and the fixed tab bar of the shell would otherwise lie on top of its buttons.
+  return createPortal(
     <div
       ref={dialog}
       tabIndex={-1}
@@ -238,7 +241,8 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
           </button>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

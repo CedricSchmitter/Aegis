@@ -49,6 +49,13 @@ public class MembersController {
         return MemberDto.from(preferences.changeLocale(actor, body.locale()));
     }
 
+    @Operation(operationId = "changeAppearance",
+            summary = "Change the palette and effects preference of the current member")
+    @PutMapping("/me/appearance")
+    public AppearanceDto changeAppearance(Actor actor, @Valid @RequestBody AppearanceDto body) {
+        return AppearanceDto.from(preferences.changeAppearance(actor, body.toApplication()).appearance());
+    }
+
     @Operation(operationId = "changePassword", summary = "Change the password of the current member")
     @PostMapping("/me/password")
     public ResponseEntity<Void> changePassword(Actor actor, @Valid @RequestBody PasswordChangeRequest body) {

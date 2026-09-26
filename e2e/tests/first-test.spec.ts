@@ -26,9 +26,22 @@ async function login(page: Page, user: { username: string; password: string }) {
   await expect(page).toHaveURL(/\/today$/);
 }
 
+/** Settings, Status, Trash and logging out sit behind the avatar (issue #27, #83 F5). */
+async function openAvatarMenu(page: Page) {
+  const toggle = page.getByTestId("avatar-menu-toggle");
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  await expect(page.getByTestId("avatar-menu")).toBeVisible();
+}
+
 async function logout(page: Page) {
-  await page.getByRole("button", { name: /Abmelden|Log out/ }).click();
+  await openAvatarMenu(page);
+  await page.getByTestId("avatar-menu").getByRole("button", { name: /Abmelden|Log out/ }).click();
   await expect(page).toHaveURL(/\/login$/);
+}
+
+/** The desktop shell starts at 1024 px; below that the phone shell with the tab bar applies. */
+function isPhoneWidth(page: Page): boolean {
+  return (page.viewportSize()?.width ?? 0) < 1024;
 }
 
 /** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
@@ -100,6 +113,42 @@ test.describe("first runnable test", () => {
     await switchLanguage();
     await expect(page.getByRole("heading", { level: 1 })).toContainText(current === "EN" ? "Einstellungen" : "Settings");
     await logout(page);
+  });
+
+  test("palette and effects are stored for the member and come back after a reload", async ({ page }) => {
+    await login(page, userA);
+    await page.goto("/settings");
+    const settings = page.getByTestId("appearance-settings");
+    const root = page.locator("html");
+    const save = async (action: () => Promise<void>) => {
+      const saved = page.waitForResponse((response) => response.url().endsWith("/api/members/me/appearance") && response.ok());
+      await action();
+      await saved;
+    };
+    try {
+      await save(() => settings.getByRole("radio", { name: /Nomad/ }).click());
+      await expect(root).toHaveAttribute("data-palette", "nomad");
+      if ((await settings.getByRole("switch").getAttribute("aria-checked")) === "true") {
+        await save(() => settings.getByRole("switch").click());
+      }
+      await page.reload();
+      await expect(root).toHaveAttribute("data-palette", "nomad");
+      await expect(root).toHaveAttribute("data-effects", "off");
+      await expect(settings.getByRole("radio", { name: /Nomad/ })).toHaveAttribute("aria-checked", "true");
+    } finally {
+      // Back to the default for the next runs: Streetkid with effects on.
+      if ((await settings.getByRole("radio", { name: /Streetkid/ }).getAttribute("aria-checked")) !== "true") {
+        await save(() => settings.getByRole("radio", { name: /Streetkid/ }).click());
+      }
+      if ((await settings.getByRole("switch").getAttribute("aria-checked")) !== "true") {
+        await save(() => settings.getByRole("switch").click());
+      }
+    }
+    await expect(root).toHaveAttribute("data-palette", "streetkid");
+    await expect(root).toHaveAttribute("data-effects", "on");
+    await logout(page);
+    // Nobody is signed in: the login page shows the default again.
+    await expect(root).toHaveAttribute("data-palette", "streetkid");
   });
 
   test("upload, archival, original, linked task, shared visibility, notices and restart-safe records", async ({ page, browser }) => {
@@ -194,7 +243,7 @@ test.describe("first runnable test", () => {
     await expect(pageB.locator("[data-testid=task-item]")).toContainText("Erledigt");
     await pageB.goto(documentUrl);
     await expect(pageB.getByTestId("processing-state")).toContainText("Archiviert");
-    await pageB.getByRole("link", { name: "Heute" }).first().click();
+    await pageB.getByRole("link", { name: "Heute", exact: true }).first().click();
     await expect(pageB.getByRole("heading", { level: 1 })).toContainText("Heute");
     // Notes that only describe the setup are gone (issue #83, F6): no calendar note and no pilot banner.
     await expect(pageB.getByText("Kein Kalender verbunden")).toHaveCount(0);
@@ -205,7 +254,9 @@ test.describe("first runnable test", () => {
     await login(page, userA);
     await page.goto(documentUrl);
     await expect(page.locator("[data-testid=task-item]", { hasText: `Kündigen ${runId}` })).toContainText("Erledigt");
-    await page.getByRole("link", { name: "Status" }).first().click();
+    // Status left the tab bar (issue #83 F5); it opens from the avatar, the header and Today's status line.
+    await openAvatarMenu(page);
+    await page.getByTestId("avatar-menu-status").click();
     const overview = page.getByTestId("status-overview");
     await expect(overview.getByRole("heading", { level: 2 })).toHaveText("Ist alles in Ordnung?");
     await expect(page.getByTestId("check-database").locator("[data-state]")).toHaveAttribute("data-state", "CHECK_OK");
@@ -253,8 +304,24 @@ test.describe("first runnable test", () => {
 
   test("mobile layout shows the bottom navigation and the upload controls @mobile", async ({ page }) => {
     await login(page, userA);
-    await expect(page.getByRole("navigation").last()).toBeVisible();
-    await page.getByRole("link", { name: /Dokumente|Documents/ }).last().click();
+    if (isPhoneWidth(page)) {
+      // Five areas (issue #83 F5); Status moved behind the avatar and into the status line on Today.
+      const tabs = page.getByTestId("bottom-nav");
+      await expect(tabs).toBeVisible();
+      await expect(tabs.getByRole("link")).toHaveText([
+        /^(Heute|Today)/,
+        /^(Dokumente|Documents)/,
+        /^(Aufgaben|Tasks)/,
+        /^(Verträge|Contracts)/,
+        /^(Eingang|Inbox)/,
+      ]);
+      await expect(page.getByTestId("status-line")).toBeVisible();
+      await expect(page.getByTestId("sidebar")).toBeHidden();
+      await tabs.getByRole("link", { name: /Dokumente|Documents/ }).click();
+    } else {
+      await expect(page.getByTestId("bottom-nav")).toBeHidden();
+      await page.getByTestId("sidebar").getByRole("link", { name: /Dokumente|Documents/ }).first().click();
+    }
     await openUpload(page);
     for (const control of ["upload-take-photo", "upload-choose-image", "upload-choose-file"]) {
       await expect(page.getByTestId(control)).toBeVisible();
@@ -264,6 +331,36 @@ test.describe("first runnable test", () => {
     await expect(page.getByTestId("upload-choose-file")).toHaveText(/^(Datei unverändert hochladen|Upload file unchanged)$/);
     // The camera control opens the rear camera directly on a phone.
     await expect(page.getByTestId("upload-camera-input")).toHaveAttribute("capture", "environment");
+    await logout(page);
+  });
+
+  test("desktop shell: sidebar, Ctrl+K search, status and the avatar menu", async ({ page }) => {
+    test.skip(isPhoneWidth(page), "the desktop shell starts at 1024 px");
+    await login(page, userA);
+    await ensureGerman(page);
+    const sidebar = page.getByTestId("sidebar");
+    await expect(sidebar.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("link")).toHaveText([
+      /^Heute/,
+      /^Dokumente/,
+      /^Aufgaben/,
+      /^Verträge/,
+      /^Eingang/,
+    ]);
+    await expect(sidebar.getByRole("link", { name: "Papierkorb" })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: "Einstellungen" })).toBeVisible();
+    await expect(page.getByTestId("status-bar")).toBeVisible();
+    // CI has no external backup, so the header may name a problem; either way it is a known state, not "unknown".
+    await expect(page.getByTestId("status-indicator")).toHaveAttribute("data-tone", /^(ok|problem)$/);
+    await page.keyboard.press("Control+k");
+    const search = page.getByRole("searchbox", { name: "Dokumente durchsuchen" });
+    await expect(search).toBeFocused();
+    await search.fill("Stromvertrag");
+    await search.press("Enter");
+    await expect(page).toHaveURL(/\/documents\?query=Stromvertrag$/);
+    await openAvatarMenu(page);
+    await page.getByTestId("avatar-menu-trash").click();
+    await expect(page).toHaveURL(/\/trash$/);
+    await expect(page.getByTestId("avatar-menu")).toBeHidden();
     await logout(page);
   });
 });

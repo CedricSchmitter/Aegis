@@ -2,6 +2,7 @@ package dev.aegis.identity.adapters.rest;
 
 import dev.aegis.identity.adapters.security.ActorArgumentResolver;
 import dev.aegis.identity.application.api.MemberPreferences;
+import dev.aegis.identity.application.api.MemberSummary;
 import dev.aegis.shared.Actor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,7 +46,11 @@ public class AuthController {
     public record LoginRequest(@NotBlank String username, @NotBlank String password) {
     }
 
-    public record SessionResponse(MemberDto member) {
+    /** The member of the session and their own appearance, which the web app applies right after login. */
+    public record SessionResponse(MemberDto member, AppearanceDto appearance) {
+        static SessionResponse of(MemberSummary summary) {
+            return new SessionResponse(MemberDto.from(summary), AppearanceDto.from(summary.appearance()));
+        }
     }
 
     @Operation(operationId = "login", summary = "Start a session with username and password")
@@ -61,7 +66,7 @@ public class AuthController {
         context.setAuthentication(authentication);
         contextHolderStrategy.setContext(context);
         securityContextRepository.saveContext(context, request, response);
-        return new SessionResponse(MemberDto.from(preferences.currentMember(ActorArgumentResolver.currentActor())));
+        return SessionResponse.of(preferences.currentMember(ActorArgumentResolver.currentActor()));
     }
 
     @Operation(operationId = "logout", summary = "End the current session")
@@ -75,6 +80,6 @@ public class AuthController {
     @Operation(operationId = "currentSession", summary = "Return the member of the current session")
     @GetMapping("/session")
     public SessionResponse session(Actor actor) {
-        return new SessionResponse(MemberDto.from(preferences.currentMember(actor)));
+        return SessionResponse.of(preferences.currentMember(actor));
     }
 }

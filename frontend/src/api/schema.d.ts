@@ -1030,6 +1030,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/members/me/appearance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change the palette and effects preference of the current member */
+        put: operations["changeAppearance"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/me/locale": {
         parameters: {
             query?: never;
@@ -1522,6 +1539,11 @@ export interface components {
         AnalysisVersionRequest: {
             /** Format: int64 */
             expectedVersion: number;
+        };
+        AppearanceDto: {
+            effects: boolean;
+            /** @enum {string} */
+            palette: "STREETKID" | "CORPO" | "NOMAD";
         };
         AssignRequest: {
             /** Format: int64 */
@@ -2214,6 +2236,7 @@ export interface components {
             workload: "CONNECTION_CHECK" | "DOCUMENT_CLASSIFICATION" | "DOCUMENT_REVIEW" | "CHAT";
         };
         SessionResponse: {
+            appearance: components["schemas"]["AppearanceDto"];
             member: components["schemas"]["MemberDto"];
         };
         SkippedDto: {
@@ -4000,6 +4023,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MemberDto"][];
+                };
+            };
+        };
+    };
+    changeAppearance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppearanceDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AppearanceDto"];
                 };
             };
         };

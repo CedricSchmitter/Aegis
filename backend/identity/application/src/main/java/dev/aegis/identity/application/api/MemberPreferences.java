@@ -9,5 +9,8 @@ public interface MemberPreferences {
 
     MemberSummary changeLocale(Actor actor, ProductLocale locale);
 
+    /** Stores palette and effects for the authenticated member only; other members keep their own. */
+    MemberSummary changeAppearance(Actor actor, MemberAppearance appearance);
+
     void changePassword(Actor actor, String currentPassword, String newPassword);
 }

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import type { TaskDto, TodayResponse } from "../api/types";
 import { TaskItem } from "../components/TaskItem";
+import { StatusLine } from "../components/shell/StatusIndicator";
 import { EmptyState, ErrorBox, Loading, PageTitle } from "../components/common";
 import { formatDate } from "../lib/format";
 import { problemMessage } from "../lib/problem";
@@ -44,6 +45,10 @@ export function TodayPage() {
         {t("today.title")}
         {today && <span className="ml-2 text-base font-normal text-stone-500">{formatDate(today.date, i18n.language)}</span>}
       </PageTitle>
+      {/* The status line replaces the former Status tab (issue #83 F5); it opens the status page. */}
+      <div className="mb-4">
+        <StatusLine />
+      </div>
       <ErrorBox message={error} />
       {!today && !error && <Loading />}
       {today && (

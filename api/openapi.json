@@ -230,6 +230,19 @@
         "required" : [ "expectedVersion" ],
         "type" : "object"
       },
+      "AppearanceDto" : {
+        "properties" : {
+          "effects" : {
+            "type" : "boolean"
+          },
+          "palette" : {
+            "enum" : [ "STREETKID", "CORPO", "NOMAD" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "effects", "palette" ],
+        "type" : "object"
+      },
       "AssignRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -2085,11 +2098,14 @@
       },
       "SessionResponse" : {
         "properties" : {
+          "appearance" : {
+            "$ref" : "#/components/schemas/AppearanceDto"
+          },
           "member" : {
             "$ref" : "#/components/schemas/MemberDto"
           }
         },
-        "required" : [ "member" ],
+        "required" : [ "appearance", "member" ],
         "type" : "object"
       },
       "SkippedDto" : {
@@ -4837,6 +4853,35 @@
           }
         },
         "summary" : "List all household members",
+        "tags" : [ "members" ]
+      }
+    },
+    "/api/members/me/appearance" : {
+      "put" : {
+        "operationId" : "changeAppearance",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AppearanceDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AppearanceDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Change the palette and effects preference of the current member",
         "tags" : [ "members" ]
       }
     },
