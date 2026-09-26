@@ -30,6 +30,17 @@ async function ensureGerman(page: Page) {
   await page.goto(back);
 }
 
+/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
+async function openUpload(page: Page) {
+  // The panel's first state follows the folder catalog, so decide only once that has loaded.
+  await expect(page.getByTestId("folder-all")).toBeAttached();
+  const panel = page.getByTestId("upload-panel");
+  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await page.getByTestId("upload-panel-toggle").click();
+  }
+  await expect(panel).toHaveAttribute("open", "");
+}
+
 test.describe("recoverable trash", () => {
   test.skip(!userA.password, "AEGIS_PASSWORD_A must be set");
 
@@ -42,7 +53,7 @@ test.describe("recoverable trash", () => {
     await ensureGerman(page);
 
     await page.goto("/documents");
-    await page.getByTestId("upload-panel-toggle").click();
+    await openUpload(page);
     await page.getByTestId("upload-input").setInputFiles({ name: `${title}.pdf`, mimeType: "application/pdf", buffer: pdf });
     await page.getByTestId("upload-submit").click();
     const card = page.locator("[data-testid=document-card]", { hasText: title }).first();

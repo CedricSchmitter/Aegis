@@ -88,6 +88,17 @@ function folderOf(page: Page) {
   return page.getByTestId("document-folder").first();
 }
 
+/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
+async function openUpload(page: Page) {
+  // The panel's first state follows the folder catalog, so decide only once that has loaded.
+  await expect(page.getByTestId("folder-all")).toBeAttached();
+  const panel = page.getByTestId("upload-panel");
+  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await page.getByTestId("upload-panel-toggle").click();
+  }
+  await expect(panel).toHaveAttribute("open", "");
+}
+
 test.describe("document tree, labels and faceted search", () => {
   test.skip(!userA.password || !userB.password, "AEGIS_PASSWORD_A and AEGIS_PASSWORD_B must be set");
 
@@ -106,7 +117,7 @@ test.describe("document tree, labels and faceted search", () => {
 
     // Upload straight into the leaf folder.
     await page.goto("/documents");
-    await page.getByTestId("upload-panel-toggle").click();
+    await openUpload(page);
     await page.locator("#upload-folder").selectOption(internetId);
     await page.getByTestId("upload-input").setInputFiles({
       name: `Telekom Rechnung e2e ${runId}.pdf`,
@@ -195,6 +206,70 @@ test.describe("document tree, labels and faceted search", () => {
     await expect(page.getByTestId("open-original")).toBeVisible();
   });
 
+  test("folders and labels are read-only rows; rename, merge, retire and delete work from their forms", async ({ page }) => {
+    test.setTimeout(180_000);
+    await login(page, userA);
+    await ensureGerman(page);
+
+    // Folders: one create button, no example structure, and a row opens its form only on "Bearbeiten" (issue #83).
+    const folderName = `Zeilen e2e ${runId}`;
+    const folderId = await createFolder(page, folderName, null);
+    await expect(page.getByRole("button", { name: "Ordner anlegen" })).toHaveCount(1);
+    await expect(page.getByText("Beispielstruktur")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Speichern" })).toHaveCount(0);
+    const folder = page.locator(`[data-folder-id="${folderId}"]`);
+    await expect(folder.getByTestId("save-implications")).toHaveCount(0);
+    await expect(page.getByTestId(`edit-folder-${folderId}`)).toHaveText("Bearbeiten");
+    await page.getByTestId(`edit-folder-${folderId}`).click();
+    await folder.getByTestId("folder-name-input").fill(`${folderName} neu`);
+    await folder.getByTestId("save-folder-name").click();
+    await expect(page.getByRole("status").first()).toContainText("Ordner umbenannt");
+    await expect(folder).toContainText(`${folderName} neu`);
+    page.once("dialog", (dialog) => void dialog.accept());
+    await page.getByTestId(`delete-folder-${folderId}`).click();
+    await expect(page.getByRole("status").first()).toContainText("gelöscht");
+
+    // Labels: one create button per group and no open forms.
+    await page.goto("/documents/labels");
+    await expect(page.getByRole("button", { name: "Label anlegen" })).toHaveCount(4);
+    await expect(page.getByRole("button", { name: "Speichern" })).toHaveCount(0);
+    const createTag = async (name: string) => {
+      await page.getByTestId("new-label-TAG").fill(name);
+      await page.getByTestId("create-label-TAG").click();
+      const row = page.locator("[data-testid=label-row]", { hasText: name }).first();
+      await expect(row).toBeVisible();
+      return (await row.getAttribute("data-label-id"))!;
+    };
+    const source = `Quelle e2e ${runId}`;
+    const target = `Ziel e2e ${runId}`;
+    const sourceId = await createTag(source);
+    const targetId = await createTag(target);
+
+    const sourceRow = page.locator(`[data-label-id="${sourceId}"]`);
+    await page.getByTestId(`edit-label-${sourceId}`).click();
+    await sourceRow.getByTestId("label-name-input").fill(`${source} neu`);
+    await sourceRow.getByTestId("save-label-name").click();
+    await expect(page.getByRole("status").first()).toContainText(`In „${source} neu“ umbenannt.`);
+    await sourceRow.getByTestId("merge-target").selectOption({ label: target });
+    await sourceRow.getByTestId("merge-label").click();
+    await expect(page.getByRole("status").first()).toContainText("zusammengeführt");
+    await expect(sourceRow).toContainText("Zusammengeführt");
+
+    const targetRow = page.locator(`[data-label-id="${targetId}"]`);
+    await page.getByTestId(`edit-label-${targetId}`).click();
+    await targetRow.getByTestId("retire-label").click();
+    await expect(targetRow).toContainText("Stillgelegt");
+    await targetRow.getByTestId("reactivate-label").click();
+    await expect(targetRow).not.toContainText("Stillgelegt");
+    // A merge target stays referenced, so deletion is shown on an unused label.
+    const spareId = await createTag(`Ersatz e2e ${runId}`);
+    const spareRow = page.locator(`[data-label-id="${spareId}"]`);
+    await page.getByTestId(`edit-label-${spareId}`).click();
+    await spareRow.getByTestId("delete-label").click();
+    await expect(page.getByRole("status").first()).toContainText("Label gelöscht.");
+    await expect(spareRow).toHaveCount(0);
+  });
+
   test("the folder tree can be operated with the keyboard", async ({ page }) => {
     await login(page, userA);
     await ensureGerman(page);
@@ -227,7 +302,7 @@ test.describe("document folders on a phone", () => {
     await expect(page.getByTestId("folder-unsorted")).toBeVisible();
     await page.getByTestId("filters-toggle").click();
     await expect(page.getByTestId("facet-filters")).toBeVisible();
-    await page.getByTestId("upload-panel-toggle").click();
+    await openUpload(page);
     // The file inputs are hidden; the camera, gallery and file buttons open them.
     await expect(page.getByTestId("upload-take-photo")).toBeVisible();
     await expect(page.getByTestId("upload-choose-file")).toBeVisible();

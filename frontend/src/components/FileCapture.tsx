@@ -19,8 +19,9 @@ interface Props {
 }
 
 /**
- * The three ways to capture a document on a phone. The camera (opens directly on Android) and the photo picker
- * add pages to a scan, which becomes one PDF; the file chooser uploads a PDF or photo unchanged. While a scan is in
+ * The three ways to capture a document on a phone. The camera (opens directly on Android) and the gallery add pages
+ * to a scan, which becomes one PDF; the file chooser uploads a PDF or photo unchanged. The button labels say which
+ * one scans and which one keeps the file, so the panel needs no longer explanation (issue #83). While a scan is in
  * progress the file chooser is hidden, so a chosen file can never silently replace scanned pages.
  */
 export function FileCapture({ file, format, pageCount, disabled, onPhotos, onFile, onClear }: Props) {
@@ -97,7 +98,7 @@ export function FileCapture({ file, format, pageCount, disabled, onPhotos, onFil
         data-testid="upload-input"
       />
 
-      {file ? (
+      {file && (
         <div className="flex items-start gap-3 rounded-lg border border-stone-200 p-2 dark:border-stone-700" data-testid="upload-selected">
           {isImage(format) && <PhotoPreview file={file} />}
           <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -111,8 +112,6 @@ export function FileCapture({ file, format, pageCount, disabled, onPhotos, onFil
             </div>
           </div>
         </div>
-      ) : (
-        !scanning && <p className="text-sm text-stone-500">{t("documents.noFile")}</p>
       )}
     </div>
   );

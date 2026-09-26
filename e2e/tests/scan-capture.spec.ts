@@ -81,6 +81,17 @@ async function trash(page: Page, documentId: string) {
   await expect(page.getByTestId("trash-banner")).toBeVisible();
 }
 
+/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
+async function openUpload(page: Page) {
+  // The panel's first state follows the folder catalog, so decide only once that has loaded.
+  await expect(page.getByTestId("folder-all")).toBeAttached();
+  const panel = page.getByTestId("upload-panel");
+  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await page.getByTestId("upload-panel-toggle").click();
+  }
+  await expect(panel).toHaveAttribute("open", "");
+}
+
 test.describe("scanned photos", () => {
   test.skip(!userA.password, "AEGIS_PASSWORD_A must be set");
 
@@ -91,7 +102,7 @@ test.describe("scanned photos", () => {
     await page.goto("/documents");
     const photo = await markedPhoto(page, SKEWED, `${runId} ${info.project.name}`);
 
-    await page.getByTestId("upload-panel-toggle").click();
+    await openUpload(page);
     const photoFile = { name: "IMG_1.jpg", mimeType: "image/jpeg", buffer: photo };
     // A single new photo opens with its detected sheet right away; "Seite verwerfen" drops a failed shot.
     await page.getByTestId("upload-image-input").setInputFiles(photoFile);
@@ -112,6 +123,9 @@ test.describe("scanned photos", () => {
     await expect(scanned.first()).toHaveAttribute("data-mode", "scan", { timeout: 60_000 });
     // While scanning, a file cannot be chosen: it would replace the pages.
     await expect(page.getByTestId("upload-choose-file")).toHaveCount(0);
+    // One short sentence per state (issue #83): while scanning, the panel explains the pages, not the file choice.
+    await expect(page.getByTestId("upload-form")).toContainText("Tipp auf eine Seite, um ihre Ecken zu korrigieren");
+    await expect(page.getByTestId("upload-form")).not.toContainText("bleibt unverändert");
     await expect(page.getByTestId("upload-submit")).toHaveText("1 Seite als Dokument speichern");
     const documentId = await save(page);
     await expect(page.getByTestId("scan-pages")).toHaveCount(0);
@@ -145,7 +159,7 @@ test.describe("scanned photos", () => {
     const first = await markedPhoto(page, STRAIGHT, `${runId} a ${info.project.name}`);
     const second = await markedPhoto(page, SKEWED, `${runId} b ${info.project.name}`);
 
-    await page.getByTestId("upload-panel-toggle").click();
+    await openUpload(page);
     await page.getByTestId("upload-image-input").setInputFiles([
       { name: "IMG_1.jpg", mimeType: "image/jpeg", buffer: first },
       { name: "IMG_2.jpg", mimeType: "image/jpeg", buffer: second },

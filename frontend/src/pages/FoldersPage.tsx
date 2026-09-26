@@ -11,15 +11,6 @@ import { byId, labelName, subjectChoices, subjectKey } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
 import { buildTree, flatten, subtreeCount } from "../lib/tree";
 
-/** Structure created by the starter button; ids are fixed so a second click changes nothing. */
-const STARTER = [
-  { key: "house", id: "aeb51000-0000-4000-8000-000000000001", parent: null as string | null, subject: "HOUSE" },
-  { key: "invoices", id: "aeb51000-0000-4000-8000-000000000002", parent: "house", builtin: "invoice" },
-  { key: "internet", id: "aeb51000-0000-4000-8000-000000000003", parent: "invoices", builtin: "internet" },
-  { key: "water", id: "aeb51000-0000-4000-8000-000000000004", parent: "invoices", builtin: "water" },
-  { key: "insurance", id: "aeb51000-0000-4000-8000-000000000005", parent: "house", builtin: "insurance" },
-] as const;
-
 export function FoldersPage() {
   const { t } = useTranslation();
   const { members, persons } = useSession();
@@ -135,36 +126,6 @@ export function FoldersPage() {
       );
     });
 
-  const createStarter = () =>
-    run(async () => {
-      const ids = new Map<string, string>();
-      for (const entry of STARTER) {
-        const created = unwrap(
-          await api.POST("/api/categories", {
-            body: {
-              id: entry.id,
-              parentId: entry.parent ? (ids.get(entry.parent) ?? null) : null,
-              name: t(`folders.structure.${entry.key}`),
-            },
-          }),
-        );
-        ids.set(entry.key, created.id);
-        const builtin = "builtin" in entry ? labels.find((label) => label.builtinKey === entry.builtin) : undefined;
-        const subject = "subject" in entry ? entry.subject : undefined;
-        if (builtin || subject) {
-          await api.PUT("/api/categories/{id}/implications", {
-            params: { path: { id: created.id } },
-            body: {
-              labelIds: builtin ? [builtin.id] : [],
-              subjects: subject ? [{ kind: subject, memberId: null }] : [],
-              expectedVersion: created.version,
-            },
-          }).then(unwrap);
-        }
-      }
-      setMessage(t("folders.starterDone"));
-    });
-
   if (!catalog) return error ? <ErrorBox message={error} /> : <Loading />;
 
   return (
@@ -180,9 +141,8 @@ export function FoldersPage() {
       {message && <InfoBox>{message}</InfoBox>}
 
       <section className="card mb-4 flex flex-col gap-2" aria-label={t("folders.create")}>
-        <h2 className="font-semibold">{t("folders.create")}</h2>
         <label className="label" htmlFor="new-folder-name">
-          {t("folders.name")}
+          {t("folders.newName")}
         </label>
         <input
           id="new-folder-name"
@@ -195,20 +155,16 @@ export function FoldersPage() {
           categories={categories}
           value={newParent}
           onChange={setNewParent}
-          label={t("folders.moveTo")}
+          label={t("folders.createIn")}
           topLabel={t("folders.top")}
           id="new-folder-parent"
         />
-        <div className="flex flex-wrap gap-2">
+        <div>
           <button type="button" className="btn-primary" disabled={!newName.trim()} onClick={create}
                   data-testid="create-folder">
             {t("folders.create")}
           </button>
-          <button type="button" className="btn-secondary" onClick={createStarter} data-testid="create-starter">
-            {t("folders.starter")}
-          </button>
         </div>
-        <p className="text-xs text-stone-500">{t("folders.starterHint")}</p>
       </section>
 
       {categories.length === 0 ? (
@@ -253,7 +209,7 @@ export function FoldersPage() {
                     data-testid={`edit-folder-${category.id}`}
                     onClick={() => (editing ? setOpen(null) : startEditing(category))}
                   >
-                    {editing ? t("app.close") : t("app.save")}
+                    {editing ? t("app.close") : t("app.edit")}
                   </button>
                 </div>
                 {editing && (
