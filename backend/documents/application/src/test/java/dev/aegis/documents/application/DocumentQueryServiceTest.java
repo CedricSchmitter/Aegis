@@ -152,6 +152,27 @@ class DocumentQueryServiceTest {
     }
 
     @Test
+    void theArchivesFirstPageImageIsServedOnlyForAnArchivedDocumentToAMember() throws Exception {
+        byte[] bytes = "%PDF-thumbnail".getBytes(StandardCharsets.US_ASCII);
+        Document document = stored("Vorschau", anna, NOW, bytes);
+        assertThatThrownBy(() -> service.thumbnail(new Actor(ben), document.id())).as("not archived yet")
+                .isInstanceOf(NotFoundException.class).hasFieldOrPropertyWithValue("resource", "thumbnail");
+
+        document.markArchived(9, NOW);
+        repository.save(document);
+        archive.originals.put(9, bytes);
+        var thumbnail = service.thumbnail(new Actor(ben), document.id());
+        assertThat(thumbnail.contentType()).isEqualTo("image/webp");
+        assertThat(thumbnail.bytes()).isEqualTo(TestDoubles.FakeArchive.THUMBNAIL);
+
+        assertThatThrownBy(() -> service.thumbnail(new Actor(MemberId.random()), document.id()))
+                .isInstanceOf(dev.aegis.shared.NotAuthorizedException.class);
+        archive.available = false;
+        assertThatThrownBy(() -> service.thumbnail(new Actor(ben), document.id()))
+                .isInstanceOf(dev.aegis.documents.application.ports.ArchiveUnavailableException.class);
+    }
+
+    @Test
     void corruptedArchiveFallsBackAndCleanupKeepsTheOnlyValidOriginal() throws Exception {
         byte[] bytes = "%PDF-original".getBytes(StandardCharsets.US_ASCII);
         Document document = stored("Original", anna, NOW.minusSeconds(900000), bytes);

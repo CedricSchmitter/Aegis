@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { formatBytes } from "../lib/format";
 import { DOCUMENT_ACCEPT, PHOTO_ACCEPT, isImage, type UploadFormat } from "../lib/uploadFormat";
+import { Icon } from "./shell/icons";
 
 interface Props {
   /** A file chosen to be uploaded unchanged; null when there is none. */
@@ -11,24 +12,32 @@ interface Props {
   /** Pages of the scan in progress; the camera and gallery then add further pages. */
   pageCount: number;
   disabled?: boolean;
+  /** On a desktop: a drop zone for a file instead of the camera, which a desktop browser does not open. */
+  desktop?: boolean;
   /** Photos from the camera or the gallery, each becoming a scanned page. */
   onPhotos: (photos: File[]) => void;
-  /** A file from the file chooser, uploaded unchanged. */
+  /** A file from the file chooser or dropped on the drop zone, uploaded unchanged. */
   onFile: (file: File) => void;
   onClear: () => void;
 }
 
+/** Whether a drag carries files, as opposed to text or a link from the page. */
+function carriesFiles(event: DragEvent): boolean {
+  return [...event.dataTransfer.types].includes("Files");
+}
+
 /**
- * The three ways to capture a document on a phone. The camera (opens directly on Android) and the gallery add pages
- * to a scan, which becomes one PDF; the file chooser uploads a PDF or photo unchanged. The button labels say which
- * one scans and which one keeps the file, so the panel needs no longer explanation (issue #83). While a scan is in
- * progress the file chooser is hidden, so a chosen file can never silently replace scanned pages.
+ * The ways to capture a document (issue #27). The camera (opens directly on Android) and the gallery add pages to a
+ * scan, which becomes one PDF; the file chooser and the desktop drop zone upload a PDF or photo unchanged. The
+ * options say which one scans and which one keeps the file (issue #83). While a scan is in progress the file choice
+ * is hidden, so a chosen file can never silently replace scanned pages.
  */
-export function FileCapture({ file, format, pageCount, disabled, onPhotos, onFile, onClear }: Props) {
+export function FileCapture({ file, format, pageCount, disabled, desktop = false, onPhotos, onFile, onClear }: Props) {
   const { t, i18n } = useTranslation();
   const camera = useRef<HTMLInputElement>(null);
   const gallery = useRef<HTMLInputElement>(null);
   const chooser = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
   const scanning = pageCount > 0;
 
   const pick = (handle: (files: File[]) => void) => (event: ChangeEvent<HTMLInputElement>) => {
@@ -38,39 +47,72 @@ export function FileCapture({ file, format, pageCount, disabled, onPhotos, onFil
     if (chosen.length > 0) handle(chosen);
   };
 
+  const drop = (event: DragEvent) => {
+    event.preventDefault();
+    setOver(false);
+    const dropped = event.dataTransfer.files[0];
+    if (dropped && !disabled) onFile(dropped);
+  };
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid gap-2 sm:grid-cols-3">
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={disabled}
-          onClick={() => camera.current?.click()}
-          data-testid="upload-take-photo"
-        >
-          {t(scanning ? "scan.addPage" : "documents.takePhoto")}
-        </button>
-        <button
-          type="button"
-          className="btn-secondary"
-          disabled={disabled}
-          onClick={() => gallery.current?.click()}
-          data-testid="upload-choose-image"
-        >
-          {t(scanning ? "scan.addImages" : "documents.chooseImage")}
-        </button>
-        {!scanning && (
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={disabled}
-            onClick={() => chooser.current?.click()}
-            data-testid="upload-choose-file"
-          >
-            {t("documents.chooseFile")}
+    <div className="flex flex-col gap-2">
+      {scanning ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {!desktop && (
+            <button type="button" className="btn-secondary" disabled={disabled} onClick={() => camera.current?.click()} data-testid="upload-take-photo">
+              <Icon name="camera" className="h-[18px] w-[18px]" />
+              {t("scan.addPage")}
+            </button>
+          )}
+          <button type="button" className="btn-secondary" disabled={disabled} onClick={() => gallery.current?.click()} data-testid="upload-choose-image">
+            <Icon name="image" className="h-[18px] w-[18px]" />
+            {t("scan.addImages")}
           </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          {desktop && (
+            <div
+              className="ui-drop"
+              data-over={over}
+              data-testid="upload-drop"
+              onDragOver={(event) => {
+                if (!carriesFiles(event)) return;
+                event.preventDefault();
+                setOver(true);
+              }}
+              onDragLeave={() => setOver(false)}
+              onDrop={drop}
+            >
+              <Icon name="upload" className="h-[30px] w-[30px]" />
+              <b className="text-[17px] tracking-[0.06em] uppercase">{t("documents.capture.dropTitle")}</b>
+              <span className="text-[13px] text-text-3">{t("documents.capture.fileHint")}</span>
+              <button type="button" className="btn-secondary" disabled={disabled} onClick={() => chooser.current?.click()} data-testid="upload-choose-file">
+                {t("documents.capture.chooseFile")}
+              </button>
+            </div>
+          )}
+          {!desktop && (
+            <button type="button" className="ui-option" disabled={disabled} onClick={() => camera.current?.click()} data-testid="upload-take-photo">
+              <Icon name="camera" className="h-6 w-6" />
+              <b>{t("documents.takePhoto")}</b>
+              <span>{t("documents.capture.photoHint")}</span>
+            </button>
+          )}
+          <button type="button" className="ui-option" disabled={disabled} onClick={() => gallery.current?.click()} data-testid="upload-choose-image">
+            <Icon name="image" className="h-6 w-6" />
+            <b>{t(desktop ? "documents.capture.photosAsScan" : "documents.chooseImage")}</b>
+            <span>{t("documents.capture.galleryHint")}</span>
+          </button>
+          {!desktop && (
+            <button type="button" className="ui-option" disabled={disabled} onClick={() => chooser.current?.click()} data-testid="upload-choose-file">
+              <Icon name="file" className="h-6 w-6" />
+              <b>{t("documents.chooseFile")}</b>
+              <span>{t("documents.capture.fileHint")}</span>
+            </button>
+          )}
+        </>
+      )}
       <input
         ref={camera}
         type="file"
@@ -99,12 +141,12 @@ export function FileCapture({ file, format, pageCount, disabled, onPhotos, onFil
       />
 
       {file && (
-        <div className="flex items-start gap-3 rounded-lg border border-stone-200 p-2 dark:border-stone-700" data-testid="upload-selected">
+        <div className="card flex items-start gap-3 p-3" data-testid="upload-selected">
           {isImage(format) && <PhotoPreview file={file} />}
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="break-words text-sm font-medium">{file.name}</span>
-            <span className="text-xs text-stone-600 dark:text-stone-400">{formatBytes(file.size, t, i18n.language)}</span>
-            {isImage(format) && <span className="text-xs text-stone-600 dark:text-stone-400">{t("scan.unchanged")}</span>}
+            <span className="text-sm font-medium break-words">{file.name}</span>
+            <span className="font-mono text-xs text-text-3">{formatBytes(file.size, t, i18n.language)}</span>
+            {isImage(format) && <span className="text-xs text-text-3">{t("scan.unchanged")}</span>}
             <div>
               <button type="button" className="btn-ghost -ml-4" disabled={disabled} onClick={onClear}>
                 {t("documents.removeFile")}
@@ -131,13 +173,13 @@ function PhotoPreview({ file }: { file: File }) {
   }, [file]);
 
   if (failed) {
-    return <p className="w-24 shrink-0 text-xs text-stone-500">{t("documents.noPreview")}</p>;
+    return <p className="w-24 shrink-0 text-xs text-text-3">{t("documents.noPreview")}</p>;
   }
   return url ? (
     <img
       src={url}
       alt={t("documents.photoPreview")}
-      className="h-24 w-24 shrink-0 rounded-md object-cover"
+      className="h-24 w-24 shrink-0 object-cover"
       onError={() => setFailed(true)}
       data-testid="upload-preview"
     />

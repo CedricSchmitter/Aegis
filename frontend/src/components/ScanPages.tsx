@@ -30,7 +30,7 @@ export function ScanPages({ scan, disabled, checkId = null, onChecked }: Props) 
 
   return (
     <div className="flex flex-col gap-3" data-testid="scan-pages">
-      <p className="text-sm text-stone-600 dark:text-stone-400">{t("scan.hint", { count: scan.pages.length })}</p>
+      <p className="text-sm text-text-3">{t("scan.hint", { count: scan.pages.length })}</p>
       <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {scan.pages.map((page, index) => (
           <PageItem
@@ -133,20 +133,20 @@ function PageItem({ page, number, first, last, disabled, onEdit, onMove, onRotat
 
   return (
     <li
-      className="flex flex-col gap-2 rounded-lg border border-stone-200 p-2 dark:border-stone-700"
+      className="flex flex-col gap-2 border border-line p-2"
       data-testid="scan-page"
       data-mode={page.result?.mode ?? "processing"}
     >
       <button
         type="button"
-        className="flex aspect-[1/1.414] w-full items-center justify-center overflow-hidden rounded-md bg-stone-100 dark:bg-stone-800"
+        className="flex aspect-[1/1.414] w-full items-center justify-center overflow-hidden bg-raised"
         disabled={disabled || processing}
         onClick={onEdit}
         aria-label={t("scan.edit", { number })}
         data-testid="scan-page-edit"
       >
         {processing ? (
-          <span className="px-2 text-center text-xs text-stone-600 dark:text-stone-300" aria-busy="true">
+          <span className="px-2 text-center text-xs text-text-3" aria-busy="true">
             {t("scan.processing")}
           </span>
         ) : (
@@ -156,7 +156,7 @@ function PageItem({ page, number, first, last, disabled, onEdit, onMove, onRotat
       <div className="flex items-center justify-between gap-1">
         <span className="text-sm font-medium">{t("scan.page", { number })}</span>
       </div>
-      {note && <span className="text-xs text-amber-800 dark:text-amber-300">{note}</span>}
+      {note && <span className="text-xs text-action">{note}</span>}
       <div className="grid grid-cols-4 gap-1">
         <IconButton label={t("scan.moveEarlier", { number })} disabled={disabled || first} onClick={() => onMove(-1)}>
           ←

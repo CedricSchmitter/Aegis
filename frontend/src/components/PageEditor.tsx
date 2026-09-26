@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { ScanPage } from "../scan/draft";
 import { clampCorner, fullQuad, isConvex, type Quad } from "../scan/geometry";
 import { LOUPE_SIZE, LOUPE_ZOOM, loupePlacement } from "./loupe";
+import { useOverlayLayer } from "./ui";
 import { useObjectUrl } from "./useObjectUrl";
 
 interface Props {
@@ -55,6 +56,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
   const frame = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const dialog = useRef<HTMLDivElement>(null);
+  const layer = useOverlayLayer();
   const close = useRef(onClose);
   useEffect(() => {
     close.current = onClose;
@@ -69,7 +71,10 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
   useEffect(() => {
     dialog.current?.focus();
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") close.current();
+      if (event.key !== "Escape") return;
+      // Escape closes the editor only, not the upload sheet around it.
+      event.preventDefault();
+      close.current();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -113,8 +118,8 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
       ? t(missing ? "scan.editor.missingInstructions" : "scan.editor.checkInstructions")
       : t("scan.editor.instructions");
 
-  // The editor covers the whole screen. It is rendered at the end of <body>, because a chamfered card around the upload
-  // panel isolates its stacking context and the fixed tab bar of the shell would otherwise lie on top of its buttons.
+  // The editor covers the whole screen. It is rendered into the open upload sheet (the browser's top layer) or at the
+  // end of <body>, so neither a chamfered card's stacking context nor the fixed tab bar lies on top of its buttons.
   return createPortal(
     <div
       ref={dialog}
@@ -124,6 +129,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
       aria-modal="true"
       aria-labelledby={titleId}
       data-testid="page-editor"
+      data-page-editor
       data-purpose={purpose}
       data-state={searching ? "searching" : missing ? "missing" : "detected"}
     >
@@ -242,7 +248,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
         )}
       </div>
     </div>,
-    document.body,
+    layer,
   );
 }
 

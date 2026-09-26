@@ -49,6 +49,9 @@ public class SecurityConfiguration {
                 .ignoringRequestMatchers(PathPatternRequestMatcher.withDefaults()
                         .matcher(HttpMethod.POST, ShareTargetFallbackController.PATH)))
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                // The desktop document viewer embeds originals and archive PDFs from the same origin (ADR-0019);
+                // other sites still cannot frame Aegis.
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers("/api/system/version", "/actuator/health", "/actuator/health/**").permitAll()

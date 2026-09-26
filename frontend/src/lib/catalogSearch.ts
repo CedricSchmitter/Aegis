@@ -168,3 +168,27 @@ export function withoutFilters(filters: CatalogFilters): CatalogFilters {
 export function showsFacetGroup(valueKeys: string[], missingSelected: boolean): boolean {
   return valueKeys.length > 0 || missingSelected;
 }
+
+/** Number of chosen facet values and "not set" filters, the ones the filter panel sets; folder and search not included. */
+export function facetFilterCount(filters: CatalogFilters): number {
+  return (
+    filters.type.length +
+    filters.organization.length +
+    filters.topic.length +
+    filters.tag.length +
+    filters.subject.length +
+    filters.missing.length
+  );
+}
+
+/** Clears the filter panel and keeps the folder, the search text, the order and the page size. */
+export function withoutFacets(filters: CatalogFilters): CatalogFilters {
+  return {
+    ...EMPTY_FILTERS,
+    query: filters.query,
+    category: filters.category,
+    subfolders: filters.subfolders,
+    sort: filters.sort,
+    size: filters.size,
+  };
+}

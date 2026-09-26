@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, toApiError, unwrap } from "../api/client";
@@ -13,26 +13,53 @@ import type {
 } from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { AnalysisPanel } from "../components/AnalysisPanel";
+import { DocumentHead, DocumentPreview, DocumentViewer } from "../components/documents/DocumentHead";
 import { FolderSelect } from "../components/FolderSelect";
 import { LabelChips } from "../components/LabelChips";
 import { LabelEditor } from "../components/LabelEditor";
 import { PlacementSuggestion } from "../components/PlacementSuggestion";
+import { ContextPanelOrFlow } from "../components/shell/ContextPanel";
+import { Icon } from "../components/shell/icons";
+import { useDesktop } from "../components/shell/ShellData";
 import { SubjectList } from "../components/SubjectList";
 import { TaskForm } from "../components/TaskForm";
 import { TextRecognitionHint } from "../components/TextRecognitionHint";
 import { TaskItem } from "../components/TaskItem";
 import { MoveToTrashButton, TrashBanner } from "../components/TrashControls";
-import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
+import { ProcessingSteps } from "../components/ui";
+import { EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
+import { documentProgress } from "../lib/documentView";
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
 import { subjectChoices, subjectKey, suggestions } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
 import { searchablePdf } from "../lib/searchablePdf";
 import { awaitingTextCheck } from "../lib/textRecognition";
 
+/** A titled block of the document view, headed by a mono section line like in the approved mockup. */
+function Block({ id, title, action, children, testId }: { id: string; title: ReactNode; action?: ReactNode; children: ReactNode; testId?: string }) {
+  return (
+    <section className="flex flex-col gap-2.5" aria-labelledby={id} data-testid={testId}>
+      <div className="ui-sec min-h-11">
+        <h2 id={id} className="font-normal">
+          {title}
+        </h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * One document (issue #27): the folder path, the title and the file actions, then the preview on a phone or the
+ * document itself on a desktop. Where it stands, the suggestions, the folder, labels, subjects, tasks and the trash
+ * follow in the page on a phone and fill the context panel from 1280 px.
+ */
 export function DocumentDetailPage() {
   const { id = "" } = useParams();
   const { t, i18n } = useTranslation();
   const { persons, memberName } = useSession();
+  const desktop = useDesktop();
   const [document, setDocument] = useState<DocumentDto | null>(null);
   const [tasks, setTasks] = useState<TaskDto[]>([]);
   const [contracts, setContracts] = useState<ContractSummaryDto[]>([]);
@@ -242,358 +269,369 @@ export function DocumentDetailPage() {
   const pending = suggestions(document.classification.labels);
   const trashed = !!document.trash;
   const searchable = searchablePdf(document);
+  const progress = documentProgress(document);
+  const hint = "text-sm text-text-3";
 
   return (
-    <>
-      <p className="mb-2 text-sm">
-        <Link to="/documents" className="text-sky-800 hover:underline dark:text-sky-300">
-          ← {t("documents.title")}
-        </Link>
-      </p>
-      <PageTitle>{document.title}</PageTitle>
+    <div className="flex flex-col gap-4">
+      <Link
+        to="/documents"
+        className="-ml-1 flex min-h-11 items-center gap-1.5 self-start font-mono text-xs tracking-[0.18em] text-text-3 uppercase hover:text-text-1"
+      >
+        <Icon name="back" className="h-4 w-4" />
+        {t("documents.title")}
+      </Link>
+      <DocumentHead
+        document={document}
+        heading={(title) => <h1 className="text-2xl leading-tight font-bold break-words lg:text-[28px]">{title}</h1>}
+      />
       <ErrorBox message={error ?? loadError} />
       {message && <InfoBox>{message}</InfoBox>}
       {document.trash && (
         <TrashBanner trash={document.trash} busy={trashBusy} onRestore={() => void changeTrash("restore")} />
       )}
 
-      <section className="card mb-4 flex flex-col gap-2" aria-label={t(`documents.state.${p.state}`)}>
-        {/* The processing state is shown once, here; an archived document names its archival date (issue #83). */}
-        <p className="font-medium" data-testid="processing-state">
-          {p.state === "ARCHIVED" && p.archivedAt
-            ? t("documents.archivedAt", { date: formatDateTime(p.archivedAt, i18n.language) })
-            : t(`documents.state.${p.state}`)}
-        </p>
-        {p.retryScheduled && (
-          <p className="text-sm text-stone-600 dark:text-stone-400">
-            {t("documents.retrying")} ·{" "}
-            {p.nextAttemptAt && t("documents.nextAttempt", { date: formatDateTime(p.nextAttemptAt, i18n.language) })}
-          </p>
-        )}
-        {p.attempts > 0 && (
-          <p className="text-sm text-stone-600 dark:text-stone-400">
-            {t("documents.attempts", { count: p.attempts })}
-          </p>
-        )}
-        {p.lastErrorCode && (
-          <p className="text-sm text-red-700 dark:text-red-300">
-            {t("documents.lastError", {
-              message: t(`errors.${p.lastErrorCode}`, { defaultValue: p.lastErrorMessage ?? p.lastErrorCode }),
-            })}
-          </p>
-        )}
-        <TextRecognitionHint document={document} />
-        {(searchable === "photo" || searchable === "photoPending") && (
-          <p className="text-sm text-stone-600 dark:text-stone-400" data-testid="photo-hint">
-            {searchable === "photo" ? t("documents.archivePdfHint") : t("documents.archivePdfPending")}
-            {document.contentType === "image/heic" && ` ${t("documents.heicHint")}`}
-          </p>
-        )}
-        {searchable === "scan" && (
-          <p className="text-sm text-stone-600 dark:text-stone-400" data-testid="scan-hint">
-            {t("documents.archivePdfScanHint")}
-          </p>
-        )}
-        <div className="flex flex-wrap gap-2">
-          {document.originalAvailable ? (
-            <>
-              <a
-                className="btn-primary"
-                href={`/api/documents/${document.id}/original?inline=true`}
-                target="_blank"
-                rel="noreferrer"
-                data-testid="open-original"
-              >
-                {t("documents.original")}
-              </a>
-              <a className="btn-secondary" href={`/api/documents/${document.id}/original`} data-testid="download-original">
-                {t("documents.download")}
-              </a>
-            </>
-          ) : (
-            <p className="text-sm text-stone-500">{t("documents.originalUnavailable")}</p>
-          )}
-          {(searchable === "photo" || searchable === "scan") && (
+      <div className="flex flex-wrap items-center gap-2">
+        {document.originalAvailable ? (
+          <>
             <a
               className="btn-secondary"
-              href={`/api/documents/${document.id}/archive-pdf?inline=true`}
+              href={`/api/documents/${document.id}/original?inline=true`}
               target="_blank"
               rel="noreferrer"
-              data-testid="open-archive-pdf"
+              data-testid="open-original"
             >
-              {t("documents.archivePdf")}
+              <Icon name="file" className="h-4 w-4" />
+              {t("documents.original")}
             </a>
-          )}
-          {p.state === "FAILED" && !trashed && (
-            <button type="button" className="btn-secondary" onClick={retry} data-testid="retry-archival">
-              {t("documents.retry")}
-            </button>
-          )}
-        </div>
-      </section>
-
-      {p.state !== "FAILED" && !trashed && (
-        <AnalysisPanel
-          document={document}
-          onChange={setDocument}
-          onError={setError}
-          onMessage={setMessage}
-          reload={load}
-        />
-      )}
-
-      <section className="card mb-4 flex flex-col gap-3" aria-label={t("documents.folder")}>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">{t("documents.folder")}:</span>
-          <span className="text-sm" data-testid="document-folder">
-            🗂 {document.classification.path.map((step) => step.name).join(" / ") || t("documents.unsorted")}
-          </span>
-        </div>
-        {!trashed && (
-          <div className="flex flex-wrap items-end gap-2">
-            <FolderSelect
-              categories={categories}
-              value={folderDraft}
-              onChange={setFolderDraft}
-              label={t("documents.chooseFolder")}
-              id="document-folder-select"
-            />
-            <button type="button" className="btn-secondary" onClick={saveFolder} data-testid="save-folder">
-              {t("app.save")}
-            </button>
-          </div>
-        )}
-
-        {!trashed && (
-          <PlacementSuggestion
-            document={document}
-            categories={categories}
-            onChange={setDocument}
-            onError={setError}
-            onMessage={setMessage}
-            reload={load}
-          />
-        )}
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">{t("documents.labels")}:</span>
-          <LabelChips
-            chips={document.classification.labels}
-            folderName={folderName}
-            onAccept={trashed ? undefined : (chip) => void review(chip, "accept")}
-            onReject={trashed ? undefined : (chip) => void review(chip, "reject")}
-          />
-          {document.classification.labels.length === 0 && (
-            <span className="text-xs text-stone-500">{t("subjects.none")}</span>
-          )}
-          {!editingLabels && !trashed && (
-            <button type="button" className="btn-ghost" onClick={() => setEditingLabels(true)} data-testid="edit-labels">
-              {t("documents.editLabels")}
-            </button>
-          )}
-        </div>
-        <p className="text-xs text-stone-500">{t("documents.inheritedFromFolder")}</p>
-        {pending.length > 0 && <p className="text-xs text-stone-500">{t("documents.confidenceHint")}</p>}
-        {editingLabels && (
-          <LabelEditor
-            key={document.classification.version}
-            chips={document.classification.labels}
-            labels={labels}
-            onSave={saveLabels}
-            onCreate={createLabel}
-          />
-        )}
-      </section>
-
-      <section className="card mb-4 flex flex-col gap-2">
-        <p className="text-sm text-stone-600 dark:text-stone-400">
-          {t("documents.uploadedBy", {
-            name: memberName(document.uploadedBy) ?? t("app.unknownMember"),
-            date: formatDateTime(document.uploadedAt, i18n.language),
-          })}
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          {editingTitle ? (
-            <>
-              <label className="label mb-0" htmlFor="title-draft">
-                {t("documents.renameTitle")}
-              </label>
-              <input
-                id="title-draft"
-                className="field max-w-sm"
-                value={titleDraft}
-                onChange={(event) => setTitleDraft(event.target.value)}
-              />
-              <button type="button" className="btn-primary" onClick={saveTitle} data-testid="save-title">
-                {t("app.save")}
-              </button>
-              <button type="button" className="btn-ghost" onClick={() => setEditingTitle(false)}>
-                {t("app.cancel")}
-              </button>
-            </>
-          ) : (
-            !trashed && (
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => {
-                  setTitleDraft(document.title);
-                  setEditingTitle(true);
-                }}
-                data-testid="rename-document"
-              >
-                {t("documents.renameTitle")}
-              </button>
-            )
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">{t("documents.subjects")}:</span>
-          <SubjectList subjects={document.subjects} />
-          {document.classification.folderSubjects.length > 0 && (
-            <span className="text-xs text-stone-500">
-              🗂 <SubjectList subjects={document.classification.folderSubjects} />
-            </span>
-          )}
-          {!editingSubjects && !trashed && (
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={() => {
-                setSubjectDraft(
-                  document.subjects.map((subject) =>
-                    subject.kind === "MEMBER" ? `MEMBER:${subject.memberId}` : subject.kind,
-                  ),
-                );
-                setEditingSubjects(true);
-              }}
-            >
-              {t("documents.editSubjects")}
-            </button>
-          )}
-        </div>
-        {editingSubjects && (
-          <div className="flex flex-wrap items-center gap-3">
-            {subjectChoices(persons, document.subjects.map(subjectKey)).map((value) => (
-              <label key={value} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={subjectDraft.includes(value)}
-                  onChange={() =>
-                    setSubjectDraft((draft) =>
-                      draft.includes(value) ? draft.filter((entry) => entry !== value) : [...draft, value],
-                    )
-                  }
-                />
-                {value.startsWith("MEMBER:") ? (memberName(value.substring(7)) ?? value) : t(`subjects.${value}`)}
-              </label>
-            ))}
-            <button type="button" className="btn-primary" onClick={saveSubjects}>
-              {t("app.save")}
-            </button>
-            <button type="button" className="btn-ghost" onClick={() => setEditingSubjects(false)}>
-              {t("app.cancel")}
-            </button>
-          </div>
-        )}
-      </section>
-
-      <details className="card mb-4 text-sm" data-testid="technical-details">
-        <summary className="min-h-11 cursor-pointer font-semibold">{t("documents.technicalDetails")}</summary>
-        <div className="mt-2 flex flex-col gap-1">
-          <p>
-            {document.originalFilename} · {formatBytes(document.sizeBytes, t, i18n.language)}
-          </p>
-          {p.paperlessDocumentId != null && <p>{t("documents.paperlessId", { id: p.paperlessDocumentId })}</p>}
-          <p className="break-all font-mono text-xs text-stone-500" data-testid="checksum">
-            {t("documents.checksum")}: {document.checksumSha256}
-          </p>
-        </div>
-      </details>
-
-      {contracts.length > 0 && (
-        <section className="mb-4" aria-labelledby="linked-contracts">
-          <h2 id="linked-contracts" className="mb-2 text-lg font-semibold">
-            {t("documents.linkedContracts")}
-          </h2>
-          <ul className="flex flex-col gap-2">
-            {contracts.map((contract) => (
-              <li key={contract.id} className="card flex flex-wrap items-center justify-between gap-2">
-                <Link
-                  to={`/contracts/${contract.id}`}
-                  className="font-medium text-sky-800 hover:underline dark:text-sky-300"
-                >
-                  {contract.name}
-                </Link>
-                <span className="text-sm">
-                  {contract.deadline.determined && contract.deadline.deadline
-                    ? t("contracts.deadline.cancelBy", {
-                        date: formatDate(contract.deadline.deadline, i18n.language),
-                      })
-                    : t("contracts.deadline.none")}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section aria-labelledby="linked-tasks">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 id="linked-tasks" className="text-lg font-semibold">
-            {t("documents.linkedTasks")}
-          </h2>
-          {!trashed && (
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => setShowTaskForm((value) => !value)}
-              data-testid="new-task-toggle"
-            >
-              {t("documents.newTask")}
-            </button>
-          )}
-        </div>
-        {showTaskForm && (
-          <div className="mb-3">
-            <TaskForm
-              sourceDocumentId={document.id}
-              onCreated={(task) => {
-                setTasks((current) => [...current, task]);
-                setShowTaskForm(false);
-                setMessage(t("tasks.created"));
-              }}
-            />
-          </div>
-        )}
-        {tasks.length === 0 ? (
-          <EmptyState>{t("documents.noLinkedTasks")}</EmptyState>
+            <a className="btn-ghost" href={`/api/documents/${document.id}/original`} data-testid="download-original">
+              {t("documents.download")}
+            </a>
+          </>
         ) : (
-          <div className="flex flex-col gap-2">
-            {tasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                onChange={(updated) =>
-                  setTasks((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)))
-                }
-              />
-            ))}
-          </div>
+          <p className={hint}>{t("documents.originalUnavailable")}</p>
         )}
-      </section>
-      {!trashed && (
-        <section className="mt-6 flex flex-col gap-2" aria-labelledby="document-trash">
-          <h2 id="document-trash" className="text-lg font-semibold">
-            {t("trash.section")}
-          </h2>
-          <p className="text-sm text-stone-600 dark:text-stone-400">{t("trash.documentHint")}</p>
-          <div>
-            <MoveToTrashButton busy={trashBusy} onConfirm={() => void changeTrash("trash")} testId="trash-document" />
-          </div>
-        </section>
-      )}
-      <p className="mt-4 text-xs text-stone-500">{formatDate(document.uploadedAt, i18n.language)}</p>
-    </>
+        {(searchable === "photo" || searchable === "scan") && (
+          <a
+            className="btn-ghost"
+            href={`/api/documents/${document.id}/archive-pdf?inline=true`}
+            target="_blank"
+            rel="noreferrer"
+            data-testid="open-archive-pdf"
+          >
+            {t("documents.archivePdf")}
+          </a>
+        )}
+      </div>
+
+      {desktop ? <DocumentViewer document={document} /> : <DocumentPreview document={document} />}
+
+      <ContextPanelOrFlow>
+        <div className="flex flex-col gap-5">
+          <Block id="document-processing" title={t("documents.processing")} testId="processing">
+            <ProcessingSteps completed={progress.completed} current={progress.current} />
+            {/* The processing state is shown once, here; an archived document names its archival date (issue #83). */}
+            <p className={`text-sm ${p.state === "FAILED" ? "text-danger" : "text-text-2"}`} data-testid="processing-state">
+              {p.state === "ARCHIVED" && p.archivedAt
+                ? t("documents.archivedAt", { date: formatDateTime(p.archivedAt, i18n.language) })
+                : t(`documents.state.${p.state}`)}
+            </p>
+            {p.retryScheduled && (
+              <p className={hint}>
+                {t("documents.retrying")} ·{" "}
+                {p.nextAttemptAt && t("documents.nextAttempt", { date: formatDateTime(p.nextAttemptAt, i18n.language) })}
+              </p>
+            )}
+            {p.attempts > 0 && <p className={hint}>{t("documents.attempts", { count: p.attempts })}</p>}
+            {p.lastErrorCode && (
+              <p className="text-sm text-danger">
+                {t("documents.lastError", {
+                  message: t(`errors.${p.lastErrorCode}`, { defaultValue: p.lastErrorMessage ?? p.lastErrorCode }),
+                })}
+              </p>
+            )}
+            <TextRecognitionHint document={document} />
+            {(searchable === "photo" || searchable === "photoPending") && (
+              <p className={hint} data-testid="photo-hint">
+                {searchable === "photo" ? t("documents.archivePdfHint") : t("documents.archivePdfPending")}
+                {document.contentType === "image/heic" && ` ${t("documents.heicHint")}`}
+              </p>
+            )}
+            {searchable === "scan" && (
+              <p className={hint} data-testid="scan-hint">
+                {t("documents.archivePdfScanHint")}
+              </p>
+            )}
+            {p.state === "FAILED" && !trashed && (
+              <div>
+                <button type="button" className="btn-secondary" onClick={retry} data-testid="retry-archival">
+                  {t("documents.retry")}
+                </button>
+              </div>
+            )}
+          </Block>
+
+          {p.state !== "FAILED" && !trashed && (
+            <AnalysisPanel document={document} onChange={setDocument} onError={setError} onMessage={setMessage} reload={load} />
+          )}
+
+          <Block id="document-folder-heading" title={t("documents.folder")}>
+            <p className="font-mono text-sm break-words text-text-2" data-testid="document-folder">
+              {document.classification.path.map((step) => step.name).join(" / ") || t("documents.unsorted")}
+            </p>
+            {!trashed && (
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-0 flex-1">
+                  <FolderSelect
+                    categories={categories}
+                    value={folderDraft}
+                    onChange={setFolderDraft}
+                    label={t("documents.chooseFolder")}
+                    id="document-folder-select"
+                  />
+                </div>
+                <button type="button" className="btn-secondary" onClick={saveFolder} data-testid="save-folder">
+                  {t("app.save")}
+                </button>
+              </div>
+            )}
+            {!trashed && (
+              <PlacementSuggestion
+                document={document}
+                categories={categories}
+                onChange={setDocument}
+                onError={setError}
+                onMessage={setMessage}
+                reload={load}
+              />
+            )}
+          </Block>
+
+          <Block
+            id="document-labels"
+            title={t("documents.labels")}
+            action={
+              !editingLabels && !trashed && (
+                <button type="button" className="btn-ghost -mr-3 font-sans normal-case tracking-normal" onClick={() => setEditingLabels(true)} data-testid="edit-labels">
+                  {t("documents.editLabels")}
+                </button>
+              )
+            }
+          >
+            <LabelChips
+              chips={document.classification.labels}
+              folderName={folderName}
+              onAccept={trashed ? undefined : (chip) => void review(chip, "accept")}
+              onReject={trashed ? undefined : (chip) => void review(chip, "reject")}
+            />
+            {document.classification.labels.length === 0 && <p className={hint}>{t("documents.noLabels")}</p>}
+            <p className="text-xs text-text-3">{t("documents.inheritedFromFolder")}</p>
+            {pending.length > 0 && <p className="text-xs text-text-3">{t("documents.confidenceHint")}</p>}
+            {editingLabels && (
+              <LabelEditor
+                key={document.classification.version}
+                chips={document.classification.labels}
+                labels={labels}
+                onSave={saveLabels}
+                onCreate={createLabel}
+              />
+            )}
+          </Block>
+
+          <Block
+            id="document-subjects"
+            title={t("documents.subjects")}
+            action={
+              !editingSubjects && !trashed && (
+                <button
+                  type="button"
+                  className="btn-ghost -mr-3 font-sans normal-case tracking-normal"
+                  onClick={() => {
+                    setSubjectDraft(
+                      document.subjects.map((subject) =>
+                        subject.kind === "MEMBER" ? `MEMBER:${subject.memberId}` : subject.kind,
+                      ),
+                    );
+                    setEditingSubjects(true);
+                  }}
+                >
+                  {t("documents.editSubjects")}
+                </button>
+              )
+            }
+          >
+            <SubjectList subjects={document.subjects} />
+            {document.classification.folderSubjects.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 text-xs text-text-3">
+                <span>{t("documents.fromFolderShort")}</span>
+                <SubjectList subjects={document.classification.folderSubjects} />
+              </div>
+            )}
+            {editingSubjects && (
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                {subjectChoices(persons, document.subjects.map(subjectKey)).map((value) => (
+                  <label key={value} className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+                    <input
+                      type="checkbox"
+                      className="ui-checkbox"
+                      checked={subjectDraft.includes(value)}
+                      onChange={() =>
+                        setSubjectDraft((draft) =>
+                          draft.includes(value) ? draft.filter((entry) => entry !== value) : [...draft, value],
+                        )
+                      }
+                    />
+                    {value.startsWith("MEMBER:") ? (memberName(value.substring(7)) ?? value) : t(`subjects.${value}`)}
+                  </label>
+                ))}
+                <div className="flex w-full gap-2">
+                  <button type="button" className="btn-secondary" onClick={saveSubjects}>
+                    {t("app.save")}
+                  </button>
+                  <button type="button" className="btn-ghost" onClick={() => setEditingSubjects(false)}>
+                    {t("app.cancel")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </Block>
+
+          {contracts.length > 0 && (
+            <Block id="linked-contracts" title={t("documents.linkedContracts")}>
+              <ul className="flex flex-col gap-2">
+                {contracts.map((contract) => (
+                  <li key={contract.id} className="card flex flex-wrap items-center justify-between gap-2">
+                    <Link to={`/contracts/${contract.id}`} className="font-medium text-data hover:underline">
+                      {contract.name}
+                    </Link>
+                    <span className="font-mono text-sm text-text-2">
+                      {contract.deadline.determined && contract.deadline.deadline
+                        ? t("contracts.deadline.cancelBy", { date: formatDate(contract.deadline.deadline, i18n.language) })
+                        : t("contracts.deadline.none")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          )}
+
+          <Block
+            id="linked-tasks"
+            title={
+              <>
+                {t("documents.linkedTasks")} <span className="text-text-3">{tasks.length}</span>
+              </>
+            }
+          >
+            {showTaskForm && (
+              <TaskForm
+                sourceDocumentId={document.id}
+                onCreated={(task) => {
+                  setTasks((current) => [...current, task]);
+                  setShowTaskForm(false);
+                  setMessage(t("tasks.created"));
+                }}
+              />
+            )}
+            {tasks.length === 0 ? (
+              <EmptyState>{t("documents.noLinkedTasks")}</EmptyState>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {tasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onChange={(updated) =>
+                      setTasks((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)))
+                    }
+                  />
+                ))}
+              </div>
+            )}
+            {!trashed && (
+              <div>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  aria-expanded={showTaskForm}
+                  onClick={() => setShowTaskForm((value) => !value)}
+                  data-testid="new-task-toggle"
+                >
+                  {t("documents.newTask")}
+                </button>
+              </div>
+            )}
+          </Block>
+
+          <Block id="document-title" title={t("documents.titleSection")}>
+            {editingTitle ? (
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="block min-w-0 flex-1" htmlFor="title-draft">
+                  <span className="label">{t("documents.renameTitle")}</span>
+                  <input
+                    id="title-draft"
+                    className="field"
+                    value={titleDraft}
+                    onChange={(event) => setTitleDraft(event.target.value)}
+                  />
+                </label>
+                <button type="button" className="btn-secondary" onClick={saveTitle} data-testid="save-title">
+                  {t("app.save")}
+                </button>
+                <button type="button" className="btn-ghost" onClick={() => setEditingTitle(false)}>
+                  {t("app.cancel")}
+                </button>
+              </div>
+            ) : (
+              !trashed && (
+                <div>
+                  <button
+                    type="button"
+                    className="btn-ghost -ml-4"
+                    onClick={() => {
+                      setTitleDraft(document.title);
+                      setEditingTitle(true);
+                    }}
+                    data-testid="rename-document"
+                  >
+                    {t("documents.renameTitle")}
+                  </button>
+                </div>
+              )
+            )}
+            <details className="text-sm" data-testid="technical-details">
+              <summary className="flex min-h-11 cursor-pointer items-center font-mono text-xs tracking-[0.18em] text-text-3 uppercase">
+                {t("documents.technicalDetails")}
+              </summary>
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3.5 gap-y-1.5 pt-1">
+                <dt className="text-text-3">{t("documents.fileName")}</dt>
+                <dd className="font-mono text-xs break-all text-text-2">{document.originalFilename}</dd>
+                <dt className="text-text-3">{t("documents.fileSize")}</dt>
+                <dd className="font-mono text-xs text-text-2">{formatBytes(document.sizeBytes, t, i18n.language)}</dd>
+                {p.paperlessDocumentId != null && (
+                  <>
+                    <dt className="text-text-3">{t("documents.paperlessNumber")}</dt>
+                    <dd className="font-mono text-xs text-text-2">{p.paperlessDocumentId}</dd>
+                  </>
+                )}
+                <dt className="text-text-3">{t("documents.checksum")}</dt>
+                <dd className="font-mono text-xs break-all text-text-2" data-testid="checksum">
+                  {document.checksumSha256}
+                </dd>
+              </dl>
+            </details>
+          </Block>
+
+          {!trashed && (
+            <Block id="document-trash" title={t("trash.section")}>
+              <p className={hint}>{t("trash.documentHint")}</p>
+              <div>
+                <MoveToTrashButton busy={trashBusy} onConfirm={() => void changeTrash("trash")} testId="trash-document" />
+              </div>
+            </Block>
+          )}
+        </div>
+      </ContextPanelOrFlow>
+    </div>
   );
 }

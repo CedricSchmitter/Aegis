@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { openDocument, openUpload, searchDocuments } from "./documents";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.resolve(here, "../../fixtures/synthetic-contract.pdf");
@@ -55,17 +56,6 @@ async function ensureGerman(page: Page) {
     await saved;
   }
   await page.goto(back);
-}
-
-/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
-async function openUpload(page: Page) {
-  // The panel's first state follows the folder catalog, so decide only once that has loaded.
-  await expect(page.getByTestId("folder-all")).toBeAttached();
-  const panel = page.getByTestId("upload-panel");
-  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
-    await page.getByTestId("upload-panel-toggle").click();
-  }
-  await expect(panel).toHaveAttribute("open", "");
 }
 
 test.describe("first runnable test", () => {
@@ -174,7 +164,7 @@ test.describe("first runnable test", () => {
     await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
     const card = page.locator("[data-testid=document-card]", { hasText: `Stromvertrag e2e ${runId}` }).first();
     await expect(card).toBeVisible();
-    await card.getByRole("link").first().click();
+    await openDocument(card);
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 300_000 });
     const documentUrl = page.url();
     const documentId = documentUrl.split("/").pop()!;
@@ -195,8 +185,7 @@ test.describe("first runnable test", () => {
 
     // Search by content (full text of the archive) and by title.
     await page.getByRole("link", { name: "Dokumente" }).first().click();
-    await page.getByTestId("search-input").fill("Kuendigungsfrist");
-    await page.getByRole("button", { name: "Suchen" }).click();
+    await searchDocuments(page, "Kuendigungsfrist");
     await expect(page.locator("[data-testid=document-card]", { hasText: `Stromvertrag e2e ${runId}` })).toBeVisible();
 
     // Create a linked task assigned to the other member with a deadline and a planned date.
@@ -323,12 +312,20 @@ test.describe("first runnable test", () => {
       await page.getByTestId("sidebar").getByRole("link", { name: /Dokumente|Documents/ }).first().click();
     }
     await openUpload(page);
-    for (const control of ["upload-take-photo", "upload-choose-image", "upload-choose-file"]) {
-      await expect(page.getByTestId(control)).toBeVisible();
+    if (isPhoneWidth(page)) {
+      for (const control of ["upload-take-photo", "upload-choose-image", "upload-choose-file"]) {
+        await expect(page.getByTestId(control)).toBeVisible();
+      }
+      // The options say which one scans and which one keeps the file unchanged (issue #83, F8).
+      await expect(page.getByTestId("upload-choose-image")).toContainText(/^(Fotos aus Galerie scannen|Scan photos from gallery)/);
+      await expect(page.getByTestId("upload-choose-file")).toContainText(/^(Datei unverändert hochladen|Upload file unchanged)/);
+    } else {
+      // A desktop browser opens no camera; a file is dropped or chosen, and photos become a scan (issue #27).
+      await expect(page.getByTestId("upload-take-photo")).toHaveCount(0);
+      await expect(page.getByTestId("upload-drop")).toBeVisible();
+      await expect(page.getByTestId("upload-choose-file")).toBeVisible();
+      await expect(page.getByTestId("upload-choose-image")).toContainText(/^(Fotos als Scan|Photos as a scan)/);
     }
-    // The labels say which button scans and which keeps the file unchanged (issue #83, F8).
-    await expect(page.getByTestId("upload-choose-image")).toHaveText(/^(Fotos aus Galerie scannen|Scan photos from gallery)$/);
-    await expect(page.getByTestId("upload-choose-file")).toHaveText(/^(Datei unverändert hochladen|Upload file unchanged)$/);
     // The camera control opens the rear camera directly on a phone.
     await expect(page.getByTestId("upload-camera-input")).toHaveAttribute("capture", "environment");
     await logout(page);

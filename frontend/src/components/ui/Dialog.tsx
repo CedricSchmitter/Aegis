@@ -1,5 +1,15 @@
-import { useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+
+/**
+ * The element full-screen overlays are rendered into. An open modal dialog lies in the browser's top layer above
+ * everything else, so an overlay opened from inside a sheet (the scan's corner editor) has to be rendered inside it.
+ */
+const LayerContext = createContext<HTMLElement | null>(null);
+
+export function useOverlayLayer(): HTMLElement {
+  return useContext(LayerContext) ?? document.body;
+}
 
 /**
  * Keeps a native <dialog> in step with `open`. The native modal makes the rest of the page inert, traps focus,
@@ -74,18 +84,32 @@ function isBackdropClick(event: MouseEvent<HTMLDialogElement>): boolean {
   return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
 }
 
-type SheetProps = { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode };
+type SheetProps = {
+  open: boolean;
+  onClose: () => void;
+  title: ReactNode;
+  children: ReactNode;
+  testId?: string;
+  /** A wider panel on large screens, for forms with previews such as the upload. */
+  wide?: boolean;
+};
 
 /** A bottom sheet on phones and a centred panel on wider screens, for choices and short forms. */
-export function Sheet({ open, onClose, title, children }: SheetProps) {
+export function Sheet({ open, onClose, title, children, testId, wide = false }: SheetProps) {
   const { t } = useTranslation();
   const ref = useModal(open, onClose);
   const titleId = useId();
+  const [layer, setLayer] = useState<HTMLElement | null>(null);
   return (
     <dialog
-      ref={ref}
+      ref={(element) => {
+        ref.current = element;
+        setLayer(element);
+      }}
       className="ui-sheet"
+      data-wide={wide || undefined}
       aria-labelledby={titleId}
+      data-testid={testId}
       onClick={(event) => {
         if (isBackdropClick(event)) onClose();
       }}
@@ -98,7 +122,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
           </svg>
         </button>
       </div>
-      {children}
+      <LayerContext.Provider value={layer}>{children}</LayerContext.Provider>
     </dialog>
   );
 }

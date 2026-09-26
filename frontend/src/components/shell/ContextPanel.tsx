@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { PANEL_QUERY, useMediaQuery } from "./ShellData";
 
 interface Slot {
   target: HTMLElement | null;
@@ -50,4 +51,18 @@ export function ContextPanel({ children }: { children: ReactNode }) {
   const register = slot?.register;
   useEffect(() => register?.(), [register]);
   return slot?.target ? createPortal(children, slot.target) : null;
+}
+
+/** Whether the context panel is shown, so a page can decide where its selection goes. */
+export function usePanelShown(): boolean {
+  const slot = useContext(ContextPanelContext);
+  return useMediaQuery(PANEL_QUERY) && slot !== null;
+}
+
+/**
+ * The same content in the context panel from 1280 px and in the page flow below, rendered once, so its ids and
+ * form state exist a single time whatever the width.
+ */
+export function ContextPanelOrFlow({ children }: { children: ReactNode }) {
+  return usePanelShown() ? <ContextPanel>{children}</ContextPanel> : <>{children}</>;
 }

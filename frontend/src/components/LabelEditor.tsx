@@ -37,15 +37,15 @@ export function LabelEditor({ chips, labels, onSave, onCreate }: Props) {
       {FACETS.map((facet) => (
         <div key={facet} className="flex flex-col gap-1">
           <p className="label mb-0">{t(`facets.${facet}`)}</p>
-          <p className="text-xs text-stone-500">{t(`facets.hint${facet}`)}</p>
+          <p className="text-xs text-text-3">{t(`facets.hint${facet}`)}</p>
           <ul className="flex flex-wrap gap-1">
             {inFacet(facet).map((id) => (
               <li key={id}>
-                <span className="badge bg-stone-200 gap-1 dark:bg-stone-800">
+                <span className="ui-chip">
                   {labelName(known.get(id), t) || id}
                   <button
                     type="button"
-                    className="px-1 text-stone-600 dark:text-stone-300"
+                    className="ui-chip-remove"
                     aria-label={t("documents.removeLabel", { name: labelName(known.get(id), t) })}
                     onClick={() => remove(id)}
                   >

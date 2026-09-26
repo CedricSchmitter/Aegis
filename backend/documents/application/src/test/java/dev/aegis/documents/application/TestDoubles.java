@@ -135,6 +135,7 @@ final class TestDoubles {
         boolean available = true;
         final Map<Integer, byte[]> originals = new HashMap<>();
         final Map<Integer, byte[]> archivePdfs = new HashMap<>();
+        static final byte[] THUMBNAIL = "RIFF\0\0\0\0WEBPVP8 ".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
         final Map<Integer, String> texts = new HashMap<>();
         final Map<String, List<Integer>> contentHits = new HashMap<>();
         int contentReads;
@@ -180,6 +181,15 @@ final class TestDoubles {
                 throw new ArchiveUnavailableException("missing " + paperlessDocumentId);
             }
             return java.util.Optional.ofNullable(archivePdfs.get(paperlessDocumentId));
+        }
+
+        @Override
+        public dev.aegis.documents.application.api.DocumentThumbnail fetchThumbnail(int paperlessDocumentId) {
+            requireAvailable();
+            if (!originals.containsKey(paperlessDocumentId)) {
+                throw new ArchiveUnavailableException("missing " + paperlessDocumentId);
+            }
+            return new dev.aegis.documents.application.api.DocumentThumbnail("image/webp", THUMBNAIL);
         }
 
         @Override

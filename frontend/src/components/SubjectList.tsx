@@ -10,11 +10,11 @@ export function subjectLabel(subject: SubjectDto, memberName: (id: string | null
 export function SubjectList({ subjects }: { subjects: SubjectDto[] }) {
   const { t } = useTranslation();
   const { memberName } = useSession();
-  if (subjects.length === 0) return <p className="text-xs text-stone-500">{t("subjects.none")}</p>;
+  if (subjects.length === 0) return <p className="text-xs text-text-3">{t("subjects.none")}</p>;
   return (
     <ul className="flex flex-wrap gap-1" aria-label={t("documents.subjects")}>
       {subjects.map((subject, index) => (
-        <li key={index} className="badge bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200">
+        <li key={index} className="inline-flex min-h-8 items-center border border-line px-2.5 text-sm text-text-2">
           {subjectLabel(subject, memberName, t)}
         </li>
       ))}

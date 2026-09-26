@@ -115,7 +115,7 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
   const titleOpen = a.title && (a.titleDecision === "SUGGESTED" || a.titleDecision === "APPLIED");
 
   return (
-    <section className="card mb-4 flex flex-col gap-3" aria-labelledby="analysis-heading" data-testid="analysis">
+    <section className="card flex flex-col gap-3" aria-labelledby="analysis-heading" data-testid="analysis">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="analysis-heading" className="text-lg font-semibold">
           {t("analysis.title")}
@@ -126,20 +126,20 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
         {t(`analysis.state.${a.state}`)}
       </p>
       {a.state === "PENDING" && a.runState && (
-        <p className="text-sm text-stone-600 dark:text-stone-400">
+        <p className="text-sm text-text-3">
           {t(`ai.state.${a.runState}`)}
           {a.nextAttemptAt && ` · ${t("ai.nextAttempt", { date: formatDateTime(a.nextAttemptAt, i18n.language) })}`}
         </p>
       )}
       {(a.state === "FAILED" || a.state === "UNAVAILABLE") && (
-        <p className="text-sm text-red-700 dark:text-red-300" data-testid="analysis-failure">
+        <p className="text-sm text-danger" data-testid="analysis-failure">
           {a.failureCategory
             ? t(`ai.failure.${a.failureCategory}`, { defaultValue: t("errors.generic") })
             : t(`errors.${a.failureCode}`, { defaultValue: t("errors.generic") })}
         </p>
       )}
       {a.completedAt && (
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-text-3">
           {t("analysis.completed", {
             date: formatDateTime(a.completedAt, i18n.language),
             model: a.model ?? "",
@@ -178,7 +178,7 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
           ? t("analysis.dateFound", { date: formatDate(a.documentDate, i18n.language) })
           : t(`analysis.date.${a.documentDateStatus}`)}
         {a.documentDateEvidence && (
-          <span className="block text-xs text-stone-500">
+          <span className="block text-xs text-text-3">
             {t("analysis.evidence", { text: a.documentDateEvidence })}
           </span>
         )}
@@ -192,7 +192,7 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
               <span>
                 {t(`facets.${candidate.facet}`)}: <strong>{candidate.name}</strong>
                 {percent(candidate.confidence, i18n.language) && (
-                  <span className="text-xs text-stone-500">
+                  <span className="text-xs text-text-3">
                     {" "}
                     · {t("analysis.modelEstimate", { value: percent(candidate.confidence, i18n.language) })}
                   </span>
@@ -229,7 +229,7 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
             >
               <span>{subjectLabel(suggestion.subject)}</span>
               {suggestion.evidence && (
-                <span className="text-xs text-stone-500">{t("analysis.evidence", { text: suggestion.evidence })}</span>
+                <span className="text-xs text-text-3">{t("analysis.evidence", { text: suggestion.evidence })}</span>
               )}
               <button
                 type="button"
@@ -252,12 +252,12 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
         </div>
       )}
 
-      <div className="flex flex-col gap-1 border-t border-stone-200 pt-3 dark:border-stone-700">
+      <div className="flex flex-col gap-1 border-t border-line pt-3 ">
         <p className="text-sm font-medium">{t("analysis.filename")}</p>
         <p className="break-all font-mono text-sm" data-testid="friendly-filename">
           {document.filename.filename}
         </p>
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-text-3">
           {t(`analysis.filenameSource.${document.filename.source}`)} ·{" "}
           {t("analysis.originalFilename", { name: document.originalFilename })}
         </p>
@@ -306,7 +306,7 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
             )}
           </div>
         )}
-        <p className="text-xs text-stone-500">{t("analysis.filenameHint")}</p>
+        <p className="text-xs text-text-3">{t("analysis.filenameHint")}</p>
       </div>
 
       {archived && REQUESTABLE.has(a.state) && (
@@ -324,15 +324,15 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
                 ? t("analysis.retry")
                 : t("analysis.reprocess")}
           </button>
-          <span className="text-xs text-stone-500">{t("analysis.costHint")}</span>
+          <span className="text-xs text-text-3">{t("analysis.costHint")}</span>
         </div>
       )}
-      <p className="text-xs text-stone-500">{t("analysis.policyHint")}</p>
+      <p className="text-xs text-text-3">{t("analysis.policyHint")}</p>
 
       {a.history.length > 0 && (
         <details className="text-sm">
           <summary className="cursor-pointer">{t("analysis.history", { count: a.history.length })}</summary>
-          <ul className="mt-2 flex flex-col gap-1 text-xs text-stone-600 dark:text-stone-400">
+          <ul className="mt-2 flex flex-col gap-1 text-xs text-text-3">
             {a.history.map((entry) => (
               <li key={`${entry.generation}-${entry.runRef ?? ""}`}>
                 {entry.completedAt && formatDateTime(entry.completedAt, i18n.language)} · {entry.title ?? "–"}

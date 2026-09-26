@@ -105,6 +105,30 @@ class PaperlessClientTest {
     }
 
     @Test
+    void theThumbnailIsServedOnlyWhenItsBytesAreAnImage() {
+        byte[] webp = "RIFF\0\0\0\0WEBPVP8 image".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        server.expect(requestTo("http://paperless.test/api/documents/5/thumb/"))
+                .andRespond(withSuccess(webp, MediaType.parseMediaType("image/webp")));
+        server.expect(requestTo("http://paperless.test/api/documents/6/thumb/"))
+                .andRespond(withSuccess("<html>login</html>", MediaType.parseMediaType("image/webp")));
+        server.expect(requestTo("http://paperless.test/api/documents/7/thumb/"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        server.expect(requestTo("http://paperless.test/api/documents/8/thumb/")).andRespond(withServerError());
+
+        var thumbnail = client.fetchThumbnail(5);
+        assertThat(thumbnail.contentType()).isEqualTo("image/webp");
+        assertThat(thumbnail.bytes()).isEqualTo(webp);
+        assertThatThrownBy(() -> client.fetchThumbnail(6)).as("the header alone does not make an image")
+                .isInstanceOf(ArchiveUnavailableException.class);
+        assertThatThrownBy(() -> client.fetchThumbnail(7)).isInstanceOf(ArchiveUnavailableException.class);
+        assertThatThrownBy(() -> client.fetchThumbnail(8)).isInstanceOf(ArchiveUnavailableException.class);
+        assertThat(PaperlessClient.thumbnailType(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}))
+                .hasValue("image/jpeg");
+        assertThat(PaperlessClient.thumbnailType("%PDF-1.7".getBytes(java.nio.charset.StandardCharsets.US_ASCII)))
+                .isEmpty();
+    }
+
+    @Test
     void theTextIsReadTogetherWithWhetherPaperlessKeepsAnArchiveVersion() {
         String fields = "/?fields=id,content,archived_file_name";
         server.expect(requestTo("http://paperless.test/api/documents/5" + fields))

@@ -51,6 +51,26 @@ const PATHS = {
   logout: <path d="M14 4h6v16h-6M10 8l-4 4 4 4M6 12h10" />,
   folder: <path d="M3 6h7l2 2h9v11H3z" />,
   chevron: <path d="M9 5l7 7-7 7" />,
+  back: <path d="M15 5l-7 7 7 7" />,
+  camera: (
+    <>
+      <path d="M3 8h4l2-3h6l2 3h4v11H3z" />
+      <polygon points="10,10 14,10 16,13 14,16 10,16 8,13" />
+    </>
+  ),
+  image: (
+    <>
+      <path d="M3 5h18v14H3z" />
+      <path d="M3 16l5-5 4 4 3-3 6 6" />
+    </>
+  ),
+  file: (
+    <>
+      <path d="M6 3h8l4 4v14H6z" />
+      <path d="M14 3v4h4" />
+    </>
+  ),
+  filter: <path d="M3 5h18l-7 8v6l-4 2v-8z" />,
 } as const;
 
 export type IconName = keyof typeof PATHS;

@@ -88,7 +88,6 @@
     "title": "Documents",
     "upload": "Upload document",
     "uploadSubmit": "Save",
-    "uploadHint": "Photos become pages of one PDF; a file (PDF or photo, up to 50 MB) stays unchanged.",
     "takePhoto": "Take photo",
     "chooseImage": "Scan photos from gallery",
     "chooseFile": "Upload file unchanged",
@@ -106,8 +105,6 @@
     "contentSearchUnavailable": "The archive is unreachable right now: only title matches are shown and the list may be incomplete.",
     "empty": "No documents yet. Upload the first PDF or take a photo of a letter.",
     "noResults": "No matches for “{{query}}”.",
-    "count": "{{count}} documents",
-    "count_one": "{{count}} document",
     "uploadedBy": "Uploaded by {{name}} on {{date}}",
     "original": "Open original",
     "download": "Download original",
@@ -133,8 +130,6 @@
     "retryDone": "Archival has been queued again.",
     "checksum": "SHA-256",
     "technicalDetails": "Technical details",
-    "size": "{{size}}",
-    "paperlessId": "Paperless no. {{id}}",
     "archivedAt": "Archived on {{date}}",
     "attempts": "Attempts: {{count}}",
     "nextAttempt": "Next attempt: {{date}}",
@@ -159,7 +154,6 @@
     "folders": "Folders",
     "manageFolders": "Manage folders",
     "manageLabels": "Manage labels",
-    "allDocuments": "All documents",
     "unsorted": "Unsorted",
     "unsortedHint": "New uploads stay here until they are filed into a folder.",
     "filters": "Filters",
@@ -208,7 +202,48 @@
     "renameTitle": "Change title",
     "renamed": "Title changed.",
     "inheritedFromFolder": "Inherited from the folder; it changes when the document moves.",
-    "linkedContracts": "Contracts from this document"
+    "linkedContracts": "Contracts from this document",
+    "total": "{{count}} in total",
+    "total_one": "{{count}} in total",
+    "allShort": "All",
+    "folderPath": "Folder path",
+    "folderEmpty": "This folder holds no documents.",
+    "resultsFor": "for “{{query}}”",
+    "activeFilters": "Active filters",
+    "showResults": "Show {{count}} results",
+    "showResults_one": "Show {{count}} result",
+    "continueScan": "Continue scan · {{count}} pages",
+    "continueScan_one": "Continue scan · {{count}} page",
+    "dropToUpload": "Drag a file here to upload",
+    "column": {
+      "type": "Type",
+      "name": "Name · folder",
+      "state": "State",
+      "date": "Date"
+    },
+    "preview": {
+      "title": "Preview",
+      "alt": "First page of “{{title}}”",
+      "pending": "The preview appears once the document is archived.",
+      "none": "No preview available."
+    },
+    "viewer": "Document “{{title}}”",
+    "openLarge": "Open large",
+    "noLabels": "No labels yet.",
+    "processing": "Processing",
+    "fromFolderShort": "From the folder:",
+    "titleSection": "Title and file",
+    "fileName": "File name",
+    "fileSize": "Size",
+    "paperlessNumber": "Paperless no.",
+    "capture": {
+      "photoHint": "Becomes a straight, readable PDF",
+      "galleryHint": "Several photos become the pages of one PDF",
+      "fileHint": "PDF or photo, up to 50 MB. The file stays as it is.",
+      "dropTitle": "Drop a file here",
+      "chooseFile": "Choose file",
+      "photosAsScan": "Photos as a scan"
+    }
   },
   "subjects": {
     "HOUSE": "House",
@@ -940,7 +975,14 @@
     "hintORGANIZATION": "Sender or provider, for example Telekom.",
     "hintTOPIC": "What it is about, for example internet.",
     "hintTAG": "Free-form tags for anything else.",
-    "hintSUBJECT": "Who or what it concerns."
+    "hintSUBJECT": "Who or what it concerns.",
+    "short": {
+      "DOCUMENT_TYPE": "Type",
+      "ORGANIZATION": "Org",
+      "TOPIC": "Topic",
+      "TAG": "Tag",
+      "SUBJECT": "Concerns"
+    }
   },
   "labels": {
     "title": "Labels",

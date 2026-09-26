@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { openUpload } from "./documents";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const STRAIGHT = path.resolve(here, "../../fixtures/synthetic-letter-photo.jpg");
@@ -79,17 +80,6 @@ async function trash(page: Page, documentId: string) {
   await page.getByTestId("trash-document").click();
   await page.getByTestId("trash-document-confirm").click();
   await expect(page.getByTestId("trash-banner")).toBeVisible();
-}
-
-/** Opens the upload panel unless it is open already: it starts open while the collection is empty (issue #83). */
-async function openUpload(page: Page) {
-  // The panel's first state follows the folder catalog, so decide only once that has loaded.
-  await expect(page.getByTestId("folder-all")).toBeAttached();
-  const panel = page.getByTestId("upload-panel");
-  if (!(await panel.evaluate((element) => (element as HTMLDetailsElement).open))) {
-    await page.getByTestId("upload-panel-toggle").click();
-  }
-  await expect(panel).toHaveAttribute("open", "");
 }
 
 test.describe("scanned photos", () => {
