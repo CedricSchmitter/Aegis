@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
 import { useSession } from "../auth/SessionContext";
+import { INBOX_CHANGED } from "../lib/inbox";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { PendingShares } from "./PendingShares";
 
@@ -11,8 +12,7 @@ const NAV = [
   { to: "/documents", key: "nav.documents" },
   { to: "/contracts", key: "nav.contracts" },
   { to: "/tasks", key: "nav.tasks" },
-  { to: "/review", key: "nav.review" },
-  { to: "/notices", key: "nav.notices" },
+  { to: "/inbox", key: "nav.inbox" },
   { to: "/status", key: "nav.status" },
 ] as const;
 
@@ -20,22 +20,31 @@ export function Layout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { member, logout } = useSession();
   const navigate = useNavigate();
-  const [unread, setUnread] = useState(0);
+  // Open review cards plus unread messages (issue #83); notices announcing a card are shown as the card. Each count
+  // is kept on its own, so one failed request leaves the other count current.
+  const [openCards, setOpenCards] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const pending = openCards + unreadMessages;
   const [version, setVersion] = useState<string>("");
 
   useEffect(() => {
     let active = true;
-    const load = async () => {
-      const result = await api.GET("/api/notices/unread-count");
-      if (active && result.data) setUnread(result.data.unread);
+    const ignore = () => undefined;
+    const load = () => {
+      void api.GET("/api/reviews/open-count").then((cards) => {
+        if (active && cards.data) setOpenCards(cards.data.open);
+      }, ignore);
+      void api.GET("/api/notices/unread-count").then((messages) => {
+        if (active && messages.data) setUnreadMessages(messages.data.unread);
+      }, ignore);
     };
-    void load();
+    load();
     const timer = window.setInterval(load, 30000);
-    window.addEventListener("aegis:notices-changed", load);
+    window.addEventListener(INBOX_CHANGED, load);
     return () => {
       active = false;
       window.clearInterval(timer);
-      window.removeEventListener("aegis:notices-changed", load);
+      window.removeEventListener(INBOX_CHANGED, load);
     };
   }, []);
 
@@ -66,9 +75,9 @@ export function Layout({ children }: { children: ReactNode }) {
               {NAV.map((item) => (
                 <NavLink key={item.to} to={item.to} className={linkClass}>
                   {t(item.key)}
-                  {item.to === "/notices" && unread > 0 && (
-                    <span className="ml-1 rounded-full bg-red-600 px-1.5 text-xs text-white" aria-label={t("nav.unreadCount", { count: unread })}>
-                      {unread}
+                  {item.to === "/inbox" && pending > 0 && (
+                    <span className="ml-1 rounded-full bg-red-600 px-1.5 text-xs text-white" aria-label={t("nav.pendingCount", { count: pending })} data-testid="inbox-badge">
+                      {pending}
                     </span>
                   )}
                 </NavLink>
@@ -108,7 +117,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </footer>
       <nav
         aria-label={t("nav.menu")}
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-stone-800 dark:bg-stone-900 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-stone-800 dark:bg-stone-900 md:hidden"
       >
         {NAV.map((item) => (
           <NavLink
@@ -121,8 +130,10 @@ export function Layout({ children }: { children: ReactNode }) {
             }
           >
             {t(item.key)}
-            {item.to === "/notices" && unread > 0 && (
-              <span className="absolute right-3 top-2 rounded-full bg-red-600 px-1.5 text-[10px] text-white">{unread}</span>
+            {item.to === "/inbox" && pending > 0 && (
+              <span className="absolute right-3 top-2 rounded-full bg-red-600 px-1.5 text-[10px] text-white" aria-label={t("nav.pendingCount", { count: pending })} data-testid="inbox-badge">
+                {pending}
+              </span>
             )}
           </NavLink>
         ))}

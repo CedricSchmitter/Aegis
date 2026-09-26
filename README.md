@@ -91,7 +91,7 @@ receives notices and can own tasks but is never what a document is about,
 [ADR-0017](docs/architecture/adr/ADR-0017-persons-and-the-assistant-account.md)), German/English UI, durable capture of PDFs and
 photos with Paperless archival, document list/search/original access, a browsable folder tree with an Unsorted
 inbox, structured labels (document type, organization, topic, tags) with faceted search, source-linked
-tasks, deterministic Today, in-app notifications, integration status, portable exports and isolated
+tasks, deterministic Today, one inbox for review cards and in-app messages, integration status, portable exports and isolated
 recovery. Folders, labels and search work without AI. New uploads are classified automatically once archived
 (title, type, organization, topics, evidenced issue date; conservative policy with reviewable suggestions), and
 downloads and exports use readable filenames such as `2026-09-17_Telekom_Rechnung_Internet_a1b2c3d4.pdf`
@@ -138,6 +138,13 @@ screens. Dismissal, source resolution and notification read state remain separat
 optimistic-concurrency conflict handling. Review history is included in portable export schema 7 and restore
 ([ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md)). Mail exceptions, task candidates and
 duplicate/relationship suggestions are not connected because those producers do not yet exist.
+
+The web app has one inbox (`/inbox`, "Eingang") with two sections: "Zu prüfen" lists the review cards, "Mitteilungen"
+the member's notices that no card represents (task assigned or completed, cancellation reminder, stale job, backup
+failed, disk space low). Notices that announce a card, including a failed archival, are still published but not
+listed a second time; opening the inbox marks them read. A successful archival publishes no notice. The navigation
+badge counts open cards plus unread messages, and the old addresses `/review` and `/notices` lead to the inbox
+([ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md#combined-inbox-issue-83)).
 
 Documents, tasks and contracts can be moved to a recoverable trash from their pages and restored from the trash
 page by either member ([ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md)). A trashed record keeps its

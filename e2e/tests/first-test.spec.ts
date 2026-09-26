@@ -152,8 +152,17 @@ test.describe("first runnable test", () => {
     const pageB = await contextB.newPage();
     await login(pageB, userB);
     await ensureGerman(pageB);
-    await pageB.getByRole("link", { name: "Hinweise" }).first().click();
-    const notice = pageB.locator("[data-testid=notice]", { hasText: `Kündigen ${runId}` });
+    // "Prüfen" and "Hinweise" are one inbox (issue #83); the old address still leads to its messages.
+    await pageB.goto("/notices");
+    await expect(pageB).toHaveURL(/\/inbox#messages$/);
+    await pageB.getByRole("link", { name: /^Eingang/ }).first().click();
+    await expect(pageB.getByRole("heading", { level: 1 })).toHaveText("Eingang");
+    await expect(pageB.getByRole("heading", { level: 2, name: "Zu prüfen" })).toBeVisible();
+    const messages = pageB.getByTestId("inbox-messages");
+    await expect(messages.getByRole("heading", { level: 2, name: "Mitteilungen" })).toBeVisible();
+    // A successful archival no longer adds a message; the upload already confirmed saving.
+    await expect(messages.locator("[data-testid=notice]", { hasText: "archiviert" })).toHaveCount(0);
+    const notice = messages.locator("[data-testid=notice]", { hasText: `Kündigen ${runId}` });
     await expect(notice).toBeVisible();
     await expect(notice).toHaveAttribute("data-unread", "true");
     await notice.getByRole("link", { name: "Öffnen" }).click();

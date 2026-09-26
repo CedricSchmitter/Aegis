@@ -190,8 +190,26 @@ class ReviewServiceTest {
     }
 
     @Test
+    void theOpenCountForTheInboxBadgeCountsOnlyOpenCardsAndDoesNotReconcile() {
+        producer.items = List.of(candidate(1), new ReviewItem.Candidate("doc:2:1", "documents", "DOCUMENT", "2", 1,
+                "PROCESSING_FAILURE", "FAILED", "HIGH", "review.failed", Map.of("title", "Letter"), "DOCUMENT", "2",
+                List.of()));
+        var first = service.list(ACTOR, "OPEN", null).getFirst();
+        service.dismiss(ACTOR, first.id(), first.version());
+        events.clear();
+        // A new candidate appears, but only opening the inbox or the daily job turns it into a card.
+        producer.items = List.of(candidate(1), candidate(3));
+
+        assertThat(service.openCount(ACTOR)).isEqualTo(1);
+        assertThat(events).isEmpty();
+        assertThatThrownBy(() -> service.openCount(RECONCILER)).isInstanceOf(NotAuthorizedException.class);
+    }
+
+    @Test
     void outsidersCannotReadOrAct() {
         assertThatThrownBy(() -> service.list(new Actor(MemberId.random()), null, null))
+                .isInstanceOf(NotAuthorizedException.class);
+        assertThatThrownBy(() -> service.openCount(new Actor(MemberId.random())))
                 .isInstanceOf(NotAuthorizedException.class);
     }
 
@@ -293,6 +311,10 @@ class ReviewServiceTest {
             }
             return all.values().stream().filter(i -> i.status().name().equals("OPEN")).map(MemoryRepository::copy)
                     .toList();
+        }
+
+        public long countOpen() {
+            return all.values().stream().filter(i -> i.status().name().equals("OPEN")).count();
         }
 
         public Set<String> findExistingFingerprints(Collection<String> fingerprints) {

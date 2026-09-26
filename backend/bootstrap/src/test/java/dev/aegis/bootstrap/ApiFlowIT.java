@@ -132,8 +132,9 @@ class ApiFlowIT extends PostgresIT {
         assertThat(original.header("X-Aegis-Original-Source")).isEqualTo("ARCHIVE");
         assertThat(original.header("Content-Disposition")).contains("Stromvertrag");
 
-        JsonNode notices = anna.json(anna.get("/api/notices?unreadOnly=true"));
-        assertThat(notices).anySatisfy(n -> assertThat(n.path("kind").asText()).isEqualTo("DOCUMENT_ARCHIVED"));
+        // The upload already confirmed saving: a successful archival adds no notice (issue #83).
+        JsonNode notices = anna.json(anna.get("/api/notices"));
+        assertThat(notices).noneSatisfy(n -> assertThat(n.path("linkId").asText()).isEqualTo(documentId));
     }
 
     @Test

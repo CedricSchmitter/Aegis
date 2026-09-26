@@ -1,24 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api, unwrap } from "../api/client";
-import type { NoticeSummary } from "../api/types";
-import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
-import { formatDateTime } from "../lib/format";
-import { noticeText } from "../lib/notices";
-import { problemMessage } from "../lib/problem";
+import { api, unwrap } from "../../api/client";
+import type { NoticeSummary } from "../../api/types";
+import { EmptyState, ErrorBox, InfoBox, Loading } from "../../components/common";
+import { formatDateTime } from "../../lib/format";
+import { INBOX_CHANGED, MESSAGES_ANCHOR, noticeTarget } from "../../lib/inbox";
+import { noticeText } from "../../lib/notices";
+import { problemMessage } from "../../lib/problem";
 
-function linkTarget(notice: NoticeSummary): string | null {
-  if (notice.linkType === "TASK" && notice.linkId) return `/tasks/${notice.linkId}`;
-  if (notice.linkType === "DOCUMENT" && notice.linkId) return `/documents/${notice.linkId}`;
-  if (notice.linkType === "CONTRACT" && notice.linkId) return `/contracts/${notice.linkId}`;
-  if (notice.linkType === "REVIEW" && notice.linkId) return `/review?item=${encodeURIComponent(notice.linkId)}`;
-  if (notice.linkType === "STATUS") return "/status";
-  return null;
-}
-
-export function NoticesPage() {
+/**
+ * The "Messages" section of the inbox: the member's notices that no review card represents, such as task
+ * assignments, cancellation reminders and operational notices (issue #83).
+ */
+export function MessagesSection() {
   const { t, i18n } = useTranslation();
+  const { hash } = useLocation();
   const [notices, setNotices] = useState<NoticeSummary[] | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +33,12 @@ export function NoticesPage() {
     void load();
   }, [load]);
 
-  const changed = () => window.dispatchEvent(new Event("aegis:notices-changed"));
+  const loaded = notices !== null;
+  useEffect(() => {
+    if (loaded && hash === `#${MESSAGES_ANCHOR}`) document.getElementById(MESSAGES_ANCHOR)?.scrollIntoView();
+  }, [loaded, hash]);
+
+  const changed = () => window.dispatchEvent(new Event(INBOX_CHANGED));
 
   const markRead = async (notice: NoticeSummary) => {
     try {
@@ -59,22 +61,21 @@ export function NoticesPage() {
   };
 
   return (
-    <>
-      <PageTitle
-        actions={
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} />
-              {t("notices.unreadOnly")}
-            </label>
-            <button type="button" className="btn-secondary" onClick={markAll} data-testid="mark-all-read">
-              {t("notices.markAllRead")}
-            </button>
-          </div>
-        }
-      >
-        {t("notices.title")}
-      </PageTitle>
+    <section aria-labelledby={MESSAGES_ANCHOR} data-testid="inbox-messages">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 id={MESSAGES_ANCHOR} className="text-lg font-semibold">
+          {t("notices.title")}
+        </h2>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} />
+            {t("notices.unreadOnly")}
+          </label>
+          <button type="button" className="btn-secondary" onClick={markAll} data-testid="mark-all-read">
+            {t("notices.markAllRead")}
+          </button>
+        </div>
+      </div>
       <div className="mb-3">
         <InfoBox>{t("notices.inAppOnly")}</InfoBox>
       </div>
@@ -84,7 +85,7 @@ export function NoticesPage() {
       {notices && (
         <ul className="flex flex-col gap-2">
           {notices.map((notice) => {
-            const target = linkTarget(notice);
+            const target = noticeTarget(notice);
             const unread = !notice.readAt;
             return (
               <li key={notice.id} className={`card flex flex-col gap-1 ${unread ? "border-sky-400 dark:border-sky-600" : ""}`} data-testid="notice" data-unread={unread}>
@@ -110,6 +111,6 @@ export function NoticesPage() {
           })}
         </ul>
       )}
-    </>
+    </section>
   );
 }

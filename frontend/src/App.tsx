@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useSession } from "./auth/SessionContext";
+import { legacyInboxTarget } from "./lib/inbox";
 import { Layout } from "./components/Layout";
 import { LoginPage } from "./pages/LoginPage";
 import { TodayPage } from "./pages/TodayPage";
@@ -12,8 +13,7 @@ import { ContractsPage } from "./pages/ContractsPage";
 import { ContractDetailPage } from "./pages/ContractDetailPage";
 import { TasksPage } from "./pages/TasksPage";
 import { TaskDetailPage } from "./pages/TaskDetailPage";
-import { NoticesPage } from "./pages/NoticesPage";
-import { ReviewPage } from "./pages/ReviewPage";
+import { InboxPage } from "./pages/InboxPage";
 import { StatusPage } from "./pages/StatusPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SharePage } from "./pages/SharePage";
@@ -53,8 +53,10 @@ export function App() {
         <Route path="/contracts/:id" element={<ContractDetailPage />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/tasks/:id" element={<TaskDetailPage />} />
-        <Route path="/notices" element={<NoticesPage />} />
-        <Route path="/review" element={<ReviewPage />} />
+        <Route path="/inbox" element={<InboxPage />} />
+        {/* "Prüfen" and "Hinweise" became one inbox (issue #83); old links and bookmarks keep working. */}
+        <Route path="/review" element={<LegacyInboxRedirect />} />
+        <Route path="/notices" element={<LegacyInboxRedirect />} />
         <Route path="/status" element={<StatusPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/trash" element={<TrashPage />} />
@@ -65,4 +67,9 @@ export function App() {
       </Routes>
     </Layout>
   );
+}
+
+function LegacyInboxRedirect() {
+  const { pathname, search } = useLocation();
+  return <Navigate to={legacyInboxTarget(pathname, search)} replace />;
 }

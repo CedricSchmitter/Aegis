@@ -30,7 +30,7 @@ own no aggregates.
 A context may depend on another context only through that context's `application.api` package (public
 contracts such as `DocumentReferenceQuery`, `MemberDirectory`, `PublishNotice`). Domain models, repositories
 and adapters of other contexts are forbidden; the composition root is exempt. Cross-context reactions (task
-assigned, document archived or failed) leave a context through an outbound port (`PlanningEvents`,
+assigned, document archival failed) leave a context through an outbound port (`PlanningEvents`,
 `DocumentEvents`) that the bootstrap routes to the notifications contract, so the notice is written in the
 same transaction as the business change.
 

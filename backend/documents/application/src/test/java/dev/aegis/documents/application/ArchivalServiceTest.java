@@ -40,7 +40,7 @@ class ArchivalServiceTest {
     }
 
     @Test
-    void walksFromSubmitToPollToFinishedAndNotifiesOnce() {
+    void walksFromSubmitToPollToFinishedAndTriggersAnalysisOnceWithoutASuccessNotice() {
         assertThat(service.prepare(document.id())).isInstanceOf(Submit.class);
 
         service.recordSubmission(document.id(), "task-1");
@@ -51,7 +51,9 @@ class ArchivalServiceTest {
 
         assertThat(service.prepare(document.id())).isInstanceOf(Finished.class);
         assertThat(repository.findById(document.id()).orElseThrow().paperlessDocumentId()).contains(42);
-        assertThat(events.events).containsExactly("archived:" + document.id());
+        assertThat(triggered).containsExactly(document.id());
+        // The upload already confirmed saving; a successful archival notifies nobody (issue #83).
+        assertThat(events.events).isEmpty();
     }
 
     @Test

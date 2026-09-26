@@ -125,7 +125,9 @@ The owner wants one shared information space. Both authenticated members can rea
 Do not infer private document areas from person associations. Continue enforcing household membership and limited mirror/MCP identities. A background job acts as the member who requested its work, or, when no member did, as a named household process that is never a member: it may call only the queries explicitly opened to household processes and no command ([ADR-0009](adr/ADR-0009-central-review-inbox.md)). Authentication secrets and provider tokens are technical credentials, not searchable shared knowledge. The direct Paperless path must expose the same shared collection to both members.
 
 The in-app notification inbox is durable. Delivery adapters reuse notification identity and application
-commands; notification delivery, read status and task completion are distinct states. Calendar integration
+commands; notification delivery, read status and task completion are distinct states. The web app shows review cards
+and notices in one inbox; a notice that announces a card is published but not listed a second time
+([ADR-0009](adr/ADR-0009-central-review-inbox.md#combined-inbox-issue-83)). Calendar integration
 uses the application-owned port; the selected external provider owns its events. AI/model adapters reuse
 authorized application tools and cannot become a prerequisite for capture or deterministic planning. All AI work runs
 through the one bounded execution boundary of ADR-0003: per-workload provider, model and budgets; tools granted per

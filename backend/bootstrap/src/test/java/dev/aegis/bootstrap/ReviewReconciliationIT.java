@@ -98,7 +98,6 @@ class ReviewReconciliationIT extends PostgresIT {
     @Test
     void theRecurringJobCreatesTheCardAndNotifiesEveryActiveMemberWithoutAnInboxVisit() {
         ApiClient anna = login(ANNA);
-        ApiClient ben = login(BEN);
         String documentId = uploadWithoutText(anna, "job");
         assertThat(cardFor(documentId)).isEmpty();
 
@@ -106,16 +105,19 @@ class ReviewReconciliationIT extends PostgresIT {
 
         UUID card = cardFor(documentId).orElseThrow();
         String title = anna.json(anna.get("/api/documents/" + documentId)).path("title").asText();
-        for (ApiClient member : List.of(anna, ben)) {
-            assertThat(member.json(member.get("/api/notices?unreadOnly=true"))).anySatisfy(notice -> {
-                assertThat(notice.path("kind").asText()).isEqualTo("REVIEW_ITEM");
-                assertThat(notice.path("linkType").asText()).isEqualTo("REVIEW");
-                assertThat(notice.path("linkId").asText()).isEqualTo(card.toString());
-                // The notice names the card (issue #91): its key and the document title, never translated text.
-                assertThat(notice.path("params").path("titleKey").asText()).isEqualTo("review.noText");
-                assertThat(notice.path("params").path("title").asText()).isEqualTo(title);
-            });
-        }
+        // The inbox shows the card itself, so its notices are not listed as messages (issue #83); they stay unread
+        // until the member opens the inbox and remain the trigger for other delivery channels.
+        List<Map<String, Object>> stored = jdbc.sql("SELECT kind, link_type, link_id, params_json, read_at FROM notices"
+                + " WHERE dedup_key = ?").param("review:" + card).query().listOfRows();
+        assertThat(stored).isNotEmpty().allSatisfy(notice -> {
+            assertThat(notice.get("kind")).isEqualTo("REVIEW_ITEM");
+            assertThat(notice.get("link_type")).isEqualTo("REVIEW");
+            assertThat(notice.get("link_id")).isEqualTo(card.toString());
+            // The notice names the card (issue #91): its key and the document title, never translated text.
+            assertThat((String) notice.get("params_json")).contains("\"titleKey\":\"review.noText\"")
+                    .contains("\"title\":\"" + title + "\"");
+            assertThat(notice.get("read_at")).isNull();
+        });
         assertExactlyOneNoticePerActiveMember(card);
 
         // The schedule lives in PostgreSQL: after the run the next one waits there, so a restart continues it.

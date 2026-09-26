@@ -161,7 +161,7 @@ describe("locale catalogs", () => {
     for (const state of ["RECEIVED", "SUBMITTED", "ARCHIVED", "FAILED"]) {
       expect(german.has(`documents.state.${state}`)).toBe(true);
     }
-    for (const kind of ["TASK_ASSIGNED", "TASK_COMPLETED", "DOCUMENT_ARCHIVED", "DOCUMENT_ARCHIVAL_FAILED"]) {
+    for (const kind of ["TASK_ASSIGNED", "TASK_COMPLETED", "CONTRACT_CANCELLATION_REMINDER", "JOB_STALE"]) {
       expect(german.has(`notices.kind.${kind}`)).toBe(true);
     }
     for (const state of ["CONNECTED", "DEGRADED", "UNAVAILABLE", "NOT_CONFIGURED"]) {

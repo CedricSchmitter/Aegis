@@ -5,9 +5,8 @@ import { formatBytes, formatDate, formatDateTime } from "./format";
 import { backupReasonText, diskName } from "./storage";
 
 /**
- * Review card title keys with the parameters their text needs. A REVIEW_ITEM notice carries the card's key and
- * parameters (issue #91); notices published before that carry the key only and keep the generic text. A failure
- * code (`errorCode`) is stored as is and shown as a short localized reason (issue #96).
+ * Review card title keys with the parameters their text needs. A failure code (`errorCode`) is stored as is and shown
+ * as a short localized reason (issue #96).
  */
 export const REVIEW_TITLE_PARAMS: Record<string, readonly string[]> = {
   "review.archiveFailed": ["title", "errorCode"],
@@ -27,11 +26,6 @@ export function reviewTitle(t: TFunction, titleKey: string, params: Record<strin
   if (params.type) values.type = String(t(`contracts.factType.${params.type}`, { defaultValue: params.type }));
   if (REVIEW_TITLE_PARAMS[titleKey]?.includes("errorCode")) values.reason = failureReasonText(t, params.errorCode);
   return String(t(titleKey, values));
-}
-
-function describesReviewCard(params: Record<string, string>): boolean {
-  const required = REVIEW_TITLE_PARAMS[params.titleKey ?? ""];
-  return required !== undefined && required.every((name) => params[name] !== undefined);
 }
 
 /**
@@ -79,12 +73,12 @@ function diskSpaceLowText(t: TFunction, params: Record<string, string>, language
   );
 }
 
-/** The localized text of a notice from its stable kind and parameters. */
+/**
+ * The localized text of a message from its stable kind and parameters. Notices announcing a review card are not
+ * listed (issue #83); the inbox shows their card with {@link reviewTitle}.
+ */
 export function noticeText(t: TFunction, notice: NoticeSummary, language: string): string {
   const params = notice.params ?? {};
-  if (notice.kind === "REVIEW_ITEM" && describesReviewCard(params)) {
-    return reviewTitle(t, params.titleKey, params);
-  }
   if (notice.kind === "JOB_STALE" && params.job && params.state) return jobStaleText(t, params, language);
   if (notice.kind === "BACKUP_FAILED" && params.state) return backupFailedText(t, params, language);
   if (notice.kind === "DISK_SPACE_LOW" && params.disk) return diskSpaceLowText(t, params, language);
@@ -93,6 +87,5 @@ export function noticeText(t: TFunction, notice: NoticeSummary, language: string
     values.cancellationDeadline = params.cancellationDeadline ? formatDate(params.cancellationDeadline, language) : "";
     values.contractEnd = params.contractEnd ? formatDate(params.contractEnd, language) : "";
   }
-  if (notice.kind === "DOCUMENT_ARCHIVAL_FAILED") values.reason = failureReasonText(t, params.code);
   return String(t(`notices.kind.${notice.kind}`, { ...values, defaultValue: notice.kind }));
 }

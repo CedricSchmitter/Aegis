@@ -64,8 +64,13 @@ async function save(page: Page): Promise<string> {
   return answer.document.id;
 }
 
+/**
+ * Trashing carries the version the page shows. Submission and archival each raise it, so a trash request sent while
+ * the upload is still processing is rejected as a concurrent change; archived is the last change without AI.
+ */
 async function trash(page: Page, documentId: string) {
   await page.goto(`/documents/${documentId}`);
+  await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });
   await page.getByTestId("trash-document").click();
   await page.getByTestId("trash-document-confirm").click();
   await expect(page.getByTestId("trash-banner")).toBeVisible();

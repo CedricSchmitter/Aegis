@@ -7,6 +7,7 @@ import dev.aegis.notifications.application.api.PublishNotice;
 import dev.aegis.notifications.domain.Notice;
 import dev.aegis.notifications.domain.NoticeId;
 import dev.aegis.notifications.domain.NoticeKind;
+import dev.aegis.notifications.domain.NoticeKind.Placement;
 import dev.aegis.notifications.domain.NoticeLink;
 import dev.aegis.notifications.domain.NoticeRepository;
 import dev.aegis.shared.Actor;
@@ -15,10 +16,18 @@ import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotAuthorizedException;
 import dev.aegis.shared.NotFoundException;
 import java.time.Clock;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
-/** Inbox use cases: publishing with deduplication and per-member read state. */
+/**
+ * Inbox use cases: publishing with deduplication and per-member read state. Only messages are listed and counted;
+ * notices announcing a review card are published but shown as the card (issue #83).
+ */
 public class NoticeService implements PublishNotice, NoticeInbox {
+    private static final Set<NoticeKind> MESSAGES = NoticeKind.placedAs(Placement.MESSAGE);
+    private static final Set<NoticeKind> REVIEW_CARDS = NoticeKind.placedAs(Placement.REVIEW_CARD);
+
     private final NoticeRepository notices;
     private final HouseholdAccess access;
     private final Clock clock;
@@ -31,14 +40,17 @@ public class NoticeService implements PublishNotice, NoticeInbox {
 
     @Override
     public PublishOutcome publish(NoticeDraft draft) {
-        if (notices.findByDedupKey(draft.recipient(), draft.dedupKey()).isPresent()) {
-            return PublishOutcome.DEDUPLICATED;
-        }
         NoticeKind kind;
         try {
             kind = NoticeKind.valueOf(draft.kind());
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new InvalidInputException("notice.kind.invalid", "Unknown notice kind " + draft.kind());
+        }
+        if (kind.placement() == Placement.RETIRED) {
+            throw new InvalidInputException("notice.kind.retired", "Notice kind " + kind + " is no longer published");
+        }
+        if (notices.findByDedupKey(draft.recipient(), draft.dedupKey()).isPresent()) {
+            return PublishOutcome.DEDUPLICATED;
         }
         NoticeLink link = draft.linkType() == null ? null
                 : new NoticeLink(NoticeLink.LinkType.valueOf(draft.linkType()), draft.linkId());
@@ -50,13 +62,14 @@ public class NoticeService implements PublishNotice, NoticeInbox {
     @Override
     public List<NoticeSummary> list(Actor actor, boolean unreadOnly) {
         access.requireMember(actor);
-        return notices.findByRecipient(actor.memberId(), unreadOnly).stream().map(NoticeService::summarize).toList();
+        return notices.findByRecipient(actor.memberId(), MESSAGES, unreadOnly).stream()
+                .map(NoticeService::summarize).toList();
     }
 
     @Override
     public long unreadCount(Actor actor) {
         access.requireMember(actor);
-        return notices.countUnread(actor.memberId());
+        return notices.countUnread(actor.memberId(), MESSAGES);
     }
 
     @Override
@@ -75,8 +88,18 @@ public class NoticeService implements PublishNotice, NoticeInbox {
     @Override
     public int markAllRead(Actor actor) {
         access.requireMember(actor);
+        return markUnreadRead(actor, EnumSet.allOf(NoticeKind.class));
+    }
+
+    @Override
+    public int markReviewCardNoticesRead(Actor actor) {
+        access.requireMember(actor);
+        return markUnreadRead(actor, REVIEW_CARDS);
+    }
+
+    private int markUnreadRead(Actor actor, Set<NoticeKind> kinds) {
         int count = 0;
-        for (Notice notice : notices.findByRecipient(actor.memberId(), true)) {
+        for (Notice notice : notices.findByRecipient(actor.memberId(), kinds, true)) {
             notice.markRead(clock.instant());
             notices.save(notice);
             count++;
