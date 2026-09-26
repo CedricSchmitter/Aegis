@@ -1,0 +1,15 @@
+# VM override for ops/ci/remote-checks.sh. The CI stack runs next to the household stack on VM 102, so it publishes no
+# port (the browser test joins the proxy's network namespace instead) and nothing starts again on its own after a
+# reboot. Used together with compose.yaml and compose.ci.yaml of the checked commit under the project name aegis-ci.
+services:
+  caddy:
+    ports: !reset []
+    restart: "no"
+  aegis:
+    restart: "no"
+  postgres:
+    restart: "no"
+  broker:
+    restart: "no"
+  paperless:
+    restart: "no"
