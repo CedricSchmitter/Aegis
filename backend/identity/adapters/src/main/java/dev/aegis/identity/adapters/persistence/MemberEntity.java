@@ -27,6 +27,12 @@ public class MemberEntity {
     @Column(nullable = false, length = 8)
     private String locale;
 
+    @Column(nullable = false, length = 20)
+    private String palette;
+
+    @Column(name = "effects_enabled", nullable = false)
+    private boolean effectsEnabled;
+
     @Column(nullable = false)
     private boolean active;
 
@@ -42,13 +48,15 @@ public class MemberEntity {
     protected MemberEntity() {
     }
 
-    MemberEntity(UUID id, String username, String displayName, String passwordHash, String locale, boolean active,
-            String kind, Instant createdAt) {
+    MemberEntity(UUID id, String username, String displayName, String passwordHash, String locale, String palette,
+            boolean effectsEnabled, boolean active, String kind, Instant createdAt) {
         this.id = id;
         this.username = username;
         this.displayName = displayName;
         this.passwordHash = passwordHash;
         this.locale = locale;
+        this.palette = palette;
+        this.effectsEnabled = effectsEnabled;
         this.active = active;
         this.kind = kind;
         this.createdAt = createdAt;
@@ -84,6 +92,22 @@ public class MemberEntity {
 
     void setLocale(String locale) {
         this.locale = locale;
+    }
+
+    String getPalette() {
+        return palette;
+    }
+
+    void setPalette(String palette) {
+        this.palette = palette;
+    }
+
+    boolean isEffectsEnabled() {
+        return effectsEnabled;
+    }
+
+    void setEffectsEnabled(boolean effectsEnabled) {
+        this.effectsEnabled = effectsEnabled;
     }
 
     boolean isActive() {

@@ -15,6 +15,7 @@ import dev.aegis.documents.application.api.ImportDocument;
 import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.application.api.ImportDocument.ImportDocumentCommand;
 import dev.aegis.documents.application.api.SubjectView;
+import dev.aegis.identity.application.api.MemberAppearance;
 import dev.aegis.identity.application.api.MemberDirectory;
 import dev.aegis.identity.application.api.MemberKind;
 import dev.aegis.identity.application.api.MemberSummary;
@@ -55,6 +56,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -188,6 +190,18 @@ public class RestoreService implements RestoreExport {
         return result;
     }
 
+    /**
+     * The exported palette and effects of a member that the restore has to create. Files before schema 10 carry
+     * neither and an unknown palette name is a look, not data, so both give the default instead of failing the
+     * restore. An existing member keeps their own choice, like their locale.
+     */
+    static MemberAppearance appearance(MemberEntry entry) {
+        MemberAppearance.Palette palette = Arrays.stream(MemberAppearance.Palette.values())
+                .filter(candidate -> candidate.name().equals(entry.palette())).findFirst()
+                .orElse(MemberAppearance.DEFAULT.palette());
+        return new MemberAppearance(palette, entry.effects() == null || entry.effects());
+    }
+
     /** Exported member id -> local member id, matched by username; unknown usernames are created locked. */
     private Map<String, String> mapMembers(Actor actor, MembersFile file, List<String> warnings) {
         Map<String, String> mapping = new LinkedHashMap<>();
@@ -201,7 +215,8 @@ public class RestoreService implements RestoreExport {
                 provisioning.ensureMember(new ProvisionMemberCommand(entry.username(), entry.displayName(),
                         Base64.getUrlEncoder().withoutPadding().encodeToString(secret),
                         entry.locale() == null ? ProductLocale.defaultLocale() : ProductLocale.valueOf(entry.locale()),
-                        entry.kind() == null ? MemberKind.PERSON : MemberKind.valueOf(entry.kind())));
+                        entry.kind() == null ? MemberKind.PERSON : MemberKind.valueOf(entry.kind()),
+                        appearance(entry)));
                 warnings.add("created member '" + entry.username()
                         + "' with an unknown random password; set a password through provisioning before use");
                 byUsername.clear();

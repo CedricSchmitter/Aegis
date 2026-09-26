@@ -91,6 +91,48 @@ class MemberTest {
     }
 
     @Test
+    void newMembersStartWithStreetkidAndEffectsOn() {
+        Member member = Member.register(Username.of("lisa"), "Lisa", "initial-secret", REVERSIBLE, ProductLocale.DE,
+                Instant.EPOCH);
+
+        assertThat(member.appearance()).isEqualTo(new Appearance(Palette.STREETKID, true));
+        assertThat(member.appearance()).isEqualTo(Appearance.DEFAULT);
+    }
+
+    @Test
+    void appearanceIsTheMembersOwnChoiceAndLeavesEverythingElseAlone() {
+        Member member = Member.register(Username.of("lisa"), "Lisa", "initial-secret", REVERSIBLE, ProductLocale.DE,
+                Instant.EPOCH);
+
+        member.changeAppearance(new Appearance(Palette.NOMAD, false));
+
+        assertThat(member.appearance().palette()).isEqualTo(Palette.NOMAD);
+        assertThat(member.appearance().effects()).isFalse();
+        assertThat(member.locale()).isEqualTo(ProductLocale.DE);
+        assertThat(member.passwordMatches("initial-secret", REVERSIBLE)).isTrue();
+    }
+
+    @Test
+    void appearanceNeedsAPalette() {
+        Member member = Member.register(Username.of("lisa"), "Lisa", "initial-secret", REVERSIBLE, ProductLocale.DE,
+                Instant.EPOCH);
+
+        assertThatThrownBy(() -> new Appearance(null, true)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> member.changeAppearance(null)).isInstanceOf(NullPointerException.class);
+        assertThat(member.appearance()).isEqualTo(Appearance.DEFAULT);
+    }
+
+    @Test
+    void rehydrationKeepsTheStoredAppearance() {
+        Member stored = Member.register(Username.of("ben"), "Ben", "initial-secret", REVERSIBLE, ProductLocale.EN,
+                Instant.EPOCH);
+        Member member = Member.rehydrate(stored.id(), stored.username(), stored.displayName(), stored.passwordHash(),
+                stored.locale(), new Appearance(Palette.CORPO, true), true, MemberKind.PERSON, Instant.EPOCH);
+
+        assertThat(member.appearance()).isEqualTo(new Appearance(Palette.CORPO, true));
+    }
+
+    @Test
     void designationNeedsAValidName() {
         Member member = Member.register(Username.of("aegis-dev"), "Aegis Dev", "initial-secret", REVERSIBLE,
                 ProductLocale.DE, Instant.EPOCH);
