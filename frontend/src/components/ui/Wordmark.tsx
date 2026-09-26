@@ -1,0 +1,21 @@
+import { useTranslation } from "react-i18next";
+
+/*
+ * Outline of the glyph 盾 ("shield") from Noto Sans JP Bold 5.3.0 (@fontsource/noto-sans-jp), Copyright 2014-2021
+ * Adobe, SIL Open Font License 1.1. One inline path instead of a Japanese font for a single decorative glyph.
+ */
+const SHIELD_GLYPH =
+  "M126 659L126 362L244 383Q293 380 343 376L343 376Q431 369 516 359Q601 349 675.5 336.5Q750 324 807 309L807 309L899 403Q826 420 741 434L741 434Q686 444 629 451L629 451L648 452Q646 495 641 541L641 541L967 541L967 646L631 646Q630 659 629 672L629 672Q626 695 624 715L624 715L894 715L894 1250L774 1250L774 1214L419 1214L419 1250L305 1250L305 715L506 715Q508 690 510 661L510 661Q510 654 510 646L510 646L245 646L245 660Q245 721 240.5 797Q236 873 223 954Q210 1035 185 1112.5Q160 1190 118 1254L118 1254Q109 1241 92 1225.5Q75 1210 56 1196.5Q37 1183 22 1177L22 1177Q58 1120 79 1054Q100 988 110 918.5Q120 849 123 783Q126 717 126 659L126 659ZM419 1120L774 1120L774 1068L419 1068L419 1120ZM419 989L774 989L774 938L419 938L419 989ZM245 485L245 485L245 541L514 541Q516 501 517 464L517 464Q448 471 379 476L379 476Q310 481 245 485ZM419 858L774 858L774 809L419 809L419 858Z";
+
+/** "AEGIS" with the decorative shield glyph, which screen readers skip. The glitch belongs to the effects layer. */
+export function Wordmark() {
+  const { t } = useTranslation();
+  return (
+    <span className="ui-wordmark">
+      <b>{t("app.name")}</b>
+      <svg viewBox="0 280 1000 1000" aria-hidden="true" focusable="false">
+        <path d={SHIELD_GLYPH} fill="currentColor" />
+      </svg>
+    </span>
+  );
+}

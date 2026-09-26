@@ -91,7 +91,7 @@ export function FacetFilters({ filters, facets, labels, members, onChange }: Pro
                   data-testid={`facet-missing-${group}`}
                   className={`badge min-h-9 gap-1 border border-dashed px-3 ${
                     filters.missing.includes(group)
-                      ? "border-sky-700 bg-sky-100 text-sky-900 dark:border-sky-400 dark:bg-sky-900"
+                      ? "border-sky-700 bg-sky-100 text-sky-900 dark:border-sky-400 dark:bg-sky-900 dark:text-sky-100"
                       : "border-stone-400 bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300"
                   }`}
                   onClick={() => toggleMissing(group)}

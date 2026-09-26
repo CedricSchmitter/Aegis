@@ -5,7 +5,44 @@ import { api } from "../api/client";
 import { useSession } from "../auth/SessionContext";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { ErrorBox, InfoBox, PageTitle } from "../components/common";
+import { SegmentedControl, Switch } from "../components/ui";
+import { applyAppearance, PALETTES, readAppearance, type Appearance } from "../lib/appearance";
 import { problemMessage } from "../lib/problem";
+
+const PALETTE_NAMES = { streetkid: "Streetkid", corpo: "Corpo", nomad: "Nomad" } as const;
+
+/** Temporary preview of palette and effects (issue #27); PR 2 stores the choice per member. */
+function AppearancePreview() {
+  const { t } = useTranslation();
+  const [appearance, setAppearance] = useState<Appearance>(() => readAppearance(document.documentElement));
+  const change = (next: Appearance) => {
+    applyAppearance(document.documentElement, next);
+    setAppearance(next);
+  };
+  return (
+    <section className="card mb-4 flex flex-col gap-3" data-testid="appearance-preview">
+      <h2 className="font-semibold">{t("settings.appearance.title")}</h2>
+      <SegmentedControl
+        label={t("settings.appearance.palette")}
+        value={appearance.palette}
+        onChange={(palette) => change({ ...appearance, palette })}
+        options={PALETTES.map((palette) => ({
+          value: palette,
+          label: (
+            <span className="flex flex-col items-center py-1 leading-tight">
+              <span>{PALETTE_NAMES[palette]}</span>
+              <span className="text-xs text-text-4">{t(`settings.appearance.${palette}`)}</span>
+            </span>
+          ),
+        }))}
+      />
+      <Switch checked={appearance.effects} onChange={(effects) => change({ ...appearance, effects })} description={t("settings.appearance.effectsHint")}>
+        {t("settings.appearance.effects")}
+      </Switch>
+      <p className="text-xs text-text-3">{t("settings.appearance.previewNote")}</p>
+    </section>
+  );
+}
 
 export function SettingsPage() {
   const { t } = useTranslation();
@@ -42,6 +79,7 @@ export function SettingsPage() {
           <span className="text-xs text-stone-500">{t("settings.localeSaved")}</span>
         </div>
       </section>
+      <AppearancePreview />
       <section className="card mb-4 flex flex-col gap-2">
         <h2 className="font-semibold">{t("trash.title")}</h2>
         <p className="text-sm text-stone-600 dark:text-stone-400">{t("trash.intro")}</p>
