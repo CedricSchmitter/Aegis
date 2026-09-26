@@ -63,10 +63,33 @@ sudo -n sh -c 'cd /srv/aegis/deploy && docker compose --env-file .env -f compose
     pg_dump -U aegis -d aegis -Fc' > /srv/aegis/backup-staging/aegis-before-<sha>.dump
 ```
 
-Rollback to a previously built commit: `sh /srv/aegis/source/current/ops/deploy/rollback.sh <sha>` on the VM
-(application container only; database migrations are additive and are not undone). A successful deployment records
-the commit it replaced in `PREVIOUS_COMMIT` and then runs the bounded cleanup described in [Disk space](#disk-space):
-only the current image and the one in `PREVIOUS_COMMIT` are guaranteed to exist; older `aegis-app` images are removed.
+A successful deployment records the commit it replaced in `PREVIOUS_COMMIT` and then runs the bounded cleanup
+described in [Disk space](#disk-space): only the current image and the one in `PREVIOUS_COMMIT` are guaranteed to
+exist; older `aegis-app` images are removed.
+
+### Rollback
+
+Roll back to a previously built commit on the VM, as `aegis-agent`:
+
+```sh
+sh /srv/aegis/source/current/ops/deploy/rollback.sh <full-sha>
+```
+
+After a failed deployment the target is the commit in `DEPLOYED_COMMIT` (the script records a deployment only after
+its checks pass); after a successful deployment that turned out wrong it is the one in `PREVIOUS_COMMIT`. The script
+
+- refuses a commit without a built `aegis-app:<sha>` image before changing anything;
+- restores the compose files and Caddyfiles of `/srv/aegis/source/releases/aegis-<sha>` into `/srv/aegis/deploy`
+  when that release is still there (otherwise it keeps the current ones and says so), and pins `AEGIS_COMMIT`;
+- runs `docker compose up -d --wait` for the whole stack, not only `aegis`: a failed deployment can leave Caddy in
+  state `Created`, because it waits for a healthy application, and HTTPS then stays down (2026-09-26);
+- checks that `/api/system/version` reports the commit, then writes `DEPLOYED_COMMIT` and `PREVIOUS_COMMIT` with
+  the same rule as `remote-deploy.sh` (a rollback after a failed deployment keeps `PREVIOUS_COMMIT`), and prints
+  `docker compose ps`.
+
+Database migrations are additive and are not undone. A commit whose Flyway migrations conflict with the applied
+ones fails its health check, for example when an unmerged branch already applied a different migration with the same
+version (PR #117's `V1_3` on 2026-09-26); deploy a merge onto the running commit instead.
 
 ## Onboarding the two logins
 
