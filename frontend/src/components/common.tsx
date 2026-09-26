@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { Badge as StatusBadge, type Tone } from "./ui";
 
 export function PageTitle({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   return (
@@ -30,68 +31,70 @@ export function InfoBox({ children }: { children: ReactNode }) {
 export function Loading() {
   const { t } = useTranslation();
   return (
-    <p className="py-6 text-center text-stone-500" aria-busy="true">
+    <p className="py-6 text-center text-text-3" aria-busy="true">
       {t("app.loading")}
     </p>
   );
 }
 
 export function EmptyState({ children }: { children: ReactNode }) {
-  return <p className="card text-stone-600 dark:text-stone-400">{children}</p>;
+  return <p className="card text-text-3">{children}</p>;
 }
 
-const STATE_STYLES: Record<string, string> = {
-  RECEIVED: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
-  SUBMITTED: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
-  ARCHIVED: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
-  FAILED: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
-  UNAVAILABLE: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
-  NOT_CONFIGURED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  QUEUED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  RUNNING: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
-  WAITING_RETRY: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
-  SUCCEEDED: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
-  CANCELLED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  NOT_REQUESTED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  WAITING_FOR_ARCHIVE: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  PENDING: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
-  CLASSIFIED: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
-  NEEDS_REVIEW: "bg-violet-100 text-violet-900 dark:bg-violet-900 dark:text-violet-100",
-  OPEN: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
-  DONE: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
-  ACTIVE: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
-  ENDED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  EXTRACTED: "bg-violet-100 text-violet-900 dark:bg-violet-900 dark:text-violet-100",
-  CONFIRMED: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
-  REJECTED: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
-  SUPERSEDED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  TEXT_NONE: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
-  TEXT_LITTLE: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
-  CHECK_OK: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
-  CHECK_UNCHECKED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  CHECK_PROBLEM: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
-  JOB_OK: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
-  JOB_PENDING: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
-  JOB_FAILING: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
-  JOB_STALE: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
-  JOB_NOT_SCHEDULED: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
-  JOB_UNKNOWN: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  BACKUP_OK: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
-  BACKUP_RUNNING: "bg-sky-100 text-sky-900 dark:bg-sky-900 dark:text-sky-100",
-  BACKUP_FAILED: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
-  BACKUP_STALE: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
-  BACKUP_INTERRUPTED: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
-  BACKUP_NOT_CONFIGURED: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  BACKUP_UNKNOWN: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  DISK_OK: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
-  DISK_LOW: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
-  DISK_UNKNOWN: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
+// Colour semantics (ADR-0019): attention asks for action, data is a normal or finished state, danger is anything
+// broken or failed, neutral is grey.
+const STATE_TONES: Record<string, Tone> = {
+  RECEIVED: "attention",
+  SUBMITTED: "data",
+  ARCHIVED: "data",
+  FAILED: "danger",
+  UNAVAILABLE: "danger",
+  NOT_CONFIGURED: "neutral",
+  QUEUED: "neutral",
+  RUNNING: "data",
+  WAITING_RETRY: "attention",
+  SUCCEEDED: "data",
+  CANCELLED: "neutral",
+  NOT_REQUESTED: "neutral",
+  WAITING_FOR_ARCHIVE: "neutral",
+  PENDING: "data",
+  CLASSIFIED: "data",
+  NEEDS_REVIEW: "attention",
+  OPEN: "data",
+  DONE: "data",
+  ACTIVE: "data",
+  ENDED: "neutral",
+  EXTRACTED: "attention",
+  CONFIRMED: "data",
+  REJECTED: "danger",
+  SUPERSEDED: "neutral",
+  TEXT_NONE: "attention",
+  TEXT_LITTLE: "attention",
+  CHECK_OK: "data",
+  CHECK_UNCHECKED: "neutral",
+  CHECK_PROBLEM: "danger",
+  JOB_OK: "data",
+  JOB_PENDING: "data",
+  JOB_FAILING: "danger",
+  JOB_STALE: "danger",
+  JOB_NOT_SCHEDULED: "danger",
+  JOB_UNKNOWN: "neutral",
+  BACKUP_OK: "data",
+  BACKUP_RUNNING: "data",
+  BACKUP_FAILED: "danger",
+  BACKUP_STALE: "danger",
+  BACKUP_INTERRUPTED: "attention",
+  BACKUP_NOT_CONFIGURED: "neutral",
+  BACKUP_UNKNOWN: "neutral",
+  DISK_OK: "data",
+  DISK_LOW: "danger",
+  DISK_UNKNOWN: "neutral",
 };
 
 export function Badge({ state, label }: { state: string; label: string }) {
   return (
-    <span className={`badge ${STATE_STYLES[state] ?? STATE_STYLES.NOT_CONFIGURED}`} data-state={state}>
+    <StatusBadge tone={STATE_TONES[state] ?? "neutral"} data-state={state}>
       {label}
-    </span>
+    </StatusBadge>
   );
 }

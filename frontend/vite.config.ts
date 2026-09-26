@@ -15,6 +15,9 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: false,
+    // Font subsets stay separate files: inlined into the CSS they would be downloaded on every visit instead of only
+    // when a page needs their unicode-range (ADR-0019).
+    assetsInlineLimit: (file) => (/\.woff2?$/.test(file) ? false : undefined),
   },
   // The scan worker is started as a module worker and loads OpenCV.js (about 10 MB) itself, so the app bundle
   // stays small; members download it only when they scan a page.
@@ -23,6 +26,6 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
   },
 });

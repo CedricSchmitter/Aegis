@@ -753,7 +753,17 @@
     "newPasswordHint": "Mindestens 10 Zeichen.",
     "changePassword": "Passwort ändern",
     "passwordChanged": "Das Passwort wurde geändert.",
-    "localeSaved": "Die Sprache wird für dein Konto gespeichert."
+    "localeSaved": "Die Sprache wird für dein Konto gespeichert.",
+    "appearance": {
+      "title": "Darstellung",
+      "palette": "Farbpalette",
+      "streetkid": "Gelb und Cyan",
+      "corpo": "Hellgrau und Blau",
+      "nomad": "Orange und Türkis",
+      "effects": "Effekte",
+      "effectsHint": "Hintergrundraster, feine Zeilen und kurzes Flackern des Logos. Wenn das Gerät Bewegung reduziert, bleibt alles ruhig.",
+      "previewNote": "Vorschau: Die Auswahl wird noch nicht gespeichert. Nach dem Neuladen gilt wieder Streetkid mit Effekten."
+    }
   },
   "errors": {
     "generic": "Das hat nicht geklappt. Bitte versuche es erneut.",
@@ -1200,6 +1210,43 @@
       "applyCorners": "Ecken übernehmen",
       "keepUnchanged": "Foto unverändert übernehmen",
       "removePage": "Seite verwerfen"
+    }
+  },
+  "ui": {
+    "fileKind": {
+      "pdf": "PDF",
+      "scan": "Scan",
+      "photo": "Foto"
+    },
+    "chip": {
+      "remove": "{{name}} entfernen"
+    },
+    "confirm": {
+      "eyebrow": "Nicht umkehrbar",
+      "typeWord": "Zur Bestätigung „{{word}}“ eingeben"
+    },
+    "toast": {
+      "undo": "Rückgängig"
+    },
+    "steps": {
+      "label": "Verarbeitung",
+      "saved": "Gespeichert",
+      "archived": "Archiviert",
+      "textRecognized": "Text erkannt",
+      "classified": "Eingeordnet",
+      "state": {
+        "done": "erledigt",
+        "running": "läuft",
+        "failed": "fehlgeschlagen",
+        "pending": "ausstehend"
+      }
+    },
+    "countdown": {
+      "left": "Tage übrig",
+      "left_one": "Tag übrig",
+      "overdue": "Tage überfällig",
+      "overdue_one": "Tag überfällig",
+      "today": "Heute fällig"
     }
   }
 }

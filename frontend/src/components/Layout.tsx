@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import { useSession } from "../auth/SessionContext";
 import { INBOX_CHANGED } from "../lib/inbox";
 import { PendingShares } from "./PendingShares";
+import { Wordmark } from "./ui";
 
 const NAV = [
   { to: "/today", key: "nav.today" },
@@ -60,22 +61,19 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-white focus:p-2">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-surface focus:p-2">
         {t("app.skipToContent")}
       </a>
       <header className="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-              <img src="/icons/favicon.svg" alt="" width={28} height={28} className="h-7 w-7" />
-              {t("app.name")}
-            </span>
+            <Wordmark />
             <nav aria-label={t("nav.menu")} className="hidden gap-1 md:flex">
               {NAV.map((item) => (
                 <NavLink key={item.to} to={item.to} className={linkClass}>
                   {t(item.key)}
                   {item.to === "/inbox" && pending > 0 && (
-                    <span className="ml-1 rounded-full bg-red-600 px-1.5 text-xs text-white" aria-label={t("nav.pendingCount", { count: pending })} data-testid="inbox-badge">
+                    <span className="ml-1 bg-danger px-1.5 font-mono text-xs text-void" aria-label={t("nav.pendingCount", { count: pending })} data-testid="inbox-badge">
                       {pending}
                     </span>
                   )}
@@ -126,7 +124,7 @@ export function Layout({ children }: { children: ReactNode }) {
           >
             {t(item.key)}
             {item.to === "/inbox" && pending > 0 && (
-              <span className="absolute right-3 top-2 rounded-full bg-red-600 px-1.5 text-[10px] text-white" aria-label={t("nav.pendingCount", { count: pending })} data-testid="inbox-badge">
+              <span className="absolute right-3 top-2 bg-danger px-1.5 font-mono text-[11px] text-void" aria-label={t("nav.pendingCount", { count: pending })} data-testid="inbox-badge">
                 {pending}
               </span>
             )}

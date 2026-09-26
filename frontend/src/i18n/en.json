@@ -753,7 +753,17 @@
     "newPasswordHint": "At least 10 characters.",
     "changePassword": "Change password",
     "passwordChanged": "The password has been changed.",
-    "localeSaved": "The language is saved for your account."
+    "localeSaved": "The language is saved for your account.",
+    "appearance": {
+      "title": "Appearance",
+      "palette": "Color palette",
+      "streetkid": "Yellow and cyan",
+      "corpo": "Light gray and blue",
+      "nomad": "Orange and turquoise",
+      "effects": "Effects",
+      "effectsHint": "Background grid, fine lines and a short flicker of the logo. When the device reduces motion, everything stays still.",
+      "previewNote": "Preview: this choice is not saved yet. After reloading, Streetkid with effects applies again."
+    }
   },
   "errors": {
     "generic": "That did not work. Please try again.",
@@ -1200,6 +1210,43 @@
       "applyCorners": "Apply corners",
       "keepUnchanged": "Keep photo unchanged",
       "removePage": "Discard page"
+    }
+  },
+  "ui": {
+    "fileKind": {
+      "pdf": "PDF",
+      "scan": "Scan",
+      "photo": "Photo"
+    },
+    "chip": {
+      "remove": "Remove {{name}}"
+    },
+    "confirm": {
+      "eyebrow": "Cannot be undone",
+      "typeWord": "Type “{{word}}” to confirm"
+    },
+    "toast": {
+      "undo": "Undo"
+    },
+    "steps": {
+      "label": "Processing",
+      "saved": "Saved",
+      "archived": "Archived",
+      "textRecognized": "Text recognized",
+      "classified": "Filed",
+      "state": {
+        "done": "done",
+        "running": "in progress",
+        "failed": "failed",
+        "pending": "pending"
+      }
+    },
+    "countdown": {
+      "left": "days left",
+      "left_one": "day left",
+      "overdue": "days overdue",
+      "overdue_one": "day overdue",
+      "today": "Due today"
     }
   }
 }

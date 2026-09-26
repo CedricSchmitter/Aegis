@@ -1,0 +1,180 @@
+import { useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+
+/**
+ * Keeps a native <dialog> in step with `open`. The native modal makes the rest of the page inert, traps focus,
+ * returns focus on close and turns Escape into a cancel event, which is reported through onClose.
+ */
+function useModal(open: boolean, onClose: () => void) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const close = useRef(onClose);
+
+  useEffect(() => {
+    close.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (open && !dialog.open) {
+      if (typeof dialog.showModal === "function") dialog.showModal();
+      else dialog.setAttribute("open", "");
+    } else if (!open && dialog.open) {
+      if (typeof dialog.close === "function") dialog.close();
+      else dialog.removeAttribute("open");
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    const onCancel = (event: Event) => {
+      event.preventDefault();
+      close.current();
+    };
+    dialog.addEventListener("cancel", onCancel);
+    return () => dialog.removeEventListener("cancel", onCancel);
+  }, []);
+
+  return ref;
+}
+
+type DialogProps = {
+  open: boolean;
+  onClose: () => void;
+  title: ReactNode;
+  children: ReactNode;
+  /** Buttons at the bottom; the dialog does not add any on its own. */
+  actions?: ReactNode;
+  /** Small mono line above the title. */
+  eyebrow?: ReactNode;
+  /** Danger adds the red frame and the warning stripe. Reserve it for irreversible actions. */
+  variant?: "default" | "danger";
+};
+
+/** A centred modal for decisions. */
+export function Dialog({ open, onClose, title, children, actions, eyebrow, variant = "default" }: DialogProps) {
+  const ref = useModal(open, onClose);
+  const titleId = useId();
+  return (
+    <dialog ref={ref} className="ui-dialog" data-variant={variant} aria-labelledby={titleId}>
+      {variant === "danger" && <span className="ui-dialog-stripe" aria-hidden="true" />}
+      {eyebrow && <p className={`ui-eyebrow ${variant === "danger" ? "text-danger" : ""}`}>{eyebrow}</p>}
+      <h2 id={titleId}>{title}</h2>
+      {children}
+      {actions && <div className="flex flex-wrap justify-end gap-2">{actions}</div>}
+    </dialog>
+  );
+}
+
+/** Whether a click on the dialog element landed on its backdrop rather than on its content. */
+function isBackdropClick(event: MouseEvent<HTMLDialogElement>): boolean {
+  if (event.target !== event.currentTarget) return false;
+  const box = event.currentTarget.getBoundingClientRect();
+  return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+}
+
+type SheetProps = { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode };
+
+/** A bottom sheet on phones and a centred panel on wider screens, for choices and short forms. */
+export function Sheet({ open, onClose, title, children }: SheetProps) {
+  const { t } = useTranslation();
+  const ref = useModal(open, onClose);
+  const titleId = useId();
+  return (
+    <dialog
+      ref={ref}
+      className="ui-sheet"
+      aria-labelledby={titleId}
+      onClick={(event) => {
+        if (isBackdropClick(event)) onClose();
+      }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 id={titleId}>{title}</h2>
+        <button type="button" className="btn-ghost -mr-2 w-11 px-0" aria-label={t("app.close")} onClick={onClose}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      </div>
+      {children}
+    </dialog>
+  );
+}
+
+/** Whether the typed text confirms: case and surrounding spaces do not matter, the word does. */
+export function matchesConfirmation(typed: string, word: string): boolean {
+  return typed.trim().toLocaleUpperCase() === word.trim().toLocaleUpperCase();
+}
+
+type ConfirmDialogProps = {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: ReactNode;
+  children: ReactNode;
+  /** The word the member has to type, such as "LÖSCHEN". */
+  confirmWord: string;
+  /** Label of the destructive button, such as "Endgültig löschen". */
+  confirmLabel: string;
+  busy?: boolean;
+};
+
+/**
+ * The danger dialog for irreversible actions such as purging the trash (#85): the destructive button stays
+ * disabled until the member has typed the confirmation word.
+ */
+export function ConfirmDialog({ open, onClose, onConfirm, title, children, confirmWord, confirmLabel, busy = false }: ConfirmDialogProps) {
+  const { t } = useTranslation();
+  const [typed, setTyped] = useState("");
+  const inputId = useId();
+  const confirmed = matchesConfirmation(typed, confirmWord);
+
+  const close = () => {
+    setTyped("");
+    onClose();
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={close}
+      title={title}
+      eyebrow={t("ui.confirm.eyebrow")}
+      variant="danger"
+      actions={
+        <>
+          <button type="button" className="btn-ghost" onClick={close}>
+            {t("app.cancel")}
+          </button>
+          <button
+            type="button"
+            className="btn-danger"
+            disabled={!confirmed || busy}
+            onClick={() => {
+              setTyped("");
+              onConfirm();
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </>
+      }
+    >
+      <div className="text-sm text-text-2">{children}</div>
+      <label htmlFor={inputId} className="block">
+        <span className="ui-eyebrow mb-1 block">{t("ui.confirm.typeWord", { word: confirmWord })}</span>
+        <input
+          id={inputId}
+          className="field font-mono tracking-[0.1em] uppercase"
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          value={typed}
+          onChange={(event) => setTyped(event.target.value)}
+        />
+      </label>
+    </Dialog>
+  );
+}
