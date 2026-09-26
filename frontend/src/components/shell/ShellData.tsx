@@ -16,6 +16,8 @@ interface ShellData {
   status: StatusSummary;
   /** Open review cards plus unread messages (issue #83). */
   pending: number;
+  openCards: number;
+  unreadMessages: number;
   /** Folders with their document counts for the desktop sidebar; null on a phone or until loaded. */
   catalog: CategoryListResponse | null;
   version: string;
@@ -124,7 +126,7 @@ export function ShellDataProvider({ children }: { children: ReactNode }) {
 
   const status = useMemo(() => summarizeStatus(checks), [checks]);
   const value = useMemo<ShellData>(
-    () => ({ status, pending: openCards + unreadMessages, catalog: desktop ? catalog : null, version, desktop }),
+    () => ({ status, pending: openCards + unreadMessages, openCards, unreadMessages, catalog: desktop ? catalog : null, version, desktop }),
     [status, openCards, unreadMessages, catalog, version, desktop],
   );
   return <ShellDataContext.Provider value={value}>{children}</ShellDataContext.Provider>;

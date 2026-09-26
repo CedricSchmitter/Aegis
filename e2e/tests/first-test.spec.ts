@@ -198,14 +198,19 @@ test.describe("first runnable test", () => {
     await page.getByTestId("task-create").click();
     const taskItem = page.locator("[data-testid=task-item]", { hasText: `Kündigen ${runId}` });
     await expect(taskItem).toBeVisible();
-    await expect(taskItem).toContainText("Fällig");
+    // The card keeps the deadline ("Frist") and the planned work day ("Geplant") apart (issue #27).
+    await expect(taskItem).toContainText("Frist");
+    await expect(taskItem).toContainText("Geplant");
 
-    // Reschedule work: the deadline must stay.
-    await taskItem.getByTestId("task-plan").click();
-    await taskItem.getByTestId("task-date-input").fill("2026-11-15");
-    await taskItem.getByRole("button", { name: "Speichern" }).click();
-    await expect(taskItem).toContainText("31.12.2026");
-    await expect(taskItem).toContainText("15.11.2026");
+    // Reschedule work in the task view: the deadline must stay.
+    await taskItem.getByRole("link", { name: `Kündigen ${runId}` }).click();
+    const taskDetail = page.getByTestId("task-detail");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(`Kündigen ${runId}`);
+    await taskDetail.getByTestId("task-plan").click();
+    await taskDetail.getByTestId("task-date-input").fill("2026-11-15");
+    await taskDetail.getByRole("button", { name: "Speichern" }).click();
+    await expect(taskDetail.getByTestId("task-due-date")).toContainText("31.12.2026");
+    await expect(taskDetail.getByTestId("task-planned-date")).toContainText("15.11.2026");
     await logout(page);
 
     // The other member sees the document, the notice and completes the task.
@@ -229,7 +234,8 @@ test.describe("first runnable test", () => {
     await notice.getByRole("link", { name: "Öffnen" }).click();
     await expect(pageB.getByRole("heading", { level: 1 })).toContainText(`Kündigen ${runId}`);
     await pageB.getByTestId("task-complete").click();
-    await expect(pageB.locator("[data-testid=task-item]")).toContainText("Erledigt");
+    await expect(pageB.getByTestId("task-detail")).toContainText("Erledigt von");
+    await expect(pageB.getByTestId("task-reopen")).toBeVisible();
     await pageB.goto(documentUrl);
     await expect(pageB.getByTestId("processing-state")).toContainText("Archiviert");
     await pageB.getByRole("link", { name: "Heute", exact: true }).first().click();

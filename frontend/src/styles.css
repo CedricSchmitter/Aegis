@@ -820,6 +820,89 @@
     }
   }
 
+  /* ---- Today, tasks and contracts (issue #27, PR 4) ---- */
+
+  /* The value in an eyebrow line, such as the date on Today or the state of a task. */
+  .ui-eyebrow b {
+    font-weight: 400;
+    color: var(--color-data);
+  }
+  .ui-sec[data-tone="danger"] {
+    color: var(--color-danger);
+  }
+
+  /* Mono meta line of a card: deadline, planned day, source. */
+  .ui-meta {
+    @apply flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs;
+    color: var(--color-text-3);
+  }
+
+  /* Cards in the context panel lie on the base colour, so they stand out from the panel's surface. */
+  .ui-panel .card:not(.card-selected) {
+    --frame-fill: var(--color-base);
+  }
+
+  /* A card whose title link covers the whole card; controls inside stay above it. */
+  .ui-stretch::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+  .ui-stretch:focus-visible {
+    outline: none;
+  }
+  .card:has(.ui-stretch:focus-visible) {
+    outline: 2px solid var(--color-data);
+    outline-offset: -4px;
+  }
+  .card:has(.ui-stretch) :is(input, button, a:not(.ui-stretch), [data-above]) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* The checkbox that completes a task at once: an action, so it fills with the action colour. */
+  .task-check {
+    @apply chamfer-edge h-7 w-7 flex-none cursor-pointer appearance-none;
+    --edge-chamfer: 5px;
+    --edge-line: var(--color-text-4);
+    --edge-fill: transparent;
+    &:hover:not(:disabled) {
+      --edge-line: var(--color-action);
+    }
+    &:checked {
+      --edge-line: var(--color-action);
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cpath d='M8 14.5l4 4 8-9' fill='none' stroke='%2307080b' stroke-width='2.4' stroke-linecap='square'/%3E%3C/svg%3E")
+        center / 100% 100% no-repeat var(--color-action);
+    }
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+    &:focus-visible {
+      outline-offset: 2px;
+    }
+  }
+
+  /* The responsible member as an initial in a small box. */
+  .owner-mark {
+    @apply inline-grid h-[22px] w-[22px] flex-none place-items-center border text-[11px] font-semibold;
+    border-color: var(--color-line);
+    background: var(--color-raised);
+    color: var(--color-text-2);
+  }
+
+  /* Label and value pairs, such as deadline, planned day and responsibility of a task. */
+  .ui-kv {
+    @apply m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-1.5 text-sm;
+    & dt {
+      color: var(--color-text-3);
+    }
+    & dd {
+      @apply m-0 text-right;
+      color: var(--color-text-2);
+    }
+  }
+
   .ui-wordmark {
     @apply inline-flex items-baseline gap-2;
     & b {

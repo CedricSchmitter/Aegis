@@ -1,7 +1,7 @@
 # ADR-0019: A dark design system with tokens, palettes, chamfers and optional effects
 
-Status: accepted; foundation (PR 1 of 6), shell with per-member preferences (PR 2) and document screens (PR 3)
-implemented for issue #27.
+Status: accepted; foundation (PR 1 of 6), shell with per-member preferences (PR 2), document screens (PR 3) and
+Today, tasks and contracts (PR 4) implemented for issue #27.
 Date: 2026-09-26.
 
 ## Context
@@ -203,6 +203,37 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
       of Spring's `DENY`, so the viewer can frame originals from the same origin while other sites still cannot.
     - After an upload or a move the page sends `aegis:catalog-changed`, so the sidebar's folder counts follow at once.
 
+16. **Today, tasks and contracts.** These screens follow the approved mockup (issue #27, PR 4):
+    - **Today:** the weekday and date, the big title and the status line, then Überfällig (a red heading and red
+      frames), Heute fällig, Heute geplant, the cancellation deadlines of active contracts within 30 days (each with
+      the large Countdown in the action colour) and Nächste 7 Tage; tasks nobody is responsible for keep their
+      own section at the end, as the deterministic Today view (`TodayPolicy`) still returns them. A cancellation
+      review whose deadline is already counted down is not listed a second time. On a desktop the urgent tasks
+      stand left and the next seven days right; the deadlines and a summary of the inbox (cards to review and new
+      messages, from the shell's counts) fill the context panel from 1280 px and follow below the columns before.
+    - **Task cards** (Today, the task list and a document's linked tasks): the checkbox completes a task at once
+      with the version the member saw and offers undo in a message, and it reopens a completed one. The rest of the
+      card opens the task. The due date ("Frist", overdue "Überfällig seit" in red) and the planned work day
+      ("Geplant", data colour) stay separate, next to the source and the responsible member as an initial.
+    - **Task list:** Offen or Alle as a segmented control, responsibility (everyone, each member, nobody) as a rail,
+      "Neue Aufgabe" as the one primary action. From 1280 px a click selects a task, marks it with the action frame
+      and shows it in the context panel; a double click or Enter opens it.
+    - **Task view:** deadline, planned work day and responsibility, the source document and, for a cancellation
+      review, its contract; "Erledigt" is the primary action with Zuweisen, Arbeit umplanen, Frist ändern and
+      Bearbeiten below it. Rescheduling changes the planned day only; a cancellation review has no deadline change
+      at all, because its due date is the contractual deadline.
+    - **Contracts:** each contract with its cancellation date and Countdown, highlighted with the action frame from
+      30 days before it and red once it has passed while the contract is active; the status appears as a badge only
+      when a contract is no longer active. From 1280 px the selected contract fills the context panel with its
+      deadline, conflicts and current statements to confirm or reject; history, new statements, renaming, the status
+      and the trash stay on the contract page ("Vertrag öffnen").
+    - **Contract view:** the cancellation date with the Countdown and its derivation (the rule, the confirmed
+      statements it rests on and the evaluation day), then every statement with its source document and page:
+      "Bestätigt" in the data colour, "Vorschlag" in the action colour with "Bestätigen" as its primary action. A
+      rejected statement reads as neutral history instead of danger. "In den Papierkorb" keeps its confirmation
+      until PR 5.
+    - Cards in the context panel lie on `base`, so they stand out from the panel's `surface`.
+
 ## Consequences
 
 - Every existing page is dark and uses the new fonts, frames and colours immediately, without page rewrites; pages
@@ -215,6 +246,7 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
 - Two members on one device see their own look after login; the login page always shows the default.
 - The shell asks the status overview once a minute, which probes the archive; a household of two keeps that load
   negligible. Pages are unchanged inside the new shell until their redesign.
+- Today asks for the confirmed cancellation deadlines next to the task buckets, one more request per visit.
 - A document preview costs one thumbnail request to the archive per document and day and browser; the viewer loads
   the whole original or searchable PDF, as "Original öffnen" did before. Headless browsers without a PDF viewer show
   an empty frame there; members' browsers (Chrome, Edge, Firefox) render it.

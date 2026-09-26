@@ -107,7 +107,7 @@ export function ContractFactForm({ contract, busy, onSubmit, onCancel }: Props) 
       <FactValueFields kind={kind} draft={draft} onChange={setDraft} idPrefix="new-fact" />
 
       <ValidityFields from={validity.from} until={validity.until} onChange={setValidity} idPrefix="new-fact" />
-      <p className="text-sm text-stone-600 dark:text-stone-400">{t("contracts.fact.validityHint")}</p>
+      <p className="text-sm text-text-3">{t("contracts.fact.validityHint")}</p>
 
       <SourcePicker
         documents={documents}
@@ -152,7 +152,7 @@ export function ContractFactForm({ contract, busy, onSubmit, onCancel }: Props) 
               />
             </div>
           </div>
-          <p className="text-sm text-stone-600 dark:text-stone-400">{t("contracts.fact.provenanceHint")}</p>
+          <p className="text-sm text-text-3">{t("contracts.fact.provenanceHint")}</p>
         </>
       )}
 
@@ -174,7 +174,7 @@ export function ContractFactForm({ contract, busy, onSubmit, onCancel }: Props) 
           {invalid}
         </p>
       )}
-      <p className="text-sm text-stone-600 dark:text-stone-400">{t("contracts.fact.enterHint")}</p>
+      <p className="text-sm text-text-3">{t("contracts.fact.enterHint")}</p>
       <div className="flex gap-2">
         <button type="submit" className="btn-primary" disabled={busy}>
           {t("contracts.fact.enter")}
@@ -270,7 +270,7 @@ function SourcePicker({
           {t("documents.search")}
         </button>
       </div>
-      {noMatches && <p className="text-sm text-stone-600 dark:text-stone-400">{t("contracts.fact.sourceNoMatches")}</p>}
+      {noMatches && <p className="text-sm text-text-3">{t("contracts.fact.sourceNoMatches")}</p>}
       {searchError && (
         <p className="alert-error" role="alert">
           {searchError}

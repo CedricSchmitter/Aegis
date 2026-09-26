@@ -5,7 +5,7 @@ import { api, unwrap } from "../api/client";
 import type { CategoryListResponse, DocumentDto, DocumentListResponse, LabelDto } from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { Breadcrumbs } from "../components/Breadcrumbs";
-import { EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
+import { BigTitle, EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
 import { DocumentPanel } from "../components/documents/DocumentPanel";
 import { DocumentCard, DocumentTable } from "../components/documents/DocumentRows";
 import { FilterSheet } from "../components/documents/FilterSheet";
@@ -226,14 +226,7 @@ export function DocumentsPage() {
           <Breadcrumbs categories={categories} selected={filters.category} onSelect={selectFolder} />
         </div>
       )}
-      <div className="mb-4 flex items-end justify-between gap-3">
-        <h1 className="text-[32px] leading-[0.95] font-bold tracking-[0.04em] break-words uppercase">{heading}</h1>
-        {list && (
-          <span className="pb-0.5 font-mono text-[13px] whitespace-nowrap text-text-3">
-            {t("documents.total", { count: list.totalDocuments })}
-          </span>
-        )}
-      </div>
+      <BigTitle count={list && t("documents.total", { count: list.totalDocuments })}>{heading}</BigTitle>
 
       <div className="flex flex-col gap-4">
         {!desktop && (

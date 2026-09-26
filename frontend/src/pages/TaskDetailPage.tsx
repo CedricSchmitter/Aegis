@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import type { TaskDto } from "../api/types";
-import { TaskItem } from "../components/TaskItem";
-import { ErrorBox, Loading, PageTitle } from "../components/common";
+import { BackLink, ErrorBox, Loading } from "../components/common";
+import { TaskDetail } from "../components/tasks/TaskDetail";
 import { problemMessage } from "../lib/problem";
 
 export function TaskDetailPage() {
@@ -24,16 +24,17 @@ export function TaskDetailPage() {
   }, [id, t]);
 
   return (
-    <>
-      <p className="mb-2 text-sm">
-        <Link to="/tasks" className="text-sky-800 hover:underline dark:text-sky-300">
-          ← {t("tasks.title")}
-        </Link>
-      </p>
-      <PageTitle>{task?.title ?? t("tasks.title")}</PageTitle>
+    <div className="flex max-w-2xl flex-col gap-4">
+      <BackLink to="/tasks">{t("tasks.title")}</BackLink>
       <ErrorBox message={error} />
       {!task && !error && <Loading />}
-      {task && <TaskItem task={task} onChange={setTask} detailed />}
-    </>
+      {task && (
+        <TaskDetail
+          task={task}
+          onChange={setTask}
+          heading={(title) => <h1 className="text-2xl leading-tight font-bold break-words lg:text-[28px]">{title}</h1>}
+        />
+      )}
+    </div>
   );
 }

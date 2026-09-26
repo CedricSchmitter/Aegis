@@ -24,7 +24,7 @@ import { useDesktop } from "../components/shell/ShellData";
 import { SubjectList } from "../components/SubjectList";
 import { TaskForm } from "../components/TaskForm";
 import { TextRecognitionHint } from "../components/TextRecognitionHint";
-import { TaskItem } from "../components/TaskItem";
+import { TaskCard } from "../components/tasks/TaskCard";
 import { MoveToTrashButton, TrashBanner } from "../components/TrashControls";
 import { ProcessingSteps } from "../components/ui";
 import { EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
@@ -536,9 +536,9 @@ export function DocumentDetailPage() {
             {tasks.length === 0 ? (
               <EmptyState>{t("documents.noLinkedTasks")}</EmptyState>
             ) : (
-              <div className="flex flex-col gap-2">
+              <ul className="flex flex-col gap-2">
                 {tasks.map((task) => (
-                  <TaskItem
+                  <TaskCard
                     key={task.id}
                     task={task}
                     onChange={(updated) =>
@@ -546,7 +546,7 @@ export function DocumentDetailPage() {
                     }
                   />
                 ))}
-              </div>
+              </ul>
             )}
             {!trashed && (
               <div>

@@ -57,31 +57,53 @@ export function ContractFactCard({ fact, facts, basedOn, busy, onConfirm, onReje
   const superseded = facts.find((other) => other.id === fact.supersededBy);
   const corrected = facts.find((other) => other.id === fact.corrects);
 
+  const typeLabel = t(`contracts.factType.${fact.type}`, { defaultValue: fact.type });
+  const suggestion = fact.reviewState === "EXTRACTED";
+
   return (
     <article
       id={`fact-${fact.id}`}
       data-testid="contract-fact"
       data-fact-id={fact.id}
       data-review-state={fact.reviewState}
-      className={`card flex flex-col gap-2 ${history ? "opacity-75" : ""}`}
+      className={`card flex flex-col gap-2 ${suggestion ? "card-attention" : ""}`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-lg font-semibold">{formatFactValue(fact.valueKind, fact.value, t, i18n.language)}</p>
-          <p className="text-sm text-stone-600 dark:text-stone-400">{validityLabel(fact, t, i18n.language)}</p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <Badge state={fact.reviewState} label={t(`contracts.reviewState.${fact.reviewState}`)} />
-          {/* Which statements hold on a given day is the backend's resolution, never one the UI re-derives. */}
-          {basedOn.includes(fact.id) && (
-            <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300">
-              {t("contracts.fact.usedForDeadline")}
-            </span>
-          )}
-        </div>
+      <div className="flex items-start gap-2.5">
+        <h3 className="min-w-0 flex-1 text-[15px] leading-snug font-semibold break-words">{typeLabel}</h3>
+        <Badge state={fact.reviewState} label={t(`contracts.reviewState.${fact.reviewState}`)} />
       </div>
+      <p className={`font-mono text-[15px] break-words ${history ? "text-text-3" : "text-text-1"}`}>
+        {formatFactValue(fact.valueKind, fact.value, t, i18n.language)}
+      </p>
+      <p className="ui-meta">
+        <span>{validityLabel(fact, t, i18n.language)}</span>
+        <span className="min-w-0 break-words">
+          {t("contracts.fact.sourceLabel")}{" "}
+          {fact.source ? (
+            <>
+              <Link to={`/documents/${fact.source.documentId}`} className="text-data hover:underline">
+                {fact.source.documentTitle ?? t("contracts.fact.sourceUnnamed")}
+              </Link>
+              {/* A page is shown only when the backend stored one; Aegis never invents a page reference. */}
+              {fact.source.page !== null && fact.source.page !== undefined && (
+                <>, {t("contracts.fact.pageLabel", { page: fact.source.page })}</>
+              )}
+              {!fact.source.documentTitle && <> {t("contracts.fact.sourceGone")}</>}
+              {fact.source.documentTrashed && <> {t("trash.sourceInTrash")}</>}
+            </>
+          ) : (
+            t("contracts.fact.sourceMissing")
+          )}
+        </span>
+        {/* Which statements hold on a given day is the backend's resolution, never one the UI re-derives. */}
+        {basedOn.includes(fact.id) && <span className="text-data">{t("contracts.fact.usedForDeadline")}</span>}
+      </p>
 
-      <dl className="flex flex-col gap-1 border-t border-stone-200 pt-2 text-sm dark:border-stone-800">
+      {fact.source?.quote && (
+        <blockquote className="border-l-2 border-line-strong pl-3 text-sm text-text-2 italic">{fact.source.quote}</blockquote>
+      )}
+
+      <dl className="flex flex-col gap-1 border-t border-line pt-2 text-[13px]">
         <Row label={t("contracts.fact.observedLabel")}>
           {fact.origin === "MANUAL"
             ? t("contracts.fact.observedManual", {
@@ -90,39 +112,10 @@ export function ContractFactCard({ fact, facts, basedOn, busy, onConfirm, onReje
               })
             : t("contracts.fact.observedAutomatic", { date: formatDateTime(fact.observedAt, i18n.language) })}
           {fact.confidence !== null && fact.confidence !== undefined && (
-            <>
-              {" "}
-              {t("contracts.fact.confidence", { percent: Math.round(fact.confidence * 100) })}
-            </>
+            <> {t("contracts.fact.confidence", { percent: Math.round(fact.confidence * 100) })}</>
           )}
           {fact.runRef && <> {t("contracts.fact.runRef", { run: fact.runRef })}</>}
         </Row>
-
-        <Row label={t("contracts.fact.sourceLabel")}>
-          {fact.source ? (
-            <>
-              <Link
-                to={`/documents/${fact.source.documentId}`}
-                className="text-sky-800 hover:underline dark:text-sky-300"
-              >
-                {fact.source.documentTitle ?? t("contracts.fact.sourceUnnamed")}
-              </Link>
-              {/* A page is shown only when the backend stored one; Aegis never invents a page reference. */}
-              {fact.source.page !== null && fact.source.page !== undefined && (
-                <> · {t("contracts.fact.pageLabel", { page: fact.source.page })}</>
-              )}
-              {!fact.source.documentTitle && (
-                <span className="text-stone-600 dark:text-stone-400"> {t("contracts.fact.sourceGone")}</span>
-              )}
-              {fact.source.documentTrashed && (
-                <span className="text-stone-600 dark:text-stone-400"> {t("trash.sourceInTrash")}</span>
-              )}
-            </>
-          ) : (
-            <span className="text-stone-600 dark:text-stone-400">{t("contracts.fact.sourceMissing")}</span>
-          )}
-        </Row>
-
         {fact.decidedAt && (
           <Row label={t("contracts.fact.decidedLabel")}>
             {t(`contracts.fact.decided.${fact.reviewState}`, {
@@ -131,10 +124,9 @@ export function ContractFactCard({ fact, facts, basedOn, busy, onConfirm, onReje
             })}
           </Row>
         )}
-
         {corrected && (
           <Row label={t("contracts.fact.correctsLabel")}>
-            <a href={`#fact-${corrected.id}`} className="text-sky-800 hover:underline dark:text-sky-300">
+            <a href={`#fact-${corrected.id}`} className="text-data hover:underline">
               {factSummary(corrected, t, i18n.language)}
             </a>
           </Row>
@@ -142,7 +134,7 @@ export function ContractFactCard({ fact, facts, basedOn, busy, onConfirm, onReje
         {fact.supersededBy && (
           <Row label={t("contracts.fact.supersededByLabel")}>
             {superseded ? (
-              <a href={`#fact-${superseded.id}`} className="text-sky-800 hover:underline dark:text-sky-300">
+              <a href={`#fact-${superseded.id}`} className="text-data hover:underline">
                 {factSummary(superseded, t, i18n.language)}
               </a>
             ) : (
@@ -153,35 +145,35 @@ export function ContractFactCard({ fact, facts, basedOn, busy, onConfirm, onReje
         {fact.note && <Row label={t("contracts.fact.noteLabel")}>{fact.note}</Row>}
       </dl>
 
-      {fact.source?.quote && (
-        <blockquote className="border-l-4 border-stone-300 pl-3 text-sm italic text-stone-700 dark:border-stone-700 dark:text-stone-300">
-          {fact.source.quote}
-        </blockquote>
-      )}
-
       {fact.reviewState === "SUPERSEDED" ? (
-        <p className="text-sm text-stone-600 dark:text-stone-400">{t("contracts.fact.supersededHint")}</p>
+        <p className="text-[13px] text-text-3">{t("contracts.fact.supersededHint")}</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {(fact.reviewState === "EXTRACTED" || fact.reviewState === "REJECTED") && (
-            <button type="button" className="btn-primary" disabled={busy} onClick={() => onConfirm(fact)}>
+            <button
+              type="button"
+              className={suggestion ? "btn-primary" : "btn-secondary"}
+              disabled={busy}
+              onClick={() => onConfirm(fact)}
+              data-testid="fact-confirm"
+            >
               {t("contracts.fact.confirm")}
-            </button>
-          )}
-          {(fact.reviewState === "EXTRACTED" || fact.reviewState === "CONFIRMED") && (
-            <button type="button" className="btn-secondary" disabled={busy} onClick={() => onReject(fact)}>
-              {t("contracts.fact.reject")}
             </button>
           )}
           <button
             type="button"
-            className="btn-secondary"
+            className="btn-ghost"
             disabled={busy}
             onClick={() => setCorrecting((open) => !open)}
             aria-expanded={correcting}
           >
             {t("contracts.fact.correct")}
           </button>
+          {(fact.reviewState === "EXTRACTED" || fact.reviewState === "CONFIRMED") && (
+            <button type="button" className="btn-ghost" disabled={busy} onClick={() => onReject(fact)} data-testid="fact-reject">
+              {t("contracts.fact.reject")}
+            </button>
+          )}
         </div>
       )}
 
@@ -204,8 +196,8 @@ export function ContractFactCard({ fact, facts, basedOn, busy, onConfirm, onReje
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-wrap gap-x-2">
-      <dt className="text-stone-600 dark:text-stone-400">{label}</dt>
-      <dd>{children}</dd>
+      <dt className="text-text-4">{label}</dt>
+      <dd className="text-text-3">{children}</dd>
     </div>
   );
 }
@@ -232,7 +224,7 @@ function CorrectionForm({
 
   return (
     <form
-      className="flex flex-col gap-3 rounded-lg border border-stone-200 p-3 dark:border-stone-800"
+      className="flex flex-col gap-3 border border-line p-3"
       aria-label={t("contracts.fact.correctLabel")}
       onSubmit={(event) => {
         event.preventDefault();
@@ -269,14 +261,14 @@ function CorrectionForm({
           onChange={(e) => setNote(e.target.value)}
         />
       </div>
-      <p className="text-sm text-stone-600 dark:text-stone-400">{t("contracts.fact.correctHint")}</p>
+      <p className="text-sm text-text-3">{t("contracts.fact.correctHint")}</p>
       {invalid && (
         <p className="alert-error" role="alert">
           {invalid}
         </p>
       )}
       <div className="flex gap-2">
-        <button type="submit" className="btn-primary" disabled={busy}>
+        <button type="submit" className="btn-secondary" disabled={busy}>
           {t("contracts.fact.saveCorrection")}
         </button>
         <button type="button" className="btn-secondary" disabled={busy} onClick={onCancel}>

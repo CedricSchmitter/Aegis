@@ -112,7 +112,11 @@ frame the page; from 1280 px a context panel shows the selection. The document s
 phone a list of cards with search, a folder rail ending in "Ordner verwalten", a filter sheet with "Labels verwalten"
 and the trash link at the end of the list; on a desktop a table whose selection shows its preview and suggestions in the
 context panel, and a document view with the browser's PDF viewer. Upload and scan open in a sheet, with a drop target on
-a desktop. Previews are the archive's first-page image (`GET /api/documents/{id}/thumbnail`).
+a desktop. Previews are the archive's first-page image (`GET /api/documents/{id}/thumbnail`). Today lists overdue, due
+and planned tasks, the cancellation deadlines of the next 30 days with a countdown and the next seven days; a task's
+checkbox completes it at once with undo, and the deadline ("Frist") and the planned work day ("Geplant") stay
+separate everywhere. The task and contract lists show the selection in the context panel from 1280 px; each contract
+counts down to its cancellation date and is highlighted from 30 days before it.
 
 Aegis supports individual logins into one shared household (the two persons and an assistant account that
 receives notices and can own tasks but is never what a document is about,

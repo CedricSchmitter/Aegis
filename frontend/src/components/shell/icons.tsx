@@ -52,6 +52,7 @@ const PATHS = {
   folder: <path d="M3 6h7l2 2h9v11H3z" />,
   chevron: <path d="M9 5l7 7-7 7" />,
   back: <path d="M15 5l-7 7 7 7" />,
+  plus: <path d="M12 5v14M5 12h14" />,
   camera: (
     <>
       <path d="M3 8h4l2-3h6l2 3h4v11H3z" />
