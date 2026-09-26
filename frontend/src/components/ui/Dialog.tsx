@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -100,12 +100,16 @@ export function Sheet({ open, onClose, title, children, testId, wide = false }: 
   const ref = useModal(open, onClose);
   const titleId = useId();
   const [layer, setLayer] = useState<HTMLElement | null>(null);
+  const attach = useCallback(
+    (element: HTMLDialogElement | null) => {
+      ref.current = element;
+      setLayer(element);
+    },
+    [ref],
+  );
   return (
     <dialog
-      ref={(element) => {
-        ref.current = element;
-        setLayer(element);
-      }}
+      ref={attach}
       className="ui-sheet"
       data-wide={wide || undefined}
       aria-labelledby={titleId}
