@@ -7,6 +7,24 @@ export function formatDate(value: string | null | undefined, language: string): 
   return new Intl.DateTimeFormat(language === "en" ? "en-GB" : "de-DE", { dateStyle: "medium" }).format(date);
 }
 
+/**
+ * A date in a card: day and month only within the current year ("14.10." / "14 Oct"), the full date otherwise, so a
+ * date from another year is never mistaken for this one.
+ */
+export function formatShortDate(value: string | null | undefined, language: string, today = todayIso()): string {
+  if (!value) return "";
+  if (value.substring(0, 4) !== today.substring(0, 4)) return formatDate(value, language);
+  const date = new Date(value.substring(0, 10) + "T00:00:00");
+  return language === "en"
+    ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(date)
+    : new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" }).format(date);
+}
+
+/** "Samstag" / "Saturday" for an ISO local date. */
+export function formatWeekday(value: string, language: string): string {
+  return new Intl.DateTimeFormat(language === "en" ? "en-GB" : "de-DE", { weekday: "long" }).format(new Date(value + "T00:00:00"));
+}
+
 export function formatDateTime(value: string | null | undefined, language: string): string {
   if (!value) return "";
   return new Intl.DateTimeFormat(language === "en" ? "en-GB" : "de-DE", {

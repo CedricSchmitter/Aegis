@@ -39,7 +39,7 @@ export function ContextPanelColumn({ filled, setTarget }: { filled: boolean; set
       ref={setTarget}
       aria-label={t("shell.contextPanel")}
       hidden={!filled}
-      className="sticky top-14 hidden h-[calc(100dvh-3.5rem-1.75rem)] overflow-y-auto border-l border-line bg-surface p-4.5 xl:block"
+      className="ui-panel sticky top-14 hidden h-[calc(100dvh-3.5rem-1.75rem)] overflow-y-auto border-l border-line bg-surface p-4.5 xl:block"
       data-testid="context-panel"
     />
   );

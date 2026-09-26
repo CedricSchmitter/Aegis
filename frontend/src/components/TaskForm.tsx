@@ -84,7 +84,7 @@ export function TaskForm({ sourceDocumentId, onCreated }: Props) {
           <input type="date" className="field" value={plannedDate} onChange={(e) => setPlannedDate(e.target.value)} data-testid="task-planned" />
         </label>
       </div>
-      <p className="text-xs text-stone-500">{t("tasks.dueHint")}</p>
+      <p className="text-xs text-text-3">{t("tasks.dueHint")}</p>
       <ErrorBox message={error} />
       <div>
         <button type="submit" className="btn-primary" disabled={busy} data-testid="task-create">

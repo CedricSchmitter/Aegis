@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { Icon } from "./shell/icons";
 import { Badge as StatusBadge, type Tone } from "./ui";
 
 export function PageTitle({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
@@ -8,6 +10,32 @@ export function PageTitle({ children, actions }: { children: ReactNode; actions?
       <h1 className="text-2xl font-semibold">{children}</h1>
       {actions}
     </div>
+  );
+}
+
+/** The big uppercase page title of the redesigned areas (issue #27), with an optional eyebrow and count. */
+export function BigTitle({ children, count, eyebrow }: { children: ReactNode; count?: ReactNode; eyebrow?: ReactNode }) {
+  return (
+    <div className="mb-4 flex flex-col gap-1.5">
+      {eyebrow && <p className="ui-eyebrow">{eyebrow}</p>}
+      <div className="flex items-end justify-between gap-3">
+        <h1 className="text-[32px] leading-[0.95] font-bold tracking-[0.04em] break-words uppercase">{children}</h1>
+        {count && <span className="pb-0.5 font-mono text-[13px] whitespace-nowrap text-text-3">{count}</span>}
+      </div>
+    </div>
+  );
+}
+
+/** The quiet mono link back to a list. */
+export function BackLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link
+      to={to}
+      className="-ml-1 flex min-h-11 items-center gap-1.5 self-start font-mono text-xs tracking-[0.18em] text-text-3 uppercase hover:text-text-1"
+    >
+      <Icon name="back" className="h-4 w-4" />
+      {children}
+    </Link>
   );
 }
 
@@ -66,7 +94,8 @@ const STATE_TONES: Record<string, Tone> = {
   ENDED: "neutral",
   EXTRACTED: "attention",
   CONFIRMED: "data",
-  REJECTED: "danger",
+  // A rejected contract statement is history a member decided on, not something broken.
+  REJECTED: "neutral",
   SUPERSEDED: "neutral",
   TEXT_NONE: "attention",
   TEXT_LITTLE: "attention",
