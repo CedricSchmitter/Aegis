@@ -76,16 +76,19 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
 6. **Typography, self-hosted.** Chakra Petch (400, 500, 600, 700) for UI and display text, Share Tech Mono (400) for
    data, labels, dates and counters. Both are SIL Open Font License 1.1 fonts, pinned as
    `@fontsource/chakra-petch@5.3.0` and `@fontsource/share-tech-mono@5.3.0` and bundled by Vite into
-   `dist/assets`. Aegis is LAN-only and makes no request to Google Fonts or any other font host. Only the `latin`
-   and `latin-ext` subsets are imported; a browser downloads a subset only when a page contains characters from its
-   unicode range. The decorative 盾 ("shield") glyph of the wordmark is a single inline SVG path taken from Noto Sans JP
+   `dist/assets`. Aegis is LAN-only and makes no request to Google Fonts or any other font host. The per-weight
+   files (`400.css`, not `latin-400.css`) are imported because only they declare each subset with its
+   `unicode-range`; a browser then downloads a subset (latin, latin-ext, Vietnamese, Thai) only when a page contains
+   characters from it. Vite never inlines font files into the CSS (`assetsInlineLimit` in `vite.config.ts`), because
+   an inlined subset would be downloaded on every visit. The decorative 盾 ("shield") glyph of the wordmark is a single inline SVG path taken from Noto Sans JP
    Bold 5.3.0 (Adobe, SIL OFL 1.1, attribution next to the path) instead of a Japanese font. The glyph is
    `aria-hidden` and never carries information.
 
-   Added size (production build, compared with `main` at 57d935d): app CSS +25.0 kB (+2.9 kB with `gzip -9`, now 9.4 kB), app
-   JavaScript +2.8 kB (+2.1 kB gzip). A German page downloads at most 53.1 kB of fonts (four Chakra Petch weights at
-   9.8-10.0 kB and Share Tech Mono at 13.5 kB, all WOFF2, cached afterwards). `dist` carries 201 kB of font files in
-   total, including WOFF fallbacks and the `latin-ext` subsets that browsers only fetch when needed.
+   Added size (production build, compared with `main` at 57d935d): app CSS +28.3 kB (+3.3 kB with `gzip -9`, now 9.8 kB),
+   app JavaScript +2.8 kB (+2.1 kB gzip). A German or English page downloads 53.1 kB of fonts once (the latin subset of
+   four Chakra Petch weights at 9.8-10.0 kB each and Share Tech Mono at 13.5 kB, all WOFF2; measured live on VM 102).
+   `dist` carries 305 kB in 34 font files, including WOFF fallbacks and the other subsets that browsers fetch only
+   when needed.
 
 7. **Chamfers instead of rounded corners.** 45° cuts at the top left and bottom right, in five sizes: 4 px
    (checkboxes), 6 px (chips, badges), 8 px (fields, secondary buttons), 10 px (primary buttons, cards), 16 px
