@@ -5,8 +5,10 @@ import { api } from "../api/client";
 import { useSession } from "../auth/SessionContext";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { ErrorBox, InfoBox } from "../components/common";
+import { Wordmark } from "../components/ui";
 import { problemMessage } from "../lib/problem";
 
+/** The login in the design system (issue #27): the wordmark, one framed form and the running version. */
 export function LoginPage() {
   const { t } = useTranslation();
   const { login } = useSession();
@@ -38,19 +40,21 @@ export function LoginPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-8">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">{t("app.name")}</h1>
-          <p className="text-stone-600 dark:text-stone-400">{t("app.tagline")}</p>
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 px-4 py-8">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="m-0">
+            <Wordmark />
+          </h1>
+          <p className="ui-eyebrow">{t("app.tagline")}</p>
         </div>
         <LanguageSwitch />
       </div>
-      <form className="card flex flex-col gap-4" onSubmit={onSubmit} aria-labelledby="login-title">
-        <h2 id="login-title" className="text-xl font-semibold">
+      <form className="card flex flex-col gap-4 p-5" onSubmit={onSubmit} aria-labelledby="login-title">
+        <h2 id="login-title" className="text-xl font-bold tracking-[0.06em] uppercase">
           {t("login.title")}
         </h2>
-        <p className="text-sm text-stone-600 dark:text-stone-400">{t("login.intro")}</p>
+        <p className="text-sm leading-relaxed text-text-3">{t("login.intro")}</p>
         {from?.startsWith("/share") && <InfoBox>{t("share.loginFirst")}</InfoBox>}
         <div>
           <label className="label" htmlFor="username">
@@ -83,13 +87,11 @@ export function LoginPage() {
           />
         </div>
         <ErrorBox message={error} />
-        <button type="submit" className="btn-primary" disabled={busy}>
+        <button type="submit" className="btn-primary w-full" disabled={busy}>
           {busy ? t("login.submitting") : t("login.submit")}
         </button>
       </form>
-      <p className="mt-4 text-center text-xs text-stone-500">
-        {version && t("app.version", { commit: version.substring(0, 12) })}
-      </p>
+      <p className="text-center font-mono text-xs text-text-4">{version && t("app.version", { commit: version.substring(0, 12) })}</p>
     </main>
   );
 }

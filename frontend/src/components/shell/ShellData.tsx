@@ -14,6 +14,8 @@ export const CATALOG_CHANGED = "aegis:catalog-changed";
 
 interface ShellData {
   status: StatusSummary;
+  /** The checks of the status overview behind the summary; null until known. */
+  checks: HealthCheck[] | null;
   /** Open review cards plus unread messages (issue #83). */
   pending: number;
   openCards: number;
@@ -126,8 +128,8 @@ export function ShellDataProvider({ children }: { children: ReactNode }) {
 
   const status = useMemo(() => summarizeStatus(checks), [checks]);
   const value = useMemo<ShellData>(
-    () => ({ status, pending: openCards + unreadMessages, openCards, unreadMessages, catalog: desktop ? catalog : null, version, desktop }),
-    [status, openCards, unreadMessages, catalog, version, desktop],
+    () => ({ status, checks, pending: openCards + unreadMessages, openCards, unreadMessages, catalog: desktop ? catalog : null, version, desktop }),
+    [status, checks, openCards, unreadMessages, catalog, version, desktop],
   );
   return <ShellDataContext.Provider value={value}>{children}</ShellDataContext.Provider>;
 }

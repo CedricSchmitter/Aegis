@@ -5,6 +5,7 @@ import { api, unwrap } from "../api/client";
 import type { TaskDto } from "../api/types";
 import { BackLink, ErrorBox, Loading } from "../components/common";
 import { TaskDetail } from "../components/tasks/TaskDetail";
+import { useTrashUndo } from "../components/TrashControls";
 import { problemMessage } from "../lib/problem";
 
 export function TaskDetailPage() {
@@ -12,6 +13,16 @@ export function TaskDetailPage() {
   const { t } = useTranslation();
   const [task, setTask] = useState<TaskDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { notify, toast } = useTrashUndo<TaskDto>();
+  const restore = async (trashed: TaskDto) => {
+    try {
+      setTask(
+        unwrap(await api.POST("/api/tasks/{id}/restore", { params: { path: { id: trashed.id } }, body: { expectedVersion: trashed.version } })),
+      );
+    } catch (failure) {
+      setError(problemMessage(t, failure));
+    }
+  };
 
   useEffect(() => {
     void (async () => {
@@ -32,9 +43,11 @@ export function TaskDetailPage() {
         <TaskDetail
           task={task}
           onChange={setTask}
+          onTrashed={(trashed) => notify(trashed, () => void restore(trashed))}
           heading={(title) => <h1 className="text-2xl leading-tight font-bold break-words lg:text-[28px]">{title}</h1>}
         />
       )}
+      {toast}
     </div>
   );
 }

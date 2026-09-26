@@ -120,10 +120,23 @@ const STATE_TONES: Record<string, Tone> = {
   DISK_UNKNOWN: "neutral",
 };
 
+export function stateTone(state: string): Tone {
+  return STATE_TONES[state] ?? "neutral";
+}
+
 export function Badge({ state, label }: { state: string; label: string }) {
   return (
-    <StatusBadge tone={STATE_TONES[state] ?? "neutral"} data-state={state}>
+    <StatusBadge tone={stateTone(state)} data-state={state}>
       {label}
     </StatusBadge>
+  );
+}
+
+/** The state of a status or job row as a mono word without a frame; the row itself is the frame (issue #27). */
+export function StateWord({ state, label }: { state: string; label: string }) {
+  return (
+    <span className="ui-state" data-state={state} data-tone={stateTone(state)}>
+      {label}
+    </span>
   );
 }

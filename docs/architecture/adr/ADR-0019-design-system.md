@@ -1,7 +1,8 @@
 # ADR-0019: A dark design system with tokens, palettes, chamfers and optional effects
 
-Status: accepted; foundation (PR 1 of 6), shell with per-member preferences (PR 2), document screens (PR 3) and
-Today, tasks and contracts (PR 4) implemented for issue #27.
+Status: accepted; foundation (PR 1 of 6), shell with per-member preferences (PR 2), document screens (PR 3),
+Today, tasks and contracts (PR 4) and inbox, status, trash, management, login and share (PR 5) implemented for
+issue #27.
 Date: 2026-09-26.
 
 ## Context
@@ -194,8 +195,7 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
       (filed means lying in a folder), the processing state, the analysis, folder, labels, subjects, linked contracts
       and tasks, title and technical data and the trash fill the context panel from 1280 px and follow in the page
       below it. Content that moves between panel and page is rendered once (`ContextPanelOrFlow`), so ids and form
-      state exist a single time. "In den Papierkorb" keeps its confirmation until the trash redesign (PR 5) replaces it
-      with an undo message for documents, tasks and contracts alike.
+      state exist a single time. "In den Papierkorb" acts at once and offers undo (decision 17).
     - **Preview images** come from the archive: `GET /api/documents/{id}/thumbnail` serves the first-page image
       Paperless renders for every document it stores, once the document is archived (404 before). The adapter
       accepts only WebP, PNG or JPEG recognized from the bytes, and the browser may keep it privately for a day. It is
@@ -230,9 +230,42 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
     - **Contract view:** the cancellation date with the Countdown and its derivation (the rule, the confirmed
       statements it rests on and the evaluation day), then every statement with its source document and page:
       "Bestätigt" in the data colour, "Vorschlag" in the action colour with "Bestätigen" as its primary action. A
-      rejected statement reads as neutral history instead of danger. "In den Papierkorb" keeps its confirmation
-      until PR 5.
+      rejected statement reads as neutral history instead of danger.
     - Cards in the context panel lie on `base`, so they stand out from the panel's `surface`.
+
+17. **Inbox, status, trash, management, login and share.** These screens follow the approved mockup (issue #27, PR 5):
+    - **Inbox:** "Zu prüfen" and "Mitteilungen" are two segments on a phone (both stay mounted, so switching keeps
+      their state; an old `/notices` link or new messages with no open card start on the messages) and sit side by
+      side on a desktop; from 1280 px the messages fill the context panel. A review card names its category, says
+      what happened and why it matters, and has one highlighted action (the card's action, such as retrying the
+      archival, otherwise the link to its document or contract) with "Ausblenden" quietly next to it. A failed
+      archival or analysis is red; other cards only ask for a decision. The card states (open, resolved, dismissed,
+      outdated) are a rail of pills, because dismissing has no undo in the API and the dismissed cards stay findable
+      there; the category filter was dropped, as the category stands on every card. A message is one link that opens
+      its target and reads it; a failed backup, low disk space and a stopped job are red, other unread messages carry
+      the data frame and "Neu".
+    - **Status:** the head card answers "Ist alles in Ordnung?" in the data colour or red, then one row per area with
+      its sentence and a mono state word (`data-state`); a broken area is red, "Noch nicht geprüft" stays grey. Below,
+      "Was jetzt?" in a red card names what to check or do for every broken area (the backup hint plus the note that
+      the documents are not affected, or a text per reason). "Technische Details" stays collapsed, now as rows instead
+      of cards. From 1280 px Settings and Trash show the same overview, compact, in the context panel.
+    - **Trash:** "In den Papierkorb" on documents, tasks and contracts acts at once; the message that follows says
+      until when the record stays restorable and offers undo, which restores with the version the trash returned. The
+      page keeps the message, so it stays when a task leaves the list and the context panel. The record view shows the
+      trash banner with "Wiederherstellen" as its primary action. The trash page filters by kind with pills and
+      confirms a restore in a message. Typed confirmation (ConfirmDialog) stays reserved for irreversible actions;
+      permanent deletion (#85) is not built, so no page uses it yet.
+    - **Settings:** rows to Status (with its state), Trash, "Ordner verwalten" and "Labels verwalten", then the
+      palette as a radio group with colour samples, the effects switch, the username and language, the password
+      form (collapsed) and logout.
+    - **Folder and label management:** a back link to Documents, the big title with the count, then rows instead of
+      cards: a folder row shows its counts in mono and the labels and subjects it passes on as chips; a label row
+      shows a badge only when the label is built in, retired or merged. Editing opens in the row. Deleting a folder
+      asks in a dialog instead of the browser's confirm, because it cannot be undone, but it is not typed: no
+      document is deleted.
+    - **Login and share:** the login shows the wordmark, one framed form and the version; the share page lists the
+      shared files as cards with a state badge only once something happened (saving, saved, failed), and discarding
+      all asks in a dialog instead of the browser's confirm.
 
 ## Consequences
 

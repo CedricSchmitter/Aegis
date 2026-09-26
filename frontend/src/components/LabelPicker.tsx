@@ -76,7 +76,7 @@ export function LabelPicker({ facet, labels, onPick, onCreate, disabled }: Props
           id={listId}
           role="listbox"
           data-testid={`label-options-${facet}`}
-          className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-stone-300 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
+          className="absolute z-20 mt-1 max-h-64 w-full overflow-auto border border-line-strong bg-raised"
         >
           {matches.map((label, index) => (
             <li key={label.id}>
@@ -84,14 +84,14 @@ export function LabelPicker({ facet, labels, onPick, onCreate, disabled }: Props
                 type="button"
                 role="option"
                 aria-selected={index === active}
-                className={`flex w-full min-h-11 items-center justify-between gap-2 px-3 text-left text-sm ${
-                  index === active ? "bg-sky-50 dark:bg-stone-800" : ""
+                className={`flex w-full min-h-11 items-center justify-between gap-2 px-3 text-left text-sm text-text-1 ${
+                  index === active ? "bg-surface text-data" : ""
                 }`}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => void take(index)}
               >
                 <span>{labelName(label, t)}</span>
-                <span className="text-xs text-stone-500">
+                <span className="font-mono text-xs text-text-4">
                   {t("labels.assignments", { count: label.assignmentCount })}
                 </span>
               </button>
@@ -103,8 +103,8 @@ export function LabelPicker({ facet, labels, onPick, onCreate, disabled }: Props
                 type="button"
                 role="option"
                 aria-selected={active === matches.length}
-                className={`flex w-full min-h-11 items-center px-3 text-left text-sm ${
-                  active === matches.length ? "bg-sky-50 dark:bg-stone-800" : ""
+                className={`flex w-full min-h-11 items-center px-3 text-left text-sm text-data ${
+                  active === matches.length ? "bg-surface" : ""
                 }`}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => void take(matches.length)}
@@ -117,7 +117,7 @@ export function LabelPicker({ facet, labels, onPick, onCreate, disabled }: Props
         </ul>
       )}
       {existing && query.trim() && (
-        <p className="mt-1 text-xs text-stone-500">{t("labels.existing", { name: labelName(existing, t) })}</p>
+        <p className="mt-1 text-xs text-text-3">{t("labels.existing", { name: labelName(existing, t) })}</p>
       )}
     </div>
   );

@@ -25,7 +25,7 @@ import { SubjectList } from "../components/SubjectList";
 import { TaskForm } from "../components/TaskForm";
 import { TextRecognitionHint } from "../components/TextRecognitionHint";
 import { TaskCard } from "../components/tasks/TaskCard";
-import { MoveToTrashButton, TrashBanner } from "../components/TrashControls";
+import { MoveToTrashButton, TrashBanner, useTrashUndo } from "../components/TrashControls";
 import { ProcessingSteps } from "../components/ui";
 import { EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
 import { documentProgress } from "../lib/documentView";
@@ -77,6 +77,7 @@ export function DocumentDetailPage() {
   const [folderDraft, setFolderDraft] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [trashBusy, setTrashBusy] = useState(false);
+  const { notify: notifyTrashed, dismiss: dismissTrashed, toast: trashToast } = useTrashUndo<DocumentDto>();
 
   const load = useCallback(async () => {
     try {
@@ -113,23 +114,29 @@ export function DocumentDetailPage() {
     return () => window.clearTimeout(timer);
   }, [document, load]);
 
-  /** Trash and restore carry the version the member saw; a concurrent change reloads instead of guessing. */
-  const changeTrash = async (action: "trash" | "restore") => {
-    if (!document) return;
+  /**
+   * Trash and restore carry the version the member saw; a concurrent change reloads instead of guessing. Moving to
+   * the trash asks nothing and offers undo in a message (issue #27).
+   */
+  const changeTrash = async (action: "trash" | "restore", version: number) => {
     setTrashBusy(true);
     setError(null);
     setMessage(null);
     try {
-      const options = { params: { path: { id } }, body: { expectedVersion: document.version } };
-      setDocument(
-        unwrap(
-          action === "trash"
-            ? await api.POST("/api/documents/{id}/trash", options)
-            : await api.POST("/api/documents/{id}/restore", options),
-        ),
+      const options = { params: { path: { id } }, body: { expectedVersion: version } };
+      const changed = unwrap(
+        action === "trash"
+          ? await api.POST("/api/documents/{id}/trash", options)
+          : await api.POST("/api/documents/{id}/restore", options),
       );
-      setMessage(t(action === "trash" ? "trash.moved" : "trash.restored"));
-      if (action === "restore") await load();
+      setDocument(changed);
+      if (action === "trash") {
+        notifyTrashed(changed, () => void changeTrash("restore", changed.version));
+      } else {
+        dismissTrashed();
+        setMessage(t("trash.restored"));
+        await load();
+      }
     } catch (failure) {
       setError(toApiError(failure).status === 409 ? t("trash.changedMeanwhile") : problemMessage(t, failure));
       await load();
@@ -288,7 +295,7 @@ export function DocumentDetailPage() {
       <ErrorBox message={error ?? loadError} />
       {message && <InfoBox>{message}</InfoBox>}
       {document.trash && (
-        <TrashBanner trash={document.trash} busy={trashBusy} onRestore={() => void changeTrash("restore")} />
+        <TrashBanner trash={document.trash} busy={trashBusy} onRestore={() => void changeTrash("restore", document.version)} />
       )}
 
       <div className="flex flex-wrap items-center gap-2">
@@ -626,12 +633,13 @@ export function DocumentDetailPage() {
             <Block id="document-trash" title={t("trash.section")}>
               <p className={hint}>{t("trash.documentHint")}</p>
               <div>
-                <MoveToTrashButton busy={trashBusy} onConfirm={() => void changeTrash("trash")} testId="trash-document" />
+                <MoveToTrashButton busy={trashBusy} onTrash={() => void changeTrash("trash", document.version)} testId="trash-document" />
               </div>
             </Block>
           )}
         </div>
       </ContextPanelOrFlow>
+      {trashToast}
     </div>
   );
 }

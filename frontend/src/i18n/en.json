@@ -488,16 +488,19 @@
     }
   },
   "inbox": {
-    "title": "Inbox"
+    "title": "Inbox",
+    "toReview": "{{count}} to review",
+    "sections": "Section"
   },
   "notices": {
     "title": "Messages",
+    "new": "New",
+    "newCount": "{{count}} new",
     "unreadOnly": "Unread only",
     "markAllRead": "Mark all as read",
     "markRead": "Mark as read",
     "empty": "No messages.",
     "emptyUnread": "No unread messages.",
-    "open": "Open",
     "kind": {
       "TASK_ASSIGNED": "You were assigned the task “{{title}}”.",
       "TASK_COMPLETED": "Your task “{{title}}” was completed.",
@@ -518,19 +521,17 @@
       "INTERRUPTED": "The external backup was started but did not finish.",
       "UNKNOWN": "The state of the external backup cannot be read."
     },
-    "diskSpaceLow": "“{{disk}}” is running low on space: only {{free}} of {{total}} free.",
-    "readAt": "Read on {{date}}"
+    "diskSpaceLow": "“{{disk}}” is running low on space: only {{free}} of {{total}} free."
   },
   "review": {
     "title": "To review",
-    "intro": "One shared place for processing failures, uncertain classifications and contract statements. Opening or dismissing a card does not change its source; source actions still enforce their own rules.",
-    "filters": "Review filters",
-    "statusLabel": "State",
-    "categoryLabel": "Category",
-    "allCategories": "All categories",
+    "history": "Cards by state",
+    "openDocument": "Review document",
+    "openContract": "Review contract",
+    "dismissedTitle": "Dismissed",
+    "dismissedHint": "The card left the inbox. It stays visible under “Dismissed”.",
     "empty": "Nothing needs review.",
     "emptyHistory": "No items in this history view.",
-    "openSource": "Review source",
     "dismiss": "Dismiss",
     "archiveFailed": "Archival failed for “{{title}}”: {{reason}}.",
     "analysisFailed": "Automatic classification failed for “{{title}}”: {{reason}}.",
@@ -561,6 +562,35 @@
   },
   "status": {
     "title": "Status",
+    "open": "Open status",
+    "whatNow": {
+      "title": "What now?",
+      "documentsSafe": "Your documents in Aegis are not affected.",
+      "fallback": "This has to be checked on the server (guide: docs/operations/DEPLOYMENT.md).",
+      "database": {
+        "unavailable": "While the database does not answer, Aegis saves and shows nothing. Reload the page in a few minutes. If it stays like this, it has to be checked on the server (guide: docs/operations/DEPLOYMENT.md)."
+      },
+      "archive": {
+        "unavailable": "Nothing to do: new documents stay saved and are archived once the archive is reachable again. If it stays like this for long, it has to be checked on the server."
+      },
+      "backup": {
+        "notConfigured": "The external backup has to be set up on the server (guide: docs/operations/BACKUP.md). Your documents in Aegis are not affected."
+      },
+      "storage": {
+        "low": "Clean up old exports or files that are no longer needed on the server. Documents in Aegis are kept.",
+        "unmeasured": "This has to be checked on the server. Documents in Aegis are kept."
+      },
+      "ai": {
+        "credentialsMissing": "Documents, search and tasks keep working without AI. The credentials have to be entered on the server.",
+        "providerFailure": "Documents, search and tasks keep working without AI. Aegis tries again on the next AI run; “Technical details” lets you check the connection."
+      },
+      "jobs": {
+        "notRunning": "“Technical details” shows when the job last ran. Restarting Aegis on the server often helps."
+      },
+      "probe": {
+        "failed": "Reload the page in a few minutes. If it stays like this, it has to be checked on the server."
+      }
+    },
     "overview": "Is everything OK?",
     "overviewOk": "Everything is OK.",
     "overviewProblems": "{{count}} areas need attention.",
@@ -804,16 +834,19 @@
   },
   "trash": {
     "title": "Trash",
+    "movedTitle": "In the trash",
+    "restoredTitle": "Restored",
+    "emptyKind": "Nothing of this kind in the trash.",
+    "kindName": {
+      "all": "All",
+      "document": "Documents",
+      "task": "Tasks",
+      "contract": "Contracts"
+    },
     "intro": "Deleted documents, tasks and contracts end up here and stay restorable at least until the date shown. Nothing is deleted permanently.",
     "open": "Trash",
     "filter": "Filter by kind",
     "empty": "The trash is empty.",
-    "kinds": {
-      "all": "All ({{count}})",
-      "document": "Documents ({{count}})",
-      "task": "Tasks ({{count}})",
-      "contract": "Contracts ({{count}})"
-    },
     "kind": {
       "document": "Document",
       "task": "Task",
@@ -825,10 +858,7 @@
     "restore": "Restore",
     "restored": "Restored.",
     "restoredNamed": "“{{title}}” was restored.",
-    "moved": "Moved to the trash. You can restore it at any time.",
     "move": "Move to trash",
-    "moveConfirm": "Yes, move to trash",
-    "confirm": "It disappears from all lists and from search. You can restore it from the trash; nothing is deleted permanently.",
     "changedMeanwhile": "This was changed in the meantime. The view is up to date again – please check it once more.",
     "section": "Delete",
     "documentHint": "The original is kept, and so are tasks and contracts that refer to the document.",
@@ -837,8 +867,14 @@
   },
   "settings": {
     "title": "Settings",
+    "signedInLabel": "Signed in as",
+    "username": "Username",
+    "places": "Status and management",
+    "statusUnknown": "Unknown",
+    "trashHint": "See and restore what was deleted",
+    "foldersHint": "Create, rename, move, and labels per folder",
+    "labelsHint": "Rename, merge and other spellings",
     "account": "Account",
-    "signedInAs": "Signed in as {{name}} ({{username}})",
     "password": "Change password",
     "currentPassword": "Current password",
     "newPassword": "New password",
@@ -1012,6 +1048,8 @@
   },
   "labels": {
     "title": "Labels",
+    "count": "{{count}} labels",
+    "count_one": "{{count}} label",
     "intro": "Labels are shared by the household. Renaming, merging and retiring keep every assignment; no document is ever deleted.",
     "empty": "No own labels in this group yet.",
     "create": "Create label",
@@ -1091,6 +1129,10 @@
   },
   "folders": {
     "title": "Folders",
+    "count": "{{count}} folders",
+    "count_one": "{{count}} folder",
+    "deleteTitle": "Delete folder?",
+    "deleteHint": "Documents and subfolders move one level up; no document is ever deleted.",
     "intro": "Folders are the shared filing structure. Every document sits in exactly one folder or in Unsorted.",
     "tree": "Folder tree",
     "empty": "No folders yet.",
@@ -1219,6 +1261,7 @@
   },
   "share": {
     "title": "Save shared files",
+    "discardAllTitle": "Discard the shared files?",
     "files": "Shared files",
     "hint": "Shared files wait on this phone until the server confirms that they are stored durably. If the upload is interrupted, nothing is lost: try again.",
     "save": "Save {{count}} files",

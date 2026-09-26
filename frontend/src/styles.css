@@ -903,6 +903,94 @@
     }
   }
 
+  /* ---- Inbox, status, trash, management, login and share (issue #27, PR 5) ---- */
+
+  /* A settings or status row: a name with one line of explanation, and a state or control at the right. */
+  .ui-row {
+    @apply flex min-h-13 w-full items-center gap-3 border-b py-2 text-left;
+    border-color: var(--color-line);
+    & .ui-row-text {
+      @apply flex min-w-0 flex-1 flex-col gap-0.5;
+    }
+    & .ui-row-text > b {
+      @apply text-[15px] font-semibold;
+      color: var(--color-text-1);
+    }
+    & .ui-row-text > span {
+      @apply text-[13px] leading-snug;
+      color: var(--color-text-3);
+    }
+    &[data-tone="danger"] .ui-row-text > span {
+      color: var(--color-danger);
+    }
+  }
+  :is(a, button).ui-row {
+    cursor: pointer;
+    &:hover {
+      background: var(--color-raised);
+    }
+    &:focus-visible {
+      outline-offset: -2px;
+    }
+  }
+
+  /* The state word of a row in mono: data colour when fine, red when broken, grey when neutral. */
+  .ui-state {
+    @apply font-mono text-[11px] tracking-[0.14em] whitespace-nowrap uppercase;
+    color: var(--color-text-3);
+    &[data-tone="data"] {
+      color: var(--color-data);
+    }
+    &[data-tone="attention"] {
+      color: var(--color-action);
+    }
+    &[data-tone="danger"] {
+      color: var(--color-danger);
+    }
+  }
+
+  /* A collapsed section with a mono summary and a plus or minus sign. */
+  .ui-details {
+    border-top: 1px solid var(--color-line);
+    & > summary {
+      @apply flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 font-mono text-xs tracking-[0.18em] uppercase;
+      color: var(--color-text-3);
+    }
+    & > summary::-webkit-details-marker {
+      display: none;
+    }
+    & > summary::after {
+      content: "+";
+      font-size: 16px;
+    }
+    &[open] > summary::after {
+      content: "\2013";
+    }
+    & > summary:hover {
+      color: var(--color-text-1);
+    }
+  }
+
+  /* A colour sample of a palette. */
+  .ui-swatch {
+    @apply inline-block h-3.5 w-3.5 flex-none border;
+    border-color: var(--color-line-strong);
+  }
+
+  /* How full a disk is. */
+  .ui-meter {
+    @apply mt-1 block h-1.5 w-full max-w-xs;
+    background: var(--color-line);
+    & > span {
+      display: block;
+      height: 100%;
+      background: var(--color-data);
+    }
+    &[data-tone="danger"] > span {
+      background: var(--color-danger);
+    }
+  }
+
   .ui-wordmark {
     @apply inline-flex items-baseline gap-2;
     & b {

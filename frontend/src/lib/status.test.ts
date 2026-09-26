@@ -5,7 +5,7 @@ import i18next from "i18next";
 import de from "../i18n/de.json";
 import en from "../i18n/en.json";
 import type { HealthCheck } from "../api/types";
-import { CHECK_REASONS, areaLabel, checkHint, checkText, lastOkText, problemCount, stateLabel } from "./status";
+import { CHECK_REASONS, WHAT_NOW_REASONS, areaLabel, checkHint, checkText, lastOkText, problemCount, stateLabel, whatNowText } from "./status";
 
 const i18n = i18next.createInstance();
 void i18n.init({ resources: { de: { translation: de }, en: { translation: en } }, lng: "de", fallbackLng: "de" });
@@ -110,5 +110,29 @@ describe("status overview", () => {
     expect(lastOkText(english, { ...archive, lastSuccessAt: null }, "en")).toBeNull();
     expect(lastOkText(english, { ...archive, area: "backup", reason: "backup.stale" }, "en")).toBeNull();
     expect(lastOkText(english, check({ lastSuccessAt: "2026-09-26T08:00:00Z" }), "en")).toBeNull();
+  });
+});
+
+describe("what now", () => {
+  it("names the backup hint and that documents are safe", () => {
+    const failed = check({ area: "backup", state: "PROBLEM", reason: "backup.failed", params: { failureCode: "destination.notMounted" } });
+    expect(whatNowText(german, failed)).toBe(
+      "Ist die USB-Platte am Server angeschlossen und eingeschaltet? Das nächste Backup läuft heute Nacht um 03:30. Deine Dokumente in Aegis sind davon nicht betroffen.",
+    );
+  });
+
+  it("has its own text for every other known problem, in both languages", () => {
+    for (const reason of WHAT_NOW_REASONS) {
+      const problem = check({ area: reason.split(".")[0], state: "PROBLEM", reason });
+      for (const translate of [german, english]) {
+        const text = whatNowText(translate, problem);
+        expect(text, reason).not.toBe(whatNowText(translate, check({ state: "PROBLEM", reason: "unknown.reason" })));
+        expect(text, reason).not.toContain("status.");
+      }
+    }
+  });
+
+  it("falls back to a generic text for an unknown reason", () => {
+    expect(whatNowText(english, check({ state: "PROBLEM", reason: "unknown.reason" }))).not.toContain("status.");
   });
 });

@@ -12,6 +12,7 @@ import { TaskForm } from "../components/TaskForm";
 import { useCompletionToast } from "../components/tasks/CompletionToast";
 import { TaskCard } from "../components/tasks/TaskCard";
 import { TaskDetail } from "../components/tasks/TaskDetail";
+import { useTrashUndo } from "../components/TrashControls";
 import { SegmentedControl } from "../components/ui";
 import { problemMessage } from "../lib/problem";
 import { EVERYONE, NOBODY, filterByOwner, sortTasks } from "../lib/tasks";
@@ -59,6 +60,16 @@ export function TasksPage() {
     [],
   );
   const { notify, toast } = useCompletionToast(replace, setError);
+  // Undo brings a trashed task back; the reload puts it in its place again.
+  const { notify: notifyTrashed, toast: trashToast } = useTrashUndo<TaskDto>();
+  const restore = async (trashed: TaskDto) => {
+    try {
+      unwrap(await api.POST("/api/tasks/{id}/restore", { params: { path: { id: trashed.id } }, body: { expectedVersion: trashed.version } }));
+      await load();
+    } catch (failure) {
+      setError(problemMessage(t, failure));
+    }
+  };
 
   const visible = useMemo(() => (tasks ? filterByOwner(tasks, owner) : []), [tasks, owner]);
   const openCount = tasks?.filter((task) => task.status === "OPEN").length ?? 0;
@@ -142,11 +153,13 @@ export function TasksPage() {
             task={selected}
             onChange={replace}
             onCompleted={notify}
+            onTrashed={(trashed) => notifyTrashed(trashed, () => void restore(trashed))}
             heading={(title) => <h2 className="text-lg leading-tight font-bold break-words">{title}</h2>}
           />
         </ContextPanel>
       )}
       {toast}
+      {trashToast}
     </>
   );
 }

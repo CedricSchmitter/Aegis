@@ -27,7 +27,7 @@ export function App() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center" aria-busy="true">
-        <p className="text-stone-500">{t("app.loading")}</p>
+        <p className="text-text-3">{t("app.loading")}</p>
       </main>
     );
   }

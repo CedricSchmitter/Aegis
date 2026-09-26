@@ -231,7 +231,8 @@ test.describe("first runnable test", () => {
     const notice = messages.locator("[data-testid=notice]", { hasText: `Kündigen ${runId}` });
     await expect(notice).toBeVisible();
     await expect(notice).toHaveAttribute("data-unread", "true");
-    await notice.getByRole("link", { name: "Öffnen" }).click();
+    // The whole message opens its target and reads it (issue #27).
+    await notice.getByRole("link").click();
     await expect(pageB.getByRole("heading", { level: 1 })).toContainText(`Kündigen ${runId}`);
     await pageB.getByTestId("task-complete").click();
     await expect(pageB.getByTestId("task-detail")).toContainText("Erledigt von");
@@ -337,6 +338,20 @@ test.describe("first runnable test", () => {
     // The sheet is modal: the page behind it, including the avatar, is inert until it closes.
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("upload-panel")).not.toHaveAttribute("open", "");
+    // The inbox shows "To review" and "Messages" as two segments on a phone and side by side on a desktop (issue #27).
+    await page.goto("/inbox");
+    if (isPhoneWidth(page)) {
+      const sections = page.getByRole("radiogroup", { name: /^(Bereich|Section)$/ });
+      await sections.getByRole("radio", { name: /^(Mitteilungen|Messages)/ }).click();
+      await expect(page.getByTestId("inbox-messages")).toBeVisible();
+      await expect(page.getByTestId("inbox-review")).toBeHidden();
+      await sections.getByRole("radio", { name: /^(Zu prüfen|To review)/ }).click();
+      await expect(page.getByTestId("inbox-review")).toBeVisible();
+      await expect(page.getByTestId("inbox-messages")).toBeHidden();
+    } else {
+      await expect(page.getByTestId("inbox-review")).toBeVisible();
+      await expect(page.getByTestId("inbox-messages")).toBeVisible();
+    }
     await logout(page);
   });
 
@@ -367,6 +382,8 @@ test.describe("first runnable test", () => {
     await page.getByTestId("avatar-menu-trash").click();
     await expect(page).toHaveURL(/\/trash$/);
     await expect(page.getByTestId("avatar-menu")).toBeHidden();
+    // From 1280 px the trash and Settings show the status overview in the context panel (issue #27).
+    await expect(page.getByTestId("context-panel").getByTestId("status-panel")).toBeVisible();
     await logout(page);
   });
 });

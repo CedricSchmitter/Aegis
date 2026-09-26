@@ -11,13 +11,14 @@ type ToastProps = {
   /** Milliseconds until the toast dismisses itself; 0 keeps it until the member acts. */
   duration?: number;
   variant?: "default" | "danger";
+  testId?: string;
 };
 
 /**
  * A short confirmation after an action, announced politely. Say what happened, then what can be done now.
  * A toast with undo stays long enough to reach the button (default 8 s instead of 5 s).
  */
-export function Toast({ title, children, onUndo, onDismiss, duration, variant = "default" }: ToastProps) {
+export function Toast({ title, children, onUndo, onDismiss, duration, variant = "default", testId = "toast" }: ToastProps) {
   const { t } = useTranslation();
   const dismiss = useRef(onDismiss);
   const timeout = duration ?? (onUndo ? 8000 : 5000);
@@ -33,7 +34,7 @@ export function Toast({ title, children, onUndo, onDismiss, duration, variant = 
   }, [timeout]);
 
   return (
-    <div className="ui-toast" role="status" aria-live="polite" data-variant={variant}>
+    <div className="ui-toast" role="status" aria-live="polite" data-variant={variant} data-testid={testId}>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <b className={`ui-eyebrow font-normal ${variant === "danger" ? "text-danger" : "text-data"}`}>{title}</b>
         {children && <span className="text-sm text-text-2">{children}</span>}

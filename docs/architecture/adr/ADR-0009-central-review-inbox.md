@@ -82,8 +82,8 @@ decided on 2026-09-25 to show one inbox.
 **Decision.**
 
 1. **One page.** The web app has one navigation entry, "Eingang" / "Inbox" (`/inbox`), in place of "Prüfen" and
-   "Hinweise". Its section "Zu prüfen" / "To review" shows the cards with unchanged behavior (state and category
-   filters, retry, source links, optimistic concurrency). Its section "Mitteilungen" / "Messages" lists the member's
+   "Hinweise". Its section "Zu prüfen" / "To review" shows the cards with unchanged behavior (state filter, retry,
+   source links, optimistic concurrency; the category filter left with the redesign, ADR-0019 decision 17). Its section "Mitteilungen" / "Messages" lists the member's
    notices that no card represents. `/review` (with `?item=<card id>`) and `/notices` redirect to `/inbox`, so links in
    notices, bookmarks and future push messages keep working.
 2. **Each notice kind has one place.** `NoticeKind` in the notifications domain states it: `MESSAGE` (task assigned

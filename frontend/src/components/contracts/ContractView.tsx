@@ -11,7 +11,7 @@ import { EmptyState, ErrorBox, InfoBox, Loading } from "../common";
 import { ContractDeadlineCard } from "../ContractDeadlineCard";
 import { ContractFactCard, type FactCorrection } from "../ContractFactCard";
 import { ContractFactForm, type EnteredFact } from "../ContractFactForm";
-import { MoveToTrashButton, TrashBanner } from "../TrashControls";
+import { MoveToTrashButton, TrashBanner, useTrashUndo } from "../TrashControls";
 import { Checkbox } from "../ui";
 
 type Result = { data?: ContractDto; error?: unknown; response: Response };
@@ -47,6 +47,7 @@ export function ContractView({ id, heading, compact = false, onChanged }: Props)
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const { notify: notifyTrashed, dismiss: dismissTrashed, toast: trashToast } = useTrashUndo<ContractDto>();
 
   const load = useCallback(async () => {
     try {
@@ -62,14 +63,16 @@ export function ContractView({ id, heading, compact = false, onChanged }: Props)
   }, [load]);
 
   /** Runs one version-checked write. A 409 means someone else decided first: reload and let the member re-judge. */
-  const run = async (call: () => Promise<Result>, success?: string) => {
+  const run = async (call: () => Promise<Result>, success?: string, after?: (changed: ContractDto) => void) => {
     setBusy(true);
     setError(null);
     setStale(false);
     setMessage(null);
     try {
-      setContract(unwrap(await call()));
+      const changed = unwrap(await call());
+      setContract(changed);
       if (success) setMessage(success);
+      after?.(changed);
       onChanged?.();
     } catch (failure) {
       if (toApiError(failure).status === 409) {
@@ -97,12 +100,17 @@ export function ContractView({ id, heading, compact = false, onChanged }: Props)
   const hidden = contract.facts.filter(isHistory).length;
   const trashed = !!contract.trash;
   const path = { params: { path: { id: contract.id } } };
-  const changeTrash = (action: "trash" | "restore") => {
-    const options = { ...path, body: { expectedVersion: contract.version } };
-    void run(
-      () => (action === "trash" ? api.POST("/api/contracts/{id}/trash", options) : api.POST("/api/contracts/{id}/restore", options)),
-      t(action === "trash" ? "trash.moved" : "trash.restored"),
-    );
+  /** Moving to the trash asks nothing and offers undo in a message (issue #27). */
+  const changeTrash = (action: "trash" | "restore", version: number) => {
+    const options = { params: { path: { id } }, body: { expectedVersion: version } };
+    if (action === "trash") {
+      void run(() => api.POST("/api/contracts/{id}/trash", options), undefined, (changed) =>
+        notifyTrashed(changed, () => changeTrash("restore", changed.version)),
+      );
+    } else {
+      dismissTrashed();
+      void run(() => api.POST("/api/contracts/{id}/restore", options), t("trash.restored"));
+    }
   };
   const enterFact = (fact: EnteredFact) =>
     run(() => api.POST("/api/contracts/{id}/facts", { ...path, body: { ...fact, expectedVersion: contract.version } }));
@@ -158,7 +166,7 @@ export function ContractView({ id, heading, compact = false, onChanged }: Props)
       )}
       <ErrorBox message={error} />
       {message && <InfoBox>{message}</InfoBox>}
-      {contract.trash && <TrashBanner trash={contract.trash} busy={busy} onRestore={() => changeTrash("restore")} />}
+      {contract.trash && <TrashBanner trash={contract.trash} busy={busy} onRestore={() => changeTrash("restore", contract.version)} />}
 
       <ContractDeadlineCard
         deadline={contract.deadline}
@@ -339,10 +347,11 @@ export function ContractView({ id, heading, compact = false, onChanged }: Props)
           <p className="text-[13px] leading-relaxed text-text-3">{t("contracts.manage.statusHint")}</p>
           <p className="text-[13px] leading-relaxed text-text-3">{t("trash.contractHint")}</p>
           <div>
-            <MoveToTrashButton busy={busy} onConfirm={() => changeTrash("trash")} testId="trash-contract" />
+            <MoveToTrashButton busy={busy} onTrash={() => changeTrash("trash", contract.version)} testId="trash-contract" />
           </div>
         </section>
       )}
+      {trashToast}
     </article>
   );
 }

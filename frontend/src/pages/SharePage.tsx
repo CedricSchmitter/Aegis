@@ -6,7 +6,8 @@ import type { CategoryDto } from "../api/types";
 import { uploadDocument } from "../api/upload";
 import { FolderSelect } from "../components/FolderSelect";
 import { UploadSubjects } from "../components/UploadSubjects";
-import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
+import { Badge, BigTitle, ErrorBox, Loading } from "../components/common";
+import { Dialog, cardClass } from "../components/ui";
 import { formatBytes, todayIso } from "../lib/format";
 import { problemMessage } from "../lib/problem";
 import { CONTENT_TYPES, detectFormat, uploadName, type UploadFormat } from "../lib/uploadFormat";
@@ -62,6 +63,7 @@ export function SharePage() {
   const [folder, setFolder] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const saving = useRef(false);
 
   useEffect(() => {
@@ -174,8 +176,8 @@ export function SharePage() {
   };
 
   return (
-    <>
-      <PageTitle>{t("share.title")}</PageTitle>
+    <div className="flex max-w-2xl flex-col gap-4">
+      <BigTitle count={items && items.length > 0 ? String(items.length) : null}>{t("share.title")}</BigTitle>
       {params.get("error") === "receive" && <ErrorBox message={t("share.receiveFailed")} />}
       {params.get("error") === "unavailable" && <ErrorBox message={t("share.notReady")} />}
       {inbox === null && <ErrorBox message={t("share.unsupported")} />}
@@ -183,48 +185,51 @@ export function SharePage() {
       {inbox && items === null && <Loading />}
 
       {items && items.length === 0 && (
-        <EmptyState>
-          {params.get("received") === "0" ? t("share.nothingReceived") : t("share.empty")}{" "}
-          <Link className="underline" to="/documents">
-            {t("share.toDocuments")}
-          </Link>
+        <div className="card flex flex-col gap-2 text-text-3">
+          <p>{params.get("received") === "0" ? t("share.nothingReceived") : t("share.empty")}</p>
           {params.get("received") === "0" && (
-            <span className="mt-2 block text-sm" data-testid="share-browser-hint">
+            <p className="text-sm" data-testid="share-browser-hint">
               {t("share.browserDroppedFiles")}
-            </span>
+            </p>
           )}
           {params.get("details") && (
-            <span className="mt-2 block break-words text-xs text-stone-500" data-testid="share-details">
+            <p className="font-mono text-xs break-words text-text-4" data-testid="share-details">
               {t("share.receivedDetails", { details: params.get("details") })}
-            </span>
+            </p>
           )}
-        </EmptyState>
+          <div>
+            <Link className="btn-secondary" to="/documents">
+              {t("share.toDocuments")}
+            </Link>
+          </div>
+        </div>
       )}
 
       {items && items.length > 0 && (
-        <div className="flex flex-col gap-4">
+        <>
           <ul className="flex flex-col gap-2" aria-label={t("share.files")} data-testid="share-files">
             {items.map((item) => {
               const detail = statusText(item.status);
+              const failed = item.status.kind === "failed" || item.status.kind === "rejected";
               return (
-                <li key={item.file.key} className="card flex flex-col gap-2" data-testid="share-file">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="min-w-0 break-words font-medium">{item.file.name || t("share.unnamed")}</span>
-                    <Badge state={BADGE_STATE[item.status.kind]} label={t(`share.status.${item.status.kind}`)} />
+                <li key={item.file.key} className={cardClass(failed ? "danger" : undefined, false, "flex flex-col gap-2")} data-testid="share-file">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="min-w-0 text-[15px] leading-snug font-semibold break-words">{item.file.name || t("share.unnamed")}</span>
+                    {item.status.kind !== "pending" && (
+                      <Badge state={BADGE_STATE[item.status.kind]} label={t(`share.status.${item.status.kind}`)} />
+                    )}
                   </div>
-                  <span className="text-sm text-stone-600 dark:text-stone-400">
-                    {formatBytes(item.file.size, t, i18n.language)} · {item.file.type || t("share.unknownType")}
-                  </span>
+                  <p className="ui-meta">
+                    <span>{formatBytes(item.file.size, t, i18n.language)}</span>
+                    <span>{item.file.type || t("share.unknownType")}</span>
+                  </p>
                   {detail && (
-                    <p
-                      className={`text-sm ${item.status.kind === "failed" || item.status.kind === "rejected" ? "text-red-800 dark:text-red-300" : ""}`}
-                      role={item.status.kind === "failed" || item.status.kind === "rejected" ? "alert" : undefined}
-                    >
+                    <p className={`text-sm ${failed ? "text-danger" : "text-text-2"}`} role={failed ? "alert" : undefined}>
                       {detail}
                     </p>
                   )}
                   {item.status.kind === "rejected" && item.inspected && (
-                    <p className="text-xs text-stone-500" data-testid="share-inspected">
+                    <p className="font-mono text-xs text-text-4" data-testid="share-inspected">
                       {t("share.inspected", {
                         size: formatBytes(item.inspected.bytes, t, i18n.language),
                         head: item.inspected.head || "–",
@@ -256,7 +261,7 @@ export function SharePage() {
                 void save();
               }}
             >
-              <p className="text-sm text-stone-600 dark:text-stone-400">{t("share.hint")}</p>
+              <p className="text-[13px] leading-relaxed text-text-3">{t("share.hint")}</p>
               <FolderSelect
                 categories={categories}
                 value={folder}
@@ -273,14 +278,7 @@ export function SharePage() {
                       ? t("share.retry", { count: toUpload.length })
                       : t("share.save", { count: toUpload.length })}
                 </button>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(t("share.discardAllConfirm", { count: open.length }))) void discard(open);
-                  }}
-                >
+                <button type="button" className="btn-ghost" disabled={busy} onClick={() => setConfirmDiscard(true)} data-testid="share-discard-all">
                   {t("share.discardAll")}
                 </button>
               </div>
@@ -288,18 +286,44 @@ export function SharePage() {
           )}
 
           {allStored && (
-            <div className="flex flex-col gap-2" data-testid="share-done">
-              <InfoBox>{t("share.done", { count: stored.length })}</InfoBox>
-              <p className="text-sm text-stone-600 dark:text-stone-400">{t("share.returnHint")}</p>
+            <div className="card card-data flex flex-col gap-2" data-testid="share-done">
+              <p className="font-semibold">{t("share.done", { count: stored.length })}</p>
+              <p className="text-sm text-text-3">{t("share.returnHint")}</p>
               <div>
-                <Link className="btn-primary" to="/documents">
+                <Link className="btn-secondary" to="/documents">
                   {t("share.toDocuments")}
                 </Link>
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
-    </>
+
+      <Dialog
+        open={confirmDiscard}
+        onClose={() => setConfirmDiscard(false)}
+        title={t("share.discardAllTitle")}
+        actions={
+          <>
+            <button type="button" className="btn-ghost" onClick={() => setConfirmDiscard(false)}>
+              {t("app.cancel")}
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              data-testid="share-discard-confirm"
+              onClick={() => {
+                setConfirmDiscard(false);
+                void discard(open);
+              }}
+            >
+              {t("share.discardAll")}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-text-2">{t("share.discardAllConfirm", { count: open.length })}</p>
+      </Dialog>
+    </div>
   );
 }

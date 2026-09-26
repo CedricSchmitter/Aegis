@@ -120,3 +120,27 @@ export function lastOkText(t: TFunction, check: HealthCheck, language: string): 
   if (check.state !== "PROBLEM" || !check.lastSuccessAt || check.area === "backup") return null;
   return String(t("status.check.lastOk", { date: formatDateTime(check.lastSuccessAt, language) }));
 }
+
+/** Problem reasons without a backup hint that have their own "what now?" text; any other gets the generic one. */
+export const WHAT_NOW_REASONS = [
+  "database.unavailable",
+  "archive.unavailable",
+  "backup.notConfigured",
+  "storage.low",
+  "storage.unmeasured",
+  "ai.credentialsMissing",
+  "ai.providerFailure",
+  "jobs.notRunning",
+  "probe.failed",
+] as const;
+
+/**
+ * "Was jetzt?" under a broken area (issue #27): what to check or do. A backup problem names its own hint and adds that
+ * the documents in Aegis are not affected.
+ */
+export function whatNowText(t: TFunction, check: HealthCheck): string {
+  const backupHint = check.area === "backup" ? checkHint(t, check) : null;
+  if (backupHint) return `${backupHint} ${String(t("status.whatNow.documentsSafe"))}`;
+  if (has(WHAT_NOW_REASONS, check.reason)) return String(t(`status.whatNow.${check.reason}`));
+  return String(t("status.whatNow.fallback"));
+}
