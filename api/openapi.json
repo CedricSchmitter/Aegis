@@ -1293,6 +1293,36 @@
         "required" : [ "generation" ],
         "type" : "object"
       },
+      "HealthCheckDto" : {
+        "description" : "One line of the overview that answers \"is everything OK?\"; stable codes only, the web app localizes them",
+        "properties" : {
+          "area" : {
+            "description" : "Area such as database, archive, backup, storage, ai or jobs",
+            "type" : "string"
+          },
+          "lastSuccessAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "params" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "description" : "Stable values of the reason, for example failureCode, disks, jobs, provider or failure",
+            "type" : "object"
+          },
+          "reason" : {
+            "description" : "Stable reason code such as backup.failed or ai.unchecked",
+            "type" : "string"
+          },
+          "state" : {
+            "enum" : [ "OK", "UNCHECKED", "PROBLEM" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "area", "params", "reason", "state" ],
+        "type" : "object"
+      },
       "ImplicationsRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -1313,29 +1343,6 @@
           }
         },
         "required" : [ "expectedVersion", "labelIds", "subjects" ],
-        "type" : "object"
-      },
-      "IntegrationStatusDto" : {
-        "properties" : {
-          "checkedAt" : {
-            "format" : "date-time",
-            "type" : [ "string", "null" ]
-          },
-          "detail" : {
-            "type" : [ "string", "null" ]
-          },
-          "lastSuccessAt" : {
-            "format" : "date-time",
-            "type" : [ "string", "null" ]
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "state" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "name", "state" ],
         "type" : "object"
       },
       "JobHealthDto" : {
@@ -2290,6 +2297,12 @@
       },
       "SystemStatusDto" : {
         "properties" : {
+          "checks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HealthCheckDto"
+            },
+            "type" : "array"
+          },
           "documentProcessing" : {
             "additionalProperties" : {
               "format" : "int64",
@@ -2301,12 +2314,6 @@
             "format" : "date-time",
             "type" : "string"
           },
-          "integrations" : {
-            "items" : {
-              "$ref" : "#/components/schemas/IntegrationStatusDto"
-            },
-            "type" : "array"
-          },
           "jobs" : {
             "items" : {
               "$ref" : "#/components/schemas/JobHealthDto"
@@ -2317,7 +2324,7 @@
             "$ref" : "#/components/schemas/StorageHealthDto"
           }
         },
-        "required" : [ "documentProcessing", "generatedAt", "integrations", "jobs", "storage" ],
+        "required" : [ "checks", "documentProcessing", "generatedAt", "jobs", "storage" ],
         "type" : "object"
       },
       "TaskDto" : {
@@ -5153,7 +5160,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Integration, processing, recurring job, backup and disk space status with last success times",
+        "summary" : "Overview of whether everything works, with processing, recurring job, backup and disk space details",
         "tags" : [ "status" ]
       }
     },

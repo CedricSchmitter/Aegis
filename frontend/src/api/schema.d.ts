@@ -1224,7 +1224,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Integration, processing, recurring job, backup and disk space status with last success times */
+        /** Overview of whether everything works, with processing, recurring job, backup and disk space details */
         get: operations["systemStatus"];
         put?: never;
         post?: never;
@@ -1912,6 +1912,21 @@ export interface components {
             shortTopic?: string | null;
             title?: string | null;
         };
+        /** @description One line of the overview that answers "is everything OK?"; stable codes only, the web app localizes them */
+        HealthCheckDto: {
+            /** @description Area such as database, archive, backup, storage, ai or jobs */
+            area: string;
+            /** Format: date-time */
+            lastSuccessAt?: string | null;
+            /** @description Stable values of the reason, for example failureCode, disks, jobs, provider or failure */
+            params: {
+                [key: string]: string;
+            };
+            /** @description Stable reason code such as backup.failed or ai.unchecked */
+            reason: string;
+            /** @enum {string} */
+            state: "OK" | "UNCHECKED" | "PROBLEM";
+        };
         ImplicationsRequest: {
             /** Format: int64 */
             expectedVersion: number;
@@ -2277,6 +2292,7 @@ export interface components {
             version: number;
         };
         SystemStatusDto: {
+            checks: components["schemas"]["HealthCheckDto"][];
             documentProcessing: {
                 [key: string]: number;
             };
@@ -2284,7 +2300,6 @@ export interface components {
             generatedAt: string;
             jobs: components["schemas"]["JobHealthDto"][];
             storage: components["schemas"]["StorageHealthDto"];
-            checks: components["schemas"]["HealthCheckDto"][];
         };
         TaskDto: {
             cancellationReview?: components["schemas"]["CancellationReviewDto"];
@@ -2374,21 +2389,6 @@ export interface components {
             provider?: string | null;
             providerConfigured: boolean;
             workload: string;
-        };
-        /** @description x */
-        HealthCheckDto: {
-            /** @description a */
-            area: string;
-            /** @enum {string} */
-            state: "OK" | "UNCHECKED" | "PROBLEM";
-            /** @description r */
-            reason: string;
-            /** @description p */
-            params: {
-                [key: string]: string;
-            };
-            /** Format: date-time */
-            lastSuccessAt?: string | null;
         };
     };
     responses: never;
