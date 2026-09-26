@@ -42,8 +42,8 @@ automatically with a preview and a manual correction, and that the generated PDF
    searched, then the detected frame, confirmed with "OK", corrected by dragging, or dropped with "Seite verwerfen";
    without a sheet it offers "Foto unverändert übernehmen" or "Ecken übernehmen". Several gallery images at once are
    not checked one by one. Every page is shown as a thumbnail before saving; tapping it opens the same corner editor
-   (drag with a finger or move with the arrow keys), which also offers "Ganzes Foto" and "Originalfoto verwenden". Pages can be rotated by quarter turns, reordered
-   and removed. Detected corners are fixed after the first processing, so a later rotation never moves them.
+   (drag with a finger or move with the arrow keys), which also offers "Rahmen auf ganzes Foto" (frame the whole
+   photo) and "Originalfoto verwenden". Pages can be rotated by quarter turns, reordered and removed. Detected corners are fixed after the first processing, so a later rotation never moves them.
 4. **The generated PDF is the original.** Saving assembles one PDF in the browser: one page per image, the page
    JPEG (quality 0.85) embedded unchanged, the long side 841.89 pt (A4), so a straightened A4 sheet prints at
    100 % and Paperless sees 300 dpi. The upload then follows the normal durable capture path unchanged: the server

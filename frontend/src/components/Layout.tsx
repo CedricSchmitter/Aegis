@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
 import { useSession } from "../auth/SessionContext";
 import { INBOX_CHANGED } from "../lib/inbox";
-import { LanguageSwitch } from "./LanguageSwitch";
 import { PendingShares } from "./PendingShares";
 
 const NAV = [
@@ -85,7 +84,6 @@ export function Layout({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="flex items-center gap-2">
-            <LanguageSwitch />
             <NavLink to="/settings" className={linkClass} aria-label={t("nav.settings")}>
               {member?.displayName}
             </NavLink>
@@ -104,9 +102,6 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 pt-3">
-        <p className="alert-warn" role="note">
-          {t(window.location.protocol === "https:" ? "app.pilotNotice" : "app.previewNotice")}
-        </p>
         <PendingShares />
       </div>
       <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-4 pb-24 md:pb-8">

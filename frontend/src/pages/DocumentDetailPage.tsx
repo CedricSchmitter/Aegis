@@ -22,7 +22,7 @@ import { TaskForm } from "../components/TaskForm";
 import { TextRecognitionHint } from "../components/TextRecognitionHint";
 import { TaskItem } from "../components/TaskItem";
 import { MoveToTrashButton, TrashBanner } from "../components/TrashControls";
-import { Badge, EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
+import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
 import { subjectChoices, subjectKey, suggestions } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
@@ -250,9 +250,7 @@ export function DocumentDetailPage() {
           ← {t("documents.title")}
         </Link>
       </p>
-      <PageTitle actions={<Badge state={p.state} label={t(`documents.stateShort.${p.state}`)} />}>
-        {document.title}
-      </PageTitle>
+      <PageTitle>{document.title}</PageTitle>
       <ErrorBox message={error ?? loadError} />
       {message && <InfoBox>{message}</InfoBox>}
       {document.trash && (
@@ -260,8 +258,11 @@ export function DocumentDetailPage() {
       )}
 
       <section className="card mb-4 flex flex-col gap-2" aria-label={t(`documents.state.${p.state}`)}>
+        {/* The processing state is shown once, here; an archived document names its archival date (issue #83). */}
         <p className="font-medium" data-testid="processing-state">
-          {t(`documents.state.${p.state}`)}
+          {p.state === "ARCHIVED" && p.archivedAt
+            ? t("documents.archivedAt", { date: formatDateTime(p.archivedAt, i18n.language) })
+            : t(`documents.state.${p.state}`)}
         </p>
         {p.retryScheduled && (
           <p className="text-sm text-stone-600 dark:text-stone-400">
@@ -279,12 +280,6 @@ export function DocumentDetailPage() {
             {t("documents.lastError", {
               message: t(`errors.${p.lastErrorCode}`, { defaultValue: p.lastErrorMessage ?? p.lastErrorCode }),
             })}
-          </p>
-        )}
-        {p.state === "ARCHIVED" && (
-          <p className="text-sm text-stone-600 dark:text-stone-400">
-            {t("documents.paperlessId", { id: p.paperlessDocumentId })} ·{" "}
-            {t("documents.archivedAt", { date: formatDateTime(p.archivedAt, i18n.language) })}
           </p>
         )}
         <TextRecognitionHint document={document} />
@@ -417,12 +412,6 @@ export function DocumentDetailPage() {
             date: formatDateTime(document.uploadedAt, i18n.language),
           })}
         </p>
-        <p className="text-sm">
-          {document.originalFilename} · {formatBytes(document.sizeBytes, t, i18n.language)}
-        </p>
-        <p className="break-all font-mono text-xs text-stone-500" data-testid="checksum">
-          {t("documents.checksum")}: {document.checksumSha256}
-        </p>
         <div className="flex flex-wrap items-center gap-2">
           {editingTitle ? (
             <>
@@ -508,6 +497,19 @@ export function DocumentDetailPage() {
           </div>
         )}
       </section>
+
+      <details className="card mb-4 text-sm" data-testid="technical-details">
+        <summary className="min-h-11 cursor-pointer font-semibold">{t("documents.technicalDetails")}</summary>
+        <div className="mt-2 flex flex-col gap-1">
+          <p>
+            {document.originalFilename} · {formatBytes(document.sizeBytes, t, i18n.language)}
+          </p>
+          {p.paperlessDocumentId != null && <p>{t("documents.paperlessId", { id: p.paperlessDocumentId })}</p>}
+          <p className="break-all font-mono text-xs text-stone-500" data-testid="checksum">
+            {t("documents.checksum")}: {document.checksumSha256}
+          </p>
+        </div>
+      </details>
 
       {contracts.length > 0 && (
         <section className="mb-4" aria-labelledby="linked-contracts">

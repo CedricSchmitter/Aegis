@@ -11,8 +11,6 @@
     "yes": "Yes",
     "no": "No",
     "unknownMember": "Unknown member",
-    "previewNotice": "LAN preview over HTTP: no encrypted connection and no push notifications. For the first synthetic-data test only.",
-    "pilotNotice": "Household pilot over HTTPS on the home network. Push notifications are not configured. Check the current backup state on the Status page.",
     "version": "Version {{commit}}",
     "skipToContent": "Skip to content"
   },
@@ -52,9 +50,7 @@
     "plannedToday": "Planned for today",
     "upcoming": "Next 7 days",
     "unassigned": "Nobody responsible",
-    "empty": "Nothing for today. New tasks come from documents or the task list.",
-    "calendarNotConnected": "No calendar is connected. Appointments appear here only after a verified calendar integration; nothing is simulated.",
-    "onDemand": "This view is computed from stored tasks every time you open it."
+    "empty": "Nothing for today. New tasks come from documents or the task list."
   },
   "documents": {
     "title": "Documents",
@@ -105,6 +101,7 @@
     "retry": "Retry archival",
     "retryDone": "Archival has been queued again.",
     "checksum": "SHA-256",
+    "technicalDetails": "Technical details",
     "size": "{{size}}",
     "paperlessId": "Paperless no. {{id}}",
     "archivedAt": "Archived on {{date}}",
@@ -430,8 +427,7 @@
       "UNKNOWN": "The state of the external backup cannot be read."
     },
     "diskSpaceLow": "“{{disk}}” is running low on space: only {{free}} of {{total}} free.",
-    "readAt": "Read on {{date}}",
-    "inAppOnly": "Messages are shown here in the app only. Phone push is not set up."
+    "readAt": "Read on {{date}}"
   },
   "review": {
     "title": "To review",
@@ -1199,7 +1195,7 @@
       "bottomLeft": "Bottom-left corner",
       "invalid": "The corners cross each other. Drag them into the right order.",
       "apply": "Apply",
-      "wholePhoto": "Whole photo",
+      "wholePhoto": "Frame whole photo",
       "keepPhoto": "Use original photo",
       "cancel": "Cancel",
       "checkTitle": "Page {{number}}: sheet found",

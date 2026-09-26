@@ -160,3 +160,11 @@ export function activeFilterCount(filters: CatalogFilters): number {
 export function withoutFilters(filters: CatalogFilters): CatalogFilters {
   return { ...EMPTY_FILTERS, sort: filters.sort, size: filters.size };
 }
+
+/**
+ * Whether the filter shows a facet group. A group without any value to choose would only offer "not set", which
+ * every listed document matches, so it is left out (issue #83); an active "not set" filter keeps it to be cleared.
+ */
+export function showsFacetGroup(valueKeys: string[], missingSelected: boolean): boolean {
+  return valueKeys.length > 0 || missingSelected;
+}

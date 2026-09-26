@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { FACET_GROUPS, type FacetCounts, type FacetGroup, type LabelDto, type MemberDto } from "../api/types";
-import { facetParam, selectedValues, toggleValue, type CatalogFilters } from "../lib/catalogSearch";
+import { facetParam, selectedValues, showsFacetGroup, toggleValue, type CatalogFilters } from "../lib/catalogSearch";
 import { byId, labelName, subjectFromKey } from "../lib/labels";
 
 interface Props {
@@ -13,7 +13,8 @@ interface Props {
 
 /**
  * Facet filters with result counts. Several values inside a group match any of them (topics and tags can switch
- * to all), different groups are combined with AND, and every group offers an explicit "not set" filter.
+ * to all), different groups are combined with AND, and a group offers an explicit "not set" filter next to its
+ * values. A group without values is left out.
  */
 export function FacetFilters({ filters, facets, labels, members, onChange }: Props) {
   const { t } = useTranslation();
@@ -57,7 +58,8 @@ export function FacetFilters({ filters, facets, labels, members, onChange }: Pro
           .filter((key) => group !== "SUBJECT" || selected.includes(key) || !isAssistant(key))
           .sort((a, b) => valueName(group, a).localeCompare(valueName(group, b)));
         const missingCount = facets.missing?.[group] ?? 0;
-        if (keys.length === 0 && missingCount === 0) return null;
+        const missingSelected = filters.missing.includes(group);
+        if (!showsFacetGroup(keys, missingSelected)) return null;
         return (
           <fieldset key={group} className="flex flex-col gap-1">
             <legend className="label mb-0">{t(`facets.${group}`)}</legend>
@@ -82,7 +84,7 @@ export function FacetFilters({ filters, facets, labels, members, onChange }: Pro
                   </button>
                 );
               })}
-              {missingCount > 0 && (
+              {(missingCount > 0 || missingSelected) && (
                 <button
                   type="button"
                   aria-pressed={filters.missing.includes(group)}

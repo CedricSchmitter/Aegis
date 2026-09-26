@@ -2,14 +2,11 @@ import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { DocumentDto } from "../api/types";
 import { useSession } from "../auth/SessionContext";
+import { documentBadges } from "../lib/documentBadges";
 import { formatDate } from "../lib/format";
-import { lacksText } from "../lib/textRecognition";
 import { Badge } from "./common";
 import { LabelChips } from "./LabelChips";
 import { SubjectList } from "./SubjectList";
-
-/** Analysis states worth a badge in lists; finished or never-requested analyses stay quiet. */
-const VISIBLE_ANALYSIS = new Set(["WAITING_FOR_ARCHIVE", "PENDING", "NEEDS_REVIEW", "FAILED", "UNAVAILABLE"]);
 
 interface Props {
   document: DocumentDto;
@@ -21,7 +18,7 @@ interface Props {
 export function DocumentCard({ document, selected, onSelectedChange, folderName }: Props) {
   const { t, i18n } = useTranslation();
   const { memberName } = useSession();
-  const state = document.processing.state;
+  const badges = documentBadges(document);
   const path = document.classification.path.map((step) => step.name).join(" / ");
   return (
     <article className="card flex flex-col gap-1" data-testid="document-card" data-document-id={document.id}>
@@ -43,24 +40,13 @@ export function DocumentCard({ document, selected, onSelectedChange, folderName 
             </Link>
           </h3>
         </div>
-        <span className="flex flex-wrap gap-1">
-          <Badge state={state} label={t(`documents.stateShort.${state}`)} />
-          {VISIBLE_ANALYSIS.has(document.analysis.state) && (
-            <Badge
-              state={document.analysis.state}
-              label={t(`analysis.stateShort.${document.analysis.state}`)}
-            />
-          )}
-          {lacksText(document.textRecognition) && (
-            <Badge
-              state={`TEXT_${document.textRecognition.state}`}
-              label={t(`documents.text.badge.${document.textRecognition.state}`)}
-            />
-          )}
-          {document.classification.placementSuggestion && (
-            <Badge state="NEEDS_REVIEW" label={t("placement.badge")} />
-          )}
-        </span>
+        {badges.length > 0 && (
+          <span className="flex flex-wrap gap-1">
+            {badges.map((badge) => (
+              <Badge key={badge.labelKey} state={badge.state} label={t(badge.labelKey)} />
+            ))}
+          </span>
+        )}
       </div>
       <p className="text-sm text-stone-600 dark:text-stone-400">
         {t("documents.uploadedBy", {
