@@ -497,7 +497,7 @@
     "new": "Neu",
     "newCount": "{{count}} neu",
     "unreadOnly": "Nur ungelesene",
-    "markAllRead": "Alle als gelesen markieren",
+    "markAllRead": "Alle gelesen",
     "markRead": "Als gelesen markieren",
     "empty": "Keine Mitteilungen.",
     "emptyUnread": "Keine ungelesenen Mitteilungen.",
@@ -526,6 +526,7 @@
   "review": {
     "title": "Zu prüfen",
     "history": "Karten nach Zustand",
+    "historyTitle": "Verlauf",
     "openDocument": "Dokument prüfen",
     "openContract": "Vertrag prüfen",
     "dismissedTitle": "Ausgeblendet",

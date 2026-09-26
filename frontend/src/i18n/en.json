@@ -497,7 +497,7 @@
     "new": "New",
     "newCount": "{{count}} new",
     "unreadOnly": "Unread only",
-    "markAllRead": "Mark all as read",
+    "markAllRead": "Mark all read",
     "markRead": "Mark as read",
     "empty": "No messages.",
     "emptyUnread": "No unread messages.",
@@ -526,6 +526,7 @@
   "review": {
     "title": "To review",
     "history": "Cards by state",
+    "historyTitle": "History",
     "openDocument": "Review document",
     "openContract": "Review contract",
     "dismissedTitle": "Dismissed",

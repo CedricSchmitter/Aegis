@@ -86,13 +86,6 @@ export function ReviewSection({ onLoaded, hidden = false, compactHeading = false
         <span>{t("review.title")}</span>
         {openCount !== null && <span>{openCount}</span>}
       </h2>
-      <div className="ui-rail lg:mx-0 lg:flex-wrap lg:px-0" role="group" aria-label={t("review.history")} data-testid="review-status">
-        {STATUSES.map((option) => (
-          <button key={option} type="button" className="ui-pill" aria-pressed={status === option} onClick={() => setStatus(option)}>
-            {t(`review.status.${option}`)}
-          </button>
-        ))}
-      </div>
       <ErrorBox message={error ?? loadError} />
       {!items && !loadError && <Loading />}
       {items?.length === 0 && <EmptyState>{open ? t("review.empty") : t("review.emptyHistory")}</EmptyState>}
@@ -147,6 +140,15 @@ export function ReviewSection({ onLoaded, hidden = false, compactHeading = false
           })}
         </ul>
       )}
+      {/* The history is rarely needed, so its states follow the cards instead of competing with them. */}
+      <p className="ui-sec mt-2">{t("review.historyTitle")}</p>
+      <div className="ui-rail lg:mx-0 lg:flex-wrap lg:px-0" role="group" aria-label={t("review.history")} data-testid="review-status">
+        {STATUSES.map((option) => (
+          <button key={option} type="button" className="ui-pill" aria-pressed={status === option} onClick={() => setStatus(option)}>
+            {t(`review.status.${option}`)}
+          </button>
+        ))}
+      </div>
       {dismissed && (
         <Toast key={dismissed} title={t("review.dismissedTitle")} onDismiss={() => setDismissed(null)}>
           {t("review.dismissedHint")}

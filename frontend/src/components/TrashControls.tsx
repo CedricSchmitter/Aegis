@@ -16,11 +16,8 @@ export function TrashBanner({ trash, busy, onRestore }: { trash: TrashInfo; busy
   const { memberName } = useSession();
   return (
     <div className="card card-attention flex flex-col gap-2" role="status" data-testid="trash-banner">
-      <p className="ui-eyebrow">
-        <Icon name="trash" className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" />
-        {t("trash.title")}
-      </p>
-      <p className="font-medium">
+      <p className="flex items-start gap-2 font-medium">
+        <Icon name="trash" className="mt-0.5 h-[18px] w-[18px] flex-none text-action" />
         {t("trash.banner", {
           name: memberName(trash.trashedBy) ?? t("app.unknownMember"),
           date: formatDateTime(trash.trashedAt, i18n.language),

@@ -76,12 +76,12 @@ export function MessagesSection({ hidden = false, compactHeading = false }: Prop
         <span>{t("notices.title")}</span>
         {notices && <span>{t("notices.newCount", { count: unread })}</span>}
       </h2>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <button type="button" className="ui-pill" aria-pressed={unreadOnly} onClick={() => setUnreadOnly((value) => !value)}>
           {t("notices.unreadOnly")}
         </button>
         {unread > 0 && (
-          <button type="button" className="btn-ghost" onClick={() => void markAll()} data-testid="mark-all-read">
+          <button type="button" className="btn-ghost -mr-4" onClick={() => void markAll()} data-testid="mark-all-read">
             {t("notices.markAllRead")}
           </button>
         )}
