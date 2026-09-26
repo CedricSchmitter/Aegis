@@ -53,7 +53,7 @@ describe("avatar menu", () => {
     at("/today", <AvatarMenu />);
     const toggle = screen.getByRole("button", { name: "Lisa: Einstellungen, Status und Papierkorb" });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.getByTestId("avatar-menu").hidden).toBe(true);
+    expect(screen.queryByTestId("avatar-menu")).toBeNull();
 
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
