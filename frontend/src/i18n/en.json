@@ -473,28 +473,72 @@
   },
   "status": {
     "title": "Status",
-    "integrations": "Services and integrations",
+    "overview": "Is everything OK?",
+    "overviewOk": "Everything is OK.",
+    "overviewProblems": "{{count}} areas need attention.",
+    "overviewProblems_one": "One area needs attention.",
+    "technicalDetails": "Technical details",
+    "area": {
+      "database": "Database",
+      "archive": "Archive (Paperless)",
+      "backup": "Backup",
+      "storage": "Storage",
+      "ai": "AI",
+      "jobs": "Background jobs",
+      "other": "Service"
+    },
+    "checkState": {
+      "OK": "OK",
+      "UNCHECKED": "Not checked yet",
+      "PROBLEM": "Problem"
+    },
+    "check": {
+      "database": {
+        "connected": "Connected.",
+        "unavailable": "The database does not respond."
+      },
+      "archive": {
+        "reachable": "Reachable.",
+        "unavailable": "The archive cannot be reached. New documents stay saved and are archived later."
+      },
+      "backup": {
+        "ok": "Last successful backup: {{date}}.",
+        "running": "A backup is running. Aegis is unavailable for a few minutes meanwhile.",
+        "failed": "The last backup failed: {{reason}}",
+        "stale": "There has been no successful backup for more than 26 hours. Last successful backup: {{date}}.",
+        "interrupted": "A backup was started but did not finish.",
+        "notConfigured": "No external backup is set up.",
+        "unknown": "The backup state cannot be read: {{reason}}"
+      },
+      "storage": {
+        "ok": "Enough free space.",
+        "low": "Space is running low: {{disks}}.",
+        "unmeasured": "Could not be measured: {{disks}}."
+      },
+      "ai": {
+        "connected": "Connected.",
+        "unchecked": "Not checked since the last restart. This happens with the next AI run or with “Check connection” under “Technical details”.",
+        "credentialsMissing": "The credentials for {{provider}} are missing.",
+        "providerFailure": "The last run failed: {{failure}}."
+      },
+      "jobs": {
+        "notRunning": "Not running as planned: {{jobs}}."
+      },
+      "probe": {
+        "failed": "Could not be checked."
+      },
+      "fallback": {
+        "OK": "OK.",
+        "UNCHECKED": "Not checked yet.",
+        "PROBLEM": "Something is wrong here."
+      },
+      "lastOk": "Last OK: {{date}}",
+      "unknownProvider": "the AI provider",
+      "unknownFailure": "unknown error"
+    },
     "processing": "Document processing",
     "lastSuccess": "Last success: {{date}}",
-    "checkedAt": "Checked: {{date}}",
     "never": "Never",
-    "state": {
-      "CONNECTED": "Connected",
-      "DEGRADED": "Degraded",
-      "UNAVAILABLE": "Unavailable",
-      "NOT_CONFIGURED": "Not configured"
-    },
-    "integration": {
-      "database": "Database",
-      "paperless": "Paperless archive",
-      "export": "Export",
-      "externalBackup": "External backup",
-      "calendar": "Calendar",
-      "mail": "Mailbox",
-      "ai": "AI",
-      "webPush": "Push notifications",
-      "telegram": "Telegram"
-    },
     "exports": "Exports",
     "createExport": "Create export now",
     "exporting": "Exporting …",
@@ -502,8 +546,6 @@
     "noExports": "No export created yet.",
     "exportLine": "{{generation}}: {{documents}} documents, {{tasks}} tasks",
     "missingOriginals": "{{count}} originals missing from the export",
-    "backupWarning": "The external backup is unavailable or out of date. See “Backup and storage” below.",
-    "storageWarning": "At least one disk is running low on space. See “Backup and storage” below.",
     "storageTitle": "Backup and storage",
     "storageIntro": "The external backup runs every night at 03:30 to the USB disk on the server. If it fails or space runs low, every member gets a message.",
     "backup": {
@@ -580,7 +622,6 @@
     "jobs": {
       "title": "Background jobs",
       "intro": "Recurring work on the server. “Stale” means no successful run for more than two intervals.",
-      "warning": "At least one background job is not running as planned. See “Background jobs” below.",
       "runs": "Runs {{interval}}.",
       "nextRun": "Next run: {{date}}",
       "lastFailure": "Last failure: {{date}} ({{count}} runs in a row failed)",
@@ -601,6 +642,7 @@
         "NOT_SCHEDULED": "Not scheduled",
         "UNKNOWN": "Unknown"
       },
+      "unnamed": "Background job",
       "name": {
         "reconcile-review-inbox": "Review inbox reconciliation",
         "check-archive-text": "Recognized text check",

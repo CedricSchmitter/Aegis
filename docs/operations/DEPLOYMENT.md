@@ -296,11 +296,12 @@ neither part of the server backup nor of an export, because the document does no
 
 ## Operations
 
-- Status page (in the app) and `GET /api/status`: database, Paperless, export, external backup, AI (not configured;
-  degraded while a configured model is unverified or its latest run failed for a provider reason; otherwise
-  connected) and the deliberately unconnected integrations (calendar,
-  mail, Web Push, Telegram). The AI section lists workload budgets, today's spending and recent runs with cancel and
-  retry.
+- Status page (in the app) and `GET /api/status`: an overview of the database, Paperless, the external backup, disk
+  space and AI with stable reason codes (ADR-0018). AI is not listed without credentials and reads "Noch nicht
+  geprüft" after every start or deployment until its next run or a manual connection check; integrations without an
+  adapter (calendar, mail, Web Push, Telegram) are not listed. The collapsed technical details hold the processing
+  counts, backup and disk details, recurring jobs, the AI section (workload budgets, today's spending, the connection
+  check and recent runs with cancel and retry), the exports and the running commit.
 - Recurring jobs: the status page shows their health (ADR-0013). `watch-job-health` checks them every five minutes
   (`aegis.operations.job-health-watch-interval`) and sends each active member one in-app `JOB_STALE` notice per
   incident when a job becomes stale or is no longer scheduled; it waits 10 minutes after a start so that jobs due

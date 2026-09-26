@@ -142,9 +142,10 @@ class AiRunIT extends PostgresIT {
             assertThat(workload.path("available").asBoolean()).isFalse();
         });
         JsonNode status = anna.json(anna.get("/api/status"));
-        assertThat(status.path("integrations")).anySatisfy(integration -> {
-            assertThat(integration.path("name").asText()).isEqualTo("ai");
-            assertThat(integration.path("state").asText()).isEqualTo("CONNECTED");
+        assertThat(status.path("checks")).anySatisfy(check -> {
+            assertThat(check.path("area").asText()).isEqualTo("ai");
+            assertThat(check.path("state").asText()).isEqualTo("OK");
+            assertThat(check.path("reason").asText()).isEqualTo("ai.connected");
         });
         assertThat(new ApiClient(port).get("/api/ai/runs").status()).isEqualTo(401);
     }

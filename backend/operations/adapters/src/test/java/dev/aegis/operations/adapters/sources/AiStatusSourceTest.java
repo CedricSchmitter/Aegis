@@ -4,13 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.aegis.assistant.application.api.AiHealth;
 import dev.aegis.assistant.application.api.AiHealth.ModelHealth;
-import dev.aegis.operations.application.api.IntegrationStatus;
+import dev.aegis.operations.application.api.HealthCheck;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.MemberId;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class AiStatusSourceTest {
@@ -20,52 +20,57 @@ class AiStatusSourceTest {
     static final ModelHealth HAIKU_OK = new ModelHealth("anthropic", "claude-haiku-4-5", true, "SUCCEEDED", null,
             EARLIER);
 
-    private static IntegrationStatus status(AiHealth health) {
-        return new AiStatusSource(actor -> health, Clock.fixed(NOW, ZoneOffset.UTC)).check(ACTOR);
+    private static Optional<HealthCheck> status(AiHealth health) {
+        return new AiStatusSource(actor -> health).check(ACTOR);
     }
 
     @Test
-    void withoutCredentialsTheIntegrationIsNotConfigured() {
-        assertThat(status(new AiHealth(false, null, List.of())).state()).isEqualTo(IntegrationStatus.NOT_CONFIGURED);
+    void withoutCredentialsAiIsNotSetUpAndNotListed() {
+        assertThat(status(new AiHealth(false, null, List.of()))).isEmpty();
     }
 
     @Test
-    void credentialsAloneOrAnUncheckedModelAreNotReportedAsConnected() {
-        IntegrationStatus none = status(new AiHealth(true, null, List.of(
-                new ModelHealth("anthropic", "claude-haiku-4-5", true, null, null, null))));
-        IntegrationStatus partly = status(new AiHealth(true, EARLIER, List.of(HAIKU_OK,
-                new ModelHealth("anthropic", "claude-opus-5", true, null, null, null))));
+    void anUncheckedModelIsNeutralNotAProblem() {
+        HealthCheck afterStart = status(new AiHealth(true, null, List.of(
+                new ModelHealth("anthropic", "claude-sonnet-5", true, null, null, null)))).orElseThrow();
+        HealthCheck partly = status(new AiHealth(true, EARLIER, List.of(HAIKU_OK,
+                new ModelHealth("anthropic", "claude-opus-5", true, null, null, null)))).orElseThrow();
 
-        assertThat(none.state()).isEqualTo(IntegrationStatus.DEGRADED);
-        assertThat(partly.state()).isEqualTo(IntegrationStatus.DEGRADED);
-        assertThat(partly.detail()).contains("not verified").contains("claude-opus-5");
+        assertThat(afterStart.state()).isEqualTo(HealthCheck.UNCHECKED);
+        assertThat(afterStart.reason()).isEqualTo("ai.unchecked");
+        assertThat(afterStart.params()).isEmpty();
+        assertThat(partly.state()).isEqualTo(HealthCheck.UNCHECKED);
+        assertThat(partly.lastSuccessAt()).isEqualTo(EARLIER);
     }
 
     @Test
     void historicalSuccessCannotHideMissingSelectedCredentials() {
-        IntegrationStatus current = status(new AiHealth(true, EARLIER, List.of(
-                new ModelHealth("anthropic", "claude-sonnet-5", false, "SUCCEEDED", null, EARLIER))));
+        HealthCheck current = status(new AiHealth(true, EARLIER, List.of(
+                new ModelHealth("anthropic", "claude-sonnet-5", false, "SUCCEEDED", null, EARLIER)))).orElseThrow();
 
-        assertThat(current.state()).isEqualTo(IntegrationStatus.DEGRADED);
-        assertThat(current.detail()).contains("credentials missing").contains("anthropic/claude-sonnet-5");
+        assertThat(current.state()).isEqualTo(HealthCheck.PROBLEM);
+        assertThat(current.reason()).isEqualTo("ai.credentialsMissing");
+        assertThat(current.params()).isEqualTo(Map.of("provider", "anthropic"));
     }
 
     @Test
-    void oneUnavailableModelDegradesTheIntegrationEvenAfterAnotherSucceeded() {
-        IntegrationStatus status = status(new AiHealth(true, EARLIER, List.of(HAIKU_OK,
-                new ModelHealth("anthropic", "claude-opus-5", true, "FAILED", "MODEL_UNAVAILABLE", NOW))));
+    void oneUnavailableModelIsAProblemEvenAfterAnotherSucceeded() {
+        HealthCheck status = status(new AiHealth(true, EARLIER, List.of(HAIKU_OK,
+                new ModelHealth("anthropic", "claude-opus-5", true, "FAILED", "MODEL_UNAVAILABLE", NOW))))
+                .orElseThrow();
 
-        assertThat(status.state()).isEqualTo(IntegrationStatus.DEGRADED);
-        assertThat(status.detail()).contains("claude-opus-5: MODEL_UNAVAILABLE");
+        assertThat(status.state()).isEqualTo(HealthCheck.PROBLEM);
+        assertThat(status.reason()).isEqualTo("ai.providerFailure");
+        assertThat(status.params()).isEqualTo(Map.of("failure", "MODEL_UNAVAILABLE"));
         assertThat(status.lastSuccessAt()).isEqualTo(EARLIER);
     }
 
     @Test
-    void workloadFailuresDoNotDegradeAndVerifiedModelsAreConnected() {
+    void workloadFailuresDoNotMatterAndVerifiedModelsAreConnected() {
         assertThat(status(new AiHealth(true, EARLIER, List.of(HAIKU_OK,
-                new ModelHealth("anthropic", "claude-opus-5", true, "FAILED", "BUDGET_EXHAUSTED", NOW)))).state())
-                .isEqualTo(IntegrationStatus.CONNECTED);
-        assertThat(status(new AiHealth(true, EARLIER, List.of(HAIKU_OK))).state())
-                .isEqualTo(IntegrationStatus.CONNECTED);
+                new ModelHealth("anthropic", "claude-opus-5", true, "FAILED", "BUDGET_EXHAUSTED", NOW))))
+                .orElseThrow().state()).isEqualTo(HealthCheck.OK);
+        assertThat(status(new AiHealth(true, EARLIER, List.of(HAIKU_OK))).orElseThrow())
+                .isEqualTo(HealthCheck.ok("ai", "ai.connected", EARLIER));
     }
 }

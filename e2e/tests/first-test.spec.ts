@@ -176,24 +176,37 @@ test.describe("first runnable test", () => {
     await expect(pageB.getByText("Kein Kalender verbunden")).toBeVisible();
     await contextB.close();
 
-    // The first member sees the completion and the status page reports honest integration states.
+    // The first member sees the completion and the status page answers "is everything OK?" in words (issue #83).
     await login(page, userA);
     await page.goto(documentUrl);
     await expect(page.locator("[data-testid=task-item]", { hasText: `Kündigen ${runId}` })).toContainText("Erledigt");
     await page.getByRole("link", { name: "Status" }).first().click();
-    await expect(page.getByTestId("integration-paperless")).toContainText(/Verbunden/);
-    // The external backup and the disks have their own section with a reason (ADR-0015); CI has no backup.
+    const overview = page.getByTestId("status-overview");
+    await expect(overview.getByRole("heading", { level: 2 })).toHaveText("Ist alles in Ordnung?");
+    await expect(page.getByTestId("check-database").locator("[data-state]")).toHaveAttribute("data-state", "CHECK_OK");
+    await expect(page.getByTestId("check-archive")).toContainText("Erreichbar");
+    // CI has no external backup: the overview names it as a problem instead of hiding it (ADR-0015).
+    await expect(page.getByTestId("check-backup")).toContainText("Es ist kein externes Backup eingerichtet.");
+    await expect(page.getByTestId("check-backup").locator("[data-state]")).toHaveAttribute("data-state", "CHECK_PROBLEM");
+    await expect(page.getByTestId("check-storage").locator("[data-state]")).toHaveAttribute("data-state", /^CHECK_(OK|PROBLEM)$/);
+    // Integrations that are not set up are not listed: no calendar, mail, push or Telegram, and no AI without credentials.
+    for (const area of ["calendar", "mail", "webPush", "telegram", "export", "ai"]) {
+      await expect(page.getByTestId(`check-${area}`)).toHaveCount(0);
+    }
+    await expect(overview).not.toContainText("Nicht eingerichtet");
+    // The owner's details are collapsed until opened.
+    const details = page.getByTestId("technical-details");
+    await expect(page.getByTestId("backup-card")).toBeHidden();
+    await details.getByText("Technische Details").click();
     await expect(page.getByTestId("backup-card")).toContainText(/Nicht eingerichtet/);
     await expect(page.getByTestId("disk-data")).toContainText("Datenspeicher des Servers");
     await expect(page.getByTestId("disk-data").locator("[data-state]")).toHaveAttribute("data-state", /^DISK_(OK|LOW)$/);
-    await expect(page.getByTestId("integration-calendar")).toContainText(/Nicht eingerichtet/);
     // Recurring background jobs are scheduled and either ran successfully or wait for their first run (ADR-0013).
     for (const job of ["reconcile-review-inbox", "check-archive-text", "reconcile-documents"]) {
       await expect(page.getByTestId(`job-${job}`).locator("[data-state]")).toHaveAttribute("data-state", /^JOB_(OK|PENDING)$/);
     }
     await expect(page.getByTestId("job-reconcile-review-inbox")).toContainText("Prüfkorb abgleichen");
     // Without provider credentials the AI boundary says so and capture, search and tasks above still worked.
-    await expect(page.getByTestId("integration-ai")).toContainText(/Nicht eingerichtet/);
     await expect(page.getByTestId("ai-section")).toContainText("Kein KI-Anbieter eingerichtet");
     await expect(page.getByTestId("ai-check")).toBeDisabled();
     await logout(page);

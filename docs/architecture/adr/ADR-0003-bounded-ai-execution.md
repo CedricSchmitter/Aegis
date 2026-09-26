@@ -141,9 +141,11 @@ parameters; not the requester): reusing it for different work is rejected with `
 Capture, search, tasks and planning never call the AI context. Requests that cannot run (no credentials, no handler,
 no price) are refused with `ai.notConfigured`, `ai.workload.unavailable` or `ai.price.unknown` instead of queuing work.
 The status page shows the AI integration, judged per configured model from its latest succeeded or failed
-run (not configured; degraded while a model is unverified or its latest run failed for a provider reason;
-otherwise connected), the workload profiles with their budgets, today's spending, the connection check and recent runs with
-cancel and retry. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`, `/api/ai/runs/{id}/cancel`,
+run: not listed without credentials; a problem when a selected provider lacks credentials or a model's latest run
+failed for a provider reason; "not checked yet", a neutral state, while a model is unverified; otherwise OK
+([ADR-0018](ADR-0018-status-overview.md), which replaced "degraded" for unverified models on 2026-09-26). Its
+technical details show the workload profiles with their budgets, today's spending, the connection check and recent
+runs with cancel and retry. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`, `/api/ai/runs/{id}/cancel`,
 `/api/ai/runs/{id}/retry`, `/api/ai/connection-checks`.
 
 ## Consequences

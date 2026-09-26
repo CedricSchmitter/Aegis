@@ -5,7 +5,7 @@ A private household workspace for shared documents and tasks, built with Java/Sp
 ## Start here
 
 - [Shared engineering instructions](AGENT.md): canonical rules for contributors, Codex, and Claude.
-- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts), [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders), [ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md) (central review inbox), [ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md) (recoverable trash), [ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md) (photos as document originals), [ADR-0012](docs/architecture/adr/ADR-0012-recognized-text.md) (whether the archive recognized text), [ADR-0013](docs/architecture/adr/ADR-0013-recurring-job-health.md) (recurring job health on the status page), [ADR-0014](docs/architecture/adr/ADR-0014-stale-job-notices.md) (notices when a recurring job stops running), [ADR-0015](docs/architecture/adr/ADR-0015-backup-and-storage-health.md) (backup failure reasons, disk space and their notices), [ADR-0016](docs/architecture/adr/ADR-0016-scanned-photo-pages.md) (scanned photo pages as one PDF) and [ADR-0017](docs/architecture/adr/ADR-0017-persons-and-the-assistant-account.md) (persons and the assistant account; no subject "both").
+- [Architecture foundations](docs/architecture/FOUNDATIONS.md), [ADR-0001](docs/architecture/adr/ADR-0001-backend-modules-and-transactions.md) (DDD, hexagonal modules, versions, transactions), [ADR-0002](docs/architecture/adr/ADR-0002-document-tree-and-labels.md) (folder tree, labels, faceted search), [ADR-0003](docs/architecture/adr/ADR-0003-bounded-ai-execution.md) (bounded, replaceable AI execution), [ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md) (automatic classification, readable filenames), [ADR-0005](docs/architecture/adr/ADR-0005-automatic-folder-placement.md) (automatic folder placement and proposed paths), [ADR-0006](docs/architecture/adr/ADR-0006-starting-folder-tree.md) (tracked starting tree), [ADR-0007](docs/architecture/adr/ADR-0007-contract-facts-and-provenance.md) (confirmed contract facts), [ADR-0008](docs/architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md) (durable cancellation tasks and reminders), [ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md) (central review inbox), [ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md) (recoverable trash), [ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md) (photos as document originals), [ADR-0012](docs/architecture/adr/ADR-0012-recognized-text.md) (whether the archive recognized text), [ADR-0013](docs/architecture/adr/ADR-0013-recurring-job-health.md) (recurring job health on the status page), [ADR-0014](docs/architecture/adr/ADR-0014-stale-job-notices.md) (notices when a recurring job stops running), [ADR-0015](docs/architecture/adr/ADR-0015-backup-and-storage-health.md) (backup failure reasons, disk space and their notices), [ADR-0016](docs/architecture/adr/ADR-0016-scanned-photo-pages.md) (scanned photo pages as one PDF), [ADR-0017](docs/architecture/adr/ADR-0017-persons-and-the-assistant-account.md) (persons and the assistant account; no subject "both") and [ADR-0018](docs/architecture/adr/ADR-0018-status-overview.md) (status overview first, stable codes, technical details collapsed).
 - [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues): feature requests, open work, acceptance criteria and dependencies.
 - [Household access](docs/operations/ACCESS.md): accounts and trusted LAN HTTPS.
 - [Deployment](docs/operations/DEPLOYMENT.md), [export, restore drill and backup](docs/operations/BACKUP.md), [VM access](docs/VM-ACCESS.md).
@@ -91,7 +91,7 @@ receives notices and can own tasks but is never what a document is about,
 [ADR-0017](docs/architecture/adr/ADR-0017-persons-and-the-assistant-account.md)), German/English UI, durable capture of PDFs and
 photos with Paperless archival, document list/search/original access, a browsable folder tree with an Unsorted
 inbox, structured labels (document type, organization, topic, tags) with faceted search, source-linked
-tasks, deterministic Today, one inbox for review cards and in-app messages, integration status, portable exports and isolated
+tasks, deterministic Today, one inbox for review cards and in-app messages, a status overview, portable exports and isolated
 recovery. Folders, labels and search work without AI. New uploads are classified automatically once archived
 (title, type, organization, topics, evidenced issue date; conservative policy with reviewable suggestions), and
 downloads and exports use readable filenames such as `2026-09-17_Telekom_Rechnung_Internet_a1b2c3d4.pdf`
@@ -164,16 +164,22 @@ in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Without either, AI is not configured. See
 [API setup](docs/operations/DEPLOYMENT.md#claude-api-with-sonnet-5) and
 [subscription fallback](docs/operations/DEPLOYMENT.md#subscription-fallback-through-claude--p).
 Scheduled review and chat workflows (#24, #25) are not connected.
-The status page also lists the recurring background jobs (review reconciliation, recognized-text check, document
-reconciliation) with their last success, next run and last failure, and marks a job stale when it has not succeeded
-for two intervals plus 10 minutes ([ADR-0013](docs/architecture/adr/ADR-0013-recurring-job-health.md)). A watch job
+The status page first answers "is everything OK?" for the database, the archive, the backup, the disk space and AI,
+in German or English words from stable codes; a problem is named with its reason. Integrations that are not set up
+(AI without credentials; calendar, mail, push and Telegram have no adapter yet) are not listed. After a start, provider
+fallback or API-key rotation a configured AI reads "Noch nicht geprüft" until its next run or a manual connection check
+([ADR-0018](docs/architecture/adr/ADR-0018-status-overview.md)). Everything else sits in the collapsed "Technische
+Details": document processing counts, the backup and disk details, the recurring background jobs, the AI workloads,
+budget and runs, the exports and the running version.
+The recurring background jobs (review reconciliation, recognized-text check, document reconciliation) show their last
+success, next run and last failure, and a job is stale when it has not succeeded for two intervals plus 10 minutes
+([ADR-0013](docs/architecture/adr/ADR-0013-recurring-job-health.md)); the overview names a job that does not run as
+planned. A watch job
 checks them every five minutes and gives each member one in-app notice per incident when a job becomes stale or is
 no longer scheduled ([ADR-0014](docs/architecture/adr/ADR-0014-stale-job-notices.md)). The same watch reports the
 external backup with a localized reason for a failure, and the free space of the data and backup disks; a failed or
 stale backup and a disk with less than 10 % or 5 GB free each notify every member once per incident
 ([ADR-0015](docs/architecture/adr/ADR-0015-backup-and-storage-health.md)).
-Integration status evaluates credentials for every currently selected provider/model. Process startup, provider
-fallback and API-key rotation make earlier outcomes unverified until a fresh connection check succeeds.
 
 The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
 passed isolated recovery and runs daily at 03:30; scheduled-run evidence is recorded in #39.

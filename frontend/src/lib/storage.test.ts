@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import i18next from "i18next";
 import de from "../i18n/de.json";
 import en from "../i18n/en.json";
-import { BACKUP_REASONS, backupNeedsAttention, backupReason, backupReasonText, diskUsageText, usedPercent } from "./storage";
-import type { BackupHealth, DiskSpace } from "./storage";
+import { BACKUP_REASONS, backupReason, backupReasonText, diskUsageText, usedPercent } from "./storage";
+import type { DiskSpace } from "./storage";
 
 /**
  * Every failure code the backup script can record (`BackupFailure("...")` and `step("...", ...)` in
@@ -69,22 +69,6 @@ describe("backup reasons", () => {
 });
 
 describe("storage state", () => {
-  const backup = (state: BackupHealth["state"]): BackupHealth => ({
-    state,
-    failureCode: null,
-    lastSuccessAt: null,
-    lastAttemptAt: null,
-    runningSince: null,
-  });
-
-  it("treats a running backup as fine and everything else that is not OK as needing attention", () => {
-    expect(backupNeedsAttention(backup("OK"))).toBe(false);
-    expect(backupNeedsAttention(backup("RUNNING"))).toBe(false);
-    for (const state of ["FAILED", "STALE", "INTERRUPTED", "NOT_CONFIGURED", "UNKNOWN"] as const) {
-      expect(backupNeedsAttention(backup(state)), state).toBe(true);
-    }
-  });
-
   it("computes the used share of a measured disk only", () => {
     expect(usedPercent(disk({}))).toBe(75);
     expect(usedPercent(disk({ freeBytes: 0 }))).toBe(100);

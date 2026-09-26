@@ -55,13 +55,6 @@ export function backupHintText(t: TFunction, code: string | null | undefined): s
   return String(t(`status.backup.hint.${backupReason(code)}`));
 }
 
-/** Backup states that need somebody's attention; a running backup is fine. */
-const BACKUP_ATTENTION = new Set<BackupHealth["state"]>(["FAILED", "STALE", "INTERRUPTED", "NOT_CONFIGURED", "UNKNOWN"]);
-
-export function backupNeedsAttention(backup: BackupHealth): boolean {
-  return BACKUP_ATTENTION.has(backup.state);
-}
-
 /** Share of the disk in use, 0–100, or null when the disk could not be measured. */
 export function usedPercent(disk: DiskSpace): number | null {
   if (disk.totalBytes == null || disk.freeBytes == null || disk.totalBytes <= 0) return null;

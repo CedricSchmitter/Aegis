@@ -70,9 +70,9 @@ export function AiSection() {
   return (
     <section aria-labelledby="ai" data-testid="ai-section">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h2 id="ai" className="text-lg font-semibold">
+        <h3 id="ai" className="font-semibold">
           {t("ai.title")}
-        </h2>
+        </h3>
         <button type="button" className="btn-secondary" onClick={checkConnection} disabled={busy || !overview?.configured || !overview.memberAllowed} data-testid="ai-check">
           {t("ai.checkConnection")}
         </button>

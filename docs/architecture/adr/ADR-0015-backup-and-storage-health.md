@@ -1,6 +1,9 @@
 # ADR-0015: The backup reports a reason, disk space is measured, and members are notified once per incident
 
-Status: accepted and implemented for issue #100. Date: 2026-09-24.
+Status: accepted and implemented for issue #100. Date: 2026-09-24. Amended 2026-09-26 by
+[ADR-0018](ADR-0018-status-overview.md): the backup and the disks are lines of the status overview, the "Backup and
+storage" section sits in the collapsed technical details, and the integration list with its `externalBackup` entry
+was removed.
 
 ## Context
 

@@ -1918,15 +1918,6 @@ export interface components {
             labelIds: string[];
             subjects: components["schemas"]["SubjectDto"][];
         };
-        IntegrationStatusDto: {
-            /** Format: date-time */
-            checkedAt?: string | null;
-            detail?: string | null;
-            /** Format: date-time */
-            lastSuccessAt?: string | null;
-            name: string;
-            state: string;
-        };
         /** @description Whether a recurring background job still runs; names the job only, never its data */
         JobHealthDto: {
             /** Format: int32 */
@@ -2291,9 +2282,9 @@ export interface components {
             };
             /** Format: date-time */
             generatedAt: string;
-            integrations: components["schemas"]["IntegrationStatusDto"][];
             jobs: components["schemas"]["JobHealthDto"][];
             storage: components["schemas"]["StorageHealthDto"];
+            checks: components["schemas"]["HealthCheckDto"][];
         };
         TaskDto: {
             cancellationReview?: components["schemas"]["CancellationReviewDto"];
@@ -2383,6 +2374,21 @@ export interface components {
             provider?: string | null;
             providerConfigured: boolean;
             workload: string;
+        };
+        /** @description x */
+        HealthCheckDto: {
+            /** @description a */
+            area: string;
+            /** @enum {string} */
+            state: "OK" | "UNCHECKED" | "PROBLEM";
+            /** @description r */
+            reason: string;
+            /** @description p */
+            params: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            lastSuccessAt?: string | null;
         };
     };
     responses: never;

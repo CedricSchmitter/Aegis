@@ -3,13 +3,6 @@ import type { SystemStatus } from "../api/types";
 
 export type JobHealth = SystemStatus["jobs"][number];
 
-/** States in which a recurring job does not run as planned (ADR-0013); a job waiting for its first run is fine. */
-const ATTENTION = new Set<JobHealth["state"]>(["FAILING", "STALE", "NOT_SCHEDULED", "UNKNOWN"]);
-
-export function needsAttention(job: JobHealth): boolean {
-  return ATTENTION.has(job.state);
-}
-
 const DAY = 86_400;
 const HOUR = 3_600;
 

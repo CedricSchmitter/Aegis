@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import de from "./de.json";
 import en from "./en.json";
 import { FAILURE_REASONS } from "../lib/failureReasons";
+import { CHECK_AREAS, CHECK_REASONS, CHECK_STATES, KNOWN_JOBS } from "../lib/status";
 
 /** All TypeScript sources of the app, so no translation key is missed. */
 function collectSources(directory: string): string[] {
@@ -92,10 +93,11 @@ describe("locale catalogs", () => {
       ...["NONE", "LITTLE"].map((state) => `documents.text.badge.${state}`),
       // Recurring background jobs on the status page (ADR-0013).
       ...["OK", "PENDING", "FAILING", "STALE", "NOT_SCHEDULED", "UNKNOWN"].map((s) => `status.jobs.state.${s}`),
-      ...["reconcile-review-inbox", "check-archive-text", "reconcile-documents"].flatMap((job) => [
-        `status.jobs.name.${job}`,
-        `status.jobs.purpose.${job}`,
-      ]),
+      ...KNOWN_JOBS.flatMap((job) => [`status.jobs.name.${job}`, `status.jobs.purpose.${job}`]),
+      // The status overview (issue #83, F4): areas, states, reasons and the generic fallbacks.
+      ...CHECK_AREAS.map((area) => `status.area.${area}`),
+      ...CHECK_STATES.flatMap((state) => [`status.checkState.${state}`, `status.check.fallback.${state}`]),
+      ...CHECK_REASONS.map((reason) => `status.check.${reason}`),
       ...["minutes", "hours", "days"].flatMap((unit) => [`status.jobs.every.${unit}`, `status.jobs.every.${unit}_one`]),
       // Keys the document review producer publishes for documents without recognized text (ADR-0012).
       "review.noText",
@@ -157,15 +159,12 @@ describe("locale catalogs", () => {
     }
   });
 
-  it("cover every processing state, notice kind and integration state", () => {
+  it("cover every processing state and notice kind", () => {
     for (const state of ["RECEIVED", "SUBMITTED", "ARCHIVED", "FAILED"]) {
       expect(german.has(`documents.state.${state}`)).toBe(true);
     }
     for (const kind of ["TASK_ASSIGNED", "TASK_COMPLETED", "CONTRACT_CANCELLATION_REMINDER", "JOB_STALE"]) {
       expect(german.has(`notices.kind.${kind}`)).toBe(true);
-    }
-    for (const state of ["CONNECTED", "DEGRADED", "UNAVAILABLE", "NOT_CONFIGURED"]) {
-      expect(german.has(`status.state.${state}`)).toBe(true);
     }
   });
 });

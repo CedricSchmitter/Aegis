@@ -101,7 +101,7 @@ import dev.aegis.operations.application.api.StorageHealthWatch;
 import dev.aegis.operations.application.api.SystemStatusQuery;
 import dev.aegis.operations.application.ports.BackupStateSource;
 import dev.aegis.operations.application.ports.DataStorageSource;
-import dev.aegis.operations.application.ports.IntegrationStatusSource;
+import dev.aegis.operations.application.ports.HealthCheckSource;
 import dev.aegis.operations.application.ports.ProcessingOverviewSource;
 import dev.aegis.operations.application.ports.JobIncidentStore;
 import dev.aegis.operations.application.ports.RecurringJobStateSource;
@@ -561,7 +561,7 @@ public class UseCaseConfiguration {
      * household jobs and the watch over them.
      */
     @Bean
-    SystemStatusQuery systemStatusQuery(List<IntegrationStatusSource> sources, ProcessingOverviewSource processing,
+    SystemStatusQuery systemStatusQuery(List<HealthCheckSource> sources, ProcessingOverviewSource processing,
             ReviewReconciliationTask reviewReconciliation, JobHealthWatchTask watchTask,
             RecurringJobStateSource jobStates, StorageHealthService storage, HouseholdAccess access, Clock clock) {
         List<RecurringJob> recurringJobs = new ArrayList<>(householdJobs(reviewReconciliation));
