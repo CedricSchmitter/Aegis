@@ -53,7 +53,7 @@ The script ships `git archive` of the commit to `/srv/aegis/source/releases/aegi
 `/srv/aegis/deploy`, prepare the optional AI key directory, pin `AEGIS_COMMIT=<sha>` in `.env`, build
 `aegis-app:<sha>` and `docker compose up -d`.
 The script updates `DEPLOYED_COMMIT` only after readiness and running-version checks pass. The running
-commit is visible at `/api/system/version` and in the UI footer.
+commit is visible at `/api/system/version`, in the desktop status bar and under "Technische Details" on the status page.
 
 Before deploying a commit that migrates household data, keep a restorable dump of the household database next to
 the backup staging area (on the VM, as `aegis-agent`; the file stays on the VM):

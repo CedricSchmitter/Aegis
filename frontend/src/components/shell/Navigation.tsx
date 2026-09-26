@@ -76,7 +76,8 @@ function FolderList() {
     ...(catalog && catalog.unsortedCount > 0 ? [{ id: UNSORTED, name: t("documents.unsorted"), count: catalog.unsortedCount }] : []),
   ];
   return (
-    <nav aria-label={t("shell.folders")} data-testid="sidebar-folders">
+    // Only the folders scroll, so Upload, the areas, Trash and Settings stay in view with any number of folders.
+    <nav aria-label={t("shell.folders")} className="min-h-0 flex-1 overflow-y-auto" data-testid="sidebar-folders">
       <p className="px-4 pt-4 pb-1.5 font-mono text-[11px] tracking-[0.22em] text-text-4 uppercase" aria-hidden="true">
         {t("shell.folders")}
       </p>
@@ -118,7 +119,7 @@ export function Sidebar() {
   };
   return (
     <aside
-      className="sticky top-14 hidden h-[calc(100dvh-3.5rem-1.75rem)] flex-col overflow-y-auto border-r border-line bg-surface pt-3.5 pb-2.5 lg:flex"
+      className="sticky top-14 hidden h-[calc(100dvh-3.5rem-1.75rem)] flex-col border-r border-line bg-surface pt-3.5 pb-2.5 lg:flex"
       aria-label={t("shell.sidebar")}
       data-testid="sidebar"
     >
@@ -140,7 +141,7 @@ export function Sidebar() {
         </ul>
       </nav>
       <FolderList />
-      <ul className="mt-auto border-t border-line pt-1.5">
+      <ul className="flex-none border-t border-line pt-1.5">
         <li>
           <NavLink to="/trash" className={SIDE_ITEM}>
             <Icon name="trash" className="h-[18px] w-[18px]" />
