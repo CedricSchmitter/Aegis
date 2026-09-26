@@ -84,6 +84,21 @@ ops scripts) and `smoke.yml` (image build and browser smoke against the compose 
 and `e2e/` changes, otherwise started by hand with `gh workflow run smoke.yml --ref <branch>`). Every workflow can
 also be started by hand. CI needs no private VM access and no live credentials.
 
+When GitHub Actions is unavailable (for example with used-up minutes), the same three jobs run for a commit on VM 102
+from the PC:
+
+```bash
+sh ops/ci/vm-checks.sh <commit-ish> [backend] [frontend] [smoke]
+```
+
+The script ships the commit as a git archive and runs Maven verify with Testcontainers, the frontend checks with the
+generated-client drift check, and the browser smoke against its own compose stack with real Paperless. That stack is a
+separate compose project (`aegis-ci`) with synthetic credentials, its own data directory, no published port and no
+access to the Claude runner. The frontend and the browser test share the Playwright image (about 2.5 GB, kept on the
+VM); the CI image and its build cache are removed after each run. A green run deletes its directory. The log stays in
+`/srv/aegis/source/ci-runs/<sha>.log`; a failed run keeps its reports next to it. Post the summary in the PR, because
+GitHub shows no check for such a run.
+
 ## Current state
 
 The web app is dark only and follows one design system: tokens with three switchable palettes, chamfered frames,
