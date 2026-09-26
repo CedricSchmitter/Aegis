@@ -116,6 +116,15 @@
     --color-data: #4fe3c1;
   }
 
+  /* What is scrolled into view or focused never hides under the sticky header, the phone tab bar or the desktop
+     status bar (WCAG 2.4.11). */
+  html {
+    scroll-padding-top: 4rem;
+    scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    @media (width >= 64rem) {
+      scroll-padding-bottom: 2.5rem;
+    }
+  }
   html,
   body {
     background-color: var(--color-base);

@@ -87,7 +87,6 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     // Leave no test document in the collection.
     await page.goto(`/documents/${documentId}`);
     await page.getByTestId("trash-document").click();
-    await page.getByTestId("trash-document-confirm").click();
     await expect(page.getByTestId("trash-banner")).toBeVisible();
   });
 
@@ -130,7 +129,6 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     // Leave no test document in the collection.
     await page.goto(`/documents/${documentId}`);
     await page.getByTestId("trash-document").click();
-    await page.getByTestId("trash-document-confirm").click();
     await expect(page.getByTestId("trash-banner")).toBeVisible();
   });
 });
