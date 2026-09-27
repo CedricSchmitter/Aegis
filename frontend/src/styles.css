@@ -5,11 +5,10 @@
  * data colours, and an optional effects layer. Fonts are self-hosted and imported in main.tsx.
  */
 
-/* Aegis is dark only. The `dark:` variants that pages still carry from the light/dark era always apply until the
-   page redesigns (issue #27, PRs 3-6) replace them with tokens. */
-@custom-variant dark (&:where(:root, :root *));
-
 @theme static {
+  /* Only the tokens below exist as colours: Tailwind's default scales (stone, sky, red, ...) are switched off, so
+     markup cannot fall back to colours outside the design system. */
+  --color-*: initial;
   --font-sans: "Chakra Petch", system-ui, "Segoe UI", Roboto, sans-serif;
   --font-mono: "Share Tech Mono", ui-monospace, Consolas, monospace;
 
@@ -31,67 +30,9 @@
   --color-action: #fcee0a;
   --color-data: #00f0ff;
   --color-danger: #ff4d6a;
-}
 
-/*
- * Transitional bridge: the Tailwind scales that existing pages use are re-pointed to the tokens so every page reads
- * as the new system before it is redesigned. Stone is the neutral ramp; sky and emerald follow the data colour,
- * amber and violet the action colour, red is danger. Shade 100 is text on a tinted surface, shade 900 the tint.
- * Remove this block once no page uses these scales (issue #27, PR 6).
- */
-@theme {
-  --color-stone-50: var(--color-base);
-  --color-stone-100: var(--color-text-1);
-  --color-stone-200: var(--color-text-2);
-  --color-stone-300: var(--color-text-3);
-  --color-stone-400: var(--color-text-4);
-  --color-stone-500: var(--color-text-4);
-  --color-stone-600: var(--color-line-strong);
-  --color-stone-700: var(--color-line);
-  --color-stone-800: color-mix(in oklab, var(--color-raised) 65%, var(--color-line));
-  --color-stone-900: var(--color-surface);
-  --color-stone-950: var(--color-base);
-
-  --color-sky-50: color-mix(in oklab, var(--color-data) 8%, var(--color-surface));
-  --color-sky-100: var(--color-text-1);
-  --color-sky-200: var(--color-data);
-  --color-sky-300: var(--color-data);
-  --color-sky-400: var(--color-data);
-  --color-sky-500: var(--color-data);
-  --color-sky-600: var(--color-data);
-  --color-sky-700: var(--color-data);
-  --color-sky-800: var(--color-data);
-  --color-sky-900: color-mix(in oklab, var(--color-data) 16%, var(--color-surface));
-  --color-sky-950: color-mix(in oklab, var(--color-data) 10%, var(--color-surface));
-
-  --color-emerald-100: var(--color-text-1);
-  --color-emerald-300: var(--color-data);
-  --color-emerald-600: var(--color-data);
-  --color-emerald-800: var(--color-data);
-  --color-emerald-900: color-mix(in oklab, var(--color-data) 16%, var(--color-surface));
-
-  --color-amber-50: color-mix(in oklab, var(--color-action) 8%, var(--color-surface));
-  --color-amber-100: var(--color-text-1);
-  --color-amber-300: var(--color-action);
-  --color-amber-400: var(--color-action);
-  --color-amber-700: var(--color-action);
-  --color-amber-800: var(--color-action);
-  --color-amber-900: color-mix(in oklab, var(--color-action) 16%, var(--color-surface));
-  --color-amber-950: color-mix(in oklab, var(--color-action) 10%, var(--color-surface));
-
-  --color-violet-100: var(--color-text-1);
-  --color-violet-900: color-mix(in oklab, var(--color-action) 16%, var(--color-surface));
-
-  --color-red-50: color-mix(in oklab, var(--color-danger) 8%, var(--color-surface));
-  --color-red-100: var(--color-text-1);
-  --color-red-200: var(--color-text-1);
-  --color-red-300: var(--color-danger);
-  --color-red-400: var(--color-danger);
-  --color-red-600: var(--color-danger);
-  --color-red-700: var(--color-danger);
-  --color-red-800: var(--color-danger);
-  --color-red-900: color-mix(in oklab, var(--color-danger) 16%, var(--color-surface));
-  --color-red-950: color-mix(in oklab, var(--color-danger) 10%, var(--color-surface));
+  /* Document previews sit on paper, whatever the theme: a scan or photo with transparent parts stays readable. */
+  --color-white: #ffffff;
 }
 
 @layer base {
