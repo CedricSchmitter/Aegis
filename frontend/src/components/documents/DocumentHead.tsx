@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import type { DocumentDto } from "../../api/types";
 import { useSession } from "../../auth/SessionContext";
@@ -63,13 +63,17 @@ export function DocumentPreview({ document, className = "" }: { document: Docume
  */
 export function DocumentViewer({ document }: { document: DocumentDto }) {
   const { t } = useTranslation();
+  const viewer = useRef<HTMLIFrameElement>(null);
+  const focused = useFrameFocused(viewer);
   const source = viewerSource(document);
   const frame = "h-[calc(100dvh-16rem)] min-h-[480px] w-full border border-line bg-raised";
   if (source.kind === "pdf") {
     return (
       <iframe
+        ref={viewer}
         key={source.url}
         src={source.url}
+        data-focused={focused}
         title={t("documents.viewer", { title: document.title })}
         className={frame}
         data-testid="document-viewer"
@@ -90,4 +94,25 @@ export function DocumentViewer({ document }: { document: DocumentDto }) {
       </p>
     </div>
   );
+}
+
+/**
+ * Whether the framed viewer holds the keyboard focus. The page loses the focus to the frame's content without any
+ * focus pseudo-class matching the iframe, so the visible focus ring needs this state (ADR-0019, decision 8).
+ */
+function useFrameFocused(frame: RefObject<HTMLIFrameElement | null>): boolean {
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    // The active element changes right after the window's blur event.
+    const update = () => window.setTimeout(() => setFocused(frame.current !== null && window.document.activeElement === frame.current));
+    window.addEventListener("blur", update);
+    window.addEventListener("focus", update);
+    window.document.addEventListener("focusin", update);
+    return () => {
+      window.removeEventListener("blur", update);
+      window.removeEventListener("focus", update);
+      window.document.removeEventListener("focusin", update);
+    };
+  }, [frame]);
+  return focused;
 }

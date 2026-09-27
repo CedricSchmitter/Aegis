@@ -43,13 +43,14 @@ type SearchFieldProps = Omit<ComponentProps<"input">, "type"> & {
 
 export function SearchField({ label, shortcut, ...props }: SearchFieldProps) {
   return (
-    <div className="ui-search">
+    // A label, so a tap anywhere on the 44 px box focuses the input.
+    <label className="ui-search">
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square">
         <path d="M9 3h6l4 4v6l-4 4H9l-4-4V7z" />
         <path d="M17.5 17.5L21 21" />
       </svg>
       <input type="search" aria-label={label} {...props} />
       {shortcut && <kbd className="hidden md:inline">{shortcut}</kbd>}
-    </div>
+    </label>
   );
 }

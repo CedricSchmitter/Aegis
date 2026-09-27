@@ -1,8 +1,8 @@
 # ADR-0019: A dark design system with tokens, palettes, chamfers and optional effects
 
-Status: accepted; foundation (PR 1 of 6), shell with per-member preferences (PR 2), document screens (PR 3),
-Today, tasks and contracts (PR 4) and inbox, status, trash, management, login and share (PR 5) implemented for
-issue #27.
+Status: accepted; implemented for issue #27 in six PRs: foundation (PR 1), shell with per-member preferences (PR 2),
+document screens (PR 3), Today, tasks and contracts (PR 4), inbox, status, trash, management, login and share (PR 5)
+and cleanup with the contrast, keyboard and reduced-motion review (PR 6).
 Date: 2026-09-26.
 
 ## Context
@@ -17,8 +17,7 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
 ## Decision
 
 1. **Dark only.** The light theme is removed. `:root` declares `color-scheme: dark` and the page always uses the
-   dark tokens. Until the page redesigns (PRs 3-5) remove them, the `dark:` variant that pages still carry always
-   applies (`@custom-variant dark` in `frontend/src/styles.css`).
+   dark tokens. No markup uses the `dark:` variant any more, and the always-on variant is gone (PR 6).
 
 2. **Tokens.** Colours are Tailwind 4 theme variables, so `bg-surface`, `text-text-3` or `border-line` work in markup:
 
@@ -36,7 +35,9 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
    | `danger` | `#FF4D6A` | danger, overdue items and anything broken |
 
    `base` is declared on `:root` instead of the theme, because a theme colour named `base` would turn Tailwind's
-   `text-base` font-size utility into a colour; use `bg-(--color-base)` for it in markup.
+   `text-base` font-size utility into a colour; use `bg-(--color-base)` for it in markup. Tailwind's default colour
+   scales are switched off (`--color-*: initial`), so these tokens are the only colours markup can name; the one
+   addition is `white`, the paper behind document previews.
 
 3. **Palettes switch only action and data**, through `data-palette` on the root element. `danger` and all neutrals
    stay the same in every palette.
@@ -72,9 +73,35 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
    be only 3.22, so counters on red use `void`). `text-1` on the 16 % tints that replace coloured badges is at least
    11.99 in every palette; data text on a chip tint is at least 7.06 (Corpo).
 
-   Non-text contrast: checkbox and switch outlines use `text-4` (6.4:1) because the outline is all that identifies
-   them. Field borders use `line-strong` (2.5:1) as in the approved mockup; fields also have a label and a `raised`
-   fill. PR 6 re-checks this with the full keyboard and contrast review.
+   Non-text contrast (WCAG 1.4.11, re-checked in PR 6): checkbox and switch outlines use `text-4` (6.41:1 on `base`,
+   6.09 on `raised`) because the outline is all that identifies them. The focus ring is the data colour, at least
+   7.97:1 on `base` (Corpo) and 7.57 on `raised`; on an action fill it is `void` (at least 9.48, Nomad). Field borders
+   keep `line-strong` (2.54 on `base`, 2.41 on their `raised` fill) as in the approved mockup: every field has a visible
+   label, and the search field its icon (`text-3`, 8.20) and placeholder (`text-4`, 6.09), so the border never
+   identifies a field on its own. Frames and dividers in `line` (1.51) only group content.
+
+   **PR 6 review (2026-09-27).** A Playwright walk over the built app, served with invented data from
+   `api/openapi.json` in the browser, covered every page and the login, the upload and filter sheets and the avatar
+   menu at 375×812, 1440×900, 1280×800 and 1100×800, in Streetkid, Corpo (English) and Nomad. It measured every text
+   against the colour behind it, including the `::before` fill of chamfered frames, tabbed through 40 stops per page,
+   measured every target and counted primary actions and running animations:
+   - text contrast: nothing below 4.5:1; the lowest value was 5.26 (Streetkid), 5.52 (Corpo) and 5.29 (Nomad), the
+     login 6.41;
+   - reduced motion: no running animation on any page; with motion allowed only the wordmark glitch and the
+     processing steps run;
+   - fonts: no request to any host other than Aegis;
+   - fixed: the chamfered checkboxes (`ui-checkbox`, `task-check`) are clipped, which hid their outside focus
+     outline entirely; they now show the ring of decision 8. The document viewer's iframe showed no focus while its
+     content had it (no focus pseudo-class matches an iframe then); the page now marks it with `data-focused`. Title
+     links that were the only target of a card or row (trash entries, a document's linked contracts, the desktop
+     document table below 1280 px) were 20-24 px high; the link now covers its card or row. The search field's box
+     is a label, so its whole 44 px height focuses the input, and the folder tree's expand button is 44 px high;
+   - desktop pages with their own primary action (Neue Aufgabe, Ordner anlegen, Erledigt, Wiederherstellen) show it
+     next to the sidebar's Upload, both in the action fill, as in the approved mockup. Every sheet and every phone
+     screen has at most one.
+
+   Real Android checks (uploads, sharing into Aegis, notifications, the redesigned screens) on both members' phones
+   are the owner's and are recorded in issue #27, not here.
 
 6. **Typography, self-hosted.** Chakra Petch (400, 500, 600, 700) for UI and display text, Share Tech Mono (400) for
    data, labels, dates and counters. Both are SIL Open Font License 1.1 fonts, pinned as
@@ -102,7 +129,9 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
    corner gradients. No soft shadows; depth comes from lines and surfaces.
 
 8. **Focus and touch.** Focus is always visible: a 2 px `data` outline, drawn 4 px inside chamfered elements so the
-   corner cut does not hide it, `void` on action fills, and a 2 px `data` border on fields. Buttons and rows are at least
+   corner cut does not hide it, `void` on action fills, and a 2 px `data` border on fields. Clipped controls (checkboxes)
+   cannot show an outline, so their edge turns into a 2 px `data` ring with a `void` band inside it (`focus-edge`),
+   which also stands apart from a checked fill. A card or row whose title link covers it shows the ring on the card. Buttons and rows are at least
    44 px high. One primary action per view. Scroll padding on the root keeps what is scrolled into view or focused
    clear of the sticky header, the phone tab bar and the desktop status bar (WCAG 2.4.11); before it, a button could
    sit half under the status bar and a click landed on the bar.
@@ -137,10 +166,9 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
     return it on close. The existing shared classes (`btn-*`, `card`, `field`, `label`, `badge`, `alert-*`) point to the
     same tokens and chamfers.
 
-13. **Transitional bridge.** Until pages are redesigned, the Tailwind scales they use are re-pointed to the tokens in
-    `styles.css`: `stone` to the neutral ramp, `sky` and `emerald` to the data colour, `amber` and `violet` to the action
-    colour, `red` to danger (shade 100 is text on a tint, shade 900 the tint). PR 6 removes the bridge once no page uses
-    these scales.
+13. **No transitional bridge.** While pages were redesigned (PRs 1-5), `styles.css` re-pointed the Tailwind scales they
+    still used (`stone`, `sky`, `emerald`, `amber`, `violet`, `red`) to the tokens. PR 6 replaced the last uses (the
+    scan corner editor) with tokens, removed the bridge and switched the default scales off (decision 2).
 
 14. **Shell.** The shell follows the approved mockup (issue #27, PR 2):
     - **Phone (below 1024 px):** a header with the wordmark (a link to Today) and the avatar, and a tab bar with the five
@@ -271,8 +299,8 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
 
 ## Consequences
 
-- Every existing page is dark and uses the new fonts, frames and colours immediately, without page rewrites; pages
-  that still use the bridge follow palette changes too.
+- Every page is dark, uses the new fonts, frames and colours and follows palette changes; a colour outside the tokens
+  produces no CSS at all.
 - New UI uses the token utilities and the base components instead of Tailwind's default colour scales.
 - A light theme would need a second token set and is not planned.
 - Fonts add about 53 kB to the first visit and nothing afterwards. They never leave the LAN.
@@ -280,7 +308,7 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
   Settings, and reduced motion is honoured without any setting.
 - Two members on one device see their own look after login; the login page always shows the default.
 - The shell asks the status overview once a minute, which probes the archive; a household of two keeps that load
-  negligible. Pages are unchanged inside the new shell until their redesign.
+  negligible.
 - Today asks for the confirmed cancellation deadlines next to the task buckets, one more request per visit.
 - A document preview costs one thumbnail request to the archive per document and day and browser; the viewer loads
   the whole original or searchable PDF, as "Original öffnen" did before. Headless browsers without a PDF viewer show

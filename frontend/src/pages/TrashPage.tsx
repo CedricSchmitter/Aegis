@@ -97,7 +97,7 @@ export function TrashPage() {
           {visible.map((entry) => (
             <li key={`${entry.kind}-${entry.id}`} className="card flex flex-col gap-2" data-testid="trash-entry" data-kind={entry.kind}>
               <p className="ui-eyebrow">{t(`trash.kind.${entry.kind}`)}</p>
-              <Link to={entry.link} className="self-start text-[15px] leading-snug font-semibold break-words hover:text-data">
+              <Link to={entry.link} className="ui-stretch self-start text-[15px] leading-snug font-semibold break-words hover:text-data">
                 {entry.title}
               </Link>
               <p className="ui-meta">

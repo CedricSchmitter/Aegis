@@ -508,7 +508,7 @@ export function DocumentDetailPage() {
               <ul className="flex flex-col gap-2">
                 {contracts.map((contract) => (
                   <li key={contract.id} className="card flex flex-wrap items-center justify-between gap-2">
-                    <Link to={`/contracts/${contract.id}`} className="font-medium text-data hover:underline">
+                    <Link to={`/contracts/${contract.id}`} className="ui-stretch font-medium text-data hover:underline">
                       {contract.name}
                     </Link>
                     <span className="font-mono text-sm text-text-2">

@@ -122,7 +122,7 @@ export function FolderTree({ categories, unsortedCount, selected, onSelect }: Pr
               <button
                 type="button"
                 tabIndex={-1}
-                className="grid h-8 w-6 flex-none cursor-pointer place-items-center text-text-4 hover:text-text-1"
+                className="grid h-11 w-8 flex-none cursor-pointer place-items-center text-text-4 hover:text-text-1"
                 aria-label={isExpanded ? t("folders.collapse") : t("folders.expand")}
                 onClick={(event) => {
                   event.stopPropagation();
