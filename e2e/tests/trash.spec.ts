@@ -72,19 +72,26 @@ test.describe("recoverable trash", () => {
       return conflicted && response.request().method() === "GET" && /^\/api\/documents\/[^/]+$/.test(pathname);
     });
     await page.getByTestId("trash-document").click();
-    await page.getByTestId("trash-document-confirm").click();
     await reloaded;
     // The page applies the reload right after its answers arrive; the message must survive that, not just flash.
     await page.waitForTimeout(1_000);
     await expect(page.getByRole("alert")).toContainText("inzwischen geändert");
     await expect(page.getByTestId("trash-banner")).toHaveCount(0);
 
-    // A first tap only asks; the confirmation moves the document. The earlier message is gone.
+    // The trash is reversible, so one tap moves the document and the message offers undo (issue #27). The earlier
+    // message is gone.
     await page.getByTestId("trash-document").click();
-    await page.getByTestId("trash-document-confirm").click();
     await expect(page.getByTestId("trash-banner")).toContainText("Im Papierkorb");
     await expect(page.getByRole("alert")).toHaveCount(0);
     await expect(page.getByTestId("rename-document")).toHaveCount(0);
+    const toast = page.getByTestId("trash-toast");
+    await expect(toast).toContainText("Wiederherstellbar mindestens bis");
+    await toast.getByRole("button", { name: "Rückgängig" }).click();
+    await expect(page.getByTestId("trash-banner")).toHaveCount(0);
+    await expect(page.getByTestId("trash-document")).toBeVisible();
+
+    await page.getByTestId("trash-document").click();
+    await expect(page.getByTestId("trash-banner")).toContainText("Im Papierkorb");
 
     await page.goto("/documents");
     await searchDocuments(page, title);
@@ -94,7 +101,7 @@ test.describe("recoverable trash", () => {
     const entry = page.locator("[data-testid=trash-entry]", { hasText: title });
     await expect(entry).toContainText("Wiederherstellbar mindestens bis");
     await entry.getByTestId("trash-entry-restore").click();
-    await expect(page.getByRole("status").first()).toContainText("wurde wiederhergestellt");
+    await expect(page.getByTestId("trash-toast")).toContainText("wurde wiederhergestellt");
     await expect(page.locator("[data-testid=trash-entry]", { hasText: title })).toHaveCount(0);
 
     await page.goto("/documents");

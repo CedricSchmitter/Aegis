@@ -78,7 +78,6 @@ async function trash(page: Page, documentId: string) {
   await page.goto(`/documents/${documentId}`);
   await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });
   await page.getByTestId("trash-document").click();
-  await page.getByTestId("trash-document-confirm").click();
   await expect(page.getByTestId("trash-banner")).toBeVisible();
 }
 

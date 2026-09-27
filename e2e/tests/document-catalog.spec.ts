@@ -187,8 +187,8 @@ test.describe("document tree, labels and faceted search", () => {
     // Deleting a folder moves the document up and keeps the label it would otherwise lose.
     await page.goto("/documents/folders");
     await page.getByTestId(`edit-folder-${invoicesId}`).click();
-    page.once("dialog", (dialog) => void dialog.accept());
     await page.getByTestId(`delete-folder-${invoicesId}`).click();
+    await page.getByTestId("delete-folder-confirm").click();
     await expect(page.getByRole("status").first()).toContainText(/gelöscht|deleted/);
     await page.goto(documentUrl);
     await expect(folderOf(page)).toContainText(`${ROOT} / ${INTERNET}`);
@@ -215,8 +215,8 @@ test.describe("document tree, labels and faceted search", () => {
     await folder.getByTestId("save-folder-name").click();
     await expect(page.getByRole("status").first()).toContainText("Ordner umbenannt");
     await expect(folder).toContainText(`${folderName} neu`);
-    page.once("dialog", (dialog) => void dialog.accept());
     await page.getByTestId(`delete-folder-${folderId}`).click();
+    await page.getByTestId("delete-folder-confirm").click();
     await expect(page.getByRole("status").first()).toContainText("gelöscht");
 
     // Labels: one create button per group and no open forms.

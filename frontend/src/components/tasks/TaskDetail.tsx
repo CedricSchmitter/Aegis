@@ -17,6 +17,8 @@ interface Props {
   heading: (title: string) => ReactNode;
   /** After "Done", for the message with undo. */
   onCompleted?(task: TaskDto): void;
+  /** After "Move to trash", for the message with undo; the page keeps it, because the task may leave its list. */
+  onTrashed?(task: TaskDto): void;
 }
 
 type Editing = "assign" | "plan" | "due" | "edit" | null;
@@ -26,7 +28,7 @@ type Editing = "assign" | "plan" | "due" | "edit" | null;
  * action with assigning and rescheduling below it. Rescheduling changes the work day only; the contractual deadline
  * of a cancellation review cannot be changed here at all.
  */
-export function TaskDetail({ task, onChange, heading, onCompleted }: Props) {
+export function TaskDetail({ task, onChange, heading, onCompleted, onTrashed }: Props) {
   const { t, i18n } = useTranslation();
   const { members, memberName } = useSession();
   const title = useTaskTitle(task);
@@ -260,7 +262,10 @@ export function TaskDetail({ task, onChange, heading, onCompleted }: Props) {
           <MoveToTrashButton
             busy={busy}
             testId="trash-task"
-            onConfirm={() => void run(() => api.POST("/api/tasks/{id}/trash", { ...path, body: { expectedVersion: task.version } }))}
+            onTrash={async () => {
+              const trashed = await run(() => api.POST("/api/tasks/{id}/trash", { ...path, body: { expectedVersion: task.version } }));
+              if (trashed) onTrashed?.(trashed);
+            }}
           />
         </div>
       )}

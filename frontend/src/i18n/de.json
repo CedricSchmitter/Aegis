@@ -488,16 +488,19 @@
     }
   },
   "inbox": {
-    "title": "Eingang"
+    "title": "Eingang",
+    "toReview": "{{count}} zu prüfen",
+    "sections": "Bereich"
   },
   "notices": {
     "title": "Mitteilungen",
+    "new": "Neu",
+    "newCount": "{{count}} neu",
     "unreadOnly": "Nur ungelesene",
-    "markAllRead": "Alle als gelesen markieren",
+    "markAllRead": "Alle gelesen",
     "markRead": "Als gelesen markieren",
     "empty": "Keine Mitteilungen.",
     "emptyUnread": "Keine ungelesenen Mitteilungen.",
-    "open": "Öffnen",
     "kind": {
       "TASK_ASSIGNED": "Dir wurde die Aufgabe „{{title}}“ zugewiesen.",
       "TASK_COMPLETED": "Deine Aufgabe „{{title}}“ wurde erledigt.",
@@ -518,19 +521,18 @@
       "INTERRUPTED": "Das externe Backup wurde gestartet, aber nicht beendet.",
       "UNKNOWN": "Der Zustand des externen Backups lässt sich nicht lesen."
     },
-    "diskSpaceLow": "Auf „{{disk}}“ wird der Platz knapp: nur noch {{free}} von {{total}} frei.",
-    "readAt": "Gelesen am {{date}}"
+    "diskSpaceLow": "Auf „{{disk}}“ wird der Platz knapp: nur noch {{free}} von {{total}} frei."
   },
   "review": {
     "title": "Zu prüfen",
-    "intro": "Ein gemeinsamer Ort für Verarbeitungsfehler, unsichere Einordnungen und Vertragsangaben. Öffnen oder Ausblenden ändert die Quelle nicht; Aktionen prüfen weiterhin deren eigene Regeln.",
-    "filters": "Prüffilter",
-    "statusLabel": "Status",
-    "categoryLabel": "Kategorie",
-    "allCategories": "Alle Kategorien",
+    "history": "Karten nach Zustand",
+    "historyTitle": "Verlauf",
+    "openDocument": "Dokument prüfen",
+    "openContract": "Vertrag prüfen",
+    "dismissedTitle": "Ausgeblendet",
+    "dismissedHint": "Die Karte ist aus dem Eingang verschwunden. Unter „Ausgeblendet“ bleibt sie sichtbar.",
     "empty": "Nichts muss geprüft werden.",
     "emptyHistory": "Keine Einträge in dieser Verlaufsansicht.",
-    "openSource": "Quelle prüfen",
     "dismiss": "Ausblenden",
     "archiveFailed": "Die Archivierung von „{{title}}“ ist fehlgeschlagen: {{reason}}.",
     "analysisFailed": "Die automatische Einordnung von „{{title}}“ ist fehlgeschlagen: {{reason}}.",
@@ -561,6 +563,35 @@
   },
   "status": {
     "title": "Status",
+    "open": "Status öffnen",
+    "whatNow": {
+      "title": "Was jetzt?",
+      "documentsSafe": "Deine Dokumente in Aegis sind davon nicht betroffen.",
+      "fallback": "Das muss auf dem Server geprüft werden (Anleitung: docs/operations/DEPLOYMENT.md).",
+      "database": {
+        "unavailable": "Solange die Datenbank nicht antwortet, speichert und zeigt Aegis nichts. Lade die Seite in ein paar Minuten neu. Bleibt es so: Das muss auf dem Server geprüft werden (Anleitung: docs/operations/DEPLOYMENT.md)."
+      },
+      "archive": {
+        "unavailable": "Du musst nichts tun: Neue Dokumente bleiben gespeichert und werden archiviert, sobald das Archiv wieder erreichbar ist. Bleibt es länger so: Das muss auf dem Server geprüft werden."
+      },
+      "backup": {
+        "notConfigured": "Das externe Backup muss auf dem Server eingerichtet werden (Anleitung: docs/operations/BACKUP.md). Deine Dokumente in Aegis sind davon nicht betroffen."
+      },
+      "storage": {
+        "low": "Alte Exporte oder nicht mehr benötigte Dateien auf dem Server aufräumen. Dokumente in Aegis bleiben erhalten.",
+        "unmeasured": "Das muss auf dem Server geprüft werden. Dokumente in Aegis bleiben erhalten."
+      },
+      "ai": {
+        "credentialsMissing": "Dokumente, Suche und Aufgaben funktionieren ohne KI weiter. Die Zugangsdaten müssen auf dem Server eingetragen werden.",
+        "providerFailure": "Dokumente, Suche und Aufgaben funktionieren ohne KI weiter. Aegis versucht es beim nächsten KI-Lauf erneut; unter „Technische Details“ lässt sich die Verbindung prüfen."
+      },
+      "jobs": {
+        "notRunning": "Unter „Technische Details“ steht, wann der Job zuletzt lief. Oft hilft ein Neustart von Aegis auf dem Server."
+      },
+      "probe": {
+        "failed": "Lade die Seite in ein paar Minuten neu. Bleibt es so: Das muss auf dem Server geprüft werden."
+      }
+    },
     "overview": "Ist alles in Ordnung?",
     "overviewOk": "Alles in Ordnung.",
     "overviewProblems": "{{count}} Bereiche brauchen Aufmerksamkeit.",
@@ -804,16 +835,19 @@
   },
   "trash": {
     "title": "Papierkorb",
+    "movedTitle": "Im Papierkorb",
+    "restoredTitle": "Wiederhergestellt",
+    "emptyKind": "Nichts von dieser Art im Papierkorb.",
+    "kindName": {
+      "all": "Alle",
+      "document": "Dokumente",
+      "task": "Aufgaben",
+      "contract": "Verträge"
+    },
     "intro": "Gelöschte Dokumente, Aufgaben und Verträge landen hier und bleiben mindestens bis zum angegebenen Datum wiederherstellbar. Endgültig gelöscht wird nichts.",
     "open": "Papierkorb",
     "filter": "Nach Art filtern",
     "empty": "Der Papierkorb ist leer.",
-    "kinds": {
-      "all": "Alle ({{count}})",
-      "document": "Dokumente ({{count}})",
-      "task": "Aufgaben ({{count}})",
-      "contract": "Verträge ({{count}})"
-    },
     "kind": {
       "document": "Dokument",
       "task": "Aufgabe",
@@ -825,10 +859,7 @@
     "restore": "Wiederherstellen",
     "restored": "Wiederhergestellt.",
     "restoredNamed": "„{{title}}“ wurde wiederhergestellt.",
-    "moved": "In den Papierkorb verschoben. Du kannst es jederzeit wiederherstellen.",
     "move": "In den Papierkorb",
-    "moveConfirm": "Ja, in den Papierkorb",
-    "confirm": "Es verschwindet aus allen Listen und aus der Suche. Im Papierkorb kannst du es wiederherstellen; endgültig gelöscht wird nichts.",
     "changedMeanwhile": "Das wurde inzwischen geändert. Die Ansicht ist aktualisiert – bitte prüfe es noch einmal.",
     "section": "Löschen",
     "documentHint": "Das Original bleibt erhalten, ebenso Aufgaben und Verträge, die auf das Dokument verweisen.",
@@ -837,8 +868,14 @@
   },
   "settings": {
     "title": "Einstellungen",
+    "signedInLabel": "Angemeldet als",
+    "username": "Benutzername",
+    "places": "Status und Verwaltung",
+    "statusUnknown": "Unbekannt",
+    "trashHint": "Gelöschtes ansehen und wiederherstellen",
+    "foldersHint": "Anlegen, umbenennen, verschieben und Labels je Ordner",
+    "labelsHint": "Umbenennen, zusammenführen und andere Schreibweisen",
     "account": "Konto",
-    "signedInAs": "Angemeldet als {{name}} ({{username}})",
     "password": "Passwort ändern",
     "currentPassword": "Aktuelles Passwort",
     "newPassword": "Neues Passwort",
@@ -1012,6 +1049,8 @@
   },
   "labels": {
     "title": "Labels",
+    "count": "{{count}} Labels",
+    "count_one": "{{count}} Label",
     "intro": "Labels gelten für den ganzen Haushalt. Umbenennen, Zusammenführen und Stilllegen behalten alle Zuordnungen; gelöscht wird nie ein Dokument.",
     "empty": "Noch keine eigenen Labels in dieser Gruppe.",
     "create": "Label anlegen",
@@ -1091,6 +1130,10 @@
   },
   "folders": {
     "title": "Ordner",
+    "count": "{{count}} Ordner",
+    "count_one": "{{count}} Ordner",
+    "deleteTitle": "Ordner löschen?",
+    "deleteHint": "Dokumente und Unterordner wandern eine Ebene höher; gelöscht wird nie ein Dokument.",
     "intro": "Ordner sind die gemeinsame Ablage. Jedes Dokument liegt in genau einem Ordner oder in Unsortiert.",
     "tree": "Ordnerbaum",
     "empty": "Noch keine Ordner.",
@@ -1219,6 +1262,7 @@
   },
   "share": {
     "title": "Geteilte Dateien speichern",
+    "discardAllTitle": "Geteilte Dateien verwerfen?",
     "files": "Geteilte Dateien",
     "hint": "Geteilte Dateien bleiben auf diesem Handy, bis der Server bestätigt, dass sie dauerhaft gespeichert sind. Bricht das Hochladen ab, geht nichts verloren: einfach erneut versuchen.",
     "save": "{{count}} Dateien speichern",

@@ -5,6 +5,13 @@ export const PALETTES = ["streetkid", "corpo", "nomad"] as const;
 export type Palette = (typeof PALETTES)[number];
 export const DEFAULT_PALETTE: Palette = "streetkid";
 
+/** The action and data colour of each palette, for the samples in Settings; styles.css applies them. */
+export const PALETTE_SWATCHES: Record<Palette, readonly [string, string]> = {
+  streetkid: ["#fcee0a", "#00f0ff"],
+  corpo: ["#dce6f5", "#5aa9ff"],
+  nomad: ["#ff9a3c", "#4fe3c1"],
+};
+
 export type Appearance = { palette: Palette; effects: boolean };
 
 /** Streetkid with effects on: before login, after logout and for every member who never chose otherwise. */

@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import { FACETS, type Facet, type LabelDto } from "../api/types";
-import { EmptyState, ErrorBox, InfoBox, Loading, PageTitle } from "../components/common";
+import { BackLink, BigTitle, EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
+import { Badge } from "../components/ui";
 import { activeLabels, labelName } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
 
+/**
+ * Managing the household's labels by group (issue #27): create, rename, other spellings, merge, change the group,
+ * retire and delete an unused one. No action deletes a document or loses an assignment.
+ */
 export function LabelsPage() {
   const { t } = useTranslation();
   const [labels, setLabels] = useState<LabelDto[] | null>(null);
@@ -130,27 +134,24 @@ export function LabelsPage() {
   if (!labels) return error ? <ErrorBox message={error} /> : <Loading />;
 
   return (
-    <>
-      <p className="mb-2 text-sm">
-        <Link to="/documents" className="text-sky-800 hover:underline dark:text-sky-300">
-          ← {t("documents.title")}
-        </Link>
-      </p>
-      <PageTitle>{t("labels.title")}</PageTitle>
-      <p className="mb-3 text-sm text-stone-600 dark:text-stone-400">{t("labels.intro")}</p>
+    <div className="flex max-w-3xl flex-col gap-4">
+      <BackLink to="/documents">{t("documents.title")}</BackLink>
+      <BigTitle count={t("labels.count", { count: labels.filter((label) => label.status !== "MERGED").length })}>{t("labels.title")}</BigTitle>
+      <p className="-mt-2 text-sm leading-relaxed text-text-3">{t("labels.intro")}</p>
       <ErrorBox message={error} />
       {message && <InfoBox>{message}</InfoBox>}
 
       {FACETS.map((facet) => {
         const group = labels.filter((label) => label.facet === facet);
         return (
-          <section key={facet} className="mb-6" aria-labelledby={`facet-${facet}`}>
-            <h2 id={`facet-${facet}`} className="mb-1 text-lg font-semibold">
-              {t(`facets.${facet}`)}
+          <section key={facet} className="flex flex-col gap-2 pt-2" aria-labelledby={`facet-${facet}`}>
+            <h2 id={`facet-${facet}`} className="ui-sec">
+              <span>{t(`facets.${facet}`)}</span>
+              <span>{group.length}</span>
             </h2>
-            <p className="mb-2 text-xs text-stone-500">{t(`facets.hint${facet}`)}</p>
-            <div className="card mb-2 flex flex-wrap items-end gap-2">
-              <label className="block flex-1">
+            <p className="text-[13px] leading-relaxed text-text-3">{t(`facets.hint${facet}`)}</p>
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="block min-w-0 flex-1">
                 <span className="label">{t("labels.newName")}</span>
                 <input
                   className="field"
@@ -161,7 +162,7 @@ export function LabelsPage() {
               </label>
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-secondary"
                 disabled={!(newNames[facet] ?? "").trim()}
                 onClick={() => create(facet)}
                 data-testid={`create-label-${facet}`}
@@ -172,39 +173,54 @@ export function LabelsPage() {
             {group.length === 0 ? (
               <EmptyState>{t("labels.empty")}</EmptyState>
             ) : (
-              <ul className="flex flex-col gap-2">
+              <ul className="border-t border-line">
                 {group.map((label) => {
                   const editing = open === label.id;
                   const mergeCandidates = activeLabels(labels, facet).filter((entry) => entry.id !== label.id);
                   return (
-                    <li key={label.id} className="card" data-testid="label-row" data-label-id={label.id}>
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="font-semibold">
-                            {labelName(label, t)}
-                            {label.builtinKey && (
-                              <span className="ml-2 badge bg-stone-200 text-xs dark:bg-stone-800">
-                                {t("labels.builtinBadge")}
-                              </span>
-                            )}
+                    <li
+                      key={label.id}
+                      className={`border-b border-line py-3 ${editing ? "bg-surface px-3" : ""}`}
+                      data-testid="label-row"
+                      data-label-id={label.id}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <p className="flex flex-wrap items-center gap-2">
+                            <span className={`text-[15px] leading-snug font-semibold break-words ${label.status === "ACTIVE" ? "" : "text-text-3"}`}>
+                              {labelName(label, t)}
+                            </span>
+                            {label.builtinKey && <Badge tone="neutral">{t("labels.builtinBadge")}</Badge>}
                             {label.status !== "ACTIVE" && (
-                              <span className="ml-2 badge bg-amber-100 text-xs dark:bg-amber-900">
+                              <Badge tone="neutral" data-state={`LABEL_${label.status}`}>
                                 {t(`labels.status.${label.status}`)}
-                              </span>
+                              </Badge>
                             )}
                           </p>
-                          <p className="text-xs text-stone-500">
-                            {t("labels.assignments", { count: label.assignmentCount })} ·{" "}
-                            {t("labels.folderUses", { count: label.folderCount })}
-                            {label.suggestionCount > 0 &&
-                              ` · ${t("labels.suggestionsPending", { count: label.suggestionCount })}`}
-                            {label.aliases.length > 0 && ` · ${label.aliases.join(", ")}`}
+                          <p className="ui-meta">
+                            <span>{t("labels.assignments", { count: label.assignmentCount })}</span>
+                            <span>{t("labels.folderUses", { count: label.folderCount })}</span>
+                            {label.suggestionCount > 0 && (
+                              <span className="text-action">{t("labels.suggestionsPending", { count: label.suggestionCount })}</span>
+                            )}
                           </p>
+                          {label.aliases.length > 0 && <p className="text-[13px] break-words text-text-3">{label.aliases.join(", ")}</p>}
+                          {label.status === "MERGED" && label.mergedInto && (
+                            <p className="text-[13px] text-text-3">
+                              {t("labels.mergedInto", {
+                                name: labelName(
+                                  labels.find((entry) => entry.id === label.mergedInto),
+                                  t,
+                                ),
+                              })}
+                            </p>
+                          )}
                         </div>
                         {label.status !== "MERGED" && (
                           <button
                             type="button"
-                            className="btn-secondary"
+                            className="btn-ghost flex-none"
+                            aria-expanded={editing}
                             data-testid={`edit-label-${label.id}`}
                             onClick={() => (editing ? setOpen(null) : startEditing(label))}
                           >
@@ -213,19 +229,13 @@ export function LabelsPage() {
                         )}
                       </div>
                       {editing && (
-                        <div className="mt-3 flex flex-col gap-3 border-t border-stone-200 pt-3 dark:border-stone-800">
+                        <div className="mt-3 flex flex-col gap-4 border-t border-line pt-3">
                           <div className="flex flex-wrap items-end gap-2">
-                            <label className="block flex-1">
+                            <label className="block min-w-0 flex-1">
                               <span className="label">{t("labels.name")}</span>
-                              <input
-                                className="field"
-                                value={nameDraft}
-                                data-testid="label-name-input"
-                                onChange={(event) => setNameDraft(event.target.value)}
-                              />
+                              <input className="field" value={nameDraft} data-testid="label-name-input" onChange={(event) => setNameDraft(event.target.value)} />
                             </label>
-                            <button type="button" className="btn-secondary" onClick={() => rename(label)}
-                                    data-testid="save-label-name">
+                            <button type="button" className="btn-secondary" onClick={() => rename(label)} data-testid="save-label-name">
                               {t("labels.save")}
                             </button>
                           </div>
@@ -239,10 +249,9 @@ export function LabelsPage() {
                                 onChange={(event) => setAliasDraft(event.target.value)}
                               />
                             </label>
-                            <p className="text-xs text-stone-500">{t("labels.aliasesHint")}</p>
+                            <p className="text-[13px] leading-relaxed text-text-3">{t("labels.aliasesHint")}</p>
                             <div>
-                              <button type="button" className="btn-secondary" onClick={() => saveAliases(label)}
-                                      data-testid="save-label-aliases">
+                              <button type="button" className="btn-secondary" onClick={() => saveAliases(label)} data-testid="save-label-aliases">
                                 {t("labels.save")}
                               </button>
                             </div>
@@ -252,12 +261,7 @@ export function LabelsPage() {
                             <div className="flex flex-col gap-1">
                               <label className="block">
                                 <span className="label">{t("labels.mergeInto")}</span>
-                                <select
-                                  className="field"
-                                  value={mergeTarget}
-                                  data-testid="merge-target"
-                                  onChange={(event) => setMergeTarget(event.target.value)}
-                                >
+                                <select className="field" value={mergeTarget} data-testid="merge-target" onChange={(event) => setMergeTarget(event.target.value)}>
                                   <option value="">—</option>
                                   {mergeCandidates.map((candidate) => (
                                     <option key={candidate.id} value={candidate.id}>
@@ -266,15 +270,9 @@ export function LabelsPage() {
                                   ))}
                                 </select>
                               </label>
-                              <p className="text-xs text-stone-500">{t("labels.mergeHint")}</p>
+                              <p className="text-[13px] leading-relaxed text-text-3">{t("labels.mergeHint")}</p>
                               <div>
-                                <button
-                                  type="button"
-                                  className="btn-secondary"
-                                  disabled={!mergeTarget}
-                                  onClick={() => merge(label)}
-                                  data-testid="merge-label"
-                                >
+                                <button type="button" className="btn-secondary" disabled={!mergeTarget} onClick={() => merge(label)} data-testid="merge-label">
                                   {t("labels.merge")}
                                 </button>
                               </div>
@@ -282,61 +280,43 @@ export function LabelsPage() {
                           )}
 
                           {facet === "TAG" && (
-                            <div className="flex flex-wrap items-end gap-2">
-                              <label className="block">
-                                <span className="label">{t("labels.convert")}</span>
-                                <select
-                                  className="field"
-                                  value={facetTarget}
-                                  onChange={(event) => setFacetTarget(event.target.value as Facet)}
-                                >
-                                  <option value="ORGANIZATION">{t("facets.ORGANIZATION")}</option>
-                                  <option value="TOPIC">{t("facets.TOPIC")}</option>
-                                </select>
-                              </label>
-                              <button type="button" className="btn-secondary" onClick={() => convert(label)}
-                                      data-testid="convert-label">
-                                {t("labels.convert")}
-                              </button>
-                              <p className="w-full text-xs text-stone-500">{t("labels.convertHint")}</p>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex flex-wrap items-end gap-2">
+                                <label className="block min-w-0 flex-1">
+                                  <span className="label">{t("labels.convert")}</span>
+                                  <select className="field" value={facetTarget} onChange={(event) => setFacetTarget(event.target.value as Facet)}>
+                                    <option value="ORGANIZATION">{t("facets.ORGANIZATION")}</option>
+                                    <option value="TOPIC">{t("facets.TOPIC")}</option>
+                                  </select>
+                                </label>
+                                <button type="button" className="btn-secondary" onClick={() => convert(label)} data-testid="convert-label">
+                                  {t("labels.convert")}
+                                </button>
+                              </div>
+                              <p className="text-[13px] leading-relaxed text-text-3">{t("labels.convertHint")}</p>
                             </div>
                           )}
 
-                          <div className="flex flex-wrap items-center gap-2 border-t border-stone-200 pt-3 dark:border-stone-800">
-                            {label.status === "ACTIVE" ? (
-                              <button type="button" className="btn-secondary" onClick={() => setStatus(label, "retire")}
-                                      data-testid="retire-label">
-                                {t("labels.retire")}
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={() => setStatus(label, "reactivate")}
-                                data-testid="reactivate-label"
-                              >
-                                {t("labels.reactivate")}
-                              </button>
-                            )}
-                            {!label.builtinKey && label.assignmentCount === 0 && label.folderCount === 0 && (
-                              <button type="button" className="btn-secondary" onClick={() => remove(label)}
-                                      data-testid="delete-label">
-                                {t("labels.delete")}
-                              </button>
-                            )}
-                            <p className="text-xs text-stone-500">{t("labels.retireHint")}</p>
+                          <div className="flex flex-col gap-1 border-t border-line pt-3">
+                            <p className="text-[13px] leading-relaxed text-text-3">{t("labels.retireHint")}</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {label.status === "ACTIVE" ? (
+                                <button type="button" className="btn-ghost -ml-4" onClick={() => setStatus(label, "retire")} data-testid="retire-label">
+                                  {t("labels.retire")}
+                                </button>
+                              ) : (
+                                <button type="button" className="btn-ghost -ml-4" onClick={() => setStatus(label, "reactivate")} data-testid="reactivate-label">
+                                  {t("labels.reactivate")}
+                                </button>
+                              )}
+                              {!label.builtinKey && label.assignmentCount === 0 && label.folderCount === 0 && (
+                                <button type="button" className="btn-ghost text-danger" onClick={() => remove(label)} data-testid="delete-label">
+                                  {t("labels.delete")}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      )}
-                      {label.status === "MERGED" && label.mergedInto && (
-                        <p className="mt-1 text-xs text-stone-500">
-                          {t("labels.mergedInto", {
-                            name: labelName(
-                              labels.find((entry) => entry.id === label.mergedInto),
-                              t,
-                            ),
-                          })}
-                        </p>
                       )}
                     </li>
                   );
@@ -346,6 +326,6 @@ export function LabelsPage() {
           </section>
         );
       })}
-    </>
+    </div>
   );
 }

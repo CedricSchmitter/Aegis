@@ -116,7 +116,9 @@ a desktop. Previews are the archive's first-page image (`GET /api/documents/{id}
 and planned tasks, the cancellation deadlines of the next 30 days with a countdown and the next seven days; a task's
 checkbox completes it at once with undo, and the deadline ("Frist") and the planned work day ("Geplant") stay
 separate everywhere. The task and contract lists show the selection in the context panel from 1280 px; each contract
-counts down to its cancellation date and is highlighted from 30 days before it.
+counts down to its cancellation date and is highlighted from 30 days before it. Settings leads to Status, Trash and the
+folder and label management and holds the palette, effects, language, password and logout; Login and the Android share
+page use the same system.
 
 Aegis supports individual logins into one shared household (the two persons and an assistant account that
 receives notices and can own tasks but is never what a document is about,
@@ -173,13 +175,16 @@ duplicate/relationship suggestions are not connected because those producers do 
 
 The web app has one inbox (`/inbox`, "Eingang") with two sections: "Zu prüfen" lists the review cards, "Mitteilungen"
 the member's notices that no card represents (task assigned or completed, cancellation reminder, stale job, backup
-failed, disk space low). Notices that announce a card, including a failed archival, are still published but not
+failed, disk space low). A phone shows them as two segments, a desktop side by side, from 1280 px with the messages
+in the context panel. Each card has one highlighted action with "Ausblenden" next to it; failed processing, a failed
+backup, low disk space and a stopped job are red. Notices that announce a card, including a failed archival, are still published but not
 listed a second time; opening the inbox marks them read. A successful archival publishes no notice. The navigation
 badge counts open cards plus unread messages, and the old addresses `/review` and `/notices` lead to the inbox
 ([ADR-0009](docs/architecture/adr/ADR-0009-central-review-inbox.md#combined-inbox-issue-83)).
 
 Documents, tasks and contracts can be moved to a recoverable trash from their pages and restored from the trash
-page by either member ([ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md)). A trashed record keeps its
+page by either member ([ADR-0010](docs/architecture/adr/ADR-0010-recoverable-trash.md)). Moving to the trash asks
+nothing; the message that follows offers undo. A trashed record keeps its
 identity, original, metadata and links; lists, search, counts, Today, reminders, review cards and published
 deadlines leave it out, while links to it still resolve and say that it is in the trash. It stays restorable at
 least 30 days (`aegis.trash.recovery-window`); permanent deletion is not implemented (#85), so nothing is purged. A
@@ -197,7 +202,8 @@ in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Without either, AI is not configured. See
 [subscription fallback](docs/operations/DEPLOYMENT.md#subscription-fallback-through-claude--p).
 Scheduled review and chat workflows (#24, #25) are not connected.
 The status page first answers "is everything OK?" for the database, the archive, the backup, the disk space and AI,
-in German or English words from stable codes; a problem is named with its reason. Integrations that are not set up
+in German or English words from stable codes; a broken area is red with its reason, and "Was jetzt?" says what to
+check or do. Integrations that are not set up
 (AI without credentials; calendar, mail, push and Telegram have no adapter yet) are not listed. After a start, provider
 fallback or API-key rotation a configured AI reads "Noch nicht geprüft" until its next run or a manual connection check
 ([ADR-0018](docs/architecture/adr/ADR-0018-status-overview.md)). Everything else sits in the collapsed "Technische

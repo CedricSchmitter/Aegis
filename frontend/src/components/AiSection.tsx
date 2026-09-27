@@ -68,9 +68,9 @@ export function AiSection() {
   const money = (amount: number | undefined) => formatMoney(amount ?? 0, overview?.currency ?? "USD", i18n.language);
 
   return (
-    <section aria-labelledby="ai" data-testid="ai-section">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 id="ai" className="font-semibold">
+    <section aria-labelledby="ai" className="flex flex-col gap-2" data-testid="ai-section">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 id="ai" className="ui-sec">
           {t("ai.title")}
         </h3>
         <button type="button" className="btn-secondary" onClick={checkConnection} disabled={busy || !overview?.configured || !overview.memberAllowed} data-testid="ai-check">
@@ -80,7 +80,7 @@ export function AiSection() {
       <ErrorBox message={error} />
       {message && <InfoBox>{message}</InfoBox>}
       {overview && (
-        <div className="card mb-2 flex flex-col gap-2 text-sm">
+        <div className="card flex flex-col gap-2 text-sm text-text-2">
           <p>{overview.configured ? t("ai.configured") : t("ai.notConfigured")}</p>
           {overview.configured && !overview.memberAllowed && <p data-testid="ai-member-not-allowed">{t("ai.memberNotAllowed")}</p>}
           <p>
@@ -91,20 +91,20 @@ export function AiSection() {
             {overview.workloads.map((workload) => (
               <li key={workload.workload} className="flex flex-wrap items-center justify-between gap-2">
                 <span>
-                  <span className="font-medium">{t(`ai.workload.${workload.workload}`)}</span>
+                  <span className="font-medium text-text-1">{t(`ai.workload.${workload.workload}`)}</span>
                   {workload.model && (
-                    <span className="text-stone-600 dark:text-stone-400">
+                    <span className="text-text-3">
                       {" "}
                       · {workload.model}
                       {workload.provider && ` · ${t(`ai.provider.${workload.provider}`, { defaultValue: workload.provider })}`}
                     </span>
                   )}
-                  <span className="text-stone-600 dark:text-stone-400">
+                  <span className="text-text-3">
                     {" "}
                     · {t("ai.budgetLine", { cost: money(workload.maxCost), attempts: workload.maxAttempts, seconds: workload.maxDurationSeconds })}
                   </span>
                 </span>
-                <span className="text-xs text-stone-600 dark:text-stone-400">
+                <span className="font-mono text-xs text-text-3">
                   {workload.available ? t("ai.available") : !workload.handlerAvailable ? t("ai.noWorkflow") : t("ai.unavailable")}
                 </span>
               </li>
@@ -123,7 +123,7 @@ export function AiSection() {
                 </span>
                 <Badge state={run.state} label={t(`ai.state.${run.state}`)} />
               </div>
-              <p className="text-stone-600 dark:text-stone-400">
+              <p className="text-text-3">
                 {t("ai.runLine", {
                   date: formatDateTime(run.requestedAt, i18n.language),
                   attempt: run.attempt,
@@ -136,7 +136,7 @@ export function AiSection() {
               </p>
               {run.cancelRequested && run.state === "RUNNING" && <p>{t("ai.cancelPending")}</p>}
               {run.failureCategory && (
-                <p className={run.state === "FAILED" ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"}>
+                <p className={run.state === "FAILED" ? "text-danger" : "text-action"}>
                   {t(`ai.failure.${run.failureCategory}`)} ({run.failureCode})
                   {run.nextAttemptAt && run.state === "WAITING_RETRY" && <> · {t("ai.nextAttempt", { date: formatDateTime(run.nextAttemptAt, i18n.language) })}</>}
                 </p>
