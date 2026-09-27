@@ -103,7 +103,9 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
 
 8. **Focus and touch.** Focus is always visible: a 2 px `data` outline, drawn 4 px inside chamfered elements so the
    corner cut does not hide it, `void` on action fills, and a 2 px `data` border on fields. Buttons and rows are at least
-   44 px high. One primary action per view.
+   44 px high. One primary action per view. Scroll padding on the root keeps what is scrolled into view or focused
+   clear of the sticky header, the phone tab bar and the desktop status bar (WCAG 2.4.11); before it, a button could
+   sit half under the status bar and a click landed on the bar.
 
 9. **Effects are optional and motion yields.** The effects layer is the 40 px grid (2.2 % opacity) on the work area,
    scanlines (2.5 %) over the page and a short glitch on the wordmark every 6 s. It is on by default and switched off with
