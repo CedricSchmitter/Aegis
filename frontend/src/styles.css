@@ -544,6 +544,31 @@
       }
     }
   }
+  /* Full screen above everything, an open sheet included (the scan's corner editor). It scrolls itself if it has to,
+     and its overscroll stays contained: a swipe on it neither chains into the sheet nor into the page (#125). */
+  .ui-overlay {
+    position: fixed;
+    inset: 0;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    padding: 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    color: var(--color-text-1);
+    background: var(--color-base);
+    outline: none;
+    &[open] {
+      display: flex;
+      flex-direction: column;
+    }
+    &::backdrop {
+      background: transparent;
+    }
+  }
 
   .ui-toast {
     @apply frame inset-x-3 z-50 mx-auto flex max-w-[420px] items-center gap-3 px-3.5 py-3;

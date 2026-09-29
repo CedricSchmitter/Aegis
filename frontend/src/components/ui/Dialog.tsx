@@ -1,15 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ComponentPropsWithoutRef, type MouseEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-/**
- * The element full-screen overlays are rendered into. An open modal dialog lies in the browser's top layer above
- * everything else, so an overlay opened from inside a sheet (the scan's corner editor) has to be rendered inside it.
+/*
+ * Layering (ADR-0019, decision 12): dialogs, sheets and overlays are native modal <dialog> elements in the browser's
+ * top layer. Whatever has to cover an open one is a modal dialog of its own, such as the Overlay, never a fixed element
+ * inside it: a sheet is a scroll container, and a swipe on a fixed element inside it scrolled the page behind (#125).
  */
-const LayerContext = createContext<HTMLElement | null>(null);
-
-export function useOverlayLayer(): HTMLElement {
-  return useContext(LayerContext) ?? document.body;
-}
 
 /**
  * Keeps a native <dialog> in step with `open`. The native modal makes the rest of the page inert, traps focus,
@@ -99,17 +95,9 @@ export function Sheet({ open, onClose, title, children, testId, wide = false }: 
   const { t } = useTranslation();
   const ref = useModal(open, onClose);
   const titleId = useId();
-  const [layer, setLayer] = useState<HTMLElement | null>(null);
-  const attach = useCallback(
-    (element: HTMLDialogElement | null) => {
-      ref.current = element;
-      setLayer(element);
-    },
-    [ref],
-  );
   return (
     <dialog
-      ref={attach}
+      ref={ref}
       className="ui-sheet"
       data-wide={wide || undefined}
       aria-labelledby={titleId}
@@ -126,7 +114,63 @@ export function Sheet({ open, onClose, title, children, testId, wide = false }: 
           </svg>
         </button>
       </div>
-      <LayerContext.Provider value={layer}>{children}</LayerContext.Provider>
+      {children}
+    </dialog>
+  );
+}
+
+type OverlayProps = Omit<ComponentPropsWithoutRef<"dialog">, "open" | "onClose" | "onCancel"> & {
+  onClose: () => void;
+  children: ReactNode;
+};
+
+/**
+ * A full-screen modal that is open for as long as it is mounted, such as the scan's corner editor. It is a modal
+ * dialog of its own: opened from a sheet, it stacks above the sheet in the top layer instead of lying inside the
+ * sheet's scroll container, and its contained overscroll keeps a swipe from scrolling the sheet or the page behind it
+ * (#125). The focus moves into it; Escape or the phone's back gesture reports onClose for the overlay only, and
+ * closing returns the focus to where it was before, such as the sheet's button that opened it.
+ */
+export function Overlay({ onClose, className = "", children, ...rest }: OverlayProps) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const close = useRef(onClose);
+
+  useEffect(() => {
+    close.current = onClose;
+  }, [onClose]);
+
+  // A layout effect, because its cleanup runs before React removes the element: only a dialog closed while still in
+  // the document returns the focus.
+  useLayoutEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    dialog.focus();
+    const onCancel = (event: Event) => {
+      // Without a recent user activation the browser closes the dialog anyway; onNativeClose reports that.
+      if (!event.cancelable) return;
+      event.preventDefault();
+      close.current();
+    };
+    // The close event arrives a task later, so one left over from a closed and reopened dialog must be ignored.
+    const onNativeClose = () => {
+      if (!dialog.open) close.current();
+    };
+    dialog.addEventListener("cancel", onCancel);
+    dialog.addEventListener("close", onNativeClose);
+    return () => {
+      dialog.removeEventListener("cancel", onCancel);
+      dialog.removeEventListener("close", onNativeClose);
+      if (!dialog.open) return;
+      if (typeof dialog.close === "function") dialog.close();
+      else dialog.removeAttribute("open");
+    };
+  }, []);
+
+  return (
+    <dialog ref={ref} tabIndex={-1} className={`ui-overlay ${className}`} {...rest}>
+      {children}
     </dialog>
   );
 }

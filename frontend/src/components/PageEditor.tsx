@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { createPortal } from "react-dom";
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { ScanPage } from "../scan/draft";
 import { clampCorner, fullQuad, isConvex, type Quad } from "../scan/geometry";
 import { LOUPE_SIZE, LOUPE_ZOOM, loupePlacement } from "./loupe";
-import { useOverlayLayer } from "./ui";
+import { Overlay } from "./ui";
 import { useObjectUrl } from "./useObjectUrl";
 
 interface Props {
@@ -55,30 +54,10 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
   const touched = edited !== null;
   const frame = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
-  const dialog = useRef<HTMLDivElement>(null);
-  const layer = useOverlayLayer();
-  const close = useRef(onClose);
-  useEffect(() => {
-    close.current = onClose;
-  });
 
   const searching = page.result === null && page.settings.corners === null;
   const missing = page.result !== null && page.result.corners === null;
   const checking = purpose === "check";
-
-  // Focus moves into the dialog once when it opens; Escape closes it. The latest onClose is read through a ref, so a
-  // re-render (every dragged corner) neither re-registers the listener nor takes the focus from a corner.
-  useEffect(() => {
-    dialog.current?.focus();
-    const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      // Escape closes the editor only, not the upload sheet around it.
-      event.preventDefault();
-      close.current();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   const place = (index: number, x: number, y: number) =>
     setEdited((current) => (current ?? corners).map((p, i) => (i === index ? clampCorner({ x, y }) : p)) as Quad);
@@ -118,15 +97,12 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
       ? t(missing ? "scan.editor.missingInstructions" : "scan.editor.checkInstructions")
       : t("scan.editor.instructions");
 
-  // The editor covers the whole screen. It is rendered into the open upload sheet (the browser's top layer) or at the
-  // end of <body>, so neither a chamfered card's stacking context nor the fixed tab bar lies on top of its buttons.
-  return createPortal(
-    <div
-      ref={dialog}
-      tabIndex={-1}
-      className="fixed inset-0 z-50 flex flex-col gap-3 bg-(--color-base) p-4 text-text-1 outline-none"
-      role="dialog"
-      aria-modal="true"
+  // The editor covers the whole screen as a modal of its own, above the upload sheet it is opened from. Escape closes
+  // the editor only; the sheet stays open with its pages.
+  return (
+    <Overlay
+      onClose={onClose}
+      className="gap-3"
       aria-labelledby={titleId}
       data-testid="page-editor"
       data-page-editor
@@ -247,8 +223,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
           </button>
         )}
       </div>
-    </div>,
-    layer,
+    </Overlay>
   );
 }
 

@@ -5,7 +5,7 @@ export { Badge, Chip, FileTypeTag, type FileKind, type Tone } from "./Marks";
 export { SearchField, TextField } from "./TextField";
 export { SegmentedControl, type SegmentOption } from "./SegmentedControl";
 export { Checkbox, Switch } from "./Toggles";
-export { ConfirmDialog, Dialog, Sheet, useOverlayLayer } from "./Dialog";
+export { ConfirmDialog, Dialog, Overlay, Sheet } from "./Dialog";
 export { Toast } from "./Toast";
 export { ProcessingSteps } from "./ProcessingSteps";
 export { Countdown } from "./Countdown";
