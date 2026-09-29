@@ -167,12 +167,23 @@ aegis:
       claude-code:
         daily-cost-limit: ${AEGIS_AI_SUBSCRIPTION_DAILY_COST_LIMIT:50.00}
         max-run-cost: ${AEGIS_AI_SUBSCRIPTION_MAX_RUN_COST:0.50}
-    # Claude API list prices per million tokens, checked on platform.claude.com on 2026-09-18.
-    # A model without a price cannot run, because its cost budget could not be enforced.
+    # Claude API list prices per million tokens, checked on 2026-09-29. A model without a price cannot run, because
+    # its cost budget could not be enforced. Predecessors stay priced for runs that were requested with them.
     prices:
       "[claude-haiku-4-5]": {input: 1.00, output: 5.00, cache-read: 0.10, cache-write: 1.25}
+      "[claude-sonnet-5-5]": {input: 2.00, output: 10.00, cache-read: 0.20, cache-write: 2.50}
       "[claude-sonnet-5]": {input: 2.00, output: 10.00, cache-read: 0.20, cache-write: 2.50}
+      "[claude-opus-5-5]": {input: 4.00, output: 20.00, cache-read: 0.20, cache-write: 5.00}
       "[claude-opus-5]": {input: 5.00, output: 25.00, cache-read: 0.50, cache-write: 6.25}
+    # Model families the household chooses per workload in the AI settings: the newest API model of each family.
+    # When a new model is released, replace its predecessor here and add its price above. The owner's subscription
+    # always uses the newest model of the family through the Claude Code CLI alias (opus, sonnet, haiku).
+    models:
+      opus: {model: claude-opus-5-5}
+      sonnet: {model: claude-sonnet-5-5}
+      # Haiku 4.5 has no effort levels; the profiles' effort is not sent to it.
+      haiku: {model: claude-haiku-4-5, effort: false}
+    # Default family of each workload until a member chooses another one; the choice applies to the whole household.
     workloads:
       # Checks every distinct model below with one structured call; no household data is sent.
       connection-check:
@@ -185,7 +196,7 @@ aegis:
         max-concurrent: 2
       classification:
         providers: ${AEGIS_AI_PROVIDERS:anthropic,claude-code}
-        model: claude-sonnet-5
+        family: sonnet
         # One structured call per document; low effort keeps thinking short within the output allowance.
         effort: low
         max-cost: 0.05
@@ -197,7 +208,7 @@ aegis:
         max-concurrent: 2
       review:
         providers: ${AEGIS_AI_PROVIDERS:anthropic,claude-code}
-        model: claude-sonnet-5
+        family: sonnet
         max-cost: 0.10
         max-duration: 10m
         max-model-calls: 12
@@ -207,7 +218,7 @@ aegis:
         max-concurrent: 1
       chat:
         providers: ${AEGIS_AI_PROVIDERS:anthropic,claude-code}
-        model: claude-sonnet-5
+        family: sonnet
         max-cost: 0.10
         max-duration: 5m
         max-model-calls: 8

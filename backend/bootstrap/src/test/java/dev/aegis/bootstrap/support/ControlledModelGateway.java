@@ -21,7 +21,8 @@ import java.util.function.Function;
  */
 public class ControlledModelGateway implements ModelGateway {
     public static final String PROVIDER = "controlled";
-    public static final String MODEL = "controlled-model";
+    /** Catalog model of the Sonnet family in the tests, the default family of every workload. */
+    public static final String MODEL = "claude-sonnet-controlled";
     public static final TokenUsage USAGE = new TokenUsage(1_000, 100, 0, 0);
 
     public final List<ModelRequest> requests = new CopyOnWriteArrayList<>();

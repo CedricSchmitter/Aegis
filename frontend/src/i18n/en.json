@@ -800,6 +800,18 @@
     "nextAttempt": "next attempt {{date}}",
     "cancel": "Cancel",
     "retry": "Try again",
+    "family": {
+      "opus": "Opus – most thorough",
+      "sonnet": "Sonnet – balanced",
+      "haiku": "Haiku – fastest and cheapest"
+    },
+    "model": {
+      "label": "Model",
+      "details": "Claude API: {{model}} · {{input}} / {{output}} per million tokens (input / output)",
+      "changedBy": "Changed by {{name}} on {{date}}",
+      "changed": "{{workload}}: {{family}} from the next run on.",
+      "scope": "The model choice applies to the whole household and to scheduled work from the next run on; running runs keep their model. The Claude subscription always uses the newest model of the chosen family."
+    },
     "workload": {
       "CONNECTION_CHECK": "Connection check",
       "DOCUMENT_CLASSIFICATION": "Document classification",
@@ -983,6 +995,9 @@
     "ai.notConfigured": "No AI provider is set up.",
     "ai.provider.memberNotAllowed": "The AI connection currently uses a personal subscription that is not enabled for your account.",
     "ai.workload.unavailable": "There is no workflow for this AI task yet.",
+    "ai.model.unknownFamily": "Unknown model family.",
+    "ai.model.notSelectable": "No model can be chosen for this AI task.",
+    "ai.model.notOffered": "This model family is not offered at the moment.",
     "ai.workload.unknown": "Unknown AI task.",
     "ai.price.unknown": "No price is configured for this model, so its cost budget cannot be enforced.",
     "ai.run.notRetryable": "Only failed or cancelled runs can be retried.",

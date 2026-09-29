@@ -1,11 +1,12 @@
 package dev.aegis.assistant.adapters.config;
 
 import dev.aegis.assistant.application.AiSettings;
+import dev.aegis.assistant.application.ModelCatalog;
 import dev.aegis.assistant.application.ModelPrice;
 import dev.aegis.assistant.application.PriceBook;
 import dev.aegis.assistant.application.ProviderLimits;
 import dev.aegis.assistant.application.WorkloadProfile;
-import dev.aegis.assistant.domain.ModelSelection;
+import dev.aegis.assistant.domain.ModelFamily;
 import dev.aegis.assistant.domain.Money;
 import dev.aegis.assistant.domain.RunBudget;
 import dev.aegis.assistant.domain.Workload;
@@ -20,16 +21,18 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * AI configuration under {@code aegis.ai}: household limits, list prices per model and one profile per workload
- * (keys {@code connection-check}, {@code classification}, {@code review}, {@code chat}). Model names are
- * configuration, not code: a model can be replaced without a release. {@code providers} lists the providers of a
- * profile in order of preference; each run uses the first one that is usable for its requester. A single
- * {@code provider} is accepted as shorthand for a one-element list; setting both is rejected.
+ * AI configuration under {@code aegis.ai}: household limits, list prices per model, the model catalog and one profile
+ * per workload (keys {@code connection-check}, {@code classification}, {@code review}, {@code chat}). The catalog
+ * ({@code models}, keys {@code opus}, {@code sonnet}, {@code haiku}) names the API model of each family the household
+ * can choose; model names are configuration, not code, so a new model replaces its predecessor without a release.
+ * A profile's {@code family} is its default until the household chooses another one. {@code providers} lists the
+ * providers of a profile in order of preference; each run uses the first one that is usable for its requester. A
+ * single {@code provider} is accepted as shorthand for a one-element list; setting both is rejected.
  */
 @ConfigurationProperties(prefix = "aegis.ai")
 public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer maxConcurrentRuns,
-        Duration callTimeout, Map<String, Price> prices, Map<String, Profile> workloads,
-        Map<String, Limits> providerLimits) {
+        Duration callTimeout, Map<String, Price> prices, Map<String, CatalogModel> models,
+        Map<String, Profile> workloads, Map<String, Limits> providerLimits) {
 
     /** Own limits of a provider (keys are provider names); unset values keep the household defaults. */
     public record Limits(BigDecimal dailyCostLimit, BigDecimal maxRunCost) {
@@ -39,7 +42,11 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
     public record Price(BigDecimal input, BigDecimal output, BigDecimal cacheRead, BigDecimal cacheWrite) {
     }
 
-    public record Profile(String provider, List<String> providers, String model, BigDecimal maxCost, Duration maxDuration,
+    /** API model of a family; {@code effort} is false for models that reject an effort level (default true). */
+    public record CatalogModel(String model, Boolean effort) {
+    }
+
+    public record Profile(String provider, List<String> providers, String family, BigDecimal maxCost, Duration maxDuration,
             Integer maxModelCalls, Integer maxToolCalls, Integer maxOutputTokens, Integer maxAttempts,
             Integer maxConcurrent, String effort) {
     }
@@ -50,6 +57,7 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         maxConcurrentRuns = maxConcurrentRuns == null ? 2 : maxConcurrentRuns;
         callTimeout = callTimeout == null ? Duration.ofSeconds(120) : callTimeout;
         prices = prices == null ? Map.of() : Map.copyOf(prices);
+        models = models == null ? Map.of() : Map.copyOf(models);
         workloads = workloads == null ? Map.of() : Map.copyOf(workloads);
         providerLimits = providerLimits == null ? Map.of() : Map.copyOf(providerLimits);
     }
@@ -59,27 +67,36 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         Map<String, ModelPrice> modelPrices = new LinkedHashMap<>();
         prices.forEach((model, price) -> modelPrices.put(model, new ModelPrice(money(price.input(), unit),
                 money(price.output(), unit), money(price.cacheRead(), unit), money(price.cacheWrite(), unit))));
+        Map<ModelFamily, ModelCatalog.Entry> catalog = new EnumMap<>(ModelFamily.class);
+        models.forEach((key, entry) -> {
+            ModelFamily family = ModelFamily.fromKey(key);
+            if (entry.model() == null || entry.model().isBlank()) {
+                throw new IllegalStateException("aegis.ai.models." + key + ".model is required");
+            }
+            catalog.put(family, new ModelCatalog.Entry(family, entry.model().strip(),
+                    entry.effort() == null || entry.effort()));
+        });
         Map<Workload, WorkloadProfile> profiles = new EnumMap<>(Workload.class);
         workloads.forEach((key, profile) -> {
             Workload workload = Workload.fromConfigKey(key);
-            List<String> providers = providers(key, profile);
-            List<ModelSelection> models = profile.model() == null || profile.model().isBlank() ? List.of()
-                    : providers.stream().map(String::strip).filter(provider -> !provider.isEmpty()).distinct()
-                            .map(provider -> new ModelSelection(provider, profile.model())).toList();
+            boolean ownModel = workload != Workload.CONNECTION_CHECK;
+            List<String> providers = ownModel ? providers(key, profile) : List.of();
+            ModelFamily family = !ownModel ? null
+                    : ModelFamily.fromKey(require(profile.family(), key, "family"));
             RunBudget budget = new RunBudget(require(profile.maxDuration(), key, "max-duration"),
                     new Money(require(profile.maxCost(), key, "max-cost"), unit),
                     require(profile.maxModelCalls(), key, "max-model-calls"),
                     profile.maxToolCalls() == null ? 0 : profile.maxToolCalls(),
                     require(profile.maxOutputTokens(), key, "max-output-tokens"),
                     require(profile.maxAttempts(), key, "max-attempts"));
-            profiles.put(workload, new WorkloadProfile(workload, models, budget,
+            profiles.put(workload, new WorkloadProfile(workload, providers, family, budget,
                     profile.maxConcurrent() == null ? 1 : profile.maxConcurrent(), profile.effort()));
         });
         Map<String, ProviderLimits> limits = new LinkedHashMap<>();
         providerLimits.forEach((provider, limit) -> limits.put(provider,
                 new ProviderLimits(money(limit.dailyCostLimit(), unit), money(limit.maxRunCost(), unit))));
         return new AiSettings(profiles, new Money(dailyCostLimit, unit), maxConcurrentRuns, callTimeout, zone,
-                new PriceBook(modelPrices), limits);
+                new PriceBook(modelPrices), limits, new ModelCatalog(catalog));
     }
 
     private static List<String> providers(String workload, Profile profile) {

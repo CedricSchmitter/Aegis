@@ -1,7 +1,9 @@
 package dev.aegis.assistant.adapters.rest;
 
 import dev.aegis.assistant.adapters.rest.AiDtos.AiOverviewDto;
+import dev.aegis.assistant.adapters.rest.AiDtos.ChooseModelRequest;
 import dev.aegis.assistant.adapters.rest.AiDtos.RunDto;
+import dev.aegis.assistant.application.api.AiModelCommands;
 import dev.aegis.assistant.application.api.AiRunCommands;
 import dev.aegis.assistant.application.api.AiRunQueries;
 import dev.aegis.shared.Actor;
@@ -13,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -25,16 +29,27 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiController {
     private final AiRunQueries queries;
     private final AiRunCommands commands;
+    private final AiModelCommands models;
 
-    public AiController(AiRunQueries queries, AiRunCommands commands) {
+    public AiController(AiRunQueries queries, AiRunCommands commands, AiModelCommands models) {
         this.queries = queries;
         this.commands = commands;
+        this.models = models;
     }
 
     @Operation(operationId = "aiOverview", summary = "Configured workloads, budgets and today's AI spending")
     @GetMapping("/overview")
     public AiOverviewDto overview(Actor actor) {
         return AiOverviewDto.from(queries.overview(actor));
+    }
+
+    @Operation(operationId = "chooseAiModel", summary = "Choose the model family of a workload for the household",
+            description = "Applies to both members and scheduled work from the next run on; queued and running runs "
+                    + "keep their model. A stale expectedVersion is rejected with 409.")
+    @PutMapping("/workloads/{workload}/model")
+    public AiOverviewDto chooseModel(Actor actor, @PathVariable String workload,
+            @RequestBody ChooseModelRequest body) {
+        return AiOverviewDto.from(models.chooseModel(actor, workload, body.family(), body.expectedVersion()));
     }
 
     @Operation(operationId = "listAiRuns", summary = "Most recent AI runs of the household")

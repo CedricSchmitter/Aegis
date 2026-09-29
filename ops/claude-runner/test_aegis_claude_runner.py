@@ -55,6 +55,10 @@ class ValidationTest(unittest.TestCase):
         self.assertEqual("claude-sonnet-5", call["model"])
         self.assertEqual(2048, call["maxOutputTokens"])
 
+    def test_accepts_the_family_aliases_that_select_the_newest_model(self):
+        for alias in ("opus", "sonnet", "haiku"):
+            self.assertEqual(alias, runner.validate(json.dumps(request(model=alias)))["model"])
+
     def test_optional_schema_and_effort_may_be_null(self):
         call = runner.validate(json.dumps(request(jsonSchema=None, effort=None)))
         self.assertIsNone(call["jsonSchema"])

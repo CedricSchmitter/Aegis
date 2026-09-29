@@ -30,7 +30,7 @@ class ClaudeCodeGatewayTest {
             "properties", Map.of("status", Map.of("type", "string")), "required", List.of("status"),
             "additionalProperties", false);
     static final String USAGE = "\"usage\":{\"input_tokens\":900,\"output_tokens\":12,\"cache_read_input_tokens\":0,"
-            + "\"cache_creation_input_tokens\":0},\"modelUsage\":{\"claude-sonnet-5\":{}}";
+            + "\"cache_creation_input_tokens\":0},\"modelUsage\":{\"claude-sonnet-5-6\":{}}";
 
     private final MemberId cedric = MemberId.random();
     private final MemberId lisa = MemberId.random();
@@ -85,7 +85,7 @@ class ClaudeCodeGatewayTest {
     }
 
     private static ModelRequest request(Map<String, Object> schema) {
-        return new ModelRequest("claude-sonnet-5", "You classify household documents.",
+        return new ModelRequest("claude-sonnet-5-5", "You classify household documents.",
                 List.of(ModelMessage.user("Return ok.")), List.of(), schema, 2048, Duration.ofSeconds(30), "low");
     }
 
@@ -94,14 +94,14 @@ class ClaudeCodeGatewayTest {
     }
 
     @Test
-    void theCallCarriesTheSameSettingsAsAnApiRequestAndReturnsTheStructuredAnswer() {
+    void theCallUsesTheNewestModelOfTheFamilyWithTheSameSettingsAsAnApiRequest() {
         cli.answer(0, result("\"subtype\":\"success\",\"is_error\":false,\"result\":\"{\\\"status\\\":\\\"ok\\\"}\","
                 + "\"structured_output\":{\"status\":\"ok\"}," + USAGE), "");
 
         ModelTurn turn = gateway.complete(request(SCHEMA));
 
         assertThat(cli.calls).singleElement().satisfies(call -> {
-            assertThat(call.model()).isEqualTo("claude-sonnet-5");
+            assertThat(call.model()).isEqualTo("sonnet");
             assertThat(call.systemPrompt()).isEqualTo("You classify household documents.");
             assertThat(call.prompt()).isEqualTo("Return ok.");
             assertThat(call.jsonSchema()).isEqualTo(SCHEMA);
@@ -114,7 +114,23 @@ class ClaudeCodeGatewayTest {
         assertThat(turn.structuredOutput()).isEqualTo(Map.of("status", "ok"));
         assertThat(turn.usage().inputTokens()).isEqualTo(900);
         assertThat(turn.usage().outputTokens()).isEqualTo(12);
-        assertThat(turn.modelId()).isEqualTo("claude-sonnet-5");
+        assertThat(turn.modelId()).isEqualTo("claude-sonnet-5-6");
+    }
+
+    @Test
+    void everyClaudeFamilyMapsToItsCliAliasAndOtherModelsPassUnchanged() {
+        assertThat(ClaudeCodeGateway.cliModel("claude-opus-5-5")).isEqualTo("opus");
+        assertThat(ClaudeCodeGateway.cliModel("claude-sonnet-5")).isEqualTo("sonnet");
+        assertThat(ClaudeCodeGateway.cliModel("claude-haiku-4-5")).isEqualTo("haiku");
+        assertThat(ClaudeCodeGateway.cliModel("claude-fable-5-1")).isEqualTo("claude-fable-5-1");
+    }
+
+    @Test
+    void theAnsweringModelIsTheReportedOneOfTheRequestedFamily() {
+        assertThat(ClaudeCodeGateway.modelId(Map.of("claude-haiku-4-5", Map.of(), "claude-sonnet-5-6", Map.of()),
+                "claude-sonnet-5-5")).isEqualTo("claude-sonnet-5-6");
+        assertThat(ClaudeCodeGateway.modelId(Map.of(), "claude-sonnet-5-5")).isEqualTo("claude-sonnet-5-5");
+        assertThat(ClaudeCodeGateway.modelId(null, "claude-opus-5-5")).isEqualTo("claude-opus-5-5");
     }
 
     @Test

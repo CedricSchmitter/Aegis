@@ -80,9 +80,9 @@ public abstract class PostgresIT {
         registry.add("aegis.ai.daily-cost-limit", () -> "100.00");
         registry.add("aegis.ai.prices[" + ControlledModelGateway.MODEL + "].input", () -> "1.00");
         registry.add("aegis.ai.prices[" + ControlledModelGateway.MODEL + "].output", () -> "5.00");
+        registry.add("aegis.ai.models.sonnet.model", () -> ControlledModelGateway.MODEL);
         for (String workload : new String[] {"classification", "review", "chat"}) {
             registry.add("aegis.ai.workloads." + workload + ".providers", () -> ControlledModelGateway.PROVIDER);
-            registry.add("aegis.ai.workloads." + workload + ".model", () -> ControlledModelGateway.MODEL);
         }
     }
 

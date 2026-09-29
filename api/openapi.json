@@ -7,18 +7,27 @@
             "type" : "boolean"
           },
           "anchorFolderId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "expectedAnchorVersion" : {
             "format" : "int64",
-            "type" : [ "integer", "null" ]
+            "type" : [
+              "integer",
+              "null"
+            ]
           },
           "expectedVersion" : {
             "format" : "int64",
             "type" : "integer"
           },
           "folderId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "newPath" : {
             "items" : {
@@ -27,7 +36,11 @@
             "type" : "array"
           }
         },
-        "required" : [ "alsoForOtherDocuments", "expectedVersion", "newPath" ],
+        "required" : [
+          "alsoForOtherDocuments",
+          "expectedVersion",
+          "newPath"
+        ],
         "type" : "object"
       },
       "AcceptPlacementResponse" : {
@@ -53,7 +66,13 @@
             "type" : "array"
           }
         },
-        "required" : [ "createdFolders", "document", "folderId", "movedDocuments", "path" ],
+        "required" : [
+          "createdFolders",
+          "document",
+          "folderId",
+          "movedDocuments",
+          "path"
+        ],
         "type" : "object"
       },
       "AiOverviewDto" : {
@@ -69,7 +88,10 @@
           },
           "limitProvider" : {
             "description" : "Provider whose daily limit and spending today are shown: the one this member's runs use now (anthropic or claude-code)",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "maxConcurrentRuns" : {
             "format" : "int32",
@@ -78,6 +100,13 @@
           "memberAllowed" : {
             "description" : "Whether the authenticated household member may use a configured provider",
             "type" : "boolean"
+          },
+          "models" : {
+            "description" : "Model families the household can choose per workload",
+            "items" : {
+              "$ref" : "#/components/schemas/ModelOptionDto"
+            },
+            "type" : "array"
           },
           "spentToday" : {
             "type" : "number"
@@ -89,7 +118,16 @@
             "type" : "array"
           }
         },
-        "required" : [ "configured", "currency", "dailyCostLimit", "maxConcurrentRuns", "memberAllowed", "spentToday", "workloads" ],
+        "required" : [
+          "configured",
+          "currency",
+          "dailyCostLimit",
+          "maxConcurrentRuns",
+          "memberAllowed",
+          "models",
+          "spentToday",
+          "workloads"
+        ],
         "type" : "object"
       },
       "AiSourceDto" : {
@@ -105,7 +143,11 @@
             "type" : "integer"
           }
         },
-        "required" : [ "id", "kind", "version" ],
+        "required" : [
+          "id",
+          "kind",
+          "version"
+        ],
         "type" : "object"
       },
       "AliasesRequest" : {
@@ -121,7 +163,10 @@
             "type" : "integer"
           }
         },
-        "required" : [ "aliases", "expectedVersion" ],
+        "required" : [
+          "aliases",
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "AnalysisDto" : {
@@ -134,26 +179,44 @@
           },
           "completedAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "correspondentLabelId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "documentDate" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "documentDateEvidence" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "documentDateStatus" : {
             "type" : "string"
           },
           "failureCategory" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "failureCode" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "flags" : {
             "items" : {
@@ -172,27 +235,48 @@
             "type" : "array"
           },
           "model" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "nextAttemptAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "requestedAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "requestedBy" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "runId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "runState" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "shortTopic" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "state" : {
             "type" : "string"
@@ -204,20 +288,38 @@
             "type" : "array"
           },
           "title" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "titleDecision" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "trigger" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "version" : {
             "format" : "int64",
             "type" : "integer"
           }
         },
-        "required" : [ "candidates", "documentDateStatus", "flags", "generation", "history", "state", "subjects", "version" ],
+        "required" : [
+          "candidates",
+          "documentDateStatus",
+          "flags",
+          "generation",
+          "history",
+          "state",
+          "subjects",
+          "version"
+        ],
         "type" : "object"
       },
       "AnalysisVersionRequest" : {
@@ -227,7 +329,9 @@
             "type" : "integer"
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "AppearanceDto" : {
@@ -236,11 +340,18 @@
             "type" : "boolean"
           },
           "palette" : {
-            "enum" : [ "STREETKID", "CORPO", "NOMAD" ],
+            "enum" : [
+              "STREETKID",
+              "CORPO",
+              "NOMAD"
+            ],
             "type" : "string"
           }
         },
-        "required" : [ "effects", "palette" ],
+        "required" : [
+          "effects",
+          "palette"
+        ],
         "type" : "object"
       },
       "AssignRequest" : {
@@ -250,10 +361,15 @@
             "type" : "integer"
           },
           "ownerId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "BackupHealthDto" : {
@@ -261,26 +377,48 @@
         "properties" : {
           "failureCode" : {
             "description" : "Stable failure code, set only when the state is FAILED or UNKNOWN",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "lastAttemptAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "lastSuccessAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "runningSince" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "state" : {
-            "enum" : [ "OK", "RUNNING", "FAILED", "STALE", "INTERRUPTED", "NOT_CONFIGURED", "UNKNOWN" ],
+            "enum" : [
+              "OK",
+              "RUNNING",
+              "FAILED",
+              "STALE",
+              "INTERRUPTED",
+              "NOT_CONFIGURED",
+              "UNKNOWN"
+            ],
             "type" : "string"
           }
         },
-        "required" : [ "state" ],
+        "required" : [
+          "state"
+        ],
         "type" : "object"
       },
       "BulkAnalysisRequest" : {
@@ -292,7 +430,9 @@
             "type" : "array"
           }
         },
-        "required" : [ "documentIds" ],
+        "required" : [
+          "documentIds"
+        ],
         "type" : "object"
       },
       "BulkAnalysisResponse" : {
@@ -310,7 +450,10 @@
             "type" : "array"
           }
         },
-        "required" : [ "requested", "skipped" ],
+        "required" : [
+          "requested",
+          "skipped"
+        ],
         "type" : "object"
       },
       "CalendarStatusDto" : {
@@ -319,7 +462,10 @@
             "type" : "boolean"
           },
           "provider" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "readSupported" : {
             "type" : "boolean"
@@ -328,7 +474,11 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "connected", "readSupported", "writeSupported" ],
+        "required" : [
+          "connected",
+          "readSupported",
+          "writeSupported"
+        ],
         "type" : "object"
       },
       "CancellationReviewDto" : {
@@ -339,7 +489,10 @@
           },
           "contractEnd" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "contractId" : {
             "type" : "string"
@@ -356,7 +509,13 @@
             "type" : "string"
           }
         },
-        "required" : [ "cancellationDeadline", "contractId", "contractName", "contractVersion", "reminderDate" ],
+        "required" : [
+          "cancellationDeadline",
+          "contractId",
+          "contractName",
+          "contractVersion",
+          "reminderDate"
+        ],
         "type" : "object"
       },
       "CandidateDecisionRequest" : {
@@ -373,20 +532,30 @@
             "type" : "string"
           }
         },
-        "required" : [ "accept", "expectedVersion", "key" ],
+        "required" : [
+          "accept",
+          "expectedVersion",
+          "key"
+        ],
         "type" : "object"
       },
       "CandidateDto" : {
         "properties" : {
           "confidence" : {
             "format" : "double",
-            "type" : [ "number", "null" ]
+            "type" : [
+              "number",
+              "null"
+            ]
           },
           "decision" : {
             "type" : "string"
           },
           "evidence" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "facet" : {
             "type" : "string"
@@ -395,13 +564,21 @@
             "type" : "string"
           },
           "labelId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "name" : {
             "type" : "string"
           }
         },
-        "required" : [ "decision", "facet", "key", "name" ],
+        "required" : [
+          "decision",
+          "facet",
+          "key",
+          "name"
+        ],
         "type" : "object"
       },
       "CategoryDto" : {
@@ -429,14 +606,24 @@
             "type" : "string"
           },
           "parentId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "version" : {
             "format" : "int64",
             "type" : "integer"
           }
         },
-        "required" : [ "documentCount", "id", "impliedLabelIds", "impliedSubjects", "name", "version" ],
+        "required" : [
+          "documentCount",
+          "id",
+          "impliedLabelIds",
+          "impliedSubjects",
+          "name",
+          "version"
+        ],
         "type" : "object"
       },
       "CategoryListResponse" : {
@@ -456,7 +643,11 @@
             "type" : "integer"
           }
         },
-        "required" : [ "categories", "totalDocuments", "unsortedCount" ],
+        "required" : [
+          "categories",
+          "totalDocuments",
+          "unsortedCount"
+        ],
         "type" : "object"
       },
       "CategoryRefDto" : {
@@ -468,26 +659,59 @@
             "type" : "string"
           }
         },
-        "required" : [ "id", "name" ],
+        "required" : [
+          "id",
+          "name"
+        ],
         "type" : "object"
       },
       "CategoryRequest" : {
         "properties" : {
           "categoryId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "expectedVersion" : {
             "format" : "int64",
             "type" : "integer"
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
+        "type" : "object"
+      },
+      "ChooseModelRequest" : {
+        "description" : "New model family of a workload with the choice version the member saw",
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "family" : {
+            "enum" : [
+              "opus",
+              "sonnet",
+              "haiku"
+            ],
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "expectedVersion",
+          "family"
+        ],
         "type" : "object"
       },
       "ClassificationDto" : {
         "properties" : {
           "categoryId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "folderSubjects" : {
             "items" : {
@@ -519,7 +743,13 @@
             "type" : "integer"
           }
         },
-        "required" : [ "folderSubjects", "labels", "path", "placement", "version" ],
+        "required" : [
+          "folderSubjects",
+          "labels",
+          "path",
+          "placement",
+          "version"
+        ],
         "type" : "object"
       },
       "ConflictDto" : {
@@ -531,7 +761,10 @@
             "type" : "array"
           },
           "establishedFactId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "kind" : {
             "type" : "string"
@@ -540,7 +773,11 @@
             "type" : "string"
           }
         },
-        "required" : [ "conflictingFactIds", "kind", "type" ],
+        "required" : [
+          "conflictingFactIds",
+          "kind",
+          "type"
+        ],
         "type" : "object"
       },
       "ContractDto" : {
@@ -552,7 +789,10 @@
             "type" : "array"
           },
           "counterparty" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "createdAt" : {
             "format" : "date-time",
@@ -602,7 +842,20 @@
             "type" : "integer"
           }
         },
-        "required" : [ "conflicts", "createdAt", "createdBy", "deadline", "evaluatedOn", "facts", "id", "name", "sources", "status", "updatedAt", "version" ],
+        "required" : [
+          "conflicts",
+          "createdAt",
+          "createdBy",
+          "deadline",
+          "evaluatedOn",
+          "facts",
+          "id",
+          "name",
+          "sources",
+          "status",
+          "updatedAt",
+          "version"
+        ],
         "type" : "object"
       },
       "ContractSourceDto" : {
@@ -611,20 +864,32 @@
             "type" : "string"
           },
           "documentTitle" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "documentTrashed" : {
             "type" : "boolean"
           },
           "page" : {
             "format" : "int32",
-            "type" : [ "integer", "null" ]
+            "type" : [
+              "integer",
+              "null"
+            ]
           },
           "quote" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "documentId", "documentTrashed" ],
+        "required" : [
+          "documentId",
+          "documentTrashed"
+        ],
         "type" : "object"
       },
       "ContractTrashDto" : {
@@ -641,7 +906,11 @@
             "type" : "string"
           }
         },
-        "required" : [ "restorableUntil", "trashedAt", "trashedBy" ],
+        "required" : [
+          "restorableUntil",
+          "trashedAt",
+          "trashedBy"
+        ],
         "type" : "object"
       },
       "ContractVersionRequest" : {
@@ -651,7 +920,9 @@
             "type" : "integer"
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "CorrectFactRequest" : {
@@ -661,54 +932,82 @@
             "type" : "integer"
           },
           "note" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "validFrom" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "validUntil" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "value" : {
             "minLength" : 1,
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "value" ],
+        "required" : [
+          "expectedVersion",
+          "value"
+        ],
         "type" : "object"
       },
       "CreateCategoryRequest" : {
         "properties" : {
           "id" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "name" : {
             "minLength" : 1,
             "type" : "string"
           },
           "parentId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "name" ],
+        "required" : [
+          "name"
+        ],
         "type" : "object"
       },
       "CreateContractRequest" : {
         "properties" : {
           "counterparty" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "name" : {
             "minLength" : 1,
             "type" : "string"
           },
           "sourceDocumentId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "name" ],
+        "required" : [
+          "name"
+        ],
         "type" : "object"
       },
       "CreateLabelRequest" : {
@@ -718,41 +1017,64 @@
             "type" : "string"
           },
           "id" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "name" : {
             "minLength" : 1,
             "type" : "string"
           }
         },
-        "required" : [ "facet", "name" ],
+        "required" : [
+          "facet",
+          "name"
+        ],
         "type" : "object"
       },
       "CreateTaskRequest" : {
         "properties" : {
           "dueDate" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "note" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "ownerId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "plannedDate" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "sourceDocumentId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "title" : {
             "minLength" : 1,
             "type" : "string"
           }
         },
-        "required" : [ "title" ],
+        "required" : [
+          "title"
+        ],
         "type" : "object"
       },
       "DeadlineDto" : {
@@ -764,11 +1086,17 @@
             "type" : "array"
           },
           "basis" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "contractEnd" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "contradicting" : {
             "items" : {
@@ -778,7 +1106,10 @@
           },
           "deadline" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "determined" : {
             "type" : "boolean"
@@ -790,7 +1121,12 @@
             "type" : "array"
           }
         },
-        "required" : [ "basedOn", "contradicting", "determined", "missing" ],
+        "required" : [
+          "basedOn",
+          "contradicting",
+          "determined",
+          "missing"
+        ],
         "type" : "object"
       },
       "DeadlineItemDto" : {
@@ -810,7 +1146,10 @@
           },
           "contractEnd" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "contractId" : {
             "type" : "string"
@@ -820,19 +1159,33 @@
             "type" : "integer"
           },
           "counterparty" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "name" : {
             "type" : "string"
           },
           "sourceDocumentId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "status" : {
             "type" : "string"
           }
         },
-        "required" : [ "basedOnFactIds", "basis", "cancellationDeadline", "contractId", "contractVersion", "name", "status" ],
+        "required" : [
+          "basedOnFactIds",
+          "basis",
+          "cancellationDeadline",
+          "contractId",
+          "contractVersion",
+          "name",
+          "status"
+        ],
         "type" : "object"
       },
       "DecisionRequest" : {
@@ -845,13 +1198,19 @@
             "type" : "integer"
           }
         },
-        "required" : [ "accept", "expectedVersion" ],
+        "required" : [
+          "accept",
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "DeletionResponse" : {
         "properties" : {
           "contentsMovedTo" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "deletedId" : {
             "type" : "string"
@@ -873,7 +1232,13 @@
             "type" : "integer"
           }
         },
-        "required" : [ "deletedId", "documentsMoved", "foldersMoved", "labelsKept", "subjectsKept" ],
+        "required" : [
+          "deletedId",
+          "documentsMoved",
+          "foldersMoved",
+          "labelsKept",
+          "subjectsKept"
+        ],
         "type" : "object"
       },
       "DiskSpaceDto" : {
@@ -881,31 +1246,51 @@
         "properties" : {
           "freeBytes" : {
             "format" : "int64",
-            "type" : [ "integer", "null" ]
+            "type" : [
+              "integer",
+              "null"
+            ]
           },
           "lowBelowBytes" : {
             "description" : "The disk is LOW below this many free bytes",
             "format" : "int64",
-            "type" : [ "integer", "null" ]
+            "type" : [
+              "integer",
+              "null"
+            ]
           },
           "measuredAt" : {
             "format" : "date-time",
             "type" : "string"
           },
           "name" : {
-            "enum" : [ "data", "backup" ],
+            "enum" : [
+              "data",
+              "backup"
+            ],
             "type" : "string"
           },
           "state" : {
-            "enum" : [ "OK", "LOW", "UNKNOWN" ],
+            "enum" : [
+              "OK",
+              "LOW",
+              "UNKNOWN"
+            ],
             "type" : "string"
           },
           "totalBytes" : {
             "format" : "int64",
-            "type" : [ "integer", "null" ]
+            "type" : [
+              "integer",
+              "null"
+            ]
           }
         },
-        "required" : [ "measuredAt", "name", "state" ],
+        "required" : [
+          "measuredAt",
+          "name",
+          "state"
+        ],
         "type" : "object"
       },
       "DocumentDto" : {
@@ -975,13 +1360,36 @@
             "type" : "integer"
           }
         },
-        "required" : [ "analysis", "archivePdfAvailable", "checksumSha256", "classification", "contentType", "filename", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "textRecognition", "title", "titleOrigin", "uploadedAt", "uploadedBy", "version" ],
+        "required" : [
+          "analysis",
+          "archivePdfAvailable",
+          "checksumSha256",
+          "classification",
+          "contentType",
+          "filename",
+          "id",
+          "originalAvailable",
+          "originalFilename",
+          "processing",
+          "sizeBytes",
+          "subjects",
+          "textRecognition",
+          "title",
+          "titleOrigin",
+          "uploadedAt",
+          "uploadedBy",
+          "version"
+        ],
         "type" : "object"
       },
       "DocumentListResponse" : {
         "properties" : {
           "contentSearch" : {
-            "enum" : [ "NOT_APPLIED", "READY", "UNAVAILABLE" ],
+            "enum" : [
+              "NOT_APPLIED",
+              "READY",
+              "UNAVAILABLE"
+            ],
             "type" : "string"
           },
           "facets" : {
@@ -1014,7 +1422,16 @@
             "type" : "integer"
           }
         },
-        "required" : [ "contentSearch", "facets", "items", "matchingDocuments", "notContentIndexed", "page", "size", "totalDocuments" ],
+        "required" : [
+          "contentSearch",
+          "facets",
+          "items",
+          "matchingDocuments",
+          "notContentIndexed",
+          "page",
+          "size",
+          "totalDocuments"
+        ],
         "type" : "object"
       },
       "DocumentTrashDto" : {
@@ -1031,21 +1448,30 @@
             "type" : "string"
           }
         },
-        "required" : [ "restorableUntil", "trashedAt", "trashedBy" ],
+        "required" : [
+          "restorableUntil",
+          "trashedAt",
+          "trashedBy"
+        ],
         "type" : "object"
       },
       "DueDateRequest" : {
         "properties" : {
           "dueDate" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "expectedVersion" : {
             "format" : "int64",
             "type" : "integer"
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "EditTaskRequest" : {
@@ -1055,14 +1481,20 @@
             "type" : "integer"
           },
           "note" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "title" : {
             "minLength" : 1,
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "title" ],
+        "required" : [
+          "expectedVersion",
+          "title"
+        ],
         "type" : "object"
       },
       "EnterFactRequest" : {
@@ -1072,17 +1504,29 @@
             "type" : "integer"
           },
           "note" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "sourceDocumentId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "sourcePage" : {
             "format" : "int32",
-            "type" : [ "integer", "null" ]
+            "type" : [
+              "integer",
+              "null"
+            ]
           },
           "sourceQuote" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "type" : {
             "minLength" : 1,
@@ -1090,18 +1534,28 @@
           },
           "validFrom" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "validUntil" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "value" : {
             "minLength" : 1,
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "type", "value" ],
+        "required" : [
+          "expectedVersion",
+          "type",
+          "value"
+        ],
         "type" : "object"
       },
       "ExportSummaryDto" : {
@@ -1122,7 +1576,10 @@
             "type" : "string"
           },
           "location" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "memberCount" : {
             "format" : "int32",
@@ -1139,7 +1596,15 @@
             "type" : "integer"
           }
         },
-        "required" : [ "contractCount", "createdAt", "documentCount", "generation", "memberCount", "missingOriginals", "taskCount" ],
+        "required" : [
+          "contractCount",
+          "createdAt",
+          "documentCount",
+          "generation",
+          "memberCount",
+          "missingOriginals",
+          "taskCount"
+        ],
         "type" : "object"
       },
       "FacetCounts" : {
@@ -1162,7 +1627,10 @@
             "type" : "object"
           }
         },
-        "required" : [ "missing", "values" ],
+        "required" : [
+          "missing",
+          "values"
+        ],
         "type" : "object"
       },
       "FacetRequest" : {
@@ -1176,24 +1644,39 @@
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "facet" ],
+        "required" : [
+          "expectedVersion",
+          "facet"
+        ],
         "type" : "object"
       },
       "FactDto" : {
         "properties" : {
           "confidence" : {
             "format" : "double",
-            "type" : [ "number", "null" ]
+            "type" : [
+              "number",
+              "null"
+            ]
           },
           "corrects" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "decidedAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "decidedBy" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "effective" : {
             "type" : "boolean"
@@ -1209,7 +1692,10 @@
             "type" : "string"
           },
           "observedBy" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "origin" : {
             "type" : "string"
@@ -1218,25 +1704,37 @@
             "type" : "string"
           },
           "runRef" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "source" : {
             "$ref" : "#/components/schemas/ContractSourceDto",
             "type" : "null"
           },
           "supersededBy" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "type" : {
             "type" : "string"
           },
           "validFrom" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "validUntil" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "value" : {
             "type" : "string"
@@ -1245,7 +1743,17 @@
             "type" : "string"
           }
         },
-        "required" : [ "effective", "id", "note", "observedAt", "origin", "reviewState", "type", "value", "valueKind" ],
+        "required" : [
+          "effective",
+          "id",
+          "note",
+          "observedAt",
+          "origin",
+          "reviewState",
+          "type",
+          "value",
+          "valueKind"
+        ],
         "type" : "object"
       },
       "FilenameDto" : {
@@ -1254,13 +1762,19 @@
             "type" : "string"
           },
           "override" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "source" : {
             "type" : "string"
           }
         },
-        "required" : [ "filename", "source" ],
+        "required" : [
+          "filename",
+          "source"
+        ],
         "type" : "object"
       },
       "FilenameRequest" : {
@@ -1270,40 +1784,65 @@
             "type" : "integer"
           },
           "stem" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "GeneratedDto" : {
         "properties" : {
           "completedAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "documentDate" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "generation" : {
             "format" : "int32",
             "type" : "integer"
           },
           "model" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "runRef" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "shortTopic" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "title" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "generation" ],
+        "required" : [
+          "generation"
+        ],
         "type" : "object"
       },
       "HealthCheckDto" : {
@@ -1315,7 +1854,10 @@
           },
           "lastSuccessAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "params" : {
             "additionalProperties" : {
@@ -1329,11 +1871,20 @@
             "type" : "string"
           },
           "state" : {
-            "enum" : [ "OK", "UNCHECKED", "PROBLEM" ],
+            "enum" : [
+              "OK",
+              "UNCHECKED",
+              "PROBLEM"
+            ],
             "type" : "string"
           }
         },
-        "required" : [ "area", "params", "reason", "state" ],
+        "required" : [
+          "area",
+          "params",
+          "reason",
+          "state"
+        ],
         "type" : "object"
       },
       "ImplicationsRequest" : {
@@ -1355,7 +1906,11 @@
             "type" : "array"
           }
         },
-        "required" : [ "expectedVersion", "labelIds", "subjects" ],
+        "required" : [
+          "expectedVersion",
+          "labelIds",
+          "subjects"
+        ],
         "type" : "object"
       },
       "JobHealthDto" : {
@@ -1371,62 +1926,108 @@
           },
           "lastFailureAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "lastSuccessAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "name" : {
             "type" : "string"
           },
           "nextRunAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "state" : {
-            "enum" : [ "OK", "FAILING", "STALE", "PENDING", "NOT_SCHEDULED", "UNKNOWN" ],
+            "enum" : [
+              "OK",
+              "FAILING",
+              "STALE",
+              "PENDING",
+              "NOT_SCHEDULED",
+              "UNKNOWN"
+            ],
             "type" : "string"
           }
         },
-        "required" : [ "consecutiveFailures", "intervalSeconds", "name", "state" ],
+        "required" : [
+          "consecutiveFailures",
+          "intervalSeconds",
+          "name",
+          "state"
+        ],
         "type" : "object"
       },
       "LabelChipDto" : {
         "properties" : {
           "builtinKey" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "confidence" : {
             "format" : "double",
-            "type" : [ "number", "null" ]
+            "type" : [
+              "number",
+              "null"
+            ]
           },
           "facet" : {
             "type" : "string"
           },
           "folderId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "labelId" : {
             "type" : "string"
           },
           "name" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "origin" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "reviewState" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "source" : {
             "type" : "string"
           },
           "sourceRef" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "facet", "labelId", "source" ],
+        "required" : [
+          "facet",
+          "labelId",
+          "source"
+        ],
         "type" : "object"
       },
       "LabelDto" : {
@@ -1442,7 +2043,10 @@
             "type" : "integer"
           },
           "builtinKey" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "facet" : {
             "type" : "string"
@@ -1455,10 +2059,16 @@
             "type" : "string"
           },
           "mergedInto" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "name" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "status" : {
             "type" : "string"
@@ -1472,7 +2082,16 @@
             "type" : "integer"
           }
         },
-        "required" : [ "aliases", "assignmentCount", "facet", "folderCount", "id", "status", "suggestionCount", "version" ],
+        "required" : [
+          "aliases",
+          "assignmentCount",
+          "facet",
+          "folderCount",
+          "id",
+          "status",
+          "suggestionCount",
+          "version"
+        ],
         "type" : "object"
       },
       "LabelVersionRequest" : {
@@ -1482,7 +2101,9 @@
             "type" : "integer"
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "LabelsRequest" : {
@@ -1498,17 +2119,25 @@
             "type" : "array"
           }
         },
-        "required" : [ "expectedVersion", "labelIds" ],
+        "required" : [
+          "expectedVersion",
+          "labelIds"
+        ],
         "type" : "object"
       },
       "LocaleRequest" : {
         "properties" : {
           "locale" : {
-            "enum" : [ "DE", "EN" ],
+            "enum" : [
+              "DE",
+              "EN"
+            ],
             "type" : "string"
           }
         },
-        "required" : [ "locale" ],
+        "required" : [
+          "locale"
+        ],
         "type" : "object"
       },
       "LoginRequest" : {
@@ -1522,7 +2151,10 @@
             "type" : "string"
           }
         },
-        "required" : [ "password", "username" ],
+        "required" : [
+          "password",
+          "username"
+        ],
         "type" : "object"
       },
       "MarkAllReadResponse" : {
@@ -1532,7 +2164,9 @@
             "type" : "integer"
           }
         },
-        "required" : [ "marked" ],
+        "required" : [
+          "marked"
+        ],
         "type" : "object"
       },
       "MemberDto" : {
@@ -1544,18 +2178,30 @@
             "type" : "string"
           },
           "kind" : {
-            "enum" : [ "PERSON", "ASSISTANT" ],
+            "enum" : [
+              "PERSON",
+              "ASSISTANT"
+            ],
             "type" : "string"
           },
           "locale" : {
-            "enum" : [ "DE", "EN" ],
+            "enum" : [
+              "DE",
+              "EN"
+            ],
             "type" : "string"
           },
           "username" : {
             "type" : "string"
           }
         },
-        "required" : [ "displayName", "id", "kind", "locale", "username" ],
+        "required" : [
+          "displayName",
+          "id",
+          "kind",
+          "locale",
+          "username"
+        ],
         "type" : "object"
       },
       "MergeRequest" : {
@@ -1569,7 +2215,10 @@
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "targetId" ],
+        "required" : [
+          "expectedVersion",
+          "targetId"
+        ],
         "type" : "object"
       },
       "MergeResponse" : {
@@ -1586,7 +2235,44 @@
             "$ref" : "#/components/schemas/LabelDto"
           }
         },
-        "required" : [ "documentsUpdated", "foldersUpdated", "target" ],
+        "required" : [
+          "documentsUpdated",
+          "foldersUpdated",
+          "target"
+        ],
+        "type" : "object"
+      },
+      "ModelOptionDto" : {
+        "description" : "A model family with the model the Claude API uses for it and its list prices per million tokens; the owner's subscription uses the newest model of the family that Claude Code offers",
+        "properties" : {
+          "family" : {
+            "enum" : [
+              "opus",
+              "sonnet",
+              "haiku"
+            ],
+            "type" : "string"
+          },
+          "inputPerMillion" : {
+            "type" : [
+              "number",
+              "null"
+            ]
+          },
+          "model" : {
+            "type" : "string"
+          },
+          "outputPerMillion" : {
+            "type" : [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required" : [
+          "family",
+          "model"
+        ],
         "type" : "object"
       },
       "MoveCategoryRequest" : {
@@ -1596,10 +2282,15 @@
             "type" : "integer"
           },
           "parentId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "NoticeDto" : {
@@ -1615,10 +2306,16 @@
             "type" : "string"
           },
           "linkId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "linkType" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "params" : {
             "additionalProperties" : {
@@ -1628,10 +2325,18 @@
           },
           "readAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "createdAt", "id", "kind", "params" ],
+        "required" : [
+          "createdAt",
+          "id",
+          "kind",
+          "params"
+        ],
         "type" : "object"
       },
       "PasswordChangeRequest" : {
@@ -1645,7 +2350,10 @@
             "type" : "string"
           }
         },
-        "required" : [ "currentPassword", "newPassword" ],
+        "required" : [
+          "currentPassword",
+          "newPassword"
+        ],
         "type" : "object"
       },
       "PlacementDecisionRequest" : {
@@ -1655,36 +2363,56 @@
             "type" : "integer"
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "PlacementDto" : {
         "properties" : {
           "at" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "by" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "byMember" : {
             "type" : "boolean"
           },
           "confidence" : {
             "format" : "double",
-            "type" : [ "number", "null" ]
+            "type" : [
+              "number",
+              "null"
+            ]
           },
           "origin" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "revertible" : {
             "type" : "boolean"
           },
           "sourceRef" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "byMember", "revertible" ],
+        "required" : [
+          "byMember",
+          "revertible"
+        ],
         "type" : "object"
       },
       "PlacementItem" : {
@@ -1698,13 +2426,19 @@
             "type" : "integer"
           }
         },
-        "required" : [ "documentId", "expectedVersion" ],
+        "required" : [
+          "documentId",
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "PlacementRequest" : {
         "properties" : {
           "categoryId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "documents" : {
             "items" : {
@@ -1713,7 +2447,9 @@
             "type" : "array"
           }
         },
-        "required" : [ "documents" ],
+        "required" : [
+          "documents"
+        ],
         "type" : "object"
       },
       "PlacementResponse" : {
@@ -1723,31 +2459,51 @@
             "type" : "integer"
           }
         },
-        "required" : [ "moved" ],
+        "required" : [
+          "moved"
+        ],
         "type" : "object"
       },
       "PlacementSuggestionDto" : {
         "properties" : {
           "anchorFolderId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "anchorVersion" : {
             "format" : "int64",
-            "type" : [ "integer", "null" ]
+            "type" : [
+              "integer",
+              "null"
+            ]
           },
           "confidence" : {
             "format" : "double",
-            "type" : [ "number", "null" ]
+            "type" : [
+              "number",
+              "null"
+            ]
           },
           "createdAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "evidence" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "folderId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "impliedLabels" : {
             "items" : {
@@ -1765,7 +2521,10 @@
             "type" : "string"
           },
           "model" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "newFolders" : {
             "items" : {
@@ -1784,10 +2543,20 @@
             "type" : "array"
           },
           "runRef" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "impliedLabels", "impliedSubjects", "key", "newFolders", "otherDocuments", "path" ],
+        "required" : [
+          "impliedLabels",
+          "impliedSubjects",
+          "key",
+          "newFolders",
+          "otherDocuments",
+          "path"
+        ],
         "type" : "object"
       },
       "PlanWorkRequest" : {
@@ -1798,17 +2567,25 @@
           },
           "plannedDate" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "ProcessingDto" : {
         "properties" : {
           "archivedAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "attempts" : {
             "format" : "int32",
@@ -1816,21 +2593,36 @@
           },
           "lastErrorAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "lastErrorCode" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "lastErrorMessage" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "nextAttemptAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "paperlessDocumentId" : {
             "format" : "int32",
-            "type" : [ "integer", "null" ]
+            "type" : [
+              "integer",
+              "null"
+            ]
           },
           "retryScheduled" : {
             "type" : "boolean"
@@ -1839,7 +2631,11 @@
             "type" : "string"
           }
         },
-        "required" : [ "attempts", "retryScheduled", "state" ],
+        "required" : [
+          "attempts",
+          "retryScheduled",
+          "state"
+        ],
         "type" : "object"
       },
       "RenameCategoryRequest" : {
@@ -1853,7 +2649,10 @@
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "name" ],
+        "required" : [
+          "expectedVersion",
+          "name"
+        ],
         "type" : "object"
       },
       "RenameContractRequest" : {
@@ -1867,7 +2666,10 @@
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "name" ],
+        "required" : [
+          "expectedVersion",
+          "name"
+        ],
         "type" : "object"
       },
       "RenameLabelRequest" : {
@@ -1881,7 +2683,10 @@
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "name" ],
+        "required" : [
+          "expectedVersion",
+          "name"
+        ],
         "type" : "object"
       },
       "RenameRequest" : {
@@ -1895,7 +2700,10 @@
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "title" ],
+        "required" : [
+          "expectedVersion",
+          "title"
+        ],
         "type" : "object"
       },
       "ReviewItemDto" : {
@@ -1960,7 +2768,24 @@
             "type" : "integer"
           }
         },
-        "required" : [ "actions", "category", "createdAt", "id", "linkId", "linkType", "params", "priority", "reason", "sourceId", "sourceKind", "sourceVersion", "status", "titleKey", "updatedAt", "version" ],
+        "required" : [
+          "actions",
+          "category",
+          "createdAt",
+          "id",
+          "linkId",
+          "linkType",
+          "params",
+          "priority",
+          "reason",
+          "sourceId",
+          "sourceKind",
+          "sourceVersion",
+          "status",
+          "titleKey",
+          "updatedAt",
+          "version"
+        ],
         "type" : "object"
       },
       "ReviewOpenCountResponse" : {
@@ -1970,7 +2795,9 @@
             "type" : "integer"
           }
         },
-        "required" : [ "open" ],
+        "required" : [
+          "open"
+        ],
         "type" : "object"
       },
       "ReviewVersionRequest" : {
@@ -1980,7 +2807,9 @@
             "type" : "integer"
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "RunDto" : {
@@ -2003,17 +2832,29 @@
             "type" : "integer"
           },
           "failureCategory" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "failureCode" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "failureMessage" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "finishedAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "id" : {
             "format" : "uuid",
@@ -2039,11 +2880,17 @@
           },
           "nextAttemptAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "output" : {
             "description" : "Validated result as JSON",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "outputTokens" : {
             "format" : "int64",
@@ -2062,7 +2909,10 @@
           },
           "retryOf" : {
             "format" : "uuid",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "sources" : {
             "items" : {
@@ -2071,7 +2921,14 @@
             "type" : "array"
           },
           "state" : {
-            "enum" : [ "QUEUED", "RUNNING", "WAITING_RETRY", "SUCCEEDED", "FAILED", "CANCELLED" ],
+            "enum" : [
+              "QUEUED",
+              "RUNNING",
+              "WAITING_RETRY",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED"
+            ],
             "type" : "string"
           },
           "steps" : {
@@ -2089,11 +2946,38 @@
             "type" : "integer"
           },
           "workload" : {
-            "enum" : [ "CONNECTION_CHECK", "DOCUMENT_CLASSIFICATION", "DOCUMENT_REVIEW", "CHAT" ],
+            "enum" : [
+              "CONNECTION_CHECK",
+              "DOCUMENT_CLASSIFICATION",
+              "DOCUMENT_REVIEW",
+              "CHAT"
+            ],
             "type" : "string"
           }
         },
-        "required" : [ "attempt", "cancelRequested", "cost", "currency", "deniedToolCalls", "id", "inputTokens", "maxAttempts", "maxCost", "model", "modelCalls", "outputTokens", "provider", "requestedAt", "requestedBy", "sources", "state", "steps", "toolCalls", "version", "workload" ],
+        "required" : [
+          "attempt",
+          "cancelRequested",
+          "cost",
+          "currency",
+          "deniedToolCalls",
+          "id",
+          "inputTokens",
+          "maxAttempts",
+          "maxCost",
+          "model",
+          "modelCalls",
+          "outputTokens",
+          "provider",
+          "requestedAt",
+          "requestedBy",
+          "sources",
+          "state",
+          "steps",
+          "toolCalls",
+          "version",
+          "workload"
+        ],
         "type" : "object"
       },
       "SessionResponse" : {
@@ -2105,7 +2989,10 @@
             "$ref" : "#/components/schemas/MemberDto"
           }
         },
-        "required" : [ "appearance", "member" ],
+        "required" : [
+          "appearance",
+          "member"
+        ],
         "type" : "object"
       },
       "SkippedDto" : {
@@ -2117,7 +3004,10 @@
             "type" : "string"
           }
         },
-        "required" : [ "documentId", "reason" ],
+        "required" : [
+          "documentId",
+          "reason"
+        ],
         "type" : "object"
       },
       "SourceDto" : {
@@ -2126,13 +3016,19 @@
             "type" : "string"
           },
           "documentTitle" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "documentTrashed" : {
             "type" : "boolean"
           }
         },
-        "required" : [ "documentId", "documentTrashed" ],
+        "required" : [
+          "documentId",
+          "documentTrashed"
+        ],
         "type" : "object"
       },
       "StatusRequest" : {
@@ -2146,7 +3042,10 @@
             "type" : "string"
           }
         },
-        "required" : [ "expectedVersion", "status" ],
+        "required" : [
+          "expectedVersion",
+          "status"
+        ],
         "type" : "object"
       },
       "StepDto" : {
@@ -2160,21 +3059,38 @@
             "type" : "integer"
           },
           "cost" : {
-            "type" : [ "number", "null" ]
+            "type" : [
+              "number",
+              "null"
+            ]
           },
           "inputTokens" : {
             "format" : "int64",
             "type" : "integer"
           },
           "kind" : {
-            "enum" : [ "ATTEMPT_STARTED", "MODEL_CALL", "TOOL_CALL", "TOOL_DENIED", "ATTEMPT_FAILED", "CANCELLED", "COMPLETED" ],
+            "enum" : [
+              "ATTEMPT_STARTED",
+              "MODEL_CALL",
+              "TOOL_CALL",
+              "TOOL_DENIED",
+              "ATTEMPT_FAILED",
+              "CANCELLED",
+              "COMPLETED"
+            ],
             "type" : "string"
           },
           "name" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "outcome" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "outputTokens" : {
             "format" : "int64",
@@ -2185,7 +3101,14 @@
             "type" : "integer"
           }
         },
-        "required" : [ "at", "attempt", "inputTokens", "kind", "outputTokens", "seq" ],
+        "required" : [
+          "at",
+          "attempt",
+          "inputTokens",
+          "kind",
+          "outputTokens",
+          "seq"
+        ],
         "type" : "object"
       },
       "StorageHealthDto" : {
@@ -2200,7 +3123,10 @@
             "type" : "array"
           }
         },
-        "required" : [ "backup", "disks" ],
+        "required" : [
+          "backup",
+          "disks"
+        ],
         "type" : "object"
       },
       "SubjectDecisionRequest" : {
@@ -2216,7 +3142,11 @@
             "$ref" : "#/components/schemas/SubjectDto"
           }
         },
-        "required" : [ "accept", "expectedVersion", "subject" ],
+        "required" : [
+          "accept",
+          "expectedVersion",
+          "subject"
+        ],
         "type" : "object"
       },
       "SubjectDto" : {
@@ -2225,29 +3155,43 @@
             "type" : "string"
           },
           "memberId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           }
         },
-        "required" : [ "kind" ],
+        "required" : [
+          "kind"
+        ],
         "type" : "object"
       },
       "SubjectSuggestionDto" : {
         "properties" : {
           "confidence" : {
             "format" : "double",
-            "type" : [ "number", "null" ]
+            "type" : [
+              "number",
+              "null"
+            ]
           },
           "decision" : {
             "type" : "string"
           },
           "evidence" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "subject" : {
             "$ref" : "#/components/schemas/SubjectDto"
           }
         },
-        "required" : [ "decision", "subject" ],
+        "required" : [
+          "decision",
+          "subject"
+        ],
         "type" : "object"
       },
       "SubjectsRequest" : {
@@ -2263,7 +3207,10 @@
             "type" : "array"
           }
         },
-        "required" : [ "expectedVersion", "subjects" ],
+        "required" : [
+          "expectedVersion",
+          "subjects"
+        ],
         "type" : "object"
       },
       "SummaryDto" : {
@@ -2274,10 +3221,16 @@
           },
           "contractEnd" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "counterparty" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "deadline" : {
             "$ref" : "#/components/schemas/DeadlineDto"
@@ -2308,7 +3261,16 @@
             "type" : "integer"
           }
         },
-        "required" : [ "conflicts", "deadline", "id", "name", "pendingFacts", "status", "updatedAt", "version" ],
+        "required" : [
+          "conflicts",
+          "deadline",
+          "id",
+          "name",
+          "pendingFacts",
+          "status",
+          "updatedAt",
+          "version"
+        ],
         "type" : "object"
       },
       "SystemStatusDto" : {
@@ -2340,7 +3302,13 @@
             "$ref" : "#/components/schemas/StorageHealthDto"
           }
         },
-        "required" : [ "checks", "documentProcessing", "generatedAt", "jobs", "storage" ],
+        "required" : [
+          "checks",
+          "documentProcessing",
+          "generatedAt",
+          "jobs",
+          "storage"
+        ],
         "type" : "object"
       },
       "TaskDto" : {
@@ -2351,10 +3319,16 @@
           },
           "completedAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "completedBy" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "createdAt" : {
             "format" : "date-time",
@@ -2365,7 +3339,10 @@
           },
           "dueDate" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "id" : {
             "type" : "string"
@@ -2374,11 +3351,17 @@
             "type" : "string"
           },
           "ownerId" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "plannedDate" : {
             "format" : "date",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "source" : {
             "$ref" : "#/components/schemas/SourceDto",
@@ -2403,7 +3386,16 @@
             "type" : "integer"
           }
         },
-        "required" : [ "createdAt", "createdBy", "id", "note", "status", "title", "updatedAt", "version" ],
+        "required" : [
+          "createdAt",
+          "createdBy",
+          "id",
+          "note",
+          "status",
+          "title",
+          "updatedAt",
+          "version"
+        ],
         "type" : "object"
       },
       "TaskTrashDto" : {
@@ -2420,7 +3412,11 @@
             "type" : "string"
           }
         },
-        "required" : [ "restorableUntil", "trashedAt", "trashedBy" ],
+        "required" : [
+          "restorableUntil",
+          "trashedAt",
+          "trashedBy"
+        ],
         "type" : "object"
       },
       "TaskVersionRequest" : {
@@ -2430,29 +3426,49 @@
             "type" : "integer"
           }
         },
-        "required" : [ "expectedVersion" ],
+        "required" : [
+          "expectedVersion"
+        ],
         "type" : "object"
       },
       "TextRecognitionDto" : {
         "properties" : {
           "checkedAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "nextAttemptAt" : {
             "format" : "date-time",
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "recognizedCharacters" : {
             "format" : "int32",
-            "type" : [ "integer", "null" ]
+            "type" : [
+              "integer",
+              "null"
+            ]
           },
           "state" : {
-            "enum" : [ "NOT_ARCHIVED", "PENDING", "UNAVAILABLE", "NONE", "LITTLE", "RECOGNIZED" ],
+            "enum" : [
+              "NOT_ARCHIVED",
+              "PENDING",
+              "UNAVAILABLE",
+              "NONE",
+              "LITTLE",
+              "RECOGNIZED"
+            ],
             "type" : "string"
           }
         },
-        "required" : [ "state" ],
+        "required" : [
+          "state"
+        ],
         "type" : "object"
       },
       "TodayResponse" : {
@@ -2495,7 +3511,15 @@
             "type" : "array"
           }
         },
-        "required" : [ "calendar", "date", "dueToday", "overdue", "plannedToday", "unassigned", "upcoming" ],
+        "required" : [
+          "calendar",
+          "date",
+          "dueToday",
+          "overdue",
+          "plannedToday",
+          "unassigned",
+          "upcoming"
+        ],
         "type" : "object"
       },
       "UnreadCountResponse" : {
@@ -2505,7 +3529,9 @@
             "type" : "integer"
           }
         },
-        "required" : [ "unread" ],
+        "required" : [
+          "unread"
+        ],
         "type" : "object"
       },
       "UploadResponse" : {
@@ -2517,7 +3543,10 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "document", "duplicate" ],
+        "required" : [
+          "document",
+          "duplicate"
+        ],
         "type" : "object"
       },
       "VersionResponse" : {
@@ -2532,13 +3561,49 @@
             "type" : "string"
           }
         },
-        "required" : [ "application", "buildTime", "commit" ],
+        "required" : [
+          "application",
+          "buildTime",
+          "commit"
+        ],
         "type" : "object"
       },
       "WorkloadDto" : {
         "properties" : {
           "available" : {
             "type" : "boolean"
+          },
+          "choiceChangedAt" : {
+            "format" : "date-time",
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "choiceChangedBy" : {
+            "description" : "Member who last changed the model choice",
+            "format" : "uuid",
+            "type" : [
+              "string",
+              "null"
+            ]
+          },
+          "choiceVersion" : {
+            "description" : "Version of the model choice, sent back when changing it",
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "family" : {
+            "description" : "Household model family for new runs; none for the connection check",
+            "enum" : [
+              "opus",
+              "sonnet",
+              "haiku"
+            ],
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "handlerAvailable" : {
             "type" : "boolean"
@@ -2571,10 +3636,16 @@
             "type" : "integer"
           },
           "model" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "provider" : {
-            "type" : [ "string", "null" ]
+            "type" : [
+              "string",
+              "null"
+            ]
           },
           "providerConfigured" : {
             "type" : "boolean"
@@ -2583,7 +3654,20 @@
             "type" : "string"
           }
         },
-        "required" : [ "available", "handlerAvailable", "maxAttempts", "maxConcurrent", "maxCost", "maxDurationSeconds", "maxModelCalls", "maxOutputTokens", "maxToolCalls", "providerConfigured", "workload" ],
+        "required" : [
+          "available",
+          "choiceVersion",
+          "handlerAvailable",
+          "maxAttempts",
+          "maxConcurrent",
+          "maxCost",
+          "maxDurationSeconds",
+          "maxModelCalls",
+          "maxOutputTokens",
+          "maxToolCalls",
+          "providerConfigured",
+          "workload"
+        ],
         "type" : "object"
       }
     }
@@ -2613,7 +3697,9 @@
           }
         },
         "summary" : "Start one connection check per configured model",
-        "tags" : [ "ai" ]
+        "tags" : [
+          "ai"
+        ]
       }
     },
     "/api/ai/overview" : {
@@ -2632,22 +3718,26 @@
           }
         },
         "summary" : "Configured workloads, budgets and today's AI spending",
-        "tags" : [ "ai" ]
+        "tags" : [
+          "ai"
+        ]
       }
     },
     "/api/ai/runs" : {
       "get" : {
         "operationId" : "listAiRuns",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "limit",
-          "required" : false,
-          "schema" : {
-            "default" : 20,
-            "format" : "int32",
-            "type" : "integer"
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "limit",
+            "required" : false,
+            "schema" : {
+              "default" : 20,
+              "format" : "int32",
+              "type" : "integer"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -2664,21 +3754,25 @@
           }
         },
         "summary" : "Most recent AI runs of the household",
-        "tags" : [ "ai" ]
+        "tags" : [
+          "ai"
+        ]
       }
     },
     "/api/ai/runs/{id}" : {
       "get" : {
         "operationId" : "getAiRun",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -2692,21 +3786,25 @@
           }
         },
         "summary" : "One AI run with its audit steps",
-        "tags" : [ "ai" ]
+        "tags" : [
+          "ai"
+        ]
       }
     },
     "/api/ai/runs/{id}/cancel" : {
       "post" : {
         "operationId" : "cancelAiRun",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -2720,21 +3818,25 @@
           }
         },
         "summary" : "Cancel a run; a running attempt never applies its result",
-        "tags" : [ "ai" ]
+        "tags" : [
+          "ai"
+        ]
       }
     },
     "/api/ai/runs/{id}/retry" : {
       "post" : {
         "operationId" : "retryAiRun",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "201" : {
             "content" : {
@@ -2748,7 +3850,51 @@
           }
         },
         "summary" : "Start a new run for the work of a failed or cancelled run",
-        "tags" : [ "ai" ]
+        "tags" : [
+          "ai"
+        ]
+      }
+    },
+    "/api/ai/workloads/{workload}/model" : {
+      "put" : {
+        "description" : "Applies to both members and scheduled work from the next run on; queued and running runs keep their model. A stale expectedVersion is rejected with 409.",
+        "operationId" : "chooseAiModel",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "workload",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChooseModelRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AiOverviewDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Choose the model family of a workload for the household",
+        "tags" : [
+          "ai"
+        ]
       }
     },
     "/api/auth/login" : {
@@ -2777,7 +3923,9 @@
           }
         },
         "summary" : "Start a session with username and password",
-        "tags" : [ "auth" ]
+        "tags" : [
+          "auth"
+        ]
       }
     },
     "/api/auth/logout" : {
@@ -2789,7 +3937,9 @@
           }
         },
         "summary" : "End the current session",
-        "tags" : [ "auth" ]
+        "tags" : [
+          "auth"
+        ]
       }
     },
     "/api/auth/session" : {
@@ -2808,7 +3958,9 @@
           }
         },
         "summary" : "Return the member of the current session",
-        "tags" : [ "auth" ]
+        "tags" : [
+          "auth"
+        ]
       }
     },
     "/api/categories" : {
@@ -2827,7 +3979,9 @@
           }
         },
         "summary" : "Folder tree with document counts and Unsorted size",
-        "tags" : [ "categories" ]
+        "tags" : [
+          "categories"
+        ]
       },
       "post" : {
         "operationId" : "createCategory",
@@ -2854,28 +4008,33 @@
           }
         },
         "summary" : "Create a folder; a client id makes retries idempotent",
-        "tags" : [ "categories" ]
+        "tags" : [
+          "categories"
+        ]
       }
     },
     "/api/categories/{id}" : {
       "delete" : {
         "operationId" : "deleteCategory",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "expectedVersion",
+            "required" : true,
+            "schema" : {
+              "format" : "int64",
+              "type" : "integer"
+            }
           }
-        }, {
-          "in" : "query",
-          "name" : "expectedVersion",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -2889,20 +4048,24 @@
           }
         },
         "summary" : "Delete a folder; documents and subfolders move up and keep the labels they would lose",
-        "tags" : [ "categories" ]
+        "tags" : [
+          "categories"
+        ]
       }
     },
     "/api/categories/{id}/implications" : {
       "put" : {
         "operationId" : "changeCategoryImplications",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2926,20 +4089,24 @@
           }
         },
         "summary" : "Replace the labels and subjects documents inherit from this folder",
-        "tags" : [ "categories" ]
+        "tags" : [
+          "categories"
+        ]
       }
     },
     "/api/categories/{id}/name" : {
       "put" : {
         "operationId" : "renameCategory",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2963,20 +4130,24 @@
           }
         },
         "summary" : "Rename a folder",
-        "tags" : [ "categories" ]
+        "tags" : [
+          "categories"
+        ]
       }
     },
     "/api/categories/{id}/parent" : {
       "put" : {
         "operationId" : "moveCategory",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3000,20 +4171,24 @@
           }
         },
         "summary" : "Move a folder; an empty parent means the top level",
-        "tags" : [ "categories" ]
+        "tags" : [
+          "categories"
+        ]
       }
     },
     "/api/contracts" : {
       "get" : {
         "operationId" : "listContracts",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "documentId",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "documentId",
+            "required" : false,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -3030,7 +4205,9 @@
           }
         },
         "summary" : "List contracts, optionally only those of one document",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       },
       "post" : {
         "operationId" : "createContract",
@@ -3057,21 +4234,25 @@
           }
         },
         "summary" : "Create a contract, optionally with its counterparty",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/deadlines" : {
       "get" : {
         "operationId" : "listContractDeadlines",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "on",
-          "required" : false,
-          "schema" : {
-            "format" : "date",
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "on",
+            "required" : false,
+            "schema" : {
+              "format" : "date",
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -3088,7 +4269,9 @@
           }
         },
         "summary" : "Contracts whose confirmed facts establish a cancellation deadline",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/trash" : {
@@ -3110,20 +4293,24 @@
           }
         },
         "summary" : "Contracts in the trash, most recently trashed first",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/{id}" : {
       "get" : {
         "operationId" : "getContract",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -3137,18 +4324,22 @@
           }
         },
         "summary" : "Contract with every observation, its provenance and the calculated deadline",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       },
       "put" : {
         "operationId" : "renameContract",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3172,20 +4363,24 @@
           }
         },
         "summary" : "Change the household name of the contract",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/{id}/facts" : {
       "post" : {
         "operationId" : "enterContractFact",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3209,27 +4404,32 @@
           }
         },
         "summary" : "State a fact about the contract; it counts as confirmed because a member entered it",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/{id}/facts/{factId}/confirm" : {
       "post" : {
         "operationId" : "confirmContractFact",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "factId",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "factId",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3253,27 +4453,32 @@
           }
         },
         "summary" : "Accept a proposed fact",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/{id}/facts/{factId}/correct" : {
       "post" : {
         "operationId" : "correctContractFact",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "factId",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "factId",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3297,27 +4502,32 @@
           }
         },
         "summary" : "Correct a fact; the corrected observation is kept as superseded history",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/{id}/facts/{factId}/reject" : {
       "post" : {
         "operationId" : "rejectContractFact",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "factId",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "factId",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3341,20 +4551,24 @@
           }
         },
         "summary" : "Reject a fact; it stays visible as history and stops being effective",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/{id}/restore" : {
       "post" : {
         "operationId" : "restoreContract",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3378,20 +4592,24 @@
           }
         },
         "summary" : "Bring a contract back from the trash",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/{id}/status" : {
       "post" : {
         "operationId" : "changeContractStatus",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3415,20 +4633,24 @@
           }
         },
         "summary" : "Record that the contract is active, cancelled or ended",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/contracts/{id}/trash" : {
       "post" : {
         "operationId" : "trashContract",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3452,137 +4674,154 @@
           }
         },
         "summary" : "Move a contract to the trash; its facts stay and it can be restored",
-        "tags" : [ "contracts" ]
+        "tags" : [
+          "contracts"
+        ]
       }
     },
     "/api/documents" : {
       "get" : {
         "operationId" : "searchDocuments",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "category",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "subfolders",
-          "required" : false,
-          "schema" : {
-            "default" : true,
-            "type" : "boolean"
-          }
-        }, {
-          "in" : "query",
-          "name" : "type",
-          "required" : false,
-          "schema" : {
-            "items" : {
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "query",
+            "required" : false,
+            "schema" : {
               "type" : "string"
-            },
-            "type" : "array"
-          }
-        }, {
-          "in" : "query",
-          "name" : "organization",
-          "required" : false,
-          "schema" : {
-            "items" : {
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "category",
+            "required" : false,
+            "schema" : {
               "type" : "string"
-            },
-            "type" : "array"
-          }
-        }, {
-          "in" : "query",
-          "name" : "topic",
-          "required" : false,
-          "schema" : {
-            "items" : {
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "subfolders",
+            "required" : false,
+            "schema" : {
+              "default" : true,
+              "type" : "boolean"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "type",
+            "required" : false,
+            "schema" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "organization",
+            "required" : false,
+            "schema" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "topic",
+            "required" : false,
+            "schema" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "tag",
+            "required" : false,
+            "schema" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "subject",
+            "required" : false,
+            "schema" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "topicMatch",
+            "required" : false,
+            "schema" : {
+              "default" : "ANY",
               "type" : "string"
-            },
-            "type" : "array"
-          }
-        }, {
-          "in" : "query",
-          "name" : "tag",
-          "required" : false,
-          "schema" : {
-            "items" : {
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "tagMatch",
+            "required" : false,
+            "schema" : {
+              "default" : "ANY",
               "type" : "string"
-            },
-            "type" : "array"
-          }
-        }, {
-          "in" : "query",
-          "name" : "subject",
-          "required" : false,
-          "schema" : {
-            "items" : {
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "missing",
+            "required" : false,
+            "schema" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "sort",
+            "required" : false,
+            "schema" : {
+              "default" : "NEWEST",
               "type" : "string"
-            },
-            "type" : "array"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "page",
+            "required" : false,
+            "schema" : {
+              "default" : 0,
+              "format" : "int32",
+              "type" : "integer"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "size",
+            "required" : false,
+            "schema" : {
+              "default" : 25,
+              "format" : "int32",
+              "type" : "integer"
+            }
           }
-        }, {
-          "in" : "query",
-          "name" : "topicMatch",
-          "required" : false,
-          "schema" : {
-            "default" : "ANY",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "tagMatch",
-          "required" : false,
-          "schema" : {
-            "default" : "ANY",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "missing",
-          "required" : false,
-          "schema" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          }
-        }, {
-          "in" : "query",
-          "name" : "sort",
-          "required" : false,
-          "schema" : {
-            "default" : "NEWEST",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "page",
-          "required" : false,
-          "schema" : {
-            "default" : 0,
-            "format" : "int32",
-            "type" : "integer"
-          }
-        }, {
-          "in" : "query",
-          "name" : "size",
-          "required" : false,
-          "schema" : {
-            "default" : 25,
-            "format" : "int32",
-            "type" : "integer"
-          }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -3596,28 +4835,33 @@
           }
         },
         "summary" : "List or search the shared collection by text, folder and facets",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       },
       "post" : {
         "operationId" : "uploadDocument",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "subjects",
-          "required" : false,
-          "schema" : {
-            "items" : {
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "subjects",
+            "required" : false,
+            "schema" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "categoryId",
+            "required" : false,
+            "schema" : {
               "type" : "string"
-            },
-            "type" : "array"
+            }
           }
-        }, {
-          "in" : "query",
-          "name" : "categoryId",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -3628,7 +4872,9 @@
                     "type" : "string"
                   }
                 },
-                "required" : [ "file" ],
+                "required" : [
+                  "file"
+                ],
                 "type" : "object"
               }
             }
@@ -3647,7 +4893,9 @@
           }
         },
         "summary" : "Upload a PDF or a photo (JPEG, PNG, WebP, HEIC); the type is recognized from the content, and the answer comes only after durable storage",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/analysis" : {
@@ -3676,7 +4924,9 @@
           }
         },
         "summary" : "Analyze a bounded selection of archived documents; never the whole collection",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/placement" : {
@@ -3705,7 +4955,9 @@
           }
         },
         "summary" : "File several documents into the same folder",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/trash" : {
@@ -3727,20 +4979,24 @@
           }
         },
         "summary" : "Documents in the trash, most recently trashed first",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}" : {
       "get" : {
         "operationId" : "getDocument",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -3754,20 +5010,24 @@
           }
         },
         "summary" : "Document details including processing state, labels and trash state",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/analysis" : {
       "post" : {
         "operationId" : "requestDocumentAnalysis",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3791,20 +5051,24 @@
           }
         },
         "summary" : "Analyze an archived document now (first time, again or after a failure)",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/analysis/candidates" : {
       "post" : {
         "operationId" : "decideLabelCandidate",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3828,20 +5092,24 @@
           }
         },
         "summary" : "Accept (create or reuse and assign) or reject a new organization or topic name",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/analysis/subjects" : {
       "post" : {
         "operationId" : "decideSubjectSuggestion",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3865,20 +5133,24 @@
           }
         },
         "summary" : "Accept or reject a subject suggestion",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/analysis/title" : {
       "post" : {
         "operationId" : "decideGeneratedTitle",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3902,28 +5174,33 @@
           }
         },
         "summary" : "Accept or reject/revert the generated title",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/archive-pdf" : {
       "get" : {
         "operationId" : "downloadArchivePdf",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "inline",
+            "required" : false,
+            "schema" : {
+              "default" : false,
+              "type" : "boolean"
+            }
           }
-        }, {
-          "in" : "query",
-          "name" : "inline",
-          "required" : false,
-          "schema" : {
-            "default" : false,
-            "type" : "boolean"
-          }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -3938,20 +5215,24 @@
           }
         },
         "summary" : "Searchable PDF the archive generated from the original, for example from a photo",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/category" : {
       "put" : {
         "operationId" : "placeDocument",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3975,20 +5256,24 @@
           }
         },
         "summary" : "File a document into a folder; empty means Unsorted",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/classification/placement/accept" : {
       "post" : {
         "operationId" : "acceptPlacement",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4012,20 +5297,24 @@
           }
         },
         "summary" : "File the document into the proposed folder, creating the missing folders of a proposed path",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/classification/placement/reject" : {
       "post" : {
         "operationId" : "rejectPlacement",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4049,20 +5338,24 @@
           }
         },
         "summary" : "Reject the proposed folder; it is not proposed for this document again",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/classification/placement/revert" : {
       "post" : {
         "operationId" : "revertPlacement",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4086,20 +5379,24 @@
           }
         },
         "summary" : "Move an automatically filed document back to Unsorted",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/filename" : {
       "put" : {
         "operationId" : "setDocumentFilename",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4123,20 +5420,24 @@
           }
         },
         "summary" : "Set the friendly filename stem; the stable id and verified extension are always added",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/labels" : {
       "put" : {
         "operationId" : "changeDocumentLabels",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4160,27 +5461,32 @@
           }
         },
         "summary" : "Replace the own labels of a document across all facets",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/labels/{labelId}/accept" : {
       "post" : {
         "operationId" : "acceptLabelSuggestion",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "labelId",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "labelId",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4204,27 +5510,32 @@
           }
         },
         "summary" : "Confirm an automatically proposed label",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/labels/{labelId}/reject" : {
       "post" : {
         "operationId" : "rejectLabelSuggestion",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "labelId",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "labelId",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4248,28 +5559,33 @@
           }
         },
         "summary" : "Reject an automatically proposed label; the decision is remembered",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/original" : {
       "get" : {
         "operationId" : "downloadOriginal",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "inline",
+            "required" : false,
+            "schema" : {
+              "default" : false,
+              "type" : "boolean"
+            }
           }
-        }, {
-          "in" : "query",
-          "name" : "inline",
-          "required" : false,
-          "schema" : {
-            "default" : false,
-            "type" : "boolean"
-          }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -4284,20 +5600,24 @@
           }
         },
         "summary" : "Original bytes, unchanged, named with the friendly filename",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/restore" : {
       "post" : {
         "operationId" : "restoreDocument",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4321,20 +5641,24 @@
           }
         },
         "summary" : "Bring a document back from the trash",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/retry" : {
       "post" : {
         "operationId" : "retryArchival",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -4348,20 +5672,24 @@
           }
         },
         "summary" : "Re-queue archival of a failed document",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/subjects" : {
       "put" : {
         "operationId" : "changeSubjects",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4385,20 +5713,24 @@
           }
         },
         "summary" : "Replace the subject metadata of a document",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/thumbnail" : {
       "get" : {
         "operationId" : "getDocumentThumbnail",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -4425,20 +5757,24 @@
           }
         },
         "summary" : "Image of the first page rendered by the archive, for previews; 404 until the document is archived",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/title" : {
       "put" : {
         "operationId" : "renameDocument",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4462,20 +5798,24 @@
           }
         },
         "summary" : "Change the display title of a document",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/documents/{id}/trash" : {
       "post" : {
         "operationId" : "trashDocument",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4499,7 +5839,9 @@
           }
         },
         "summary" : "Move a document to the trash; nothing is deleted and it can be restored",
-        "tags" : [ "documents" ]
+        "tags" : [
+          "documents"
+        ]
       }
     },
     "/api/exports" : {
@@ -4521,7 +5863,9 @@
           }
         },
         "summary" : "Published export generations, newest first",
-        "tags" : [ "exports" ]
+        "tags" : [
+          "exports"
+        ]
       },
       "post" : {
         "operationId" : "createExport",
@@ -4538,7 +5882,9 @@
           }
         },
         "summary" : "Create and atomically publish a new export generation",
-        "tags" : [ "exports" ]
+        "tags" : [
+          "exports"
+        ]
       }
     },
     "/api/labels" : {
@@ -4560,7 +5906,9 @@
           }
         },
         "summary" : "Whole vocabulary with usage counts",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       },
       "post" : {
         "operationId" : "createLabel",
@@ -4587,27 +5935,32 @@
           }
         },
         "summary" : "Create a label; a client id makes retries idempotent",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       }
     },
     "/api/labels/resolve" : {
       "get" : {
         "operationId" : "resolveLabel",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "facet",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "facet",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "name",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        }, {
-          "in" : "query",
-          "name" : "name",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -4621,48 +5974,57 @@
           }
         },
         "summary" : "Find a label by name or alias within one facet",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       }
     },
     "/api/labels/{id}" : {
       "delete" : {
         "operationId" : "deleteLabel",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "expectedVersion",
+            "required" : true,
+            "schema" : {
+              "format" : "int64",
+              "type" : "integer"
+            }
           }
-        }, {
-          "in" : "query",
-          "name" : "expectedVersion",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "description" : "OK"
           }
         },
         "summary" : "Delete an unused label; documents are never deleted",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       }
     },
     "/api/labels/{id}/aliases" : {
       "put" : {
         "operationId" : "replaceLabelAliases",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4686,20 +6048,24 @@
           }
         },
         "summary" : "Replace the alternative spellings of a label",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       }
     },
     "/api/labels/{id}/facet" : {
       "post" : {
         "operationId" : "convertLabel",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4723,20 +6089,24 @@
           }
         },
         "summary" : "Turn a tag into an organization or topic",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       }
     },
     "/api/labels/{id}/merge" : {
       "post" : {
         "operationId" : "mergeLabel",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4760,20 +6130,24 @@
           }
         },
         "summary" : "Fold a label into another one; assignments and folder mappings follow",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       }
     },
     "/api/labels/{id}/name" : {
       "put" : {
         "operationId" : "renameLabel",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4797,20 +6171,24 @@
           }
         },
         "summary" : "Rename a label without losing its assignments",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       }
     },
     "/api/labels/{id}/reactivate" : {
       "post" : {
         "operationId" : "reactivateLabel",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4834,20 +6212,24 @@
           }
         },
         "summary" : "Offer a retired label again",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       }
     },
     "/api/labels/{id}/retire" : {
       "post" : {
         "operationId" : "retireLabel",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4871,7 +6253,9 @@
           }
         },
         "summary" : "Stop offering a label for new assignments",
-        "tags" : [ "labels" ]
+        "tags" : [
+          "labels"
+        ]
       }
     },
     "/api/members" : {
@@ -4893,7 +6277,9 @@
           }
         },
         "summary" : "List all household members",
-        "tags" : [ "members" ]
+        "tags" : [
+          "members"
+        ]
       }
     },
     "/api/members/me/appearance" : {
@@ -4922,7 +6308,9 @@
           }
         },
         "summary" : "Change the palette and effects preference of the current member",
-        "tags" : [ "members" ]
+        "tags" : [
+          "members"
+        ]
       }
     },
     "/api/members/me/locale" : {
@@ -4951,7 +6339,9 @@
           }
         },
         "summary" : "Change the preferred product locale of the current member",
-        "tags" : [ "members" ]
+        "tags" : [
+          "members"
+        ]
       }
     },
     "/api/members/me/password" : {
@@ -4973,21 +6363,25 @@
           }
         },
         "summary" : "Change the password of the current member",
-        "tags" : [ "members" ]
+        "tags" : [
+          "members"
+        ]
       }
     },
     "/api/notices" : {
       "get" : {
         "operationId" : "listNotices",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "unreadOnly",
-          "required" : false,
-          "schema" : {
-            "default" : false,
-            "type" : "boolean"
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "unreadOnly",
+            "required" : false,
+            "schema" : {
+              "default" : false,
+              "type" : "boolean"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -5004,7 +6398,9 @@
           }
         },
         "summary" : "List the current member's messages (notices without a review card), newest first",
-        "tags" : [ "notices" ]
+        "tags" : [
+          "notices"
+        ]
       }
     },
     "/api/notices/read-all" : {
@@ -5023,7 +6419,9 @@
           }
         },
         "summary" : "Mark every unread notice as read",
-        "tags" : [ "notices" ]
+        "tags" : [
+          "notices"
+        ]
       }
     },
     "/api/notices/review-cards/read" : {
@@ -5042,7 +6440,9 @@
           }
         },
         "summary" : "Mark the notices announcing review cards as read when the inbox shows the cards",
-        "tags" : [ "notices" ]
+        "tags" : [
+          "notices"
+        ]
       }
     },
     "/api/notices/unread-count" : {
@@ -5061,20 +6461,24 @@
           }
         },
         "summary" : "Number of unread messages",
-        "tags" : [ "notices" ]
+        "tags" : [
+          "notices"
+        ]
       }
     },
     "/api/notices/{id}/read" : {
       "post" : {
         "operationId" : "markNoticeRead",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -5088,27 +6492,32 @@
           }
         },
         "summary" : "Mark one notice as read",
-        "tags" : [ "notices" ]
+        "tags" : [
+          "notices"
+        ]
       }
     },
     "/api/reviews" : {
       "get" : {
         "operationId" : "listReviewItems",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "status",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "status",
+            "required" : false,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "category",
+            "required" : false,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        }, {
-          "in" : "query",
-          "name" : "category",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -5125,7 +6534,9 @@
           }
         },
         "summary" : "List and reconcile the shared review inbox",
-        "tags" : [ "reviews" ]
+        "tags" : [
+          "reviews"
+        ]
       }
     },
     "/api/reviews/open-count" : {
@@ -5144,28 +6555,33 @@
           }
         },
         "summary" : "Number of open cards, without reconciling",
-        "tags" : [ "reviews" ]
+        "tags" : [
+          "reviews"
+        ]
       }
     },
     "/api/reviews/{id}/actions/{action}" : {
       "post" : {
         "operationId" : "actOnReviewItem",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "action",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        }, {
-          "in" : "path",
-          "name" : "action",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5189,21 +6605,25 @@
           }
         },
         "summary" : "Run an application-owned source action",
-        "tags" : [ "reviews" ]
+        "tags" : [
+          "reviews"
+        ]
       }
     },
     "/api/reviews/{id}/dismiss" : {
       "post" : {
         "operationId" : "dismissReviewItem",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5227,7 +6647,9 @@
           }
         },
         "summary" : "Dismiss the card without changing its source",
-        "tags" : [ "reviews" ]
+        "tags" : [
+          "reviews"
+        ]
       }
     },
     "/api/status" : {
@@ -5246,7 +6668,9 @@
           }
         },
         "summary" : "Overview of whether everything works, with processing, recurring job, backup and disk space details",
-        "tags" : [ "status" ]
+        "tags" : [
+          "status"
+        ]
       }
     },
     "/api/system/version" : {
@@ -5265,28 +6689,33 @@
           }
         },
         "summary" : "Deployed commit and build time",
-        "tags" : [ "system" ]
+        "tags" : [
+          "system"
+        ]
       }
     },
     "/api/tasks" : {
       "get" : {
         "operationId" : "listTasks",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "includeDone",
-          "required" : false,
-          "schema" : {
-            "default" : false,
-            "type" : "boolean"
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "includeDone",
+            "required" : false,
+            "schema" : {
+              "default" : false,
+              "type" : "boolean"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "documentId",
+            "required" : false,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        }, {
-          "in" : "query",
-          "name" : "documentId",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -5303,7 +6732,9 @@
           }
         },
         "summary" : "List tasks; open only unless includeDone is set",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       },
       "post" : {
         "operationId" : "createTask",
@@ -5330,7 +6761,9 @@
           }
         },
         "summary" : "Create a task, optionally linked to a document",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/tasks/trash" : {
@@ -5352,20 +6785,24 @@
           }
         },
         "summary" : "Tasks in the trash, most recently trashed first",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/tasks/{id}" : {
       "get" : {
         "operationId" : "getTask",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "responses" : {
           "200" : {
             "content" : {
@@ -5379,18 +6816,22 @@
           }
         },
         "summary" : "Task details",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       },
       "put" : {
         "operationId" : "editTask",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5414,20 +6855,24 @@
           }
         },
         "summary" : "Change title and note",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/tasks/{id}/assign" : {
       "post" : {
         "operationId" : "assignTask",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5451,20 +6896,24 @@
           }
         },
         "summary" : "Assign one member or leave unassigned (ownerId null)",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/tasks/{id}/complete" : {
       "post" : {
         "operationId" : "completeTask",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5488,20 +6937,24 @@
           }
         },
         "summary" : "Mark a task done",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/tasks/{id}/due-date" : {
       "post" : {
         "operationId" : "changeTaskDueDate",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5525,20 +6978,24 @@
           }
         },
         "summary" : "Explicitly change the actual deadline",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/tasks/{id}/plan" : {
       "post" : {
         "operationId" : "planTaskWork",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5562,20 +7019,24 @@
           }
         },
         "summary" : "Move the planned work date; the due date stays",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/tasks/{id}/reopen" : {
       "post" : {
         "operationId" : "reopenTask",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5599,20 +7060,24 @@
           }
         },
         "summary" : "Reopen a completed task",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/tasks/{id}/restore" : {
       "post" : {
         "operationId" : "restoreTask",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5636,20 +7101,24 @@
           }
         },
         "summary" : "Bring a task back from the trash",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/tasks/{id}/trash" : {
       "post" : {
         "operationId" : "trashTask",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
           }
-        } ],
+        ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -5673,7 +7142,9 @@
           }
         },
         "summary" : "Move a task to the trash; it leaves lists, Today and reminders and can be restored",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     },
     "/api/today" : {
@@ -5692,7 +7163,9 @@
           }
         },
         "summary" : "Deterministic Today view computed from persisted tasks",
-        "tags" : [ "tasks" ]
+        "tags" : [
+          "tasks"
+        ]
       }
     }
   }
