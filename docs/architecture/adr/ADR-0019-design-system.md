@@ -80,28 +80,8 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
    label, and the search field its icon (`text-3`, 8.20) and placeholder (`text-4`, 6.09), so the border never
    identifies a field on its own. Frames and dividers in `line` (1.51) only group content.
 
-   **PR 6 review (2026-09-27).** A Playwright walk over the built app, served with invented data from
-   `api/openapi.json` in the browser, covered every page and the login, the upload and filter sheets and the avatar
-   menu at 375×812, 1440×900, 1280×800 and 1100×800, in Streetkid, Corpo (English) and Nomad. It measured every text
-   against the colour behind it, including the `::before` fill of chamfered frames, tabbed through 40 stops per page,
-   measured every target and counted primary actions and running animations:
-   - text contrast: nothing below 4.5:1; the lowest value was 5.26 (Streetkid), 5.52 (Corpo) and 5.29 (Nomad), the
-     login 6.41;
-   - reduced motion: no running animation on any page; with motion allowed only the wordmark glitch and the
-     processing steps run;
-   - fonts: no request to any host other than Aegis;
-   - fixed: the chamfered checkboxes (`ui-checkbox`, `task-check`) are clipped, which hid their outside focus
-     outline entirely; they now show the ring of decision 8. The document viewer's iframe showed no focus while its
-     content had it (no focus pseudo-class matches an iframe then); the page now marks it with `data-focused`. Title
-     links that were the only target of a card or row (trash entries, a document's linked contracts, the desktop
-     document table below 1280 px) were 20-24 px high; the link now covers its card or row. The search field's box
-     is a label, so its whole 44 px height focuses the input, and the folder tree's expand button is 44 px high;
-   - desktop pages with their own primary action (Neue Aufgabe, Ordner anlegen, Erledigt, Wiederherstellen) show it
-     next to the sidebar's Upload, both in the action fill, as in the approved mockup. Every sheet and every phone
-     screen has at most one.
-
-   Real Android checks (uploads, sharing into Aegis, notifications, the redesigned screens) on both members' phones
-   are the owner's and are recorded in issue #27, not here.
+   PR 6 checked every page for text contrast, keyboard focus, target size and reduced motion against these values
+   (method and results in PR #124). The real Android checks on both members' phones are tracked in issue #27.
 
 6. **Typography, self-hosted.** Chakra Petch (400, 500, 600, 700) for UI and display text, Share Tech Mono (400) for
    data, labels, dates and counters. Both are SIL Open Font License 1.1 fonts, pinned as
@@ -131,8 +111,12 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
 8. **Focus and touch.** Focus is always visible: a 2 px `data` outline, drawn 4 px inside chamfered elements so the
    corner cut does not hide it, `void` on action fills, and a 2 px `data` border on fields. Clipped controls (checkboxes)
    cannot show an outline, so their edge turns into a 2 px `data` ring with a `void` band inside it (`focus-edge`),
-   which also stands apart from a checked fill. A card or row whose title link covers it shows the ring on the card. Buttons and rows are at least
-   44 px high. One primary action per view. Scroll padding on the root keeps what is scrolled into view or focused
+   which also stands apart from a checked fill. No focus pseudo-class matches the document viewer's iframe while its
+   content has the focus, so the page marks it with `data-focused` when it was reached with Tab (a click shows no
+   ring, as with `:focus-visible`). Where a title link was the only target of a card or row (trash entries, a
+   document's linked contracts, the desktop document table), the link covers the card or row, which shows the ring;
+   controls inside stay above it. The search field's box is a label, so its whole height focuses the input. Buttons
+   and rows are at least 44 px high. One primary action per view. Scroll padding on the root keeps what is scrolled into view or focused
    clear of the sticky header, the phone tab bar and the desktop status bar (WCAG 2.4.11); before it, a button could
    sit half under the status bar and a click landed on the bar.
 

@@ -134,7 +134,7 @@ export function FolderTree({ categories, unsortedCount, selected, onSelect }: Pr
                 </svg>
               </button>
             ) : (
-              <span className="grid w-6 flex-none place-items-center" aria-hidden="true">
+              <span className="grid w-8 flex-none place-items-center" aria-hidden="true">
                 <Diamond className={`h-1.5 w-1.5 ${row.id === UNSORTED ? "text-text-4" : "text-data"}`} />
               </span>
             )}

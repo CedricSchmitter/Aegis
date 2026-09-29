@@ -96,22 +96,46 @@ export function DocumentViewer({ document }: { document: DocumentDto }) {
   );
 }
 
+/** How long after a Tab press on the page the frame taking the focus still counts as keyboard focus. */
+const KEYBOARD_FOCUS_WINDOW_MS = 500;
+
 /**
  * Whether the framed viewer holds the keyboard focus. The page loses the focus to the frame's content without any
- * focus pseudo-class matching the iframe, so the visible focus ring needs this state (ADR-0019, decision 8).
+ * focus pseudo-class matching the iframe, so the visible focus ring needs this state (ADR-0019, decision 8). Like
+ * :focus-visible elsewhere, only keyboard focus counts: a click into the frame reaches the page without a key press.
  */
 function useFrameFocused(frame: RefObject<HTMLIFrameElement | null>): boolean {
   const [focused, setFocused] = useState(false);
   useEffect(() => {
-    // The active element changes right after the window's blur event.
-    const update = () => window.setTimeout(() => setFocused(frame.current !== null && window.document.activeElement === frame.current));
-    window.addEventListener("blur", update);
-    window.addEventListener("focus", update);
-    window.document.addEventListener("focusin", update);
+    let tabbedAt = Number.NEGATIVE_INFINITY;
+    let timer: number | undefined;
+    // The active element changes right after the window's blur and focus events.
+    const later = (check: () => void) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(check);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") tabbedAt = event.timeStamp;
+    };
+    const onEnter = (event: FocusEvent) => {
+      const byKeyboard = event.timeStamp - tabbedAt < KEYBOARD_FOCUS_WINDOW_MS;
+      later(() => setFocused(byKeyboard && frame.current !== null && window.document.activeElement === frame.current));
+    };
+    const onLeave = (event: FocusEvent) => {
+      // The frame's own focusin comes with the window's blur, in either order.
+      if (event.target === frame.current) return;
+      later(() => setFocused((current) => current && window.document.activeElement === frame.current));
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("blur", onEnter);
+    window.addEventListener("focus", onLeave);
+    window.document.addEventListener("focusin", onLeave);
     return () => {
-      window.removeEventListener("blur", update);
-      window.removeEventListener("focus", update);
-      window.document.removeEventListener("focusin", update);
+      window.clearTimeout(timer);
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("blur", onEnter);
+      window.removeEventListener("focus", onLeave);
+      window.document.removeEventListener("focusin", onLeave);
     };
   }, [frame]);
   return focused;

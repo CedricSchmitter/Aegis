@@ -162,8 +162,11 @@ describe("document viewer", () => {
         </>,
       );
       const frame = screen.getByTestId("document-viewer");
+      const next = screen.getByRole("button", { name: "weiter" });
       expect(frame.getAttribute("data-focused")).toBe("false");
 
+      // Tabbing into the frame: the page sees the Tab press, then loses the focus to the frame's content.
+      fireEvent.keyDown(window, { key: "Tab" });
       frame.focus();
       fireEvent.blur(window);
       act(() => vi.runAllTimers());
@@ -171,7 +174,14 @@ describe("document viewer", () => {
 
       // Tabbing out of the frame gives the focus back to the page.
       fireEvent.focus(window);
-      screen.getByRole("button", { name: "weiter" }).focus();
+      next.focus();
+      act(() => vi.runAllTimers());
+      expect(frame.getAttribute("data-focused")).toBe("false");
+
+      // A click into the frame reaches the page without a recent key press, so like :focus-visible it shows no ring.
+      act(() => vi.advanceTimersByTime(1_000));
+      frame.focus();
+      fireEvent.blur(window);
       act(() => vi.runAllTimers());
       expect(frame.getAttribute("data-focused")).toBe("false");
     } finally {
