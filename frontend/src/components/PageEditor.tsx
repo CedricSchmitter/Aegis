@@ -124,7 +124,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
     <div
       ref={dialog}
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex flex-col gap-3 bg-stone-950 p-4 text-stone-100 outline-none"
+      className="fixed inset-0 z-50 flex flex-col gap-3 bg-(--color-base) p-4 text-text-1 outline-none"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -137,7 +137,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
         <h2 id={titleId} className="text-lg font-semibold">
           {title}
         </h2>
-        <p className="text-sm text-stone-300" aria-live="polite">
+        <p className="text-sm text-text-3" aria-live="polite">
           {instructions}
         </p>
       </div>
@@ -164,7 +164,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
                 <button
                   key={CORNER_KEYS[index]}
                   type="button"
-                  className="absolute h-11 w-11 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-white bg-sky-500/50 shadow"
+                  className="absolute h-11 w-11 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-text-1 bg-data/50 ring-1 ring-void/60"
                   style={{ left: `${corner.x * 100}%`, top: `${corner.y * 100}%` }}
                   aria-label={t(`scan.editor.${CORNER_KEYS[index]}`)}
                   data-testid={`page-editor-corner-${index}`}
@@ -187,7 +187,7 @@ export function PageEditor({ page, number, purpose, onApply, onKeepPhoto, onRemo
       </div>
       {drag && url && <Loupe url={url} corners={corners} drag={drag} valid={valid} />}
       {!searching && !valid && (
-        <p className="text-sm text-red-300" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {t("scan.editor.invalid")}
         </p>
       )}
@@ -263,8 +263,7 @@ function Outline({ corners, valid }: { corners: Quad; valid: boolean }) {
     >
       <polygon
         points={corners.map((p) => `${p.x},${p.y}`).join(" ")}
-        fill={valid ? "rgba(56, 189, 248, 0.18)" : "rgba(239, 68, 68, 0.25)"}
-        stroke={valid ? "#38bdf8" : "#ef4444"}
+        className={valid ? "fill-data/20 stroke-data" : "fill-danger/25 stroke-danger"}
         strokeWidth={2}
         vectorEffect="non-scaling-stroke"
       />
@@ -283,7 +282,7 @@ function Loupe({ url, corners, drag, valid }: { url: string; corners: Quad; drag
   const position = loupePlacement(point, drag.viewport);
   return (
     <div
-      className="pointer-events-none fixed z-10 overflow-hidden rounded-full border-2 border-white bg-stone-900 shadow-lg"
+      className="pointer-events-none fixed z-10 overflow-hidden rounded-full border-2 border-text-1 bg-surface ring-1 ring-void/60"
       style={{ left: position.x, top: position.y, width: LOUPE_SIZE, height: LOUPE_SIZE }}
       aria-hidden="true"
       data-testid="page-editor-loupe"
@@ -300,18 +299,18 @@ function Loupe({ url, corners, drag, valid }: { url: string; corners: Quad; drag
         <img src={url} alt="" className="block h-full w-full" draggable={false} />
         <Outline corners={corners} valid={valid} />
       </div>
-      {/* White on a dark outline, so the crosshair stays visible on paper and on a dark desk alike. */}
+      {/* Light on a dark outline, so the crosshair stays visible on paper and on a dark desk alike. */}
       <svg className="absolute inset-0 h-full w-full" viewBox="-1 -1 2 2" fill="none">
         {[
-          { stroke: "rgba(0, 0, 0, 0.6)", width: 0.04 },
-          { stroke: "white", width: 0.018 },
+          { stroke: "stroke-void/60", width: 0.04 },
+          { stroke: "stroke-text-1", width: 0.018 },
         ].map(({ stroke, width }) => (
-          <g key={stroke} stroke={stroke} strokeWidth={width} strokeLinecap="round">
+          <g key={stroke} className={stroke} strokeWidth={width} strokeLinecap="round">
             <circle r={0.12} />
             <path d="M -0.4 0 H -0.12 M 0.12 0 H 0.4 M 0 -0.4 V -0.12 M 0 0.12 V 0.4" />
           </g>
         ))}
-        <circle r={0.018} fill={valid ? "#38bdf8" : "#ef4444"} />
+        <circle r={0.018} className={valid ? "fill-data" : "fill-danger"} />
       </svg>
     </div>
   );

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CategoryDto, CategoryListResponse, DocumentDto, LabelDto } from "../../api/types";
@@ -7,6 +7,7 @@ import i18n from "../../i18n";
 import { EMPTY_FILTERS } from "../../lib/catalogSearch";
 import { ActiveFilters } from "../FacetFilters";
 import { FolderTree } from "../FolderTree";
+import { DocumentViewer } from "./DocumentHead";
 import { DocumentTable } from "./DocumentRows";
 import { FolderRail } from "./FolderRail";
 
@@ -146,5 +147,45 @@ describe("active filters", () => {
     expect(within(list).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["OrgStadtwerke", "ThemaStrom", "StichwortOhne Angabe"]);
     fireEvent.click(screen.getByRole("button", { name: "Org Stadtwerke entfernen" }));
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ organization: [], topic: ["l2"], missing: ["TAG"], page: 0 }));
+  });
+});
+
+describe("document viewer", () => {
+  it("marks the frame while its content holds the focus, because no focus pseudo-class matches an iframe then", async () => {
+    vi.useFakeTimers();
+    try {
+      await i18n.changeLanguage("de");
+      render(
+        <>
+          <DocumentViewer document={{ ...document("d1", "Vertrag"), originalAvailable: true } as DocumentDto} />
+          <button type="button">weiter</button>
+        </>,
+      );
+      const frame = screen.getByTestId("document-viewer");
+      const next = screen.getByRole("button", { name: "weiter" });
+      expect(frame.getAttribute("data-focused")).toBe("false");
+
+      // Tabbing into the frame: the page sees the Tab press, then loses the focus to the frame's content.
+      fireEvent.keyDown(window, { key: "Tab" });
+      frame.focus();
+      fireEvent.blur(window);
+      act(() => vi.runAllTimers());
+      expect(frame.getAttribute("data-focused")).toBe("true");
+
+      // Tabbing out of the frame gives the focus back to the page.
+      fireEvent.focus(window);
+      next.focus();
+      act(() => vi.runAllTimers());
+      expect(frame.getAttribute("data-focused")).toBe("false");
+
+      // A click into the frame reaches the page without a recent key press, so like :focus-visible it shows no ring.
+      act(() => vi.advanceTimersByTime(1_000));
+      frame.focus();
+      fireEvent.blur(window);
+      act(() => vi.runAllTimers());
+      expect(frame.getAttribute("data-focused")).toBe("false");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -118,7 +118,8 @@ checkbox completes it at once with undo, and the deadline ("Frist") and the plan
 separate everywhere. The task and contract lists show the selection in the context panel from 1280 px; each contract
 counts down to its cancellation date and is highlighted from 30 days before it. Settings leads to Status, Trash and the
 folder and label management and holds the palette, effects, language, password and logout; Login and the Android share
-page use the same system.
+page use the same system. Every screen keeps text at 4.5:1 or more, shows keyboard focus (also on chamfered controls),
+offers 44 px targets and stops all motion under reduced motion.
 
 Aegis supports individual logins into one shared household (the two persons and an assistant account that
 receives notices and can own tasks but is never what a document is about,

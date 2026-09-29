@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import type { DocumentDto } from "../../api/types";
 import { useSession } from "../../auth/SessionContext";
@@ -63,13 +63,17 @@ export function DocumentPreview({ document, className = "" }: { document: Docume
  */
 export function DocumentViewer({ document }: { document: DocumentDto }) {
   const { t } = useTranslation();
+  const viewer = useRef<HTMLIFrameElement>(null);
+  const focused = useFrameFocused(viewer);
   const source = viewerSource(document);
   const frame = "h-[calc(100dvh-16rem)] min-h-[480px] w-full border border-line bg-raised";
   if (source.kind === "pdf") {
     return (
       <iframe
+        ref={viewer}
         key={source.url}
         src={source.url}
+        data-focused={focused}
         title={t("documents.viewer", { title: document.title })}
         className={frame}
         data-testid="document-viewer"
@@ -90,4 +94,49 @@ export function DocumentViewer({ document }: { document: DocumentDto }) {
       </p>
     </div>
   );
+}
+
+/** How long after a Tab press on the page the frame taking the focus still counts as keyboard focus. */
+const KEYBOARD_FOCUS_WINDOW_MS = 500;
+
+/**
+ * Whether the framed viewer holds the keyboard focus. The page loses the focus to the frame's content without any
+ * focus pseudo-class matching the iframe, so the visible focus ring needs this state (ADR-0019, decision 8). Like
+ * :focus-visible elsewhere, only keyboard focus counts: a click into the frame reaches the page without a key press.
+ */
+function useFrameFocused(frame: RefObject<HTMLIFrameElement | null>): boolean {
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    let tabbedAt = Number.NEGATIVE_INFINITY;
+    let timer: number | undefined;
+    // The active element changes right after the window's blur and focus events.
+    const later = (check: () => void) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(check);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") tabbedAt = event.timeStamp;
+    };
+    const onEnter = (event: FocusEvent) => {
+      const byKeyboard = event.timeStamp - tabbedAt < KEYBOARD_FOCUS_WINDOW_MS;
+      later(() => setFocused(byKeyboard && frame.current !== null && window.document.activeElement === frame.current));
+    };
+    const onLeave = (event: FocusEvent) => {
+      // The frame's own focusin comes with the window's blur, in either order.
+      if (event.target === frame.current) return;
+      later(() => setFocused((current) => current && window.document.activeElement === frame.current));
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("blur", onEnter);
+    window.addEventListener("focus", onLeave);
+    window.document.addEventListener("focusin", onLeave);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("blur", onEnter);
+      window.removeEventListener("focus", onLeave);
+      window.document.removeEventListener("focusin", onLeave);
+    };
+  }, [frame]);
+  return focused;
 }

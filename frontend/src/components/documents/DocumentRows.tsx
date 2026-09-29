@@ -155,7 +155,7 @@ export function DocumentTable({ items, selection, onSelectionChange, previewed, 
               <span role="cell" className="flex min-w-0 flex-col gap-1.5">
                 <Link
                   to={`/documents/${document.id}`}
-                  className="text-[14.5px] leading-snug font-semibold break-words hover:underline"
+                  className="doc-link text-[14.5px] leading-snug font-semibold break-words hover:underline"
                   onClick={(event) => {
                     if (onPreview && isPreviewClick(event)) {
                       event.preventDefault();
