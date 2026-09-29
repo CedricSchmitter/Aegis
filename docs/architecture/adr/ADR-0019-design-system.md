@@ -118,7 +118,9 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
    controls inside stay above it. The search field's box is a label, so its whole height focuses the input. Buttons
    and rows are at least 44 px high. One primary action per view. Scroll padding on the root keeps what is scrolled into view or focused
    clear of the sticky header, the phone tab bar and the desktop status bar (WCAG 2.4.11); before it, a button could
-   sit half under the status bar and a click landed on the bar.
+   sit half under the status bar and a click landed on the bar. A full-screen overlay contains its overscroll
+   (`overscroll-behavior: contain` on its own scroll box), so a swipe on it moves neither the sheet nor the page behind
+   it; drag surfaces such as the corner editor's photo set `touch-action: none`.
 
 9. **Effects are optional and motion yields.** The effects layer is the 40 px grid (2.2 % opacity) on the work area,
    scanlines (2.5 %) over the page and a short glitch on the wordmark every 6 s. It is on by default and switched off with
@@ -145,10 +147,14 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
     (primary, secondary, ghost, danger), Card (attention, data, danger, selected), Chip (facet prefix, remove button),
     Badge, FileTypeTag, TextField and SearchField, SegmentedControl (a radio group with arrow keys), Switch, Checkbox,
     Dialog, Sheet (a bottom sheet on phones), ConfirmDialog (typed confirmation for irreversible actions such as #85),
-    Toast (optional undo), ProcessingSteps (Gespeichert → Archiviert → Text erkannt → Eingeordnet), Countdown and the
-    Wordmark. Dialogs and sheets are native `<dialog>` elements, which make the page behind them inert, trap focus and
-    return it on close. The existing shared classes (`btn-*`, `card`, `field`, `label`, `badge`, `alert-*`) point to the
-    same tokens and chamfers.
+    Overlay (full screen, such as the scan corner editor), Toast (optional undo), ProcessingSteps (Gespeichert →
+    Archiviert → Text erkannt → Eingeordnet), Countdown and the Wordmark. Dialogs, sheets and overlays are native
+    `<dialog>` elements opened with `showModal()`, which make the page behind them inert, trap focus and return it on
+    close. Layering rule: anything that has to cover an open dialog or sheet is a modal dialog of its own, so it stacks
+    above it in the browser's top layer and the topmost one alone receives Escape or the phone's back gesture. It is
+    never a fixed element inside a sheet: a swipe on the corner editor, once such an element, scrolled the page behind
+    the sheet, and on Android the screen flickered while it moved (#125). The existing shared classes (`btn-*`, `card`,
+    `field`, `label`, `badge`, `alert-*`) point to the same tokens and chamfers.
 
 13. **No transitional bridge.** While pages were redesigned (PRs 1-5), `styles.css` re-pointed the Tailwind scales they
     still used (`stone`, `sky`, `emerald`, `amber`, `violet`, `red`) to the tokens. PR 6 replaced the last uses (the
@@ -198,8 +204,8 @@ approval workflow, quarantine, access requests, storage quota) do not apply to A
       and "Datei unverändert hochladen" as options on a phone; a drop zone with "Datei wählen" and "Fotos als Scan"
       on a desktop, where browsers open no camera. The sheet cannot be closed while the server has not answered, so a
       failure is always seen; after a confirmed durable save it closes and the list says so. The scan draft stays in the browser
-      when the sheet closes and reopens it after a reload. The corner editor renders inside the open sheet, because a
-      modal dialog lies in the top layer above the rest of the page; its Escape closes only the editor. The sidebar's
+      when the sheet closes and reopens it after a reload. The corner editor is an Overlay above the open sheet
+      (decision 12); its Escape closes only the editor, returns the focus to the sheet and keeps the pages. The sidebar's
       "Hochladen" and "Neues Foto hochladen" on a document without text open `/documents?upload=1`; the parameter is removed
       again, so the same link works a second time.
     - **Document view:** back link, folder path, title, type and uploader, then "Original öffnen", "Original

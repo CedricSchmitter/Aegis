@@ -58,6 +58,25 @@ async function markedPhoto(page: Page, file: string, mark: string): Promise<Buff
   return Buffer.from(base64, "base64");
 }
 
+/** A finger swiping straight up by `distance` pixels from (x, y), as Chrome on a phone receives it. */
+async function swipeUp(page: Page, x: number, y: number, distance: number) {
+  const cdp = await page.context().newCDPSession(page);
+  const touch = (type: "touchStart" | "touchMove" | "touchEnd", at: number) =>
+    cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y: at }] });
+  await touch("touchStart", y);
+  for (let step = 1; step <= 20; step++) await touch("touchMove", y - (distance * step) / 20);
+  await touch("touchEnd", y - distance);
+  await cdp.detach();
+}
+
+/** How far the upload sheet and the page behind it are scrolled. */
+function scrollOffsets(page: Page) {
+  return page.evaluate(() => ({
+    sheet: document.querySelector('[data-testid="upload-panel"]')!.scrollTop,
+    page: document.scrollingElement!.scrollTop,
+  }));
+}
+
 /** Saves the scan and returns the id of the new document from the upload answer. */
 async function save(page: Page): Promise<string> {
   const uploaded = page.waitForResponse(
@@ -97,6 +116,17 @@ test.describe("scanned photos", () => {
     await page.getByTestId("upload-image-input").setInputFiles(photoFile);
     const editor = page.getByTestId("page-editor");
     await expect(editor).toHaveAttribute("data-purpose", "check");
+    // The editor is a modal of its own above the sheet (#125): a swipe on it, outside the corners, scrolls neither the
+    // sheet nor the page behind it. Before, it chained into the page and Android redrew the sheet while it moved.
+    await expect(editor).toBeFocused();
+    const touch = info.project.use.hasTouch === true;
+    if (touch) {
+      await page.getByTestId("upload-panel").evaluate((sheet) => (sheet.scrollTop = 0));
+      const unscrolled = await scrollOffsets(page);
+      await swipeUp(page, 8, page.viewportSize()!.height - 150, 300);
+      await page.waitForTimeout(700);
+      expect(await scrollOffsets(page)).toEqual(unscrolled);
+    }
     await expect(editor).not.toContainText("Blatt nicht erkannt");
     await page.getByTestId("page-editor-remove").click();
     await expect(page.getByTestId("scan-page")).toHaveCount(0);
@@ -110,6 +140,19 @@ test.describe("scanned photos", () => {
     const scanned = page.getByTestId("scan-page");
     await expect(scanned).toHaveCount(1);
     await expect(scanned.first()).toHaveAttribute("data-mode", "scan", { timeout: 60_000 });
+    // Escape closes only the editor and returns the focus to the page that opened it; the sheet keeps the page.
+    await page.getByTestId("scan-page-edit").click();
+    await expect(editor).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(editor).toHaveCount(0);
+    await expect(page.getByTestId("upload-panel")).toHaveAttribute("open", "");
+    await expect(page.getByTestId("scan-page-edit")).toBeFocused();
+    await expect(scanned).toHaveCount(1);
+    if (touch) {
+      // The same swipe on the sheet itself does scroll it, so the check above measured a real gesture.
+      await swipeUp(page, page.viewportSize()!.width / 2, page.viewportSize()!.height - 150, 300);
+      await expect.poll(async () => (await scrollOffsets(page)).sheet).toBeGreaterThan(0);
+    }
     // While scanning, a file cannot be chosen: it would replace the pages.
     await expect(page.getByTestId("upload-choose-file")).toHaveCount(0);
     // One short sentence per state (issue #83): while scanning, the panel explains the pages, not the file choice.

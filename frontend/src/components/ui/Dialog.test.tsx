@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import "../../i18n";
-import { ConfirmDialog, Dialog, matchesConfirmation } from "./Dialog";
+import { ConfirmDialog, Dialog, Overlay, matchesConfirmation } from "./Dialog";
 
 afterEach(cleanup);
 
@@ -27,6 +27,42 @@ describe("Dialog", () => {
     dialog.dispatchEvent(cancel);
     expect(cancel.defaultPrevented).toBe(true);
     expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("Overlay", () => {
+  it("is open and focused while mounted and closed before it is removed", () => {
+    const view = render(
+      <Overlay onClose={() => undefined} aria-label="Ecken">
+        <button type="button">OK</button>
+      </Overlay>,
+    );
+    const overlay = screen.getByRole("dialog", { name: "Ecken" }) as HTMLDialogElement;
+    expect(overlay.open).toBe(true);
+    expect(document.activeElement).toBe(overlay);
+    view.unmount();
+    expect(overlay.open).toBe(false);
+  });
+
+  it("reports Escape as close and so does a close by the browser", () => {
+    const onClose = vi.fn();
+    render(
+      <Overlay onClose={onClose} aria-label="Ecken">
+        <p>Text</p>
+      </Overlay>,
+    );
+    const overlay = screen.getByRole("dialog", { name: "Ecken" }) as HTMLDialogElement;
+    const cancel = new Event("cancel", { cancelable: true });
+    overlay.dispatchEvent(cancel);
+    expect(cancel.defaultPrevented).toBe(true);
+    expect(onClose).toHaveBeenCalledOnce();
+
+    // Without a user activation the browser's cancel cannot be prevented; the dialog closes and that is reported once.
+    overlay.dispatchEvent(new Event("cancel", { cancelable: false }));
+    expect(onClose).toHaveBeenCalledOnce();
+    overlay.removeAttribute("open");
+    overlay.dispatchEvent(new Event("close"));
+    expect(onClose).toHaveBeenCalledTimes(2);
   });
 });
 
