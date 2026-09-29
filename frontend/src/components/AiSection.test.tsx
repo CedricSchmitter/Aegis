@@ -108,16 +108,19 @@ describe("AI model choice", () => {
     expect((screen.getByTestId("ai-model-DOCUMENT_CLASSIFICATION") as HTMLSelectElement).value).toBe("opus");
   });
 
-  it("explains a concurrent change by the other member", async () => {
-    api.GET.mockImplementation((path: string) => Promise.resolve(ok(path === "/api/ai/runs" ? [] : overview())));
-    api.PUT.mockResolvedValue({
-      error: { code: "version.conflict" },
-      response: new Response(null, { status: 409 }),
+  it("explains a concurrent change by the other member and shows their choice", async () => {
+    let current = overview();
+    api.GET.mockImplementation((path: string) => Promise.resolve(ok(path === "/api/ai/runs" ? [] : current)));
+    api.PUT.mockImplementation(() => {
+      current = overview({ family: "opus", model: "claude-opus-5-5", choiceVersion: 1, choiceChangedBy: "m-lisa", choiceChangedAt: "2026-09-29T10:00:00Z" });
+      return Promise.resolve({ error: { code: "version.conflict" }, response: new Response(null, { status: 409 }) });
     });
 
     render(<AiSection />);
     fireEvent.change(await screen.findByTestId("ai-model-DOCUMENT_CLASSIFICATION"), { target: { value: "haiku" } });
 
     await waitFor(() => expect(screen.getByText("Der Datensatz wurde inzwischen geändert.")).toBeTruthy());
+    expect((screen.getByTestId("ai-model-DOCUMENT_CLASSIFICATION") as HTMLSelectElement).value).toBe("opus");
+    expect(screen.getByText(/Geändert von Lisa/)).toBeTruthy();
   });
 });

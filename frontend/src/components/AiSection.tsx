@@ -71,16 +71,23 @@ export function AiSection() {
   const retry = (id: string) =>
     act(async () => unwrap(await api.POST("/api/ai/runs/{id}/retry", { params: { path: { id } } })), t("ai.retryStarted"));
   const chooseModel = (workload: Workload, family: ModelOption["family"]) =>
-    act(
-      async () =>
-        unwrap(
-          await api.PUT("/api/ai/workloads/{workload}/model", {
-            params: { path: { workload: workload.workload } },
-            body: { family, expectedVersion: workload.choiceVersion },
-          }),
-        ),
-      t("ai.model.changed", { workload: t(`ai.workload.${workload.workload}`), family: t(`ai.family.${family}`) }),
-    );
+    act(async () => {
+      try {
+        // The answer is the updated overview, so the dropdown shows the new family before the runs are reloaded.
+        setOverview(
+          unwrap(
+            await api.PUT("/api/ai/workloads/{workload}/model", {
+              params: { path: { workload: workload.workload } },
+              body: { family, expectedVersion: workload.choiceVersion },
+            }),
+          ),
+        );
+      } catch (failure) {
+        // After a conflict the other member's choice is shown, so the next attempt uses the current version.
+        await load();
+        throw failure;
+      }
+    }, t("ai.model.changed", { workload: t(`ai.workload.${workload.workload}`), family: t(`ai.family.${family}`) }));
 
   const money = (amount: number | undefined) => formatMoney(amount ?? 0, overview?.currency ?? "USD", i18n.language);
 
