@@ -7,6 +7,7 @@ import dev.aegis.assistant.application.ports.ModelMessage;
 import dev.aegis.assistant.application.ports.ModelRequest;
 import dev.aegis.assistant.application.ports.ModelTurn;
 import dev.aegis.assistant.domain.FailureCategory;
+import dev.aegis.assistant.domain.ModelFamily;
 import dev.aegis.assistant.domain.TokenUsage;
 import dev.aegis.identity.application.api.MemberDirectory;
 import dev.aegis.identity.application.api.MemberSummary;
@@ -32,9 +33,11 @@ import tools.jackson.databind.ObjectMapper;
  * logged in to it. Aegis never reads, copies or stores that login. The subscription is personal, so only runs requested
  * by the configured members may use it.
  *
- * <p>The request maps to the same model, system prompt, JSON schema, effort and output allowance that the API provider
- * would send. The CLI takes one prompt without tools, so workloads that need tools or multi-turn conversations are
- * refused before anything runs; they need the API provider.
+ * <p>The request maps to the same system prompt, JSON schema, effort and output allowance that the API provider would
+ * send. The model is the CLI's alias of its family ({@code opus}, {@code sonnet}, {@code haiku}), so the subscription
+ * always uses the newest model of the family that Claude Code offers, even before the API catalog names it; the audit
+ * step records the model that actually answered. The CLI takes one prompt without tools, so workloads that need tools
+ * or multi-turn conversations are refused before anything runs; they need the API provider.
  */
 @Component
 @EnableConfigurationProperties(ClaudeCodeProperties.class)
@@ -84,9 +87,15 @@ public class ClaudeCodeGateway implements ModelGateway {
             throw new ModelCallException(FailureCategory.INVALID_REQUEST, "provider.toolsUnsupported",
                     "the Claude Code provider runs without tools; tool workloads need the API provider");
         }
-        ClaudeCli.Call call = new ClaudeCli.Call(request.model(), request.system(), singlePrompt(request.messages()),
-                request.outputSchema(), request.effort(), maxTurns, request.maxOutputTokens(), request.timeout());
+        ClaudeCli.Call call = new ClaudeCli.Call(cliModel(request.model()), request.system(),
+                singlePrompt(request.messages()), request.outputSchema(), request.effort(), maxTurns,
+                request.maxOutputTokens(), request.timeout());
         return interpret(cli.run(call), request);
+    }
+
+    /** The CLI alias of the model's family; a model outside the Claude families is passed on unchanged. */
+    static String cliModel(String model) {
+        return ModelFamily.ofModel(model).map(ModelFamily::key).orElse(model);
     }
 
     /** The CLI takes one prompt; earlier turns, tool calls or tool results cannot be expressed. */
@@ -170,11 +179,18 @@ public class ClaudeCodeGateway implements ModelGateway {
         return value instanceof Number number ? Math.max(0, number.longValue()) : 0;
     }
 
-    private static String modelId(Object modelUsage, String requested) {
-        if (modelUsage instanceof Map<?, ?> models && models.size() == 1) {
+    /** The model that answered: the only one reported, or the reported one of the requested family. */
+    static String modelId(Object modelUsage, String requested) {
+        if (!(modelUsage instanceof Map<?, ?> models) || models.isEmpty()) {
+            return requested;
+        }
+        if (models.size() == 1) {
             return String.valueOf(models.keySet().iterator().next());
         }
-        return requested;
+        var family = ModelFamily.ofModel(requested);
+        List<String> sameFamily = models.keySet().stream().map(String::valueOf)
+                .filter(model -> family.isPresent() && ModelFamily.ofModel(model).equals(family)).toList();
+        return sameFamily.size() == 1 ? sameFamily.getFirst() : requested;
     }
 
     /** Classifies a CLI failure by its message; unknown failures count as a provider outage and are retried. */

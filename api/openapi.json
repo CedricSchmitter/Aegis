@@ -79,6 +79,13 @@
             "description" : "Whether the authenticated household member may use a configured provider",
             "type" : "boolean"
           },
+          "models" : {
+            "description" : "Model families the household can choose per workload",
+            "items" : {
+              "$ref" : "#/components/schemas/ModelOptionDto"
+            },
+            "type" : "array"
+          },
           "spentToday" : {
             "type" : "number"
           },
@@ -89,7 +96,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "configured", "currency", "dailyCostLimit", "maxConcurrentRuns", "memberAllowed", "spentToday", "workloads" ],
+        "required" : [ "configured", "currency", "dailyCostLimit", "maxConcurrentRuns", "memberAllowed", "models", "spentToday", "workloads" ],
         "type" : "object"
       },
       "AiSourceDto" : {
@@ -482,6 +489,21 @@
           }
         },
         "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "ChooseModelRequest" : {
+        "description" : "New model family of a workload with the choice version the member saw",
+        "properties" : {
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "family" : {
+            "enum" : [ "opus", "sonnet", "haiku" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "expectedVersion", "family" ],
         "type" : "object"
       },
       "ClassificationDto" : {
@@ -1589,6 +1611,26 @@
         "required" : [ "documentsUpdated", "foldersUpdated", "target" ],
         "type" : "object"
       },
+      "ModelOptionDto" : {
+        "description" : "A model family with the model the Claude API uses for it and its list prices per million tokens; the owner's subscription uses the newest model of the family that Claude Code offers",
+        "properties" : {
+          "family" : {
+            "enum" : [ "opus", "sonnet", "haiku" ],
+            "type" : "string"
+          },
+          "inputPerMillion" : {
+            "type" : [ "number", "null" ]
+          },
+          "model" : {
+            "type" : "string"
+          },
+          "outputPerMillion" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "family", "model" ],
+        "type" : "object"
+      },
       "MoveCategoryRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -2540,6 +2582,25 @@
           "available" : {
             "type" : "boolean"
           },
+          "choiceChangedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "choiceChangedBy" : {
+            "description" : "Member who last changed the model choice",
+            "format" : "uuid",
+            "type" : [ "string", "null" ]
+          },
+          "choiceVersion" : {
+            "description" : "Version of the model choice, sent back when changing it",
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "family" : {
+            "description" : "Household model family for new runs; none for the connection check",
+            "enum" : [ "opus", "sonnet", "haiku" ],
+            "type" : [ "string", "null" ]
+          },
           "handlerAvailable" : {
             "type" : "boolean"
           },
@@ -2583,7 +2644,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "available", "handlerAvailable", "maxAttempts", "maxConcurrent", "maxCost", "maxDurationSeconds", "maxModelCalls", "maxOutputTokens", "maxToolCalls", "providerConfigured", "workload" ],
+        "required" : [ "available", "choiceVersion", "handlerAvailable", "maxAttempts", "maxConcurrent", "maxCost", "maxDurationSeconds", "maxModelCalls", "maxOutputTokens", "maxToolCalls", "providerConfigured", "workload" ],
         "type" : "object"
       }
     }
@@ -2748,6 +2809,44 @@
           }
         },
         "summary" : "Start a new run for the work of a failed or cancelled run",
+        "tags" : [ "ai" ]
+      }
+    },
+    "/api/ai/workloads/{workload}/model" : {
+      "put" : {
+        "description" : "Applies to both members and scheduled work from the next run on; queued and running runs keep their model. A stale expectedVersion is rejected with 409.",
+        "operationId" : "chooseAiModel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "workload",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChooseModelRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AiOverviewDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Choose the model family of a workload for the household",
         "tags" : [ "ai" ]
       }
     },

@@ -106,6 +106,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/workloads/{workload}/model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Choose the model family of a workload for the household
+         * @description Applies to both members and scheduled work from the next run on; queued and running runs keep their model. A stale expectedVersion is rejected with 409.
+         */
+        put: operations["chooseAiModel"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -1507,6 +1527,8 @@ export interface components {
             maxConcurrentRuns: number;
             /** @description Whether the authenticated household member may use a configured provider */
             memberAllowed: boolean;
+            /** @description Model families the household can choose per workload */
+            models: components["schemas"]["ModelOptionDto"][];
             spentToday: number;
             workloads: components["schemas"]["WorkloadDto"][];
         };
@@ -1647,6 +1669,13 @@ export interface components {
             categoryId?: string | null;
             /** Format: int64 */
             expectedVersion: number;
+        };
+        /** @description New model family of a workload with the choice version the member saw */
+        ChooseModelRequest: {
+            /** Format: int64 */
+            expectedVersion: number;
+            /** @enum {string} */
+            family: "opus" | "sonnet" | "haiku";
         };
         ClassificationDto: {
             categoryId?: string | null;
@@ -2060,6 +2089,14 @@ export interface components {
             foldersUpdated: number;
             target: components["schemas"]["LabelDto"];
         };
+        /** @description A model family with the model the Claude API uses for it and its list prices per million tokens; the owner's subscription uses the newest model of the family that Claude Code offers */
+        ModelOptionDto: {
+            /** @enum {string} */
+            family: "opus" | "sonnet" | "haiku";
+            inputPerMillion?: number | null;
+            model: string;
+            outputPerMillion?: number | null;
+        };
         MoveCategoryRequest: {
             /** Format: int64 */
             expectedVersion: number;
@@ -2411,6 +2448,23 @@ export interface components {
         };
         WorkloadDto: {
             available: boolean;
+            /** Format: date-time */
+            choiceChangedAt?: string | null;
+            /**
+             * Format: uuid
+             * @description Member who last changed the model choice
+             */
+            choiceChangedBy?: string | null;
+            /**
+             * Format: int64
+             * @description Version of the model choice, sent back when changing it
+             */
+            choiceVersion: number;
+            /**
+             * @description Household model family for new runs; none for the connection check
+             * @enum {string|null}
+             */
+            family?: "opus" | "sonnet" | "haiku" | null;
             handlerAvailable: boolean;
             /** Format: int32 */
             maxAttempts: number;
@@ -2563,6 +2617,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RunDto"];
+                };
+            };
+        };
+    };
+    chooseAiModel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workload: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChooseModelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AiOverviewDto"];
                 };
             };
         };

@@ -9,6 +9,7 @@ import dev.aegis.assistant.application.RunExecutionService;
 import dev.aegis.assistant.application.RunExecutor;
 import dev.aegis.assistant.application.WorkloadHandler;
 import dev.aegis.assistant.application.api.AiHealthQuery;
+import dev.aegis.assistant.application.api.AiModelCommands;
 import dev.aegis.assistant.application.api.AiRunCommands;
 import dev.aegis.assistant.application.api.AiRunQueries;
 import dev.aegis.assistant.application.api.AiRunStatusQuery;
@@ -20,6 +21,7 @@ import dev.aegis.assistant.application.ports.ModelGateway;
 import dev.aegis.assistant.application.ports.RunScheduler;
 import dev.aegis.assistant.domain.AiRunRepository;
 import dev.aegis.assistant.domain.Workload;
+import dev.aegis.assistant.domain.WorkloadModelChoiceRepository;
 import dev.aegis.shared.HouseholdAccess;
 import java.time.Clock;
 import java.time.ZoneId;
@@ -92,10 +94,11 @@ public class AssistantConfiguration {
     }
 
     @Bean
-    AssistantServices assistantServices(AiRunRepository runs, RunScheduler scheduler, AiLock lock,
-            AssistantParts parts, AiSettings settings, HouseholdAccess access, Clock clock) {
-        return new AssistantServices(new AiRunService(runs, scheduler, lock, parts.handlers(), parts.gateways(),
-                settings, access, clock));
+    AssistantServices assistantServices(AiRunRepository runs, WorkloadModelChoiceRepository choices,
+            RunScheduler scheduler, AiLock lock, AssistantParts parts, AiSettings settings, HouseholdAccess access,
+            Clock clock) {
+        return new AssistantServices(new AiRunService(runs, choices, scheduler, lock, parts.handlers(),
+                parts.gateways(), settings, access, clock));
     }
 
     @Bean
@@ -111,6 +114,11 @@ public class AssistantConfiguration {
     @Bean
     AiRunCommands aiRunCommands(AssistantServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(AiRunCommands.class, services.runs(), tm);
+    }
+
+    @Bean
+    AiModelCommands aiModelCommands(AssistantServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(AiModelCommands.class, services.runs(), tm);
     }
 
     @Bean

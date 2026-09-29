@@ -15,12 +15,15 @@ import java.util.Optional;
 /**
  * Household-wide AI limits and the per-workload profiles. Daily cost limits count the model calls of one provider
  * per household day in {@code zone}: {@code dailyCostLimit} is the default, {@code providerLimits} can set a
- * provider's own daily limit and run budget. All amounts share one currency.
+ * provider's own daily limit and run budget. All amounts share one currency. Every model of the {@code catalog} needs
+ * a price, and every workload's default family must be in the catalog.
  */
 public record AiSettings(Map<Workload, WorkloadProfile> profiles, Money dailyCostLimit, int maxConcurrentRuns,
-        Duration callTimeout, ZoneId zone, PriceBook prices, Map<String, ProviderLimits> providerLimits) {
+        Duration callTimeout, ZoneId zone, PriceBook prices, Map<String, ProviderLimits> providerLimits,
+        ModelCatalog catalog) {
     public AiSettings {
         Objects.requireNonNull(dailyCostLimit, "daily cost limit");
+        Objects.requireNonNull(catalog, "catalog");
         Objects.requireNonNull(callTimeout, "call timeout");
         Objects.requireNonNull(zone, "zone");
         Objects.requireNonNull(prices, "prices");
@@ -45,6 +48,17 @@ public record AiSettings(Map<Workload, WorkloadProfile> profiles, Money dailyCos
         for (ModelPrice price : prices.prices().values()) {
             if (!price.inputPerMillion().currency().equals(currency)) {
                 throw new IllegalArgumentException("all AI prices must use " + currency);
+            }
+        }
+        for (ModelCatalog.Entry entry : catalog.entries().values()) {
+            if (prices.find(entry.model()).isEmpty()) {
+                throw new IllegalArgumentException("the catalog model " + entry.model() + " has no price");
+            }
+        }
+        for (WorkloadProfile profile : profiles.values()) {
+            if (profile.family() != null && catalog.entry(profile.family()).isEmpty()) {
+                throw new IllegalArgumentException("the default family " + profile.family().key() + " of "
+                        + profile.workload() + " is not in the model catalog");
             }
         }
     }

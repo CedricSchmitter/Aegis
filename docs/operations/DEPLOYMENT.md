@@ -167,11 +167,12 @@ which the application container mounts read-only at `/run/secrets/ai`. Credentia
 change, so no restart is needed; deleting a file disconnects that provider. Never put a token or key into `.env`, Git,
 tickets or chat. The deployment secrets, including these files, are part of the encrypted external backup.
 
-### Claude API with Sonnet 5
+### Claude API
 
-The preferred provider is the direct Claude Messages API through the Java SDK. All three workload profiles select
-`claude-sonnet-5`; the API needs no Claude Code installation, subscription login or CLI process.
-Both household members use their own Aegis login with the server-side API connection.
+The preferred provider is the direct Claude Messages API through the Java SDK; it needs no Claude Code installation,
+subscription login or CLI process. Both household members use their own Aegis login with the server-side API
+connection. Which model each workload uses is a household setting on the status page (see
+[model choice](#model-choice-per-workload)).
 
 1. In [Claude Console](https://platform.claude.com/), open Billing and manually buy a small prepaid credit balance.
    API credits are separate from a Claude subscription. Check the displayed currency, minimum and taxes before
@@ -232,10 +233,24 @@ for every workload. Daily limits count each provider separately, so subscription
 0.25 USD and vice versa. The status page shows the limit and today's spending of the provider the member's runs use.
 Subscription usage limits appear as `RATE_LIMITED` with the reset time.
 
+### Model choice per workload
+
+Aegis > Status > Technical details > AI execution shows a **Model** dropdown per workload (classification, review,
+chat) with the families Opus, Sonnet and Haiku ([ADR-0020](../architecture/adr/ADR-0020-household-model-families.md)).
+The choice applies to both members and to scheduled work from the next run on; running runs keep their model. Until
+someone changes it, every workload uses Sonnet. The Claude API uses the model of the family named in `aegis.ai.models`
+of `application.yml` (on 2026-09-29: `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-4-5`); the subscription
+passes the family alias to `claude -p` and so always uses the newest model of the family that Claude Code offers.
+
+When Anthropic releases a new model of a family, replace its entry in `aegis.ai.models`, add its list price to
+`aegis.ai.prices` (keep the predecessor's price for queued runs and retries) and deploy. A catalog model without a
+price stops the application at startup instead of running without a cost budget. The budgets stay the same for every
+family, so a more expensive model reaches them sooner.
+
 ### Verify and understand availability
 
-Open Aegis > Status > Check connection as either member. All profiles share Sonnet 5, so one check makes one small
-structured request, not three requests. A successful run proves authentication, model access and structured output;
+Open Aegis > Status > Check connection as either member. The check makes one small structured request per distinct
+chosen model (one request while all workloads use the same family). A successful run proves authentication, model access and structured output;
 it does not test document extraction quality. The check has a 0.05 USD run budget and at most two attempts.
 
 Implemented: connection checks, persistent run status, token/cost accounting, bounded retries, cancellation,
@@ -252,13 +267,13 @@ manual requests keep working. Filenames for downloads and exports use German nam
 (`aegis.documents.analysis.filename-language`).
 
 The default household daily cost limit is **0.25 USD**, with one run at a time. Classification is limited to
-0.05 USD per run (one structured Sonnet 5 call at low effort; at most 20,000 characters of OCR text are sent);
+0.05 USD per run (one structured call at low effort; at most 20,000 characters of OCR text are sent);
 review/chat profiles to 0.10 USD. When the daily limit is reached, further classifications fail visibly as
 "Budget exhausted" and can be started again the next day. These are application estimates from reported usage, not a
 provider balance or an exact billing ceiling: interrupted requests may be billed without recorded usage.
 The provider's billing controls remain authoritative. No automatic top-up exists. The only provider fallback is the
 choice at request time described above; a failing API call is never repeated on the subscription.
-Models, prices and per-run budgets are in `aegis.ai` of `application.yml`.
+The model catalog, prices and per-run budgets are in `aegis.ai` of `application.yml`.
 
 Deployment defaults: `AEGIS_AI_PROVIDERS=anthropic,claude-code`, `AEGIS_AI_SUBSCRIPTION_MEMBERS=` (empty: nobody may
 use the subscription), `AEGIS_AI_DAILY_COST_LIMIT=0.25`, `AEGIS_ASSISTANT_MEMBERS=` (empty: every member is a person;

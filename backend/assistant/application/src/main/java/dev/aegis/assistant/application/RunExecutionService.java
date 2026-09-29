@@ -171,7 +171,9 @@ public class RunExecutionService implements RunExecution {
     }
 
     RunContext context(AiRun run, int attempt) {
-        String effort = settings.profile(run.workload()).map(WorkloadProfile::effort).orElse(null);
+        // A model without effort levels (Haiku) rejects the parameter, so it is only sent to models that accept it.
+        String effort = settings.catalog().acceptsEffort(run.model().model())
+                ? settings.profile(run.workload()).map(WorkloadProfile::effort).orElse(null) : null;
         return new RunContext(run.id(), run.workload(), attempt, new Actor(run.requestedBy()), run.model(),
                 run.sources(), run.parameters(), effort);
     }

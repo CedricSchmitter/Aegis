@@ -1,6 +1,7 @@
 package dev.aegis.assistant.adapters.rest;
 
 import dev.aegis.assistant.application.api.AiOverview;
+import dev.aegis.assistant.application.api.ModelOptionView;
 import dev.aegis.assistant.application.api.RunView;
 import dev.aegis.assistant.application.api.SourceVersion;
 import dev.aegis.assistant.application.api.StepView;
@@ -59,11 +60,17 @@ public final class AiDtos {
     }
 
     public record WorkloadDto(String workload, @Schema(nullable = true) String provider,
-            @Schema(nullable = true) String model, boolean providerConfigured, boolean handlerAvailable, boolean available, BigDecimal maxCost,
-            long maxDurationSeconds, int maxModelCalls, int maxToolCalls, int maxOutputTokens, int maxAttempts,
-            int maxConcurrent) {
+            @Schema(nullable = true) String model,
+            @Schema(nullable = true, allowableValues = {"opus", "sonnet", "haiku"},
+                    description = "Household model family for new runs; none for the connection check") String family,
+            @Schema(description = "Version of the model choice, sent back when changing it") long choiceVersion,
+            @Schema(nullable = true, description = "Member who last changed the model choice") UUID choiceChangedBy,
+            @Schema(nullable = true) Instant choiceChangedAt, boolean providerConfigured, boolean handlerAvailable,
+            boolean available, BigDecimal maxCost, long maxDurationSeconds, int maxModelCalls, int maxToolCalls,
+            int maxOutputTokens, int maxAttempts, int maxConcurrent) {
         static WorkloadDto from(WorkloadView view) {
-            return new WorkloadDto(view.workload(), view.provider(), view.model(), view.providerConfigured(),
+            return new WorkloadDto(view.workload(), view.provider(), view.model(), view.family(),
+                    view.choiceVersion(), view.choiceChangedBy(), view.choiceChangedAt(), view.providerConfigured(),
                     view.handlerAvailable(), view.available(), view.maxCost(), view.maxDurationSeconds(),
                     view.maxModelCalls(), view.maxToolCalls(), view.maxOutputTokens(), view.maxAttempts(),
                     view.maxConcurrent());
@@ -75,11 +82,28 @@ public final class AiDtos {
             @Schema(description = "Provider whose daily limit and spending today are shown: the one this member's "
                     + "runs use now (anthropic or claude-code)", nullable = true) String limitProvider,
             BigDecimal dailyCostLimit, BigDecimal spentToday, String currency, int maxConcurrentRuns,
-            List<WorkloadDto> workloads) {
+            List<WorkloadDto> workloads,
+            @Schema(description = "Model families the household can choose per workload") List<ModelOptionDto> models) {
         static AiOverviewDto from(AiOverview overview) {
             return new AiOverviewDto(overview.configured(), overview.memberAllowed(), overview.limitProvider(),
                     overview.dailyCostLimit(), overview.spentToday(), overview.currency(), overview.maxConcurrentRuns(),
-                    overview.workloads().stream().map(WorkloadDto::from).toList());
+                    overview.workloads().stream().map(WorkloadDto::from).toList(),
+                    overview.models().stream().map(ModelOptionDto::from).toList());
         }
+    }
+
+    @Schema(description = "A model family with the model the Claude API uses for it and its list prices per million "
+            + "tokens; the owner's subscription uses the newest model of the family that Claude Code offers")
+    public record ModelOptionDto(@Schema(allowableValues = {"opus", "sonnet", "haiku"}) String family, String model,
+            @Schema(nullable = true) BigDecimal inputPerMillion, @Schema(nullable = true) BigDecimal outputPerMillion) {
+        static ModelOptionDto from(ModelOptionView option) {
+            return new ModelOptionDto(option.family(), option.model(), option.inputPerMillion(),
+                    option.outputPerMillion());
+        }
+    }
+
+    @Schema(description = "New model family of a workload with the choice version the member saw")
+    public record ChooseModelRequest(@Schema(allowableValues = {"opus", "sonnet", "haiku"}) String family,
+            long expectedVersion) {
     }
 }

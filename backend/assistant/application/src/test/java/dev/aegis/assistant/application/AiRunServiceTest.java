@@ -179,11 +179,11 @@ class AiRunServiceTest {
     }
 
     @Test
-    void modelWithoutAPriceCannotRun() {
-        kit.prices.clear();
+    void aCatalogModelWithoutAPriceIsRejectedBeforeAnythingCanRun() {
+        kit.prices.remove(AiTestKit.OPUS);
 
-        assertThatThrownBy(() -> kit.classify("doc-1", 3, "Rechnung", false))
-                .extracting(e -> ((InvalidInputException) e).code()).isEqualTo("ai.price.unknown");
+        assertThatThrownBy(kit::settings).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(AiTestKit.OPUS);
     }
 
     @Test

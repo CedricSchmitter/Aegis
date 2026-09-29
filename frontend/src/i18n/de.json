@@ -800,6 +800,18 @@
     "nextAttempt": "nächster Versuch {{date}}",
     "cancel": "Abbrechen",
     "retry": "Erneut versuchen",
+    "family": {
+      "opus": "Opus – am gründlichsten",
+      "sonnet": "Sonnet – ausgewogen",
+      "haiku": "Haiku – am schnellsten und günstigsten"
+    },
+    "model": {
+      "label": "Modell",
+      "details": "Claude API: {{model}} · {{input}} / {{output}} je Million Tokens (Eingabe / Ausgabe)",
+      "changedBy": "Geändert von {{name}} am {{date}}",
+      "changed": "{{workload}}: ab dem nächsten Lauf {{family}}.",
+      "scope": "Die Modellwahl gilt für den ganzen Haushalt und für geplante Arbeit, jeweils ab dem nächsten Lauf; laufende Läufe behalten ihr Modell. Das Claude-Abo nutzt immer das neueste Modell der gewählten Familie."
+    },
     "workload": {
       "CONNECTION_CHECK": "Verbindungsprüfung",
       "DOCUMENT_CLASSIFICATION": "Dokumente einordnen",
@@ -983,6 +995,9 @@
     "ai.notConfigured": "Es ist kein KI-Anbieter eingerichtet.",
     "ai.provider.memberNotAllowed": "Die KI-Anbindung läuft gerade über ein persönliches Abo und ist für dein Konto nicht freigegeben.",
     "ai.workload.unavailable": "Für diese KI-Aufgabe gibt es noch keinen Ablauf.",
+    "ai.model.unknownFamily": "Unbekannte Modellfamilie.",
+    "ai.model.notSelectable": "Für diese KI-Aufgabe lässt sich kein Modell wählen.",
+    "ai.model.notOffered": "Diese Modellfamilie wird derzeit nicht angeboten.",
     "ai.workload.unknown": "Unbekannte KI-Aufgabe.",
     "ai.price.unknown": "Für dieses Modell ist kein Preis hinterlegt, daher kann das Kostenbudget nicht geprüft werden.",
     "ai.run.notRetryable": "Nur fehlgeschlagene oder abgebrochene Läufe können wiederholt werden.",

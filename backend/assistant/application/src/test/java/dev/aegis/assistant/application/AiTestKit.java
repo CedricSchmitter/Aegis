@@ -9,15 +9,18 @@ import dev.aegis.assistant.application.ports.ModelMessage;
 import dev.aegis.assistant.application.ports.ModelTurn;
 import dev.aegis.assistant.application.ports.RunScheduler;
 import dev.aegis.assistant.application.ports.ToolSpec;
-import dev.aegis.assistant.domain.ModelSelection;
+import dev.aegis.assistant.domain.ModelFamily;
 import dev.aegis.assistant.domain.Money;
 import dev.aegis.assistant.domain.RunBudget;
 import dev.aegis.assistant.domain.RunId;
 import dev.aegis.assistant.domain.Workload;
+import dev.aegis.assistant.domain.WorkloadModelChoice;
+import dev.aegis.assistant.domain.WorkloadModelChoiceRepository;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.NotAuthorizedException;
+import dev.aegis.shared.StaleVersionException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -43,11 +46,16 @@ class AiTestKit {
     static final MemberId CEDRIC = MemberId.random();
     static final Actor AS_LISA = new Actor(LISA);
     static final Actor AS_CEDRIC = new Actor(CEDRIC);
-    static final String MODEL = "scripted-model";
+    /** Catalog model of the Sonnet family, the default of every profile. */
+    static final String MODEL = "claude-sonnet-test";
+    static final String OPUS = "claude-opus-test";
+    /** Catalog model without effort levels, like Haiku 4.5. */
+    static final String HAIKU = "claude-haiku-test";
     static final String SUBSCRIPTION = "subscription";
 
     final MutableClock clock = new MutableClock(T0);
     final InMemoryAiRunRepository runs = new InMemoryAiRunRepository();
+    final InMemoryModelChoices choices = new InMemoryModelChoices();
     final ScriptedGateway gateway = new ScriptedGateway();
     /** Second choice of every profile, like the owner's subscription: not configured and limited to Cedric. */
     final ScriptedGateway subscription = new ScriptedGateway(SUBSCRIPTION);
@@ -76,8 +84,15 @@ class AiTestKit {
             new ProviderLimits(Money.of("50.00", "USD"), Money.of("0.50", "USD"))));
     int maxConcurrentRuns = 2;
     int workloadConcurrency = 2;
-    Map<String, ModelPrice> prices = new LinkedHashMap<>(Map.of(MODEL,
-            new ModelPrice(Money.of("1", "USD"), Money.of("5", "USD"), null, null)));
+    String classificationEffort;
+    Map<String, ModelPrice> prices = new LinkedHashMap<>(Map.of(
+            MODEL, new ModelPrice(Money.of("1", "USD"), Money.of("5", "USD"), null, null),
+            OPUS, new ModelPrice(Money.of("4", "USD"), Money.of("20", "USD"), null, null),
+            HAIKU, new ModelPrice(Money.of("1", "USD"), Money.of("5", "USD"), null, null)));
+    Map<ModelFamily, ModelCatalog.Entry> catalog = new LinkedHashMap<>(Map.of(
+            ModelFamily.SONNET, new ModelCatalog.Entry(ModelFamily.SONNET, MODEL, true),
+            ModelFamily.OPUS, new ModelCatalog.Entry(ModelFamily.OPUS, OPUS, true),
+            ModelFamily.HAIKU, new ModelCatalog.Entry(ModelFamily.HAIKU, HAIKU, false)));
 
     private AiSettings settings;
     private RunExecutionService execution;
@@ -87,16 +102,15 @@ class AiTestKit {
     AiSettings settings() {
         if (settings == null) {
             Map<Workload, WorkloadProfile> profiles = new EnumMap<>(Workload.class);
-            List<ModelSelection> models = List.of(new ModelSelection(ScriptedGateway.PROVIDER, MODEL),
-                    new ModelSelection(SUBSCRIPTION, MODEL));
-            profiles.put(Workload.DOCUMENT_CLASSIFICATION,
-                    new WorkloadProfile(Workload.DOCUMENT_CLASSIFICATION, models, budget, workloadConcurrency, null));
+            List<String> providers = List.of(ScriptedGateway.PROVIDER, SUBSCRIPTION);
+            profiles.put(Workload.DOCUMENT_CLASSIFICATION, new WorkloadProfile(Workload.DOCUMENT_CLASSIFICATION,
+                    providers, ModelFamily.SONNET, budget, workloadConcurrency, classificationEffort));
             profiles.put(Workload.DOCUMENT_REVIEW,
-                    new WorkloadProfile(Workload.DOCUMENT_REVIEW, models, budget, 1, "high"));
-            profiles.put(Workload.CONNECTION_CHECK, new WorkloadProfile(Workload.CONNECTION_CHECK, List.of(),
+                    new WorkloadProfile(Workload.DOCUMENT_REVIEW, providers, ModelFamily.SONNET, budget, 1, "high"));
+            profiles.put(Workload.CONNECTION_CHECK, new WorkloadProfile(Workload.CONNECTION_CHECK, List.of(), null,
                     new RunBudget(Duration.ofSeconds(90), Money.of("0.05", "USD"), 1, 0, 256, 2), 2, null));
             settings = new AiSettings(profiles, dailyLimit, maxConcurrentRuns, Duration.ofSeconds(60),
-                    ZoneId.of("Europe/Berlin"), new PriceBook(prices), providerLimits);
+                    ZoneId.of("Europe/Berlin"), new PriceBook(prices), providerLimits, new ModelCatalog(catalog));
         }
         return settings;
     }
@@ -130,7 +144,7 @@ class AiTestKit {
 
     AiRunService service() {
         if (service == null) {
-            service = new AiRunService(runs, scheduler, () -> {
+            service = new AiRunService(runs, choices, scheduler, () -> {
             }, handlers(), gateways(), settings(), access, clock);
         }
         return service;
@@ -233,6 +247,35 @@ class AiTestKit {
         public Result invoke(Invocation invocation, Map<String, Object> input) {
             invocations++;
             return Result.ok("deleted");
+        }
+    }
+
+    /** Model choices in memory with the same version check as the database. */
+    static final class InMemoryModelChoices implements WorkloadModelChoiceRepository {
+        private final Map<Workload, WorkloadModelChoice> stored = new EnumMap<>(Workload.class);
+
+        @Override
+        public synchronized Optional<WorkloadModelChoice> find(Workload workload) {
+            WorkloadModelChoice choice = stored.get(workload);
+            return Optional.ofNullable(choice).map(found -> WorkloadModelChoice.restore(found.workload(),
+                    found.family(), found.version(), found.changedBy().orElse(null), found.changedAt().orElse(null)));
+        }
+
+        @Override
+        public synchronized Map<Workload, WorkloadModelChoice> findAll() {
+            Map<Workload, WorkloadModelChoice> all = new EnumMap<>(Workload.class);
+            stored.keySet().forEach(workload -> all.put(workload, find(workload).orElseThrow()));
+            return all;
+        }
+
+        @Override
+        public synchronized void save(WorkloadModelChoice choice) {
+            long current = stored.containsKey(choice.workload()) ? stored.get(choice.workload()).version() : 0;
+            if (current != choice.version() - 1) {
+                throw new StaleVersionException("aiModelChoice", choice.workload().name(), choice.version() - 1,
+                        current);
+            }
+            stored.put(choice.workload(), choice);
         }
     }
 

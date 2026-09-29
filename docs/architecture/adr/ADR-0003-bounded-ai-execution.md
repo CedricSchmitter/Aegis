@@ -68,7 +68,9 @@ manual prepaid billing procedure are in DEPLOYMENT.md. Aegis has no billing/relo
 ### Workload profiles
 
 Providers in order of preference, model and budgets are configuration per workload. All profiles select
-`anthropic`, then `claude-code`, with `claude-sonnet-5` (2 USD input / 10 USD output per million tokens). The API daily limit is 0.25 USD (subscription: 50 USD, 0.50 USD per run) and global
+`anthropic`, then `claude-code`. Since [ADR-0020](ADR-0020-household-model-families.md) the model is the catalog model
+of the family the household chose per workload (default Sonnet, `claude-sonnet-5-5`, 2 USD input / 10 USD output per
+million tokens). The API daily limit is 0.25 USD (subscription: 50 USD, 0.50 USD per run) and global
 concurrency is one. Classification has a 0.05 USD run budget; review and chat have 0.10 USD each.
 Model changes require a configured price and representative quality checks. The connection check performs
 one structured call per distinct configured model, so the default profiles require only one check.
