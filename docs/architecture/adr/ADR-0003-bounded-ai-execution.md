@@ -51,6 +51,7 @@ timeout); it cannot choose command-line flags. The adapter's `ClaudeCli` executo
 error classification) apart from the transport (`HostRunnerClient`). The subscription is personal, so the gateway
 serves only the members listed in `AEGIS_AI_SUBSCRIPTION_MEMBERS` (`ModelGateway.allows`); requests of other members
 are refused as `ai.provider.memberNotAllowed` and a queued run whose member lost access fails as `NOT_AUTHORIZED`.
+Document classification shows both as "not classified" rather than as a failure (ADR-0004).
 The provider accepts one user prompt without tools, which fits classification; tool workloads need the API.
 
 Provider choice: a workload profile lists providers in order of preference (`AEGIS_AI_PROVIDERS`, default

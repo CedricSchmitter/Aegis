@@ -84,6 +84,8 @@ const STATE_TONES: Record<string, Tone> = {
   SUCCEEDED: "data",
   CANCELLED: "neutral",
   NOT_REQUESTED: "neutral",
+  // Requested for a member who may not use AI: an expected state, not a failure (issue #107).
+  NOT_CLASSIFIED: "neutral",
   WAITING_FOR_ARCHIVE: "neutral",
   PENDING: "data",
   CLASSIFIED: "data",

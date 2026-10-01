@@ -1185,7 +1185,8 @@
       "CLASSIFIED": "Eingeordnet. Automatisch gesetzte Werte kannst du jederzeit ändern.",
       "NEEDS_REVIEW": "Eingeordnet. Einige Vorschläge warten auf deine Prüfung.",
       "FAILED": "Die Einordnung ist fehlgeschlagen. Das Dokument selbst ist gespeichert und archiviert.",
-      "UNAVAILABLE": "Die KI war nicht verfügbar. Das Dokument selbst ist gespeichert."
+      "UNAVAILABLE": "Die KI war nicht verfügbar. Das Dokument selbst ist gespeichert.",
+      "NOT_CLASSIFIED": "Nicht automatisch eingeordnet, weil die KI für {{name}} nicht freigegeben ist. Ein Mitglied mit KI-Zugang kann das Dokument mit „Jetzt einordnen“ einordnen. Das Dokument selbst ist gespeichert und archiviert."
     },
     "stateShort": {
       "NOT_REQUESTED": "Nicht eingeordnet",
@@ -1194,7 +1195,8 @@
       "CLASSIFIED": "Eingeordnet",
       "NEEDS_REVIEW": "Prüfen",
       "FAILED": "Einordnung fehlgeschlagen",
-      "UNAVAILABLE": "KI nicht verfügbar"
+      "UNAVAILABLE": "KI nicht verfügbar",
+      "NOT_CLASSIFIED": "Nicht eingeordnet"
     },
     "completed": "Zuletzt eingeordnet am {{date}} mit {{model}}, angestoßen von {{name}}.",
     "flag": {

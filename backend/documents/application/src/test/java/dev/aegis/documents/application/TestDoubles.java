@@ -89,11 +89,16 @@ final class TestDoubles {
         final List<String> requested = new ArrayList<>();
         final Map<String, RunStatus> states = new HashMap<>();
         String refusal;
+        /** Members the AI provider does not serve, such as a subscription that is not theirs. */
+        final Set<MemberId> notAllowed = new LinkedHashSet<>();
 
         @Override
         public Outcome request(Actor requester, DocumentId id, int generation, long classificationVersion) {
             if (refusal != null) {
                 return new Unavailable(refusal);
+            }
+            if (notAllowed.contains(requester.memberId())) {
+                return new Unavailable(MEMBER_NOT_ALLOWED);
             }
             String key = AnalysisRuns.key(id, generation);
             requested.add(key + "@" + classificationVersion + " by " + requester.memberId());

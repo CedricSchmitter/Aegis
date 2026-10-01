@@ -15,6 +15,11 @@ import java.util.UUID;
 public interface AnalysisRuns {
     String SOURCE_CLASSIFICATION = "documentClassification";
     String SOURCE_ANALYSIS = "documentAnalysis";
+    /**
+     * Refusal or failure code when the requesting member may not use the configured AI provider, for example a
+     * personal subscription that serves only its owner. An expected configuration state, not a failure.
+     */
+    String MEMBER_NOT_ALLOWED = "ai.provider.memberNotAllowed";
 
     static String key(DocumentId id, int generation) {
         return "document-classification:" + id + ":g" + generation;

@@ -7,8 +7,11 @@ import dev.aegis.assistant.application.ports.ModelRequest;
 import dev.aegis.assistant.application.ports.ModelTurn;
 import dev.aegis.assistant.domain.FailureCategory;
 import dev.aegis.assistant.domain.TokenUsage;
+import dev.aegis.shared.MemberId;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -17,7 +20,8 @@ import java.util.function.Function;
 
 /**
  * Controlled model for integration tests (provider {@code controlled}): answers from a per-test script, can hold a
- * call open to simulate a slow provider, and records every request. No network, no credentials.
+ * call open to simulate a slow provider, and records every request. Like a personal subscription, it can refuse to
+ * serve chosen members. No network, no credentials.
  */
 public class ControlledModelGateway implements ModelGateway {
     public static final String PROVIDER = "controlled";
@@ -29,9 +33,12 @@ public class ControlledModelGateway implements ModelGateway {
     private final ConcurrentLinkedDeque<Function<ModelRequest, ModelTurn>> script = new ConcurrentLinkedDeque<>();
     private volatile Function<ModelRequest, ModelTurn> fallback = ControlledModelGateway::unavailable;
     public volatile boolean configured = true;
+    /** Members this provider does not serve. */
+    public final Set<MemberId> notAllowed = ConcurrentHashMap.newKeySet();
 
     public void reset() {
         requests.clear();
+        notAllowed.clear();
         script.clear();
         fallback = ControlledModelGateway::unavailable;
         configured = true;
@@ -92,6 +99,11 @@ public class ControlledModelGateway implements ModelGateway {
     @Override
     public boolean configured() {
         return configured;
+    }
+
+    @Override
+    public boolean allows(MemberId member) {
+        return !notAllowed.contains(member);
     }
 
     @Override

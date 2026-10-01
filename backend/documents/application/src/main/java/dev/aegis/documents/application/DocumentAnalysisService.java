@@ -152,11 +152,20 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         requestRun(document.id(), analysis, new Actor(requester), Trigger.UPLOAD);
     }
 
+    /**
+     * Requests the run of a new generation. An upload by a member who may not use AI stays not classified until a
+     * member who may starts it (issue #107). Such a member's own request is refused instead, without touching the
+     * analysis: the refusal concerns the member, not the document, so it never replaces an earlier result.
+     */
     private AnalysisRuns.Outcome requestRun(DocumentId id, DocumentAnalysis analysis, Actor actor, Trigger trigger) {
         long classificationVersion = classifications.findById(id).map(DocumentClassification::version).orElse(0L);
         int generation = analysis.request(actor.memberId(), trigger, clock.instant());
         AnalysisRuns.Outcome outcome = runs.request(actor, id, generation, classificationVersion);
         if (outcome instanceof AnalysisRuns.Unavailable unavailable) {
+            if (trigger == Trigger.MANUAL && AnalysisRuns.MEMBER_NOT_ALLOWED.equals(unavailable.code())) {
+                throw new InvalidInputException(unavailable.code(),
+                        "The configured AI provider is not available for this member");
+            }
             analysis.markUnavailable(unavailable.code());
         }
         analyses.save(analysis);

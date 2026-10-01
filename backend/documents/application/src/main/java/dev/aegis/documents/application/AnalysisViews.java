@@ -109,7 +109,10 @@ public class AnalysisViews {
         return switch (analysis.status()) {
             case NOT_REQUESTED -> AnalysisView.NOT_REQUESTED;
             case AWAITING_ARCHIVE -> AnalysisView.WAITING_FOR_ARCHIVE;
-            case UNAVAILABLE -> AnalysisView.UNAVAILABLE;
+            // A requester who may not use AI is an expected configuration state (issue #107), whether the request was
+            // refused at once or the queued run found the access withdrawn.
+            case UNAVAILABLE -> AnalysisRuns.MEMBER_NOT_ALLOWED.equals(analysis.snapshot().unavailableCode())
+                    ? AnalysisView.NOT_CLASSIFIED : AnalysisView.UNAVAILABLE;
             case REQUESTED -> {
                 if (run == null) {
                     yield AnalysisView.FAILED;
@@ -117,7 +120,11 @@ public class AnalysisViews {
                 if (run.active()) {
                     yield AnalysisView.PENDING;
                 }
-                yield "SUCCEEDED".equals(run.state()) ? AnalysisView.CLASSIFIED : AnalysisView.FAILED;
+                if ("SUCCEEDED".equals(run.state())) {
+                    yield AnalysisView.CLASSIFIED;
+                }
+                yield AnalysisRuns.MEMBER_NOT_ALLOWED.equals(run.failureCode()) ? AnalysisView.NOT_CLASSIFIED
+                        : AnalysisView.FAILED;
             }
             // A doubtful result that left the document without any effective label also needs a member's look.
             case COMPLETED -> analysis.hasPendingSuggestions() || pendingLabels(classification)

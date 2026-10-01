@@ -23,7 +23,7 @@ Storage, archival/OCR and AI processing are three separate visible states:
 |---|---|---|
 | Capture | Documents (`documents`) | saved once the original is in ingress and the record committed |
 | Archival/OCR | Documents (`ProcessingInfo`) | `RECEIVED`, `SUBMITTED`, `ARCHIVED`, `FAILED` |
-| Analysis | Documents (`document_analyses`) plus the run state from the assistant context | `NOT_REQUESTED`, `WAITING_FOR_ARCHIVE`, `PENDING`, `CLASSIFIED`, `NEEDS_REVIEW`, `FAILED`, `UNAVAILABLE` |
+| Analysis | Documents (`document_analyses`) plus the run state from the assistant context | `NOT_REQUESTED`, `WAITING_FOR_ARCHIVE`, `PENDING`, `CLASSIFIED`, `NEEDS_REVIEW`, `FAILED`, `UNAVAILABLE`, `NOT_CLASSIFIED` |
 
 The documents context owns a `DocumentAnalysis` aggregate per analyzed document: a request **generation**, who
 requested it and why (upload or member), the generated values of the latest finished run (title, issue date,
@@ -50,6 +50,14 @@ document without any effective label (for example an unreadable scan) until a me
   uploader is no longer a member, `RequestAiRun.tryRequest` reports this without throwing, the analysis becomes
   `UNAVAILABLE` with the reason, and archival commits normally. Capture, archival, search, folders, labels and
   tasks never depend on the model.
+- An uploader who may not use the configured provider (`ai.provider.memberNotAllowed`, for example a personal
+  subscription that serves only its owner) is an expected configuration state, not a failure (issue #107): the
+  analysis is shown as `NOT_CLASSIFIED` without a failure reason, and the review inbox creates no failure card or
+  notice for it. The same applies when a queued run fails because its member lost access. A member who may use AI
+  starts the classification explicitly; the run is requested and executed on that member's behalf (ADR-0003). A
+  member who may not use AI is refused with `ai.provider.memberNotAllowed` when they request a run themselves, and
+  the analysis stays unchanged, so the refusal never replaces an earlier result. Failure cards created for this
+  reason before are superseded by the next reconciliation and keep their history.
 - Every member request (first time, retry after a failure, reprocessing) starts a new generation and therefore a
   new key and effect key. A request is refused with `analysis.pending` while a run of the current generation is
   active. Retrying a failed run from the status page reuses its key and sources unchanged.
