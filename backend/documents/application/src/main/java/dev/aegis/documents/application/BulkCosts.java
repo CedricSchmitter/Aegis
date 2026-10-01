@@ -25,15 +25,17 @@ final class BulkCosts {
         BigDecimal count = BigDecimal.valueOf(documents);
         BigDecimal limit = orZero(estimate.dailyLimit());
         BigDecimal remaining = scaled(limit.subtract(orZero(estimate.spentToday())).max(BigDecimal.ZERO));
-        int today;
+        // What is left of today's limit pays for this many documents, whether or not the run needs them all.
+        long affordable;
         long perDay;
         if (perDocument.signum() <= 0) {
-            today = documents;
+            affordable = Integer.MAX_VALUE;
             perDay = Math.max(documents, 1);
         } else {
-            today = (int) Math.min(documents, fits(remaining, perDocument));
+            affordable = fits(remaining, perDocument);
             perDay = fits(limit, perDocument);
         }
+        int today = (int) Math.min(documents, affordable);
         Integer days;
         if (documents <= today) {
             days = documents == 0 ? 0 : 1;
@@ -46,7 +48,7 @@ final class BulkCosts {
         return new BulkAnalysisPreview.Cost(perDocument, average ? "AVERAGE" : "RUN_BUDGET",
                 average ? estimate.samples() : 0, scaled(perDocument.multiply(count)),
                 scaled(runBudget.multiply(count)), scaled(limit), scaled(orZero(estimate.spentToday())), remaining,
-                today, days, estimate.currency(), estimate.nextBudgetDay());
+                (int) Math.min(Integer.MAX_VALUE, affordable), days, estimate.currency(), estimate.nextBudgetDay());
     }
 
     /** How many runs of {@code each} fit into {@code amount}. */

@@ -164,7 +164,7 @@ class BulkAnalysisServiceTest {
         assertThat(all.cost().perDocument()).isEqualByComparingTo("0.01");
         assertThat(all.cost().total()).isEqualByComparingTo("0.02");
         assertThat(all.cost().maximum()).isEqualByComparingTo("0.10");
-        assertThat(all.cost().documentsToday()).isEqualTo(2);
+        assertThat(all.cost().documentsToday()).as("what today's budget pays for").isEqualTo(25);
         assertThat(all.cost().days()).isEqualTo(1);
 
         BulkAnalysisPreview inFolder = service.preview(f.actor, new ScopeRequest("FOLDER", folder.id(), true));

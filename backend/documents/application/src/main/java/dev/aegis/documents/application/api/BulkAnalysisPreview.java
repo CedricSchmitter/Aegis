@@ -24,9 +24,9 @@ public record BulkAnalysisPreview(BulkAnalysisView.Scope scope, int documents, b
      * Expected cost against the household's daily AI budget. {@code perDocument} is the mean of recent classification
      * runs when {@code basis} is {@code AVERAGE} (from {@code samples} runs), otherwise the run budget, the most one
      * run may cost ({@code RUN_BUDGET}). {@code total} is the estimate for all documents, {@code maximum} the bound
-     * from the run budget. {@code documentsToday} fit into what is left of today's limit; {@code days} is the number
-     * of budget days the run is expected to need, {@code null} when the daily limit cannot pay for a single run.
-     * Estimates from list prices, not charges.
+     * from the run budget. {@code documentsToday} is how many documents what is left of today's limit pays for (not
+     * capped at {@code documents}); {@code days} is the number of budget days the run is expected to need,
+     * {@code null} when the daily limit cannot pay for a single run. Estimates from list prices, not charges.
      */
     public record Cost(BigDecimal perDocument, String basis, int samples, BigDecimal total, BigDecimal maximum,
             BigDecimal dailyLimit, BigDecimal spentToday, BigDecimal remainingToday, int documentsToday,
