@@ -49,5 +49,7 @@ export function noticeTone(notice: Pick<NoticeSummary, "kind" | "readAt">): Inbo
 export function reviewTarget(linkType: string, linkId: string): { to: string; labelKey: string } | null {
   if (linkType === "DOCUMENT") return { to: `/documents/${linkId}`, labelKey: "review.openDocument" };
   if (linkType === "CONTRACT") return { to: `/contracts/${linkId}`, labelKey: "review.openContract" };
+  // One card for a whole bulk classification (issue #115) leads to its grouped results.
+  if (linkType === "BULK_ANALYSIS") return { to: `/documents/classify?run=${encodeURIComponent(linkId)}`, labelKey: "review.openBulkAnalysis" };
   return null;
 }

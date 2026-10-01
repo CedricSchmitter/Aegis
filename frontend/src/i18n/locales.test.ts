@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import de from "./de.json";
 import en from "./en.json";
+import { SKIP_REASONS } from "../lib/bulkAnalysis";
 import { FAILURE_REASONS } from "../lib/failureReasons";
 import { CHECK_AREAS, CHECK_REASONS, CHECK_STATES, KNOWN_JOBS } from "../lib/status";
 
@@ -104,6 +105,16 @@ describe("locale catalogs", () => {
       // Keys the document review producer publishes for documents without recognized text (ADR-0012).
       "review.noText",
       "review.reason.NO_TEXT_RECOGNIZED",
+      // Bulk classification (issue #115): its single review card, run states, cost bases, scopes and skip reasons.
+      "review.bulkAnalysis",
+      "review.reason.BULK_CLASSIFICATION",
+      "review.openBulkAnalysis",
+      ...["RUNNING", "COMPLETED", "CANCELLED", "STOPPED"].map((state) => `bulkAnalysis.state.${state}`),
+      ...["AVERAGE", "RUN_BUDGET"].map((basis) => `bulkAnalysis.basis.${basis}`),
+      ...["ALL", "UNSORTED", "FOLDER", "deletedFolder"].map((scope) => `bulkAnalysis.scopeName.${scope}`),
+      ...SKIP_REASONS.map((reason) => `bulkAnalysis.skipReason.${reason}`),
+      ...["classified", "needsReview", "failed", "skipped", "pending", "notClassified", "cancelled", "superseded"]
+        .map((count) => `bulkAnalysis.count.${count}`),
       // Short reasons for the failure codes of review cards and archival notices (issue #96).
       ...FAILURE_REASONS.map((reason) => `review.failureReason.${reason}`),
     ];

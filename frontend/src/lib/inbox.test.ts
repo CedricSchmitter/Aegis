@@ -44,6 +44,7 @@ describe("inbox tones", () => {
   it("open a review card's document or contract", () => {
     expect(reviewTarget("DOCUMENT", "d1")).toEqual({ to: "/documents/d1", labelKey: "review.openDocument" });
     expect(reviewTarget("CONTRACT", "c1")).toEqual({ to: "/contracts/c1", labelKey: "review.openContract" });
+    expect(reviewTarget("BULK_ANALYSIS", "b1")).toEqual({ to: "/documents/classify?run=b1", labelKey: "review.openBulkAnalysis" });
     expect(reviewTarget("OTHER", "x")).toBeNull();
   });
 });

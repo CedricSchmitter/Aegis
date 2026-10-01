@@ -283,6 +283,10 @@ export function DocumentsPage() {
               {t("documents.clearFilters")}
             </button>
           )}
+          {/* Existing documents that were never classified, in one explicitly started run (issue #115). */}
+          <Link to="/documents/classify" className="btn-ghost" data-testid="open-bulk-analysis">
+            {t("bulkAnalysis.open")}
+          </Link>
         </div>
 
         {!list && !error && <Loading />}
@@ -345,7 +349,12 @@ export function DocumentsPage() {
                   {t("documents.clearSelection")}
                 </button>
                 {selection.length > MAX_ANALYSIS_SELECTION && (
-                  <p className="w-full text-xs text-text-3">{t("analysis.selectionLimit", { max: MAX_ANALYSIS_SELECTION })}</p>
+                  <p className="w-full text-xs text-text-3">
+                    {t("analysis.selectionLimit", { max: MAX_ANALYSIS_SELECTION })}{" "}
+                    <Link to="/documents/classify" className="text-action hover:underline">
+                      {t("bulkAnalysis.open")}
+                    </Link>
+                  </p>
                 )}
               </div>
             )}
