@@ -20,4 +20,7 @@ public interface ProcessingScheduler {
 
     /** Next planned execution of the purge job, if one is scheduled. */
     Optional<Instant> nextPurgeAttempt(DocumentId id);
+
+    /** Schedules the next step of a bulk analysis at {@code at}, in the caller's transaction (issue #115). */
+    void scheduleBulkAnalysis(java.util.UUID bulkId, Instant at);
 }

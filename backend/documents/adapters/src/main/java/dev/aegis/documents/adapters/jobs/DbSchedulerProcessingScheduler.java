@@ -6,13 +6,14 @@ import dev.aegis.shared.DocumentId;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 /**
- * Schedules archival and purge jobs through db-scheduler. The scheduler client is wired with a transaction-aware data source
- * so the job row commits or rolls back together with the document record. The client is resolved lazily because
- * the scheduler itself collects the task beans that depend on this adapter.
+ * Schedules archival, purge and bulk analysis jobs through db-scheduler. The scheduler client is wired with a
+ * transaction-aware data source so the job row commits or rolls back together with the document record. The client
+ * is resolved lazily because the scheduler itself collects the task beans that depend on this adapter.
  */
 @Component
 public class DbSchedulerProcessingScheduler implements ProcessingScheduler {
@@ -41,6 +42,12 @@ public class DbSchedulerProcessingScheduler implements ProcessingScheduler {
     public void schedulePurge(DocumentId id) {
         schedulerClient.getObject().scheduleIfNotExists(PurgeDocumentTask.DESCRIPTOR.instance(id.toString())
                 .data(PurgeDocumentPayload.of(id.toString())).scheduledTo(clock.instant()));
+    }
+
+    @Override
+    public void scheduleBulkAnalysis(UUID bulkId, Instant at) {
+        schedulerClient.getObject().scheduleIfNotExists(BulkAnalysisTask.DESCRIPTOR.instance(bulkId.toString())
+                .data(BulkAnalysisPayload.of(bulkId.toString())).scheduledTo(at));
     }
 
     @Override

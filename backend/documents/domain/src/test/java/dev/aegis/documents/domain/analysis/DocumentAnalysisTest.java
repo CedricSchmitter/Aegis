@@ -134,4 +134,17 @@ class DocumentAnalysisTest {
         assertThat(pending.status()).isEqualTo(Status.NOT_REQUESTED);
         assertThatThrownBy(() -> fresh.restore(exported)).isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void aWithdrawnBulkRequestReturnsToItsEarlierStateAndRefusesTheLateResult() {
+        DocumentAnalysis analysis = DocumentAnalysis.none(id);
+        int generation = analysis.request(lisa, Trigger.BULK, NOW);
+        assertThat(analysis.withdraw(generation + 1)).isFalse();
+        assertThat(analysis.withdraw(generation)).isTrue();
+        assertThat(analysis.status()).isEqualTo(Status.NOT_REQUESTED);
+        assertThat(analysis.accepts(generation)).as("a late answer of the cancelled run").isFalse();
+        assertThat(analysis.withdraw(generation)).isFalse();
+        assertThat(analysis.everCompleted()).isFalse();
+        assertThat(analysis.snapshot().trigger()).isEqualTo(Trigger.BULK);
+    }
 }

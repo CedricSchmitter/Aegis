@@ -290,6 +290,110 @@
         "required" : [ "state" ],
         "type" : "object"
       },
+      "BulkAnalysisDto" : {
+        "properties" : {
+          "cancelled" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "cancelledAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "cancelledBy" : {
+            "type" : [ "string", "null" ]
+          },
+          "classified" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BulkReasonGroupDto"
+            },
+            "type" : "array"
+          },
+          "finishedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "inFlight" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "needsReview" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "notClassified" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pending" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "placementGroups" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BulkPlacementGroupDto"
+            },
+            "type" : "array"
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "requestedBy" : {
+            "type" : "string"
+          },
+          "reviewDocuments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BulkDocumentRefDto"
+            },
+            "type" : "array"
+          },
+          "scope" : {
+            "$ref" : "#/components/schemas/BulkScopeDto"
+          },
+          "skipped" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "skips" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BulkReasonGroupDto"
+            },
+            "type" : "array"
+          },
+          "state" : {
+            "type" : "string"
+          },
+          "stopCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "superseded" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "total" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "waitingForBudgetUntil" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "cancelled", "classified", "failed", "failures", "id", "inFlight", "needsReview", "notClassified", "pending", "placementGroups", "requestedAt", "requestedBy", "reviewDocuments", "scope", "skipped", "skips", "state", "superseded", "total" ],
+        "type" : "object"
+      },
       "BulkAnalysisRequest" : {
         "properties" : {
           "documentIds" : {
@@ -318,6 +422,182 @@
           }
         },
         "required" : [ "requested", "skipped" ],
+        "type" : "object"
+      },
+      "BulkCostDto" : {
+        "properties" : {
+          "basis" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "dailyLimit" : {
+            "type" : "number"
+          },
+          "days" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "documentsToday" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maximum" : {
+            "type" : "number"
+          },
+          "nextBudgetDay" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "perDocument" : {
+            "type" : "number"
+          },
+          "remainingToday" : {
+            "type" : "number"
+          },
+          "samples" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "spentToday" : {
+            "type" : "number"
+          },
+          "total" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "basis", "currency", "dailyLimit", "documentsToday", "maximum", "nextBudgetDay", "perDocument", "remainingToday", "samples", "spentToday", "total" ],
+        "type" : "object"
+      },
+      "BulkDocumentRefDto" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "title" ],
+        "type" : "object"
+      },
+      "BulkPlacementGroupDto" : {
+        "properties" : {
+          "documents" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "example" : {
+            "$ref" : "#/components/schemas/BulkDocumentRefDto"
+          },
+          "key" : {
+            "type" : "string"
+          },
+          "newFolders" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "path" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "documents", "example", "key", "newFolders", "path" ],
+        "type" : "object"
+      },
+      "BulkPreviewDto" : {
+        "properties" : {
+          "cost" : {
+            "$ref" : "#/components/schemas/BulkCostDto"
+          },
+          "documents" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "limited" : {
+            "type" : "boolean"
+          },
+          "maxDocuments" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "refusal" : {
+            "type" : [ "string", "null" ]
+          },
+          "runningId" : {
+            "type" : [ "string", "null" ]
+          },
+          "sample" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BulkDocumentRefDto"
+            },
+            "type" : "array"
+          },
+          "scope" : {
+            "$ref" : "#/components/schemas/BulkScopeDto"
+          }
+        },
+        "required" : [ "cost", "documents", "limited", "maxDocuments", "sample", "scope" ],
+        "type" : "object"
+      },
+      "BulkReasonGroupDto" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "documents" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "examples" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BulkDocumentRefDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "code", "documents", "examples" ],
+        "type" : "object"
+      },
+      "BulkScopeDto" : {
+        "properties" : {
+          "folderId" : {
+            "type" : [ "string", "null" ]
+          },
+          "folderPath" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "includeSubfolders" : {
+            "type" : "boolean"
+          },
+          "kind" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "includeSubfolders", "kind" ],
+        "type" : "object"
+      },
+      "BulkStartRequest" : {
+        "properties" : {
+          "expectedDocuments" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "scope" : {
+            "$ref" : "#/components/schemas/BulkScopeDto"
+          }
+        },
+        "required" : [ "expectedDocuments", "scope" ],
         "type" : "object"
       },
       "CalendarStatusDto" : {
@@ -3844,6 +4124,138 @@
           }
         },
         "summary" : "Analyze a bounded selection of archived documents; never the whole collection",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/bulk-analyses" : {
+      "get" : {
+        "operationId" : "listBulkAnalyses",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/BulkAnalysisDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The running and the most recent bulk classifications",
+        "tags" : [ "documents" ]
+      },
+      "post" : {
+        "operationId" : "startBulkAnalysis",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BulkStartRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BulkAnalysisDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Start the bulk classification the preview showed; refused when the scope changed",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/bulk-analyses/preview" : {
+      "post" : {
+        "operationId" : "previewBulkAnalysis",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BulkScopeDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BulkPreviewDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Show which never-classified documents a bulk classification would include and its cost",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/bulk-analyses/{id}" : {
+      "get" : {
+        "operationId" : "getBulkAnalysis",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BulkAnalysisDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "One bulk classification with its progress and results",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/bulk-analyses/{id}/cancel" : {
+      "post" : {
+        "operationId" : "cancelBulkAnalysis",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BulkAnalysisDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Cancel a running bulk classification; results already applied stay",
         "tags" : [ "documents" ]
       }
     },

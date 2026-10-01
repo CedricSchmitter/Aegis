@@ -156,6 +156,26 @@ public final class DocumentAnalysis {
         unavailableCode = Objects.requireNonNull(code);
     }
 
+    /**
+     * Takes back a request whose run was cancelled before its result was applied, for example by cancelling a bulk
+     * run (issue #115). The document returns to its earlier result or to not requested; the generation stays
+     * counted, so a late answer of the cancelled run is refused.
+     *
+     * @return whether the request of {@code requestedGeneration} was still open
+     */
+    public boolean withdraw(int requestedGeneration) {
+        if (!accepts(requestedGeneration)) {
+            return false;
+        }
+        status = completedAt == null ? Status.NOT_REQUESTED : Status.COMPLETED;
+        return true;
+    }
+
+    /** Whether a run ever produced a result for this document. */
+    public boolean everCompleted() {
+        return completedAt != null;
+    }
+
     public boolean awaitsArchive() {
         return status == Status.AWAITING_ARCHIVE;
     }

@@ -13,6 +13,7 @@ import dev.aegis.assistant.application.api.RequestOutcome;
 import dev.aegis.assistant.application.api.RunRequest;
 import dev.aegis.assistant.application.api.RunView;
 import dev.aegis.assistant.application.api.SourceVersion;
+import dev.aegis.assistant.application.api.WorkloadEstimate;
 import dev.aegis.assistant.application.api.WorkloadView;
 import dev.aegis.assistant.application.ports.AiLock;
 import dev.aegis.assistant.application.ports.ModelGateway;
@@ -59,6 +60,8 @@ import java.util.function.Predicate;
 public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, AiHealthQuery, AiRunStatusQuery,
         AiModelCommands {
     public static final int MAX_LIST = 100;
+    /** Succeeded runs whose mean cost estimates the next one. */
+    static final int ESTIMATE_SAMPLES = 20;
     /** Codes of requests that cannot run with the current configuration or membership. */
     static final String MEMBER_NOT_ALLOWED = "ai.provider.memberNotAllowed";
     static final Set<String> UNAVAILABLE_CODES = Set.of("ai.notConfigured", "ai.workload.unavailable",
@@ -411,6 +414,36 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         runs.findLatestByKeys(idempotencyKeys).forEach((key, run) -> views.put(key, RunViews.view(run, List.of())));
         return views;
+    }
+
+    @Override
+    public WorkloadEstimate estimate(Actor actor, String workloadName) {
+        access.requireMember(actor);
+        Workload workload = workload(workloadName);
+        Instant now = clock.instant();
+        String currency = settings.currency().getCurrencyCode();
+        Optional<WorkloadProfile> profile = settings.profile(workload);
+        if (profile.isEmpty() || profile.get().providers().isEmpty()) {
+            return new WorkloadEstimate(workload.name(), "ai.workload.unavailable", null, null, null, 0, null, null,
+                    BigDecimal.ZERO, currency, settings.startOfNextDay(now));
+        }
+        List<ModelSelection> candidates = candidates(profile.get());
+        String refusal = null;
+        ModelSelection model;
+        try {
+            model = requireRunnable(actor, workload, candidates);
+        } catch (InvalidInputException refused) {
+            refusal = refused.code();
+            model = first(candidates, this::providerConfigured).orElse(candidates.getFirst());
+        }
+        AiRunRepository.CostSample sample = runs.recentSucceededCost(workload, model.model(), settings.currency(),
+                ESTIMATE_SAMPLES);
+        return new WorkloadEstimate(workload.name(), refusal, model.provider(), model.model(),
+                sample.average() == null ? null : sample.average().amount(), sample.runs(),
+                settings.budget(profile.get(), model.provider()).maxCost().amount(),
+                settings.dailyCostLimit(model.provider()).amount(),
+                runs.costSince(settings.startOfDay(now), model.provider(), settings.currency()).amount(), currency,
+                settings.startOfNextDay(now));
     }
 
     @Override

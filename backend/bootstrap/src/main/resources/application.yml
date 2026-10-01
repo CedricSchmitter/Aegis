@@ -127,11 +127,17 @@ aegis:
     low-free-space: 5GB
   documents:
     # Automatic classification of new uploads once archived (ADR-0004). Existing and restored documents are only
-    # analyzed when a member selects them. Filenames use one household naming language, not the UI language.
+    # analyzed when a member selects them or starts a bulk run (ADR-0022). Filenames use one household naming
+    # language, not the UI language.
     analysis:
       automatic: ${AEGIS_DOCUMENT_ANALYSIS_AUTOMATIC:true}
       filename-language: DE
       max-text-chars: 20000
+      bulk:
+        max-documents: 500
+        batch-size: 3
+        poll-interval: 10s
+        max-wait: 15m
   backup:
     state-file: ${AEGIS_BACKUP_STATE_FILE:}
   import:

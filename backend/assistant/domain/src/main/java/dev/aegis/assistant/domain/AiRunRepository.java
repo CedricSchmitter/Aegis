@@ -37,6 +37,16 @@ public interface AiRunRepository {
 
     List<RunStep> steps(RunId id);
 
+    /** Mean cost of {@code runs} succeeded runs; {@code average} is {@code null} without any. */
+    record CostSample(Money average, int runs) {
+    }
+
+    /**
+     * Mean cost of the most recently finished succeeded runs of {@code workload} on {@code model}, at most
+     * {@code limit} of them, in {@code currency}.
+     */
+    CostSample recentSucceededCost(Workload workload, String model, Currency currency, int limit);
+
     /** Cost of all model calls recorded at or after {@code since} by runs on {@code provider}. */
     Money costSince(Instant since, String provider, Currency currency);
 

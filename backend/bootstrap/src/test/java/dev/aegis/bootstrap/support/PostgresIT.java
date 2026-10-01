@@ -74,6 +74,10 @@ public abstract class PostgresIT {
         registry.add("aegis.storage.low-free-fraction", () -> "0.0001");
         // Automatic analysis of uploads is switched on only by the tests about it (AnalysisSettings#setAutomatic).
         registry.add("aegis.documents.analysis.automatic", () -> "false");
+        // Bulk classification (BulkAnalysisIT): two runs in flight and short steps instead of production's 10s.
+        registry.add("aegis.documents.analysis.bulk.batch-size", () -> "2");
+        registry.add("aegis.documents.analysis.bulk.poll-interval", () -> "200ms");
+        registry.add("aegis.documents.analysis.bulk.max-wait", () -> "2s");
         // AI: the real Anthropic adapter stays unconfigured (no key file); workloads use the controlled model.
         registry.add("aegis.ai.providers.anthropic.api-key-file", () -> DATA.resolve("no-anthropic-key").toString());
         registry.add("aegis.ai.providers.claude-code.runner-socket", () -> DATA.resolve("no-runner.sock").toString());

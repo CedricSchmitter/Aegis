@@ -137,6 +137,21 @@ public class JdbcAiRunRepository implements AiRunRepository {
     }
 
     @Override
+    public CostSample recentSucceededCost(Workload workload, String model, Currency currency, int limit) {
+        return jdbc.sql("""
+                SELECT avg(cost) AS average, count(*) AS runs FROM (
+                    SELECT cost FROM ai_runs
+                     WHERE workload = ? AND model = ? AND currency = ? AND state = 'SUCCEEDED'
+                     ORDER BY finished_at DESC LIMIT ?) recent""")
+                .params(workload.name(), model, currency.getCurrencyCode(), limit)
+                .query((rs, row) -> {
+                    BigDecimal average = rs.getBigDecimal("average");
+                    int runs = rs.getInt("runs");
+                    return new CostSample(runs == 0 || average == null ? null : new Money(average, currency), runs);
+                }).single();
+    }
+
+    @Override
     public Money costSince(Instant since, String provider, Currency currency) {
         BigDecimal total = jdbc.sql("""
                 SELECT coalesce(sum(s.cost), 0) FROM ai_run_steps s JOIN ai_runs r ON r.id = s.run_id

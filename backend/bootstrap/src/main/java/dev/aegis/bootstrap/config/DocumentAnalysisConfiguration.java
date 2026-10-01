@@ -1,21 +1,29 @@
 package dev.aegis.bootstrap.config;
 
 import dev.aegis.assistant.application.WorkloadHandler;
+import dev.aegis.assistant.application.api.AiRunCommands;
+import dev.aegis.assistant.application.api.AiRunQueries;
 import dev.aegis.assistant.application.api.AiRunStatusQuery;
 import dev.aegis.assistant.application.api.RequestAiRun;
 import dev.aegis.assistant.application.api.RequestOutcome;
 import dev.aegis.assistant.application.api.RunRequest;
 import dev.aegis.assistant.application.api.RunView;
 import dev.aegis.assistant.application.api.SourceVersion;
+import dev.aegis.assistant.application.api.WorkloadEstimate;
 import dev.aegis.assistant.application.classification.DocumentClassificationHandler;
 import dev.aegis.assistant.domain.Workload;
 import dev.aegis.documents.application.AnalysisSettings;
 import dev.aegis.documents.application.AnalysisTrigger;
 import dev.aegis.documents.application.AnalysisViews;
+import dev.aegis.documents.application.BulkAnalysisDriver;
+import dev.aegis.documents.application.BulkAnalysisService;
+import dev.aegis.documents.application.BulkAnalysisSettings;
 import dev.aegis.documents.application.ClassificationViews;
 import dev.aegis.documents.application.DocumentAnalysisService;
 import dev.aegis.documents.application.DocumentPresenter;
 import dev.aegis.documents.application.api.AutomaticClassification;
+import dev.aegis.documents.application.api.BulkAnalysisCommands;
+import dev.aegis.documents.application.api.BulkAnalysisQueries;
 import dev.aegis.documents.application.api.DocumentAnalysisCommands;
 import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.application.api.LabelCommands;
@@ -24,8 +32,10 @@ import dev.aegis.documents.application.ports.CatalogLock;
 import dev.aegis.documents.application.ports.DocumentCatalog;
 import dev.aegis.documents.application.ports.HouseholdPersons;
 import dev.aegis.documents.application.ports.PaperlessArchive;
+import dev.aegis.documents.application.ports.ProcessingScheduler;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
+import dev.aegis.documents.domain.bulk.BulkAnalysisRepository;
 import dev.aegis.documents.domain.catalog.CategoryRepository;
 import dev.aegis.documents.domain.catalog.LabelRepository;
 import dev.aegis.documents.domain.classification.ClassificationRepository;
@@ -35,11 +45,13 @@ import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -67,7 +79,8 @@ public class DocumentAnalysisConfiguration {
     }
 
     @Bean
-    AnalysisRuns analysisRuns(ObjectProvider<RequestAiRun> requests, ObjectProvider<AiRunStatusQuery> statuses) {
+    AnalysisRuns analysisRuns(ObjectProvider<RequestAiRun> requests, ObjectProvider<AiRunStatusQuery> statuses,
+            ObjectProvider<AiRunQueries> queries, ObjectProvider<AiRunCommands> commands) {
         return new AnalysisRuns() {
             @Override
             public Outcome request(Actor requester, DocumentId id, int generation, long classificationVersion) {
@@ -87,6 +100,20 @@ public class DocumentAnalysisConfiguration {
                 Map<String, RunStatus> result = new LinkedHashMap<>();
                 statuses.getObject().latestByKeys(keys).forEach((key, run) -> result.put(key, status(run)));
                 return result;
+            }
+
+            @Override
+            public CostEstimate estimate(Actor requester) {
+                WorkloadEstimate estimate = queries.getObject().estimate(requester,
+                        Workload.DOCUMENT_CLASSIFICATION.name());
+                return new CostEstimate(estimate.refusal(), estimate.averageCost(), estimate.samples(),
+                        estimate.runBudget(), estimate.dailyCostLimit(), estimate.spentToday(), estimate.currency(),
+                        estimate.nextBudgetDay());
+            }
+
+            @Override
+            public void cancel(Actor actor, UUID runId) {
+                commands.getObject().cancel(actor, runId);
             }
         };
     }
@@ -140,6 +167,46 @@ public class DocumentAnalysisConfiguration {
     @Bean
     AnalysisTrigger analysisTrigger(AnalysisServices services) {
         return TransactionalProxy.expose(AnalysisTrigger.class, services.analysis());
+    }
+
+    @Bean
+    BulkAnalysisSettings bulkAnalysisSettings(
+            @Value("${aegis.documents.analysis.bulk.max-documents:500}") int maxDocuments,
+            @Value("${aegis.documents.analysis.bulk.batch-size:3}") int batchSize,
+            @Value("${aegis.documents.analysis.bulk.poll-interval:10s}") Duration pollInterval,
+            @Value("${aegis.documents.analysis.bulk.max-wait:15m}") Duration maxWait) {
+        return new BulkAnalysisSettings(maxDocuments, batchSize, pollInterval, maxWait);
+    }
+
+    /** Raw service; only the per-interface proxies below are injectable. */
+    record BulkServices(BulkAnalysisService bulk) {
+    }
+
+    @Bean
+    BulkServices bulkServices(BulkAnalysisRepository bulks, DocumentRepository documents,
+            DocumentAnalysisRepository analyses, DocumentCatalog catalog, CategoryRepository categories,
+            LabelRepository labels, ClassificationViews classificationViews, AnalysisViews analysisViews,
+            AnalysisRuns runs, AnalysisServices analysis, ProcessingScheduler scheduler, HouseholdAccess access,
+            BulkAnalysisSettings settings, Clock clock) {
+        // The per-document requests join the bulk run's transaction, so the raw analysis service is used.
+        return new BulkServices(new BulkAnalysisService(bulks, documents, analyses, catalog, categories, labels,
+                classificationViews, analysisViews, runs, analysis.analysis(), scheduler, access, settings, clock));
+    }
+
+    @Bean
+    BulkAnalysisCommands bulkAnalysisCommands(BulkServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(BulkAnalysisCommands.class, services.bulk(), tm);
+    }
+
+    @Bean
+    BulkAnalysisQueries bulkAnalysisQueries(BulkServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(BulkAnalysisQueries.class, services.bulk(), tm);
+    }
+
+    /** One job step per transaction. */
+    @Bean
+    BulkAnalysisDriver bulkAnalysisDriver(BulkServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(BulkAnalysisDriver.class, services.bulk(), tm);
     }
 
     @Bean

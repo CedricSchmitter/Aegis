@@ -2,6 +2,7 @@ package dev.aegis.documents.application.ports;
 
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
@@ -48,9 +49,24 @@ public interface AnalysisRuns {
         }
     }
 
+    /**
+     * Expected cost of one classification run requested by {@code requester} and the household's budget today
+     * (issue #115). {@code refusal} is the code such a request would be refused with now, otherwise {@code null};
+     * {@code averageCost} is the mean of the last {@code samples} succeeded classification runs on the same model,
+     * {@code null} without any; {@code runBudget} is the most one run may cost. Estimates, not charges.
+     */
+    record CostEstimate(String refusal, BigDecimal averageCost, int samples, BigDecimal runBudget,
+            BigDecimal dailyLimit, BigDecimal spentToday, String currency, Instant nextBudgetDay) {
+    }
+
     /** Requests the run on behalf of {@code requester}; never throws for an unavailable AI configuration. */
     Outcome request(Actor requester, DocumentId id, int generation, long classificationVersion);
 
     /** Latest run per key; keys without a run are absent. */
     Map<String, RunStatus> latest(Collection<String> keys);
+
+    CostEstimate estimate(Actor requester);
+
+    /** Cancels a run on behalf of a member, in the caller's transaction; a finished run stays as it is. */
+    void cancel(Actor actor, UUID runId);
 }

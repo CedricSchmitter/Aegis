@@ -8,6 +8,7 @@ import dev.aegis.assistant.domain.RunId;
 import dev.aegis.assistant.domain.RunState;
 import dev.aegis.assistant.domain.RunStep;
 import dev.aegis.assistant.domain.StepKind;
+import dev.aegis.assistant.domain.Workload;
 import dev.aegis.shared.StaleVersionException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -88,6 +89,22 @@ class InMemoryAiRunRepository implements AiRunRepository {
     @Override
     public synchronized List<RunStep> steps(RunId id) {
         return List.copyOf(steps.getOrDefault(id, List.of()));
+    }
+
+    @Override
+    public synchronized CostSample recentSucceededCost(Workload workload, String model, Currency currency,
+            int limit) {
+        List<AiRun> succeeded = runs.values().stream().filter(run -> run.workload() == workload
+                        && run.model().model().equals(model) && run.state() == RunState.SUCCEEDED)
+                .sorted(Comparator.comparing((AiRun run) -> run.finishedAt().orElse(Instant.MIN)).reversed())
+                .limit(limit).toList();
+        if (succeeded.isEmpty()) {
+            return new CostSample(null, 0);
+        }
+        java.math.BigDecimal total = succeeded.stream().map(run -> run.cost().amount())
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        return new CostSample(new Money(total.divide(java.math.BigDecimal.valueOf(succeeded.size()),
+                Money.SCALE, java.math.RoundingMode.HALF_UP), currency), succeeded.size());
     }
 
     @Override
