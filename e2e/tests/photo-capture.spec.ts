@@ -74,6 +74,13 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     expect(original.headers()["content-disposition"]).toContain(".jpg");
     expect(createHash("sha256").update(await original.body()).digest("hex")).toBe(sha256);
     await expect(page.getByTestId("open-archive-pdf")).toBeVisible();
+    if (info.project.name === "mobile-chromium") {
+      // On a phone the file opens in place, so the back button returns to the document instead of closing the app.
+      await expect(page.getByTestId("open-archive-pdf")).not.toHaveAttribute("target");
+      await expect(page.getByTestId("open-original")).not.toHaveAttribute("target");
+    } else {
+      await expect(page.getByTestId("open-archive-pdf")).toHaveAttribute("target", "_blank");
+    }
     const searchable = await page.request.get(`/api/documents/${documentId}/archive-pdf`, { headers: { Accept: "*/*" } });
     expect(searchable.ok()).toBeTruthy();
     expect(searchable.headers()["content-type"]).toBe("application/pdf");
