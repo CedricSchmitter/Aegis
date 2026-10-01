@@ -260,8 +260,12 @@ Scheduled review/task creation (#24) and document chat (#25) are **not connected
 workflows even after a successful connection check.
 
 Classification runs automatically only for **new uploads**, after Paperless has archived them with OCR. Existing
-and restored documents are never analyzed in bulk: a member starts the analysis per document (document page,
-"Classify now") or for up to ten selected documents in the list. Without a key, uploads are marked "AI
+and restored documents are only analyzed when a member starts it: per document (document page, "Classify now"), for
+up to ten selected documents in the list, or as a bulk run over the documents that were never classified (Documents >
+"Bestand einordnen", [ADR-0022](../architecture/adr/ADR-0022-bulk-classification.md)). A bulk run shows the number of
+documents and the expected cost first, keeps at most `aegis.documents.analysis.bulk.batch-size` (default 3) runs in
+flight, includes at most `aegis.documents.analysis.bulk.max-documents` (default 500) documents and continues after a
+restart or deployment only if a member started it before; nothing starts one automatically. Without a key, uploads are marked "AI
 unavailable" and stay fully usable. To stop automatic runs for new uploads without removing the key, set
 `AEGIS_DOCUMENT_ANALYSIS_AUTOMATIC=false` in `/srv/aegis/deploy/.env` and recreate the application container;
 manual requests keep working. Filenames for downloads and exports use German names for built-in types and topics

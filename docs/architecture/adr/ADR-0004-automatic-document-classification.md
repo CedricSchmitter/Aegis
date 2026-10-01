@@ -43,7 +43,8 @@ document without any effective label (for example an unreadable scan) until a me
 - An upload made while automatic analysis is on (`aegis.documents.analysis.automatic`, default on) records the
   analysis as `WAITING_FOR_ARCHIVE` in the capture transaction. Restores never do, and documents that existed
   before this feature have no analysis: the existing collection is only analyzed when a member selects documents
-  (one at a time or up to ten at once). There is no automatic bulk run over the collection.
+  (one at a time or up to ten at once) or starts a bulk run with preview and cost estimate
+  ([ADR-0022](ADR-0022-bulk-classification.md), trigger `BULK`). There is no automatic bulk run over the collection.
 - Paperless reports a finished consumption only after OCR, so `ARCHIVED` is the readiness signal. The archival
   transaction that records `ARCHIVED` also requests the run through the documents port `AnalysisRuns`; the AI run
   and its db-scheduler job are created in that same transaction (ADR-0003). A repeated archival event finds the
