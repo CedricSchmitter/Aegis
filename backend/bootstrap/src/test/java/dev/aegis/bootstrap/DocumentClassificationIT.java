@@ -429,7 +429,7 @@ class DocumentClassificationIT extends PostgresIT {
         AtomicInteger answered = new AtomicInteger();
         List<UUID> spentOn = new CopyOnWriteArrayList<>();
         model.otherwise(request -> {
-            Invoice invoice = invoices.stream().filter(candidate -> prompt(request).contains(candidate.alias()))
+            Invoice invoice = invoices.stream().filter(candidate -> documentText(request).contains(candidate.alias()))
                     .findFirst().orElseThrow(() -> new IllegalStateException("not an invoice of this burst"));
             if (answered.incrementAndGet() == 2) {
                 spentOn.add(jdbc.sql("""
@@ -491,8 +491,12 @@ class DocumentClassificationIT extends PostgresIT {
         }
     }
 
-    private static String prompt(ModelRequest request) {
-        return ((ContentPart.Text) request.messages().getFirst().parts().getFirst()).text();
+    /** The framed OCR text of the request; the rest of the prompt lists the household's names and aliases. */
+    private static String documentText(ModelRequest request) {
+        String prompt = ((ContentPart.Text) request.messages().getFirst().parts().getFirst()).text();
+        int start = prompt.indexOf("<untrusted_content source=\"document-text:");
+        int end = prompt.indexOf("</untrusted_content>", Math.max(start, 0));
+        return start < 0 || end < 0 ? "" : prompt.substring(start, end);
     }
 
     @Test
