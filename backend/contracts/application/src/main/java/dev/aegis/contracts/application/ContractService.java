@@ -7,6 +7,7 @@ import dev.aegis.contracts.application.api.ContractViews.ContractView;
 import dev.aegis.contracts.application.api.ImportContract;
 import dev.aegis.contracts.application.api.RecordContractObservation;
 import dev.aegis.contracts.application.api.ContractReconciliationScheduler;
+import dev.aegis.contracts.application.ports.ContractEvents;
 import dev.aegis.contracts.domain.Confidence;
 import dev.aegis.contracts.domain.Contract;
 import dev.aegis.contracts.domain.ContractFact;
@@ -23,6 +24,7 @@ import dev.aegis.shared.ContractId;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotFoundException;
+import dev.aegis.shared.PurgeConflictException;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.Trash;
 import java.time.Clock;
@@ -45,10 +47,12 @@ public class ContractService implements ContractCommands, RecordContractObservat
     private final Clock clock;
     private final ContractReconciliationScheduler reconciliation;
     private final Trash.RecoveryWindow recoveryWindow;
+    private final ContractEvents events;
 
     public ContractService(ContractRepository contracts, DocumentReferenceQuery documents,
             ContractPresenter presenter, HouseholdAccess access, Clock clock,
-            ContractReconciliationScheduler reconciliation, Trash.RecoveryWindow recoveryWindow) {
+            ContractReconciliationScheduler reconciliation, Trash.RecoveryWindow recoveryWindow,
+            ContractEvents events) {
         this.contracts = contracts;
         this.documents = documents;
         this.presenter = presenter;
@@ -56,6 +60,7 @@ public class ContractService implements ContractCommands, RecordContractObservat
         this.clock = clock;
         this.reconciliation = reconciliation;
         this.recoveryWindow = recoveryWindow;
+        this.events = events;
     }
 
     @Override
@@ -170,6 +175,26 @@ public class ContractService implements ContractCommands, RecordContractObservat
         contracts.save(contract);
         reconcile(contract, actor);
         return describe(id);
+    }
+
+    @Override
+    public void purge(Actor actor, ContractId id, long expectedVersion) {
+        access.requireMember(actor);
+        Contract contract = contracts.findById(id).orElse(null);
+        if (contract == null) {
+            if (contracts.wasPurged(id)) {
+                return;
+            }
+            throw new NotFoundException("contract", id.toString());
+        }
+        if (!contract.isTrashed()) {
+            throw PurgeConflictException.notTrashed("contract", id.toString());
+        }
+        requireVersion(contract, expectedVersion);
+        contracts.purge(contract, actor.memberId(), clock.instant());
+        // Planning removes the superseded reviews and marks the completed ones in its own job, atomically scheduled.
+        reconciliation.schedule(id, actor.memberId());
+        events.contractPurged(id);
     }
 
     @Override

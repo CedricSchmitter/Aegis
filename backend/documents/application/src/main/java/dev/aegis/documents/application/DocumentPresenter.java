@@ -11,6 +11,8 @@ import dev.aegis.documents.domain.text.ArchiveTextCheckRepository;
 import dev.aegis.shared.DocumentId;
 import java.util.Map;
 import dev.aegis.documents.application.api.ProcessingInfo;
+import dev.aegis.documents.application.api.PurgeView;
+import dev.aegis.documents.domain.DocumentPurge;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.application.ports.ProcessingScheduler;
 import dev.aegis.documents.domain.Document;
@@ -75,7 +77,12 @@ public class DocumentPresenter {
                 document.checksum().sha256Hex(), document.uploadedBy(), document.uploadedAt(), own, processing,
                 originalAvailable, document.version(), view, parts.filename(), parts.analysis(),
                 textRecognition(document, textCheck), archivePdfAvailable(document, textCheck),
-                document.trash().orElse(null));
+                document.trash().orElse(null), document.purge().map(DocumentPresenter::purgeView).orElse(null));
+    }
+
+    private static PurgeView purgeView(DocumentPurge purge) {
+        return new PurgeView(purge.failed() ? PurgeView.FAILED : PurgeView.PENDING, purge.requestedBy(),
+                purge.requestedAt(), purge.failureCode(), purge.failedAt());
     }
 
     /** Only a check of the current archive document can tell that the archive keeps an archive version of it. */

@@ -20,4 +20,7 @@ public interface NoticeRepository {
 
     /** Atomically inserts unless this recipient already has the durable deduplication key. */
     boolean saveIfAbsent(Notice notice);
+
+    /** Deletes every notice that opens this target, for all recipients; returns how many were deleted. */
+    int deleteLinkedTo(NoticeLink link);
 }

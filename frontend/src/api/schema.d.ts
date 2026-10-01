@@ -401,6 +401,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/contracts/{id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a trashed contract permanently with all of its facts (ADR-0021)
+         * @description 204 also when it is already gone, so a repeated request after a lost response is harmless.
+         */
+        post: operations["purgeContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/contracts/{id}/restore": {
         parameters: {
             query?: never;
@@ -770,6 +790,26 @@ export interface paths {
         get: operations["downloadOriginal"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a trashed document permanently, including its archive original (ADR-0021)
+         * @description 202 with the document while the deletion runs in the background; it can no longer be restored. 204 once it is gone, so a repeated request after a lost response is harmless.
+         */
+        post: operations["purgeDocument"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1426,6 +1466,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks/{id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete a trashed task permanently (ADR-0021)
+         * @description 204 also when it is already gone, so a repeated request after a lost response is harmless.
+         */
+        post: operations["purgeTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks/{id}/reopen": {
         parameters: {
             query?: never;
@@ -1618,6 +1678,7 @@ export interface components {
         CancellationReviewDto: {
             /** Format: date */
             cancellationDeadline: string;
+            contractDeleted: boolean;
             /** Format: date */
             contractEnd?: string | null;
             contractId: string;
@@ -1714,6 +1775,7 @@ export interface components {
             version: number;
         };
         ContractSourceDto: {
+            documentDeleted: boolean;
             documentId: string;
             documentTitle?: string | null;
             documentTrashed: boolean;
@@ -1869,6 +1931,7 @@ export interface components {
             totalDocuments: number;
         };
         DocumentTrashDto: {
+            purge?: components["schemas"]["PurgeDto"];
             /** Format: date-time */
             restorableUntil: string;
             /** Format: date-time */
@@ -2189,6 +2252,16 @@ export interface components {
             retryScheduled: boolean;
             state: string;
         };
+        PurgeDto: {
+            /** Format: date-time */
+            failedAt?: string | null;
+            failureCode?: string | null;
+            /** Format: date-time */
+            requestedAt: string;
+            requestedBy: string;
+            /** @enum {string} */
+            state: "PENDING" | "FAILED";
+        };
         RenameCategoryRequest: {
             /** Format: int64 */
             expectedVersion: number;
@@ -2301,6 +2374,7 @@ export interface components {
             reason: string;
         };
         SourceDto: {
+            documentDeleted: boolean;
             documentId: string;
             documentTitle?: string | null;
             documentTrashed: boolean;
@@ -3101,6 +3175,30 @@ export interface operations {
             };
         };
     };
+    purgeContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     restoreContract: {
         parameters: {
             query?: never;
@@ -3692,6 +3790,32 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": string;
+                };
+            };
+        };
+    };
+    purgeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
                 };
             };
         };
@@ -4677,6 +4801,30 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["TaskDto"];
                 };
+            };
+        };
+    };
+    purgeTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

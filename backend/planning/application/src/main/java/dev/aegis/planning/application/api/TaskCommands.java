@@ -43,4 +43,10 @@ public interface TaskCommands {
      * a task that is not in the trash returns it unchanged.
      */
     TaskSummary restoreFromTrash(Actor actor, TaskId id, long expectedVersion);
+
+    /**
+     * Deletes a trashed task permanently (ADR-0021). An automatic cancellation review deleted this way is not created
+     * again for the same deadline. Repeating it for a task that is already gone changes nothing.
+     */
+    void purge(Actor actor, TaskId id, long expectedVersion);
 }

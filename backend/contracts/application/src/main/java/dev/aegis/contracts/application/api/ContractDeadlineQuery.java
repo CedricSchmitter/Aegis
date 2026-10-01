@@ -52,4 +52,10 @@ public interface ContractDeadlineQuery {
 
     /** The confirmed deadline of one contract, or empty when its facts are insufficient on that day. */
     Optional<ContractDeadlineView> confirmedDeadline(Actor actor, ContractId contractId, LocalDate on);
+
+    /**
+     * Whether a member deleted this contract permanently (ADR-0021), so planning can remove or mark its reviews
+     * instead of asking for a deadline of a contract that no longer exists.
+     */
+    boolean wasPurged(Actor actor, ContractId contractId);
 }

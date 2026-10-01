@@ -11,6 +11,7 @@ import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.TaskId;
 import dev.aegis.shared.Trash;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -79,6 +80,7 @@ public class JpaTaskRepository implements TaskRepository {
         entity.setCancellationDeadline(review == null ? null : review.cancellationDeadline());
         entity.setReminderDate(review == null ? null : review.reminderDate());
         entity.setContractVersion(review == null ? null : review.contractVersion());
+        entity.setContractDeleted(review != null && review.contractDeleted());
         entity.setCreatedBy(task.createdBy().value());
         entity.setCreatedAt(task.createdAt());
         entity.setUpdatedAt(task.updatedAt());
@@ -94,10 +96,27 @@ public class JpaTaskRepository implements TaskRepository {
         }
     }
 
+    @Override
+    public void purge(Task task, MemberId purgedBy, Instant purgedAt) {
+        if (jpa.deleteVersion(task.id().value(), task.version()) != 1) {
+            Long actual = jpa.findById(task.id().value()).map(TaskEntity::getVersion).orElse(null);
+            if (actual == null) {
+                return;
+            }
+            throw new StaleVersionException("task", task.id().toString(), task.version(), actual);
+        }
+        jpa.recordPurge(task.id().value(), purgedBy.value(), purgedAt);
+    }
+
+    @Override
+    public boolean wasPurged(TaskId id) {
+        return jpa.existsPurge(id.value());
+    }
+
     private static Task toDomain(TaskEntity e) {
         CancellationReview review = e.getContractId() == null ? null : new CancellationReview(
                 new ContractId(e.getContractId()), e.getContractName(), e.getContractEnd(),
-                e.getCancellationDeadline(), e.getReminderDate(), e.getContractVersion());
+                e.getCancellationDeadline(), e.getReminderDate(), e.getContractVersion(), e.isContractDeleted());
         return Task.rehydrate(new TaskId(e.getId()), e.getTitle(), e.getNote(),
                 e.getOwnerId() == null ? null : new MemberId(e.getOwnerId()), TaskStatus.valueOf(e.getStatus()),
                 e.getDueDate(), e.getPlannedDate(),

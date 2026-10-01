@@ -21,7 +21,7 @@ public class TaskPresenter {
         SourceView source = task.source().map(this::sourceView).orElse(null);
         CancellationReviewView cancellation = task.cancellationReview().map(review -> new CancellationReviewView(
                 review.contractId(), review.contractName(), review.contractEnd(), review.cancellationDeadline(),
-                review.reminderDate(), review.contractVersion())).orElse(null);
+                review.reminderDate(), review.contractVersion(), review.contractDeleted())).orElse(null);
         return new TaskSummary(task.id(), task.title(), task.note(), task.owner().orElse(null), task.status().name(),
                 task.dueDate().orElse(null), task.plannedDate().orElse(null), source, cancellation, task.createdBy(),
                 task.createdAt(), task.updatedAt(), task.completedAt().orElse(null),
@@ -44,7 +44,8 @@ public class TaskPresenter {
 
     private SourceView sourceView(TaskSource source) {
         DocumentReference reference = documents.findReference(source.documentId()).orElse(null);
+        // A source the documents context no longer knows was deleted permanently; ids are never reused.
         return new SourceView(source.documentId(), reference == null ? null : reference.title(),
-                reference != null && reference.trashed());
+                reference != null && reference.trashed(), reference == null);
     }
 }

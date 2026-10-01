@@ -21,6 +21,10 @@ interface NoticeJpaRepository extends JpaRepository<NoticeEntity, UUID> {
     long countByRecipientIdAndKindInAndReadAtIsNull(UUID recipientId, Collection<String> kinds);
 
     @Modifying
+    @Query(value = "DELETE FROM notices WHERE link_type = :linkType AND link_id = :linkId", nativeQuery = true)
+    int deleteByLink(@Param("linkType") String linkType, @Param("linkId") String linkId);
+
+    @Modifying
     @Query(value = """
             INSERT INTO notices (id, recipient_id, kind, dedup_key, params_json, link_type, link_id, created_at)
             VALUES (:id, :recipientId, :kind, :dedupKey, :paramsJson, :linkType, :linkId, :createdAt)

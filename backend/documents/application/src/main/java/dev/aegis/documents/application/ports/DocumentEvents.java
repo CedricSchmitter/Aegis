@@ -9,4 +9,10 @@ import dev.aegis.shared.MemberId;
  */
 public interface DocumentEvents {
     void documentArchivalFailed(DocumentId id, String title, MemberId uploadedBy, String failureCode);
+
+    /**
+     * The document was deleted permanently (ADR-0021). Runs in the transaction that deletes it, so notices and
+     * review cards that only describe it disappear together with it.
+     */
+    void documentPurged(DocumentId id);
 }

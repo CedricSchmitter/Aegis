@@ -81,14 +81,19 @@ export function ContractFactCard({ fact, facts, basedOn, busy, onConfirm, onReje
           {t("contracts.fact.sourceLabel")}{" "}
           {fact.source ? (
             <>
-              <Link to={`/documents/${fact.source.documentId}`} className="text-data hover:underline">
-                {fact.source.documentTitle ?? t("contracts.fact.sourceUnnamed")}
-              </Link>
+              {/* A source deleted permanently (ADR-0021) keeps its page and quote here but has no page to open. */}
+              {fact.source.documentDeleted ? (
+                <span className="text-text-3" data-testid="fact-source-deleted">{t("trash.sourceDeleted")}</span>
+              ) : (
+                <Link to={`/documents/${fact.source.documentId}`} className="text-data hover:underline">
+                  {fact.source.documentTitle ?? t("contracts.fact.sourceUnnamed")}
+                </Link>
+              )}
               {/* A page is shown only when the backend stored one; Aegis never invents a page reference. */}
               {fact.source.page !== null && fact.source.page !== undefined && (
                 <>, {t("contracts.fact.pageLabel", { page: fact.source.page })}</>
               )}
-              {!fact.source.documentTitle && <> {t("contracts.fact.sourceGone")}</>}
+              {!fact.source.documentTitle && !fact.source.documentDeleted && <> {t("contracts.fact.sourceGone")}</>}
               {fact.source.documentTrashed && <> {t("trash.sourceInTrash")}</>}
             </>
           ) : (

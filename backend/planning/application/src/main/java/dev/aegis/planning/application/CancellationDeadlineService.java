@@ -8,6 +8,7 @@ import dev.aegis.notifications.application.api.PublishNotice;
 import dev.aegis.planning.application.api.CancellationDeadlineReconciliation;
 import dev.aegis.planning.application.api.CancellationReminderPublication;
 import dev.aegis.planning.application.ports.CancellationReminderScheduler;
+import dev.aegis.planning.application.ports.PlanningEvents;
 import dev.aegis.planning.domain.CancellationReview;
 import dev.aegis.planning.domain.Task;
 import dev.aegis.planning.domain.TaskRepository;
@@ -39,17 +40,19 @@ public class CancellationDeadlineService
     private final CancellationReminderScheduler reminders;
     private final MemberDirectory members;
     private final PublishNotice notices;
+    private final PlanningEvents events;
     private final HouseholdAccess access;
     private final Clock clock;
 
     public CancellationDeadlineService(ContractDeadlineQuery contracts, TaskRepository tasks,
             CancellationReminderScheduler reminders, MemberDirectory members, PublishNotice notices,
-            HouseholdAccess access, Clock clock) {
+            PlanningEvents events, HouseholdAccess access, Clock clock) {
         this.contracts = contracts;
         this.tasks = tasks;
         this.reminders = reminders;
         this.members = members;
         this.notices = notices;
+        this.events = events;
         this.access = access;
         this.clock = clock;
     }
@@ -57,6 +60,10 @@ public class CancellationDeadlineService
     @Override
     public void reconcile(Actor actor, ContractId contractId) {
         access.requireMember(actor);
+        if (contracts.wasPurged(actor, contractId)) {
+            forgetDeletedContract(actor, contractId);
+            return;
+        }
         LocalDate today = LocalDate.now(clock);
         ContractDeadlineView deadline = contracts.confirmedDeadline(actor, contractId, today).orElse(null);
         if (deadline == null || !"ACTIVE".equals(deadline.status())) {
@@ -78,6 +85,10 @@ public class CancellationDeadlineService
             }
         }
         if (current == null) {
+            if (tasks.wasPurged(taskId(contractId, review.cancellationDeadline()))) {
+                // A member deleted this occurrence permanently; it does not come back under its stable id.
+                return;
+            }
             current = Task.createCancellationReview(taskId(contractId, review.cancellationDeadline()),
                     deadline.name(), deadline.cancellationDeadline(), source, review, actor.memberId(),
                     clock.instant());
@@ -138,6 +149,24 @@ public class CancellationDeadlineService
         if (task.status() == TaskStatus.OPEN) {
             task.cancelAutomatic(clock.instant());
             tasks.save(task);
+        }
+    }
+
+    /**
+     * The contract was deleted permanently (ADR-0021): a review a member completed stays as history and shows that
+     * the contract is gone; every other occurrence was only automatic work for it and is deleted with it, including
+     * one in the trash.
+     */
+    private void forgetDeletedContract(Actor actor, ContractId contractId) {
+        for (Task task : tasks.findCancellationReviews(contractId)) {
+            if (task.status() == TaskStatus.DONE) {
+                if (task.markContractDeleted(clock.instant())) {
+                    tasks.save(task);
+                }
+            } else {
+                tasks.purge(task, actor.memberId(), clock.instant());
+                events.taskPurged(task.id());
+            }
         }
     }
 

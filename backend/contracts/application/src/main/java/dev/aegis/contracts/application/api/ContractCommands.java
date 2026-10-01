@@ -62,4 +62,11 @@ public interface ContractCommands {
      * Repeating it for a contract that is not in the trash returns it unchanged.
      */
     ContractView restoreFromTrash(Actor actor, ContractId id, long expectedVersion);
+
+    /**
+     * Deletes a trashed contract permanently with all of its facts (ADR-0021). Completed cancellation reviews stay as
+     * history and show that the contract was deleted; superseded automatic reviews are deleted with it. Repeating it
+     * for a contract that is already gone changes nothing.
+     */
+    void purge(Actor actor, ContractId id, long expectedVersion);
 }

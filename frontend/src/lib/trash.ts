@@ -11,6 +11,15 @@ export interface TrashInfo {
   restorableUntil: string;
 }
 
+/**
+ * A requested permanent deletion of a document (ADR-0021): PENDING while the background job removes it, FAILED when it
+ * gave up. Tasks and contracts are deleted at once and never carry one.
+ */
+export interface PurgeInfo {
+  state: "PENDING" | "FAILED";
+  failureCode?: string | null;
+}
+
 /** One row of the trash view, whatever kind of record it is. */
 export interface TrashEntry {
   kind: TrashKind;
@@ -19,6 +28,7 @@ export interface TrashEntry {
   version: number;
   trash: TrashInfo;
   link: string;
+  purge: PurgeInfo | null;
 }
 
 /**
@@ -40,12 +50,13 @@ export function mergeTrash(
         version: document.version,
         trash: document.trash,
         link: `/documents/${document.id}`,
+        purge: document.trash.purge ? { state: document.trash.purge.state, failureCode: document.trash.purge.failureCode } : null,
       });
     }
   }
   for (const task of tasks) {
     if (task.trash) {
-      entries.push({ kind: "task", id: task.id, title: task.title, version: task.version, trash: task.trash, link: `/tasks/${task.id}` });
+      entries.push({ kind: "task", id: task.id, title: task.title, version: task.version, trash: task.trash, link: `/tasks/${task.id}`, purge: null });
     }
   }
   for (const contract of contracts) {
@@ -57,6 +68,7 @@ export function mergeTrash(
         version: contract.version,
         trash: contract.trash,
         link: `/contracts/${contract.id}`,
+        purge: null,
       });
     }
   }
@@ -73,4 +85,9 @@ export function countTrash(entries: TrashEntry[]): Record<TrashKind | "all", num
   const counts: Record<TrashKind | "all", number> = { all: entries.length, document: 0, task: 0, contract: 0 };
   for (const entry of entries) counts[entry.kind] += 1;
   return counts;
+}
+
+/** Whether a document's permanent deletion is still running, so the trash view checks back until it is gone. */
+export function hasPendingPurge(entries: TrashEntry[]): boolean {
+  return entries.some((entry) => entry.purge?.state === "PENDING");
 }

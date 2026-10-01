@@ -5,7 +5,9 @@ import dev.aegis.contracts.domain.ContractFact;
 import dev.aegis.contracts.domain.ContractRepository;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
+import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -46,6 +48,28 @@ public class InMemoryContractRepository implements ContractRepository {
                     stored.version());
         }
         store.put(contract.id(), copy(contract, contract.version() + 1));
+    }
+
+    /** Deleted ids with who deleted them; the record keeps no name or facts, like the real one. */
+    final Map<ContractId, MemberId> purged = new LinkedHashMap<>();
+
+    @Override
+    public void purge(Contract contract, MemberId purgedBy, Instant purgedAt) {
+        Contract stored = store.get(contract.id());
+        if (stored == null) {
+            return;
+        }
+        if (stored.version() != contract.version()) {
+            throw new StaleVersionException("contract", contract.id().toString(), contract.version(),
+                    stored.version());
+        }
+        store.remove(contract.id());
+        purged.put(contract.id(), purgedBy);
+    }
+
+    @Override
+    public boolean wasPurged(ContractId id) {
+        return purged.containsKey(id);
     }
 
     private static Contract copy(Contract contract) {

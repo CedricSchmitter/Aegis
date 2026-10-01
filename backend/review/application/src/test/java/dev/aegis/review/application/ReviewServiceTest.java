@@ -317,6 +317,15 @@ class ReviewServiceTest {
             return all.values().stream().filter(i -> i.status().name().equals("OPEN")).count();
         }
 
+        public List<UUID> deleteByRecord(String kind, String id) {
+            List<UUID> deleted = all.values().stream()
+                    .filter(i -> (i.sourceKind().equals(kind) && i.sourceId().equals(id))
+                            || (i.linkType().equals(kind) && i.linkId().equals(id)))
+                    .map(ReviewItem::id).toList();
+            deleted.forEach(all::remove);
+            return deleted;
+        }
+
         public Set<String> findExistingFingerprints(Collection<String> fingerprints) {
             Set<String> existing = new HashSet<>();
             if (!hideFromExistenceCheck) {

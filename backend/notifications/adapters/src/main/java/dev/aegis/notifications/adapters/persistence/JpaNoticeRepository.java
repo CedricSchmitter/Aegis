@@ -53,6 +53,11 @@ public class JpaNoticeRepository implements NoticeRepository {
         return jpa.countByRecipientIdAndKindInAndReadAtIsNull(recipient.value(), names(kinds));
     }
 
+    @Override
+    public int deleteLinkedTo(NoticeLink link) {
+        return jpa.deleteByLink(link.type().name(), link.id());
+    }
+
     private static List<String> names(Set<NoticeKind> kinds) {
         return kinds.stream().map(NoticeKind::name).toList();
     }

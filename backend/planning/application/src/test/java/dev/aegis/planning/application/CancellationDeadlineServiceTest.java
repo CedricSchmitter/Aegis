@@ -41,6 +41,8 @@ class CancellationDeadlineServiceTest {
     private final MutableClock clock = new MutableClock("2027-11-22T12:00:00Z");
     private final RecordingReminders reminders = new RecordingReminders();
     private final DeduplicatingNotices notices = new DeduplicatingNotices();
+    private final PlanningTestSupport.RecordingEvents events = new PlanningTestSupport.RecordingEvents();
+    private final java.util.Set<ContractId> purgedContracts = new java.util.HashSet<>();
     private ContractDeadlineView view;
     private CancellationDeadlineService service;
 
@@ -57,6 +59,11 @@ class CancellationDeadlineServiceTest {
             public Optional<ContractDeadlineView> confirmedDeadline(Actor requester, ContractId id, LocalDate on) {
                 return view == null || !contractId.equals(id) ? Optional.empty() : Optional.of(view);
             }
+
+            @Override
+            public boolean wasPurged(Actor requester, ContractId id) {
+                return purgedContracts.contains(id);
+            }
         };
         MemberDirectory members = new MemberDirectory() {
             @Override
@@ -70,7 +77,7 @@ class CancellationDeadlineServiceTest {
                 return listMembers(actor).stream().filter(member -> member.id().equals(id)).findFirst();
             }
         };
-        service = new CancellationDeadlineService(contracts, tasks, reminders, members, notices,
+        service = new CancellationDeadlineService(contracts, tasks, reminders, members, notices, events,
                 new PlanningTestSupport.Members(anna, ben), clock);
     }
 
@@ -241,6 +248,61 @@ class CancellationDeadlineServiceTest {
         service.reconcile(actor, contractId);
 
         assertThat(tasks.findById(task.id()).orElseThrow().status()).isEqualTo(TaskStatus.CANCELLED);
+    }
+
+    @Test
+    void aDeletedContractKeepsCompletedReviewsAsHistoryAndDeletesItsAutomaticWork() {
+        service.reconcile(actor, contractId);
+        Task completed = tasks.findCancellationReviews(contractId).getFirst();
+        completed.complete(anna, clock.instant());
+        tasks.save(completed);
+        view = deadline(LocalDate.of(2027, 12, 15), "ACTIVE", 4);
+        service.reconcile(actor, contractId);
+        Task superseded = tasks.findOpen().getFirst();
+        // The contract goes to the trash first, which supersedes the open occurrence; one also waits in the trash.
+        view = null;
+        service.reconcile(actor, contractId);
+        superseded = tasks.findById(superseded.id()).orElseThrow();
+        superseded.moveToTrash(ben, clock.instant(), dev.aegis.shared.Trash.RecoveryWindow.DEFAULT);
+        tasks.save(superseded);
+
+        purgedContracts.add(contractId);
+        service.reconcile(actor, contractId);
+
+        assertThat(tasks.findCancellationReviews(contractId)).singleElement().satisfies(history -> {
+            assertThat(history.id()).isEqualTo(completed.id());
+            assertThat(history.status()).isEqualTo(TaskStatus.DONE);
+            assertThat(history.cancellationReview().orElseThrow().contractDeleted()).isTrue();
+            assertThat(history.cancellationReview().orElseThrow().contractName()).isEqualTo("Fitnessstudio");
+        });
+        assertThat(tasks.wasPurged(superseded.id())).isTrue();
+        assertThat(events.events).containsExactly("purged:" + superseded.id());
+
+        // Repeating the job changes nothing more.
+        long version = tasks.findById(completed.id()).orElseThrow().version();
+        service.reconcile(actor, contractId);
+        assertThat(tasks.findById(completed.id()).orElseThrow().version()).isEqualTo(version);
+        assertThat(events.events).hasSize(1);
+    }
+
+    @Test
+    void anOccurrenceAMemberDeletedPermanentlyIsNotCreatedAgain() {
+        service.reconcile(actor, contractId);
+        Task task = tasks.findCancellationReviews(contractId).getFirst();
+        task.moveToTrash(anna, clock.instant(), dev.aegis.shared.Trash.RecoveryWindow.DEFAULT);
+        tasks.save(task);
+        tasks.purge(tasks.findById(task.id()).orElseThrow(), anna, clock.instant());
+        reminders.scheduledAt.clear();
+
+        service.reconcile(actor, contractId);
+
+        assertThat(tasks.findCancellationReviews(contractId)).isEmpty();
+        assertThat(reminders.scheduledAt).isEmpty();
+        // A new deadline is new work and gets its review.
+        view = deadline(LocalDate.of(2028, 11, 30), "ACTIVE", 4);
+        service.reconcile(actor, contractId);
+        assertThat(tasks.findOpen()).singleElement()
+                .satisfies(open -> assertThat(open.dueDate()).contains(LocalDate.of(2028, 11, 30)));
     }
 
     @Test

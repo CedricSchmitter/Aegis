@@ -5,6 +5,7 @@ import dev.aegis.documents.application.ports.ArchiveUnavailableException;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotAuthorizedException;
 import dev.aegis.shared.NotFoundException;
+import dev.aegis.shared.PurgeConflictException;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.TrashedException;
 import java.util.Set;
@@ -55,6 +56,14 @@ public class ProblemDetailsAdvice {
     /** The record exists but is in the trash: a conflict with its current state, resolved by restoring it. */
     @ExceptionHandler(TrashedException.class)
     ProblemDetail trashed(TrashedException e) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, e.code(), e.getMessage());
+        e.details().forEach(problem::setProperty);
+        return problem;
+    }
+
+    /** Permanent deletion conflicts with the record's state (ADR-0021): not in the trash, archiving or purging. */
+    @ExceptionHandler(PurgeConflictException.class)
+    ProblemDetail purgeConflict(PurgeConflictException e) {
         ProblemDetail problem = problem(HttpStatus.CONFLICT, e.code(), e.getMessage());
         e.details().forEach(problem::setProperty);
         return problem;

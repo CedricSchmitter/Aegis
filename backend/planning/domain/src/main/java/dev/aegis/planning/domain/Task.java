@@ -151,6 +151,21 @@ public final class Task {
     }
 
     /**
+     * Keeps a completed cancellation review as history after its contract was deleted permanently (ADR-0021): it
+     * shows that the contract no longer exists instead of linking to it.
+     *
+     * @return whether the task changed
+     */
+    public boolean markContractDeleted(Instant now) {
+        if (cancellationReview == null || cancellationReview.contractDeleted()) {
+            return false;
+        }
+        cancellationReview = cancellationReview.withContractDeleted();
+        touch(now);
+        return true;
+    }
+
+    /**
      * Reopens a superseded automatic occurrence whose deadline is current again, for example after its contract
      * came back from the trash or a correction was undone. Owner, note and planned date are kept; a member's
      * completion is never touched.

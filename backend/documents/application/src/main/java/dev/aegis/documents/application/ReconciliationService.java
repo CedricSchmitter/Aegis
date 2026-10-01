@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Closes the gaps between filesystem, database and scheduler: re-schedules pending documents without a job,
+ * Closes the gaps between filesystem, database and scheduler: re-schedules pending archivals and purges without a job,
  * quarantines files without a record, and removes staging copies only after verified archival plus retention.
  */
 public class ReconciliationService {
@@ -58,6 +58,13 @@ public class ReconciliationService {
                     scheduler.scheduleArchival(document.id());
                     count++;
                 }
+            }
+        }
+        // A requested permanent deletion (ADR-0021) always has its job; one lost with a scheduler row comes back.
+        for (Document document : documents.findPurgePending()) {
+            if (scheduler.nextPurgeAttempt(document.id()).isEmpty()) {
+                scheduler.schedulePurge(document.id());
+                count++;
             }
         }
         return count;

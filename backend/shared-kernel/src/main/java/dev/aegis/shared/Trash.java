@@ -10,8 +10,8 @@ import java.util.Objects;
  * contexts make the same promise.
  *
  * <p>{@code restorableUntil} is fixed when the record is trashed: it stays restorable at least until then, even if
- * the configured window changes later. Permanent deletion does not exist yet, so a record also stays restorable
- * after that instant.
+ * the configured window changes later. A record also stays restorable after that instant: only a member's explicit
+ * permanent deletion removes it (issue #85, ADR-0021), never the passing of this date.
  */
 public record Trash(MemberId trashedBy, Instant trashedAt, Instant restorableUntil) {
 

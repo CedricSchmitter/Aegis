@@ -11,4 +11,6 @@ public interface ReviewRepository {
  /** Inserts the card unless one with its id or fingerprint exists, also one a concurrent transaction is inserting; true when this call inserted it. */
  boolean insertIfAbsent(ReviewItem item);
  void update(ReviewItem item,long expectedVersion);
+ /** Deletes every card whose source or link is this record; returns the ids of the deleted cards. */
+ List<UUID> deleteByRecord(String kind, String id);
 }

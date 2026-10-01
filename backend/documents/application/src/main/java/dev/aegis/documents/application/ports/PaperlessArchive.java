@@ -75,6 +75,14 @@ public interface PaperlessArchive {
 
     boolean exists(int paperlessDocumentId);
 
+    /**
+     * Deletes an archived document for good, including the entry the archive keeps in its own trash (ADR-0021). A
+     * document the archive no longer holds counts as deleted, so repeating the call is harmless. Throws
+     * {@link ArchiveUnavailableException} when the outcome is uncertain, so the caller retries, and
+     * {@link ArchiveRejectedException} when the archive refuses the deletion.
+     */
+    void purge(int paperlessDocumentId);
+
     /** Paperless ids matching the query in title or content. */
     List<Integer> searchContent(String query);
 

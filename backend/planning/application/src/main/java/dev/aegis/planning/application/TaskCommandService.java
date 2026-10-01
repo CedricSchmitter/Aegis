@@ -19,6 +19,7 @@ import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.NotFoundException;
+import dev.aegis.shared.PurgeConflictException;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.TaskId;
 import dev.aegis.shared.Trash;
@@ -160,6 +161,24 @@ public class TaskCommandService implements TaskCommands, ImportTask {
         // superseded when the contract was resolved or trashed in the meantime.
         task.cancellationReview().ifPresent(review -> cancellations.reconcile(actor, review.contractId()));
         return presenter.summarize(reload(id));
+    }
+
+    @Override
+    public void purge(Actor actor, TaskId id, long expectedVersion) {
+        access.requireMember(actor);
+        Task task = tasks.findById(id).orElse(null);
+        if (task == null) {
+            if (tasks.wasPurged(id)) {
+                return;
+            }
+            throw new NotFoundException("task", id.toString());
+        }
+        if (!task.isTrashed()) {
+            throw PurgeConflictException.notTrashed("task", id.toString());
+        }
+        requireVersion(task, expectedVersion);
+        tasks.purge(task, actor.memberId(), clock.instant());
+        events.taskPurged(id);
     }
 
     @Override

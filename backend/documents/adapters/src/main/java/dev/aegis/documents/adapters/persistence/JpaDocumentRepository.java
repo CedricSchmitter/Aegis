@@ -2,6 +2,7 @@ package dev.aegis.documents.adapters.persistence;
 
 import dev.aegis.documents.domain.Checksum;
 import dev.aegis.documents.domain.Document;
+import dev.aegis.documents.domain.DocumentPurge;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.ProcessingFailure;
 import dev.aegis.documents.domain.ProcessingState;
@@ -93,6 +94,38 @@ public class JpaDocumentRepository implements DocumentRepository {
     }
 
     @Override
+    public List<Document> findPurgePending() {
+        return jpa.findByPurgeRequestedAtIsNotNullAndPurgeFailedAtIsNullOrderByPurgeRequestedAtAsc().stream()
+                .map(JpaDocumentRepository::toDomain).toList();
+    }
+
+    /**
+     * Deleting the row cascades in the database to subjects, classification, labels, analysis, placement and text
+     * checks (ADR-0021); the version check guards against a concurrent change since the job loaded the document.
+     */
+    @Override
+    public void purge(Document document, Instant purgedAt) {
+        DocumentPurge requested = document.purge().orElseThrow(() -> new IllegalStateException(
+                "document " + document.id() + " has no purge request"));
+        DocumentEntity entity = jpa.findById(document.id().value()).orElse(null);
+        if (entity == null) {
+            return;
+        }
+        if (entity.getVersion() != null && entity.getVersion() != document.version()) {
+            throw new StaleVersionException("document", document.id().toString(), document.version(),
+                    entity.getVersion());
+        }
+        jpa.recordPurge(document.id().value(), requested.requestedBy().value(), requested.requestedAt(), purgedAt);
+        jpa.delete(entity);
+        jpa.flush();
+    }
+
+    @Override
+    public boolean wasPurged(DocumentId id) {
+        return jpa.existsPurge(id.value());
+    }
+
+    @Override
     public void save(Document document) {
         DocumentEntity entity = jpa.findById(document.id().value()).orElseGet(() -> new DocumentEntity(
                 document.id().value()));
@@ -131,6 +164,10 @@ public class JpaDocumentRepository implements DocumentRepository {
         Trash trash = document.trash().orElse(null);
         entity.setTrash(trash == null ? null : trash.trashedBy().value(), trash == null ? null : trash.trashedAt(),
                 trash == null ? null : trash.restorableUntil());
+        DocumentPurge purge = document.purge().orElse(null);
+        entity.setPurge(purge == null ? null : purge.requestedBy().value(), purge == null ? null
+                : purge.requestedAt(), purge == null ? 0 : purge.attempts(), purge == null ? null
+                : purge.failureCode(), purge == null ? null : purge.failedAt());
         Set<SubjectEmbeddable> subjects = new LinkedHashSet<>();
         for (Subject subject : document.subjects()) {
             subjects.add(new SubjectEmbeddable(subject.kind().name(),
@@ -156,6 +193,9 @@ public class JpaDocumentRepository implements DocumentRepository {
                 e.getVersion() == null ? 0 : e.getVersion(),
                 e.getTitleOrigin() == null ? TitleOrigin.MANUAL : TitleOrigin.valueOf(e.getTitleOrigin()),
                 e.getTrashedAt() == null ? null : new Trash(new MemberId(e.getTrashedBy()), e.getTrashedAt(),
-                        e.getRestorableUntil()));
+                        e.getRestorableUntil()),
+                e.getPurgeRequestedAt() == null ? null : new DocumentPurge(new MemberId(e.getPurgeRequestedBy()),
+                        e.getPurgeRequestedAt(), e.getPurgeAttempts(), e.getPurgeFailureCode(),
+                        e.getPurgeFailedAt()));
     }
 }

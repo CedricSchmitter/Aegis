@@ -34,7 +34,9 @@ Records in the trash ([ADR-0010](../architecture/adr/ADR-0010-recoverable-trash.
 others. Since export schema 8, `data/*.json` carries their trash record (who, when, restorable until), the readable
 CSV files have a `trashedAt` column and the index marks them "in the trash". A restore keeps that state, so a
 trashed record comes back trashed. Trashing or restoring never prunes a backup or an export generation; earlier
-copies stay where they are.
+copies stay where they are. The same holds for permanent deletion from the trash
+([ADR-0021](../architecture/adr/ADR-0021-permanent-deletion.md)): a deleted record, and for a document its Paperless
+original, remains in every backup and export generation taken before the deletion. The deletion record itself (id, who, when) is in the database backup, not in the portable export.
 
 Since export schema 9 ([ADR-0017](../architecture/adr/ADR-0017-persons-and-the-assistant-account.md)) each member
 entry says whether it is a `PERSON` or the household's `ASSISTANT` account, and no record carries the retired subject

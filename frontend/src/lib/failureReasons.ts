@@ -10,6 +10,8 @@ export const FAILURE_REASONS = [
   "archiveRejected",
   "archiveUnexpected",
   "originalMissing",
+  "archiveBusy",
+  "stagingUndeletable",
   "aiNotConfigured",
   "aiMemberNotAllowed",
   "aiUnavailable",
@@ -34,6 +36,9 @@ const EXACT: Record<string, FailureReason> = {
   "paperless.noTaskId": "archiveUnexpected",
   "paperless.noDocumentId": "archiveUnexpected",
   "document.stagingMissing": "originalMissing",
+  // Permanent deletion (PurgeDocumentTask, ADR-0021); shown in the trash, never as a review card.
+  "paperless.consumptionPending": "archiveBusy",
+  "document.stagingDeleteFailed": "stagingUndeletable",
   // Analysis that could not be queued (DocumentAnalysis.unavailableCode) or ended without a run.
   "ai.notConfigured": "aiNotConfigured",
   "ai.provider.notConfigured": "aiNotConfigured",

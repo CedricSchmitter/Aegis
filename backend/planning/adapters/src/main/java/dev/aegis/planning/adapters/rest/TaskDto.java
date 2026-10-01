@@ -17,9 +17,12 @@ public record TaskDto(String id, String title, String note, @Schema(nullable = t
         @Schema(nullable = true) Instant completedAt, @Schema(nullable = true) String completedBy, long version,
         @Schema(nullable = true) TaskTrashDto trash) {
 
-    /** {@code documentTrashed} says the linked document is in the trash, where it can be restored. */
+    /**
+     * {@code documentTrashed} says the linked document is in the trash, where it can be restored;
+     * {@code documentDeleted} that a member deleted it permanently, and then the title is null.
+     */
     public record SourceDto(String documentId, @Schema(nullable = true) String documentTitle,
-            boolean documentTrashed) {
+            boolean documentTrashed, boolean documentDeleted) {
     }
 
     /** Who moved the task to the trash, when, and until when it is guaranteed to stay restorable. */
@@ -30,19 +33,21 @@ public record TaskDto(String id, String title, String note, @Schema(nullable = t
         }
     }
 
+    /** {@code contractDeleted}: a completed review kept as history after its contract was deleted permanently. */
     public record CancellationReviewDto(String contractId, String contractName,
             @Schema(nullable = true) LocalDate contractEnd, LocalDate cancellationDeadline,
-            LocalDate reminderDate, long contractVersion) {
+            LocalDate reminderDate, long contractVersion, boolean contractDeleted) {
     }
 
     static TaskDto from(TaskSummary s) {
         SourceDto source = s.source() == null ? null
                 : new SourceDto(s.source().documentId().toString(), s.source().documentTitle(),
-                        s.source().documentTrashed());
+                        s.source().documentTrashed(), s.source().documentDeleted());
         CancellationReviewDto cancellation = s.cancellationReview() == null ? null : new CancellationReviewDto(
                 s.cancellationReview().contractId().toString(), s.cancellationReview().contractName(),
                 s.cancellationReview().contractEnd(), s.cancellationReview().cancellationDeadline(),
-                s.cancellationReview().reminderDate(), s.cancellationReview().contractVersion());
+                s.cancellationReview().reminderDate(), s.cancellationReview().contractVersion(),
+                s.cancellationReview().contractDeleted());
         return new TaskDto(s.id().toString(), s.title(), s.note(), s.ownerId() == null ? null : s.ownerId().toString(),
                 s.status(), s.dueDate(), s.plannedDate(), source, cancellation, s.createdBy().toString(), s.createdAt(),
                 s.updatedAt(), s.completedAt(), s.completedBy() == null ? null : s.completedBy().toString(),

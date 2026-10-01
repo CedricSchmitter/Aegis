@@ -101,8 +101,9 @@ public class ContractPresenter {
 
     public SourceView sourceView(SourceReference source) {
         DocumentReference reference = documents.findReference(source.documentId()).orElse(null);
+        // A source the documents context no longer knows was deleted permanently; ids are never reused.
         return new SourceView(source.documentId(), reference == null ? null : reference.title(),
-                reference != null && reference.trashed(), source.page(), source.quote());
+                reference != null && reference.trashed(), reference == null, source.page(), source.quote());
     }
 
     private static FactExportRecord factExportRecord(ContractFact fact) {

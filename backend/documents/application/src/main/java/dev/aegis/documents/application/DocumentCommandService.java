@@ -17,6 +17,7 @@ import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.Trash;
 import java.time.Clock;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /** Member commands on documents; wrapped in a transaction by the composition root. */
@@ -103,6 +104,26 @@ public class DocumentCommandService implements DocumentCommands {
             analysis.archived(restored);
         }
         return presenter.summarize(load(id));
+    }
+
+    @Override
+    public Optional<DocumentSummary> purge(Actor actor, DocumentId id, long expectedVersion) {
+        access.requireMember(actor);
+        Document document = documents.findById(id).orElse(null);
+        if (document == null) {
+            if (documents.wasPurged(id)) {
+                return Optional.empty();
+            }
+            throw new NotFoundException("document", id.toString());
+        }
+        if (document.isPurgePending()) {
+            return Optional.of(presenter.summarize(document));
+        }
+        requireVersion(document, expectedVersion);
+        document.requestPurge(actor.memberId(), clock.instant());
+        documents.save(document);
+        scheduler.schedulePurge(id);
+        return Optional.of(presenter.summarize(load(id)));
     }
 
     private Document loadVersion(DocumentId id, long expectedVersion) {

@@ -31,5 +31,19 @@ public interface DocumentRepository {
     /** Documents in the trash, most recently trashed first. */
     List<Document> findTrashed();
 
+    /** Trashed documents whose permanent deletion is pending (ADR-0021). */
+    List<Document> findPurgePending();
+
     void save(Document document);
+
+    /**
+     * Deletes the document's record together with every row the documents context keeps for it (subjects,
+     * classification, labels, analysis, placement and text checks) and records who requested the deletion and when.
+     * The record of the deletion keeps no title or other content. Fails with a stale version when the document changed
+     * since it was loaded.
+     */
+    void purge(Document document, Instant purgedAt);
+
+    /** Whether a document with this id was deleted permanently. */
+    boolean wasPurged(DocumentId id);
 }

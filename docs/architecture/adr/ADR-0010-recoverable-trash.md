@@ -1,6 +1,7 @@
 # ADR-0010: The trash is a recoverable state of each record, not a deletion
 
-Status: accepted and implemented for issue #48. Date: 2026-09-22.
+Status: accepted and implemented for issue #48. Date: 2026-09-22. Permanent deletion from the trash is decided in
+[ADR-0021](ADR-0021-permanent-deletion.md) (issue #85).
 
 ## Context
 
@@ -25,8 +26,9 @@ for at least 30 days; this change implements the trash only, and permanent delet
    Each context owns its own trash state; no context reads another context's trash columns.
 2. **Recovery window.** `aegis.trash.recovery-window` (default 30 days, at least one day) fixes
    `restorable_until` when a record is trashed, so a later configuration change never shortens a promise already
-   shown. Nothing is purged: a record also stays restorable after that date until a permanent-deletion feature
-   defines permissions, reference handling and confirmation. The product text says "restorable at least until".
+   shown. Nothing is purged automatically: a record also stays restorable after that date until a member deletes it
+   permanently from the trash ([ADR-0021](ADR-0021-permanent-deletion.md)). The product text says "restorable at
+   least until".
 3. **Visibility.** Ordinary lists, search (title and Paperless full text), folder and label counts, Today, the
    document page's task and contract lists, the review inbox producers, the assistant's `search_documents` tool
    and published contract deadlines exclude trashed records. Reading a record by its id still works and returns
@@ -67,5 +69,5 @@ for at least 30 days; this change implements the trash only, and permanent delet
   deletion exists.
 - Who trashed a record and when is kept while it is trashed. After a restore only the record's current state
   remains; a full change history belongs to issue #47.
-- Permanent deletion (including the Paperless original and its own trash) is not implemented; it is tracked in
-  issue #85.
+- Permanent deletion, including the Paperless original and its own trash, is a separate explicit action
+  ([ADR-0021](ADR-0021-permanent-deletion.md)).

@@ -49,6 +49,12 @@ final class ContractTestSupport {
             return id;
         }
 
+        /** A member deleted the document permanently; the documents context no longer knows it. */
+        void purge(DocumentId id) {
+            titles.remove(id);
+            trashed.remove(id);
+        }
+
         /** The document is moved to the trash in the documents context. */
         void trash(DocumentId id) {
             trashed.add(id);

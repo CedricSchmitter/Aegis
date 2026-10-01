@@ -10,7 +10,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 /**
- * Schedules archival jobs through db-scheduler. The scheduler client is wired with a transaction-aware data source
+ * Schedules archival and purge jobs through db-scheduler. The scheduler client is wired with a transaction-aware data source
  * so the job row commits or rolls back together with the document record. The client is resolved lazily because
  * the scheduler itself collects the task beans that depend on this adapter.
  */
@@ -34,6 +34,19 @@ public class DbSchedulerProcessingScheduler implements ProcessingScheduler {
     public Optional<Instant> nextAttempt(DocumentId id) {
         return schedulerClient.getObject()
                 .getScheduledExecution(ArchiveDocumentTask.DESCRIPTOR.instanceId(id.toString()))
+                .map(execution -> execution.getExecutionTime());
+    }
+
+    @Override
+    public void schedulePurge(DocumentId id) {
+        schedulerClient.getObject().scheduleIfNotExists(PurgeDocumentTask.DESCRIPTOR.instance(id.toString())
+                .data(PurgeDocumentPayload.of(id.toString())).scheduledTo(clock.instant()));
+    }
+
+    @Override
+    public Optional<Instant> nextPurgeAttempt(DocumentId id) {
+        return schedulerClient.getObject()
+                .getScheduledExecution(PurgeDocumentTask.DESCRIPTOR.instanceId(id.toString()))
                 .map(execution -> execution.getExecutionTime());
     }
 }

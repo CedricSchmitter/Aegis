@@ -180,6 +180,18 @@ public class DocumentsController {
         return DocumentDto.from(commands.restoreFromTrash(actor, DocumentId.of(id), body.expectedVersion()));
     }
 
+    @Operation(operationId = "purgeDocument",
+            summary = "Delete a trashed document permanently, including its archive original (ADR-0021)",
+            description = "202 with the document while the deletion runs in the background; it can no longer be "
+                    + "restored. 204 once it is gone, so a repeated request after a lost response is harmless.")
+    @PostMapping("/{id}/purge")
+    public ResponseEntity<DocumentDto> purge(Actor actor, @PathVariable("id") String id,
+            @Valid @RequestBody LabelsController.VersionRequest body) {
+        return commands.purge(actor, DocumentId.of(id), body.expectedVersion())
+                .map(summary -> ResponseEntity.status(HttpStatus.ACCEPTED).body(DocumentDto.from(summary)))
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     @Operation(operationId = "getDocument",
             summary = "Document details including processing state, labels and trash state")
     @GetMapping("/{id}")

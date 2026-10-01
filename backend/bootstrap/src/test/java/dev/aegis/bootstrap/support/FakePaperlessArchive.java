@@ -43,6 +43,8 @@ public class FakePaperlessArchive implements PaperlessArchive {
     private final java.util.Set<String> scannedChecksums = ConcurrentHashMap.newKeySet();
     private final Map<Integer, String> texts = new ConcurrentHashMap<>();
     public final AtomicInteger contentReads = new AtomicInteger();
+    /** Archive documents deleted through {@link #purge}, including repeated deletions of the same id. */
+    public final List<Integer> purged = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     /**
      * OCR text the fake reports once a file with these bytes is archived. Without it, the text is the file's bytes
@@ -169,6 +171,19 @@ public class FakePaperlessArchive implements PaperlessArchive {
         return documents.containsKey(paperlessDocumentId);
     }
 
+    /** Like Paperless after deleting and emptying the document from its trash: nothing of it is kept. */
+    @Override
+    public void purge(int paperlessDocumentId) {
+        requireAvailable();
+        documents.remove(paperlessDocumentId);
+        texts.remove(paperlessDocumentId);
+        purged.add(paperlessDocumentId);
+    }
+
+    public boolean holds(int paperlessDocumentId) {
+        return documents.containsKey(paperlessDocumentId);
+    }
+
     @Override
     public List<Integer> searchContent(String query) {
         requireAvailable();
@@ -194,6 +209,7 @@ public class FakePaperlessArchive implements PaperlessArchive {
         texts.clear();
         tasks.clear();
         pollsRemaining.clear();
+        purged.clear();
     }
 
     public int documentCount() {
