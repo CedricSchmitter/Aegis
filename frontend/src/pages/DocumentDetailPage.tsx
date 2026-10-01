@@ -116,12 +116,14 @@ export function DocumentDetailPage() {
 
   /**
    * Trash and restore carry the version the member saw; a concurrent change reloads instead of guessing. Moving to
-   * the trash asks nothing and offers undo in a message (issue #27).
+   * the trash asks nothing and offers undo in a message (issue #27). The reload after the action no longer holds the
+   * buttons: should it hang, the member can still act, and a tap with the stale version only meets another conflict.
    */
   const changeTrash = async (action: "trash" | "restore", version: number) => {
     setTrashBusy(true);
     setError(null);
     setMessage(null);
+    let reload = false;
     try {
       const options = { params: { path: { id } }, body: { expectedVersion: version } };
       const changed = unwrap(
@@ -135,14 +137,15 @@ export function DocumentDetailPage() {
       } else {
         dismissTrashed();
         setMessage(t("trash.restored"));
-        await load();
+        reload = true;
       }
     } catch (failure) {
       setError(toApiError(failure).status === 409 ? t("trash.changedMeanwhile") : problemMessage(t, failure));
-      await load();
+      reload = true;
     } finally {
       setTrashBusy(false);
     }
+    if (reload) await load();
   };
 
   const retry = async () => {

@@ -54,19 +54,19 @@ test.describe("recoverable trash", () => {
     // Someone else changed the document first: the member is told so, and the reload that follows keeps the message.
     // The flag is set in the route handler, which runs before the page can reload; the response event of a fulfilled
     // route may arrive after the reload's own response.
+    // The route stays for the whole test and lets later calls through. A one-time route ({ times: 1 }) switches the
+    // browser's request interception off right after the 409, while the page's reload requests are already paused in
+    // it; one of them then never got an answer and kept the trash button disabled until the test timed out.
     let conflicted = false;
-    await page.route(
-      "**/api/documents/*/trash",
-      (route) => {
-        conflicted = true;
-        return route.fulfill({
-          status: 409,
-          contentType: "application/problem+json",
-          body: JSON.stringify({ status: 409, title: "Conflict", code: "version.conflict", resource: "document" }),
-        });
-      },
-      { times: 1 },
-    );
+    await page.route("**/api/documents/*/trash", (route) => {
+      if (conflicted) return route.fallback();
+      conflicted = true;
+      return route.fulfill({
+        status: 409,
+        contentType: "application/problem+json",
+        body: JSON.stringify({ status: 409, title: "Conflict", code: "version.conflict", resource: "document" }),
+      });
+    });
     const reloaded = page.waitForResponse((response) => {
       const pathname = new URL(response.url()).pathname;
       return conflicted && response.request().method() === "GET" && /^\/api\/documents\/[^/]+$/.test(pathname);
