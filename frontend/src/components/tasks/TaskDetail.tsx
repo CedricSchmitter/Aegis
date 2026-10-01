@@ -108,7 +108,14 @@ export function TaskDetail({ task, onChange, heading, onCompleted, onTrashed }: 
       )}
       {task.note && <p className="text-sm whitespace-pre-wrap text-text-2">{task.note}</p>}
 
-      {task.source && (
+      {task.source && task.source.documentDeleted && (
+        // A source deleted permanently (ADR-0021) has no page to open any more.
+        <div className="card flex flex-col gap-1" data-testid="task-source-deleted">
+          <span className="ui-eyebrow">{t("tasks.sourceLabel")}</span>
+          <span className="text-[15px] leading-snug font-semibold break-words text-text-3">{t("trash.sourceDeleted")}</span>
+        </div>
+      )}
+      {task.source && !task.source.documentDeleted && (
         <Link to={`/documents/${task.source.documentId}`} className="card flex flex-col gap-1">
           <span className="ui-eyebrow">{t("tasks.sourceLabel")}</span>
           <span className="text-[15px] leading-snug font-semibold break-words">
@@ -118,7 +125,17 @@ export function TaskDetail({ task, onChange, heading, onCompleted, onTrashed }: 
         </Link>
       )}
 
-      {review && (
+      {review && review.contractDeleted && (
+        // A completed review kept as history after its contract was deleted permanently: nothing left to open.
+        <div className="card flex flex-col gap-1.5" data-testid="cancellation-review-details">
+          <span className="ui-eyebrow">{t("tasks.contractMeta")}</span>
+          <span className="text-[15px] leading-snug font-semibold break-words">{review.contractName}</span>
+          <span className="text-sm text-text-3" data-testid="cancellation-review-contract-deleted">
+            {t("trash.contractDeleted")}
+          </span>
+        </div>
+      )}
+      {review && !review.contractDeleted && (
         <Link to={`/contracts/${review.contractId}`} className="card flex flex-col gap-1.5" data-testid="cancellation-review-details">
           <span className="ui-eyebrow">{t("tasks.contractMeta")}</span>
           <span className="text-[15px] leading-snug font-semibold break-words">{review.contractName}</span>

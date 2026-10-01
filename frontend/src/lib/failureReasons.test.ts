@@ -25,6 +25,9 @@ const PUBLISHED_CODES = [
   "attempt.interrupted", "ai.run.cancelled", "ai.run.failed", "ai.run.missing",
 ];
 
+/** Failure codes of a document's permanent deletion (ADR-0021), shown in the trash instead of on a review card. */
+const PURGE_CODES = ["paperless.consumptionPending", "document.stagingDeleteFailed"];
+
 /** Unexpected defects and the producer's placeholder for a missing code deliberately get the generic reason. */
 const GENERIC_CODES = ["internal.error", "unknown"];
 
@@ -56,7 +59,7 @@ function backendFailureCodes(): Set<string> {
 
 describe("failureReason", () => {
   it("names every code the review producer publishes with a specific reason", () => {
-    for (const code of PUBLISHED_CODES) {
+    for (const code of [...PUBLISHED_CODES, ...PURGE_CODES]) {
       expect(failureReason(code), code).not.toBe("unknown");
     }
   });
@@ -65,7 +68,7 @@ describe("failureReason", () => {
     const codes = backendFailureCodes();
     expect(codes.size).toBeGreaterThan(30);
     for (const code of codes) {
-      expect([...PUBLISHED_CODES, ...GENERIC_CODES], code).toContain(code);
+      expect([...PUBLISHED_CODES, ...PURGE_CODES, ...GENERIC_CODES], code).toContain(code);
     }
   });
 

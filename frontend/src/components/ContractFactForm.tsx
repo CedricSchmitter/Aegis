@@ -214,7 +214,7 @@ function SourcePicker({
         await api.GET("/api/documents", { params: { query: { query: query.trim(), size: 10 } } }),
       );
       // Search never returns trashed documents, so a found source is never in the trash.
-      onFound(result.items.map((item) => ({ documentId: item.id, documentTitle: item.title, documentTrashed: false })));
+      onFound(result.items.map((item) => ({ documentId: item.id, documentTitle: item.title, documentTrashed: false, documentDeleted: false })));
       setNoMatches(result.items.length === 0);
     } catch (failure) {
       setSearchError(problemMessage(t, failure));

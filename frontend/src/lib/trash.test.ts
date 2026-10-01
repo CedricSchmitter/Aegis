@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ContractSummaryDto, DocumentDto, TaskDto } from "../api/types";
-import { countTrash, filterTrash, mergeTrash } from "./trash";
+import { countTrash, filterTrash, hasPendingPurge, mergeTrash } from "./trash";
 
 const trash = (at: string) => ({ trashedBy: "m1", trashedAt: at, restorableUntil: "2026-10-22T10:00:00Z" });
 
@@ -49,5 +49,36 @@ describe("filterTrash and countTrash", () => {
 
   it("counts entries per kind", () => {
     expect(countTrash(entries)).toEqual({ all: 3, document: 2, task: 1, contract: 0 });
+  });
+});
+
+describe("permanent deletion", () => {
+  it("carries a document's requested deletion and reports while one is still running", () => {
+    const pending = {
+      id: "d1",
+      title: "Scan",
+      version: 4,
+      trash: { ...trash("2026-09-20T08:00:00Z"), purge: { state: "PENDING", requestedBy: "m1", requestedAt: "2026-09-21T08:00:00Z" } },
+    } as unknown as DocumentDto;
+    const failed = {
+      id: "d2",
+      title: "Kaputt",
+      version: 5,
+      trash: {
+        ...trash("2026-09-20T07:00:00Z"),
+        purge: { state: "FAILED", requestedBy: "m1", requestedAt: "2026-09-21T08:00:00Z", failureCode: "paperless.rejected" },
+      },
+    } as unknown as DocumentDto;
+
+    const entries = mergeTrash([pending, failed], [task("t1", "C", "2026-09-22T09:00:00Z")], []);
+
+    expect(entries.map((entry) => [entry.id, entry.purge?.state ?? null])).toEqual([
+      ["t1", null],
+      ["d1", "PENDING"],
+      ["d2", "FAILED"],
+    ]);
+    expect(entries[2].purge?.failureCode).toBe("paperless.rejected");
+    expect(hasPendingPurge(entries)).toBe(true);
+    expect(hasPendingPurge(entries.filter((entry) => entry.id !== "d1"))).toBe(false);
   });
 });

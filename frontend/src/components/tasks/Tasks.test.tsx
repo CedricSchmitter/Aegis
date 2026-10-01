@@ -130,6 +130,7 @@ describe("task detail", () => {
         cancellationDeadline: inDays(10),
         contractEnd: null,
         contractVersion: 2,
+        contractDeleted: false,
         reminderDate: inDays(3),
       },
     });
