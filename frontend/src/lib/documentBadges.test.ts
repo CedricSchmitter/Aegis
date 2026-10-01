@@ -43,6 +43,7 @@ describe("documentBadges", () => {
     expect(labels({ analysis: "FAILED" })).toEqual(["analysis.stateShort.FAILED"]);
     expect(labels({ analysis: "UNAVAILABLE" })).toEqual(["analysis.stateShort.UNAVAILABLE"]);
     expect(labels({ analysis: "NOT_CLASSIFIED" })).toEqual(["analysis.stateShort.NOT_CLASSIFIED"]);
+    expect(labels({ analysis: "WAITING_FOR_BUDGET" })).toEqual(["analysis.stateShort.WAITING_FOR_BUDGET"]);
     expect(labels({ placementSuggestion: true })).toEqual(["placement.badge"]);
   });
 

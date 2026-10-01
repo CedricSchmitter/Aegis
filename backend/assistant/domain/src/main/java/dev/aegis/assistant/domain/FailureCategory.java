@@ -21,7 +21,10 @@ public enum FailureCategory {
     INVALID_OUTPUT(true),
     /** The model declined the request. */
     REFUSED(false),
-    /** Cost, daily, time, model-call or tool-call budget reached. */
+    /**
+     * Cost, daily, time, model-call or tool-call budget reached. A stop by the daily limit alone does not end the run:
+     * it waits for the next budget day ({@link AiRun#authorizeModelCall}).
+     */
     BUDGET_EXHAUSTED(false),
     /** The model repeatedly asked for tools that the workload does not grant. */
     TOOL_DENIED(false),

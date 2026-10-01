@@ -198,7 +198,11 @@ fallback to the owner's Claude subscription through headless `claude -p` on the 
 The household chooses the model family (Opus, Sonnet, Haiku) per workload on the status page; all default to Sonnet
 ([ADR-0020](docs/architecture/adr/ADR-0020-household-model-families.md)). The API uses the catalog model of the family,
 the subscription always the newest one Claude Code offers. The API has a 0.25 USD household daily budget (50 USD per
-day and 0.50 USD per run on the subscription) and one concurrent run.
+day and 0.50 USD per run on the subscription) and one concurrent run. Uploads are classified one after another;
+once a day's limit is used up, the remaining runs wait until midnight (household time) and then continue on their
+own. Their documents read "Wartet auf KI-Budget" with the time they continue, without a failure card, and the
+status page lists such runs as waiting rather than failed. A wait does not use up one of the run's attempts; a run
+whose own cost budget is used up, or a daily limit too small for a single call, still fails visibly.
 Both members can use the shared server-side API connection; the subscription fallback serves only the members listed
 in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Without either, AI is not configured. See
 [API setup](docs/operations/DEPLOYMENT.md#claude-api) and

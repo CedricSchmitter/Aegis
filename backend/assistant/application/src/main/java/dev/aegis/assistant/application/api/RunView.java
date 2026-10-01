@@ -8,6 +8,8 @@ import java.util.UUID;
 /**
  * Visible state of a run. Codes (workload, state, failure category and code, step kinds) are stable English values
  * that the UI localizes. {@code output} is the validated result as JSON. {@code steps} is empty in list views.
+ * {@code attempt} counts the attempts against {@code maxAttempts}; attempts that only waited for the next budget day
+ * are not counted, while the steps number every attempt.
  */
 public record RunView(UUID id, String workload, String state, UUID retryOf, UUID requestedBy, Instant requestedAt,
         String provider, String model, int attempt, int maxAttempts, boolean cancelRequested, int modelCalls,

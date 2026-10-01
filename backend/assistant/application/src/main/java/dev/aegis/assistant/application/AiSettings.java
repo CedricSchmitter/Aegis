@@ -92,4 +92,9 @@ public record AiSettings(Map<Workload, WorkloadProfile> profiles, Money dailyCos
     public Instant startOfDay(Instant now) {
         return now.atZone(zone).toLocalDate().atStartOfDay(zone).toInstant();
     }
+
+    /** Start of the household day after the one containing {@code now}, when the daily limits renew. */
+    public Instant startOfNextDay(Instant now) {
+        return now.atZone(zone).toLocalDate().plusDays(1).atStartOfDay(zone).toInstant();
+    }
 }

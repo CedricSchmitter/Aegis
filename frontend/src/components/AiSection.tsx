@@ -10,6 +10,11 @@ import { Badge, EmptyState, ErrorBox, InfoBox } from "./common";
 const ACTIVE = ["QUEUED", "RUNNING", "WAITING_RETRY"];
 const POLL_MS = 3000;
 
+/** A run stopped by today's AI cost limit that continues on the next budget day: no failure (issue #109). */
+function waitsForBudgetDay(run: AiRun): boolean {
+  return run.state === "WAITING_RETRY" && run.failureCode === "budget.daily" && !!run.nextAttemptAt;
+}
+
 type Workload = AiOverview["workloads"][number];
 type ModelOption = AiOverview["models"][number];
 
@@ -111,6 +116,7 @@ export function AiSection() {
             {t("ai.spentToday", { spent: money(overview.spentToday), limit: money(overview.dailyCostLimit) })}
             {overview.limitProvider && ` (${t(`ai.provider.${overview.limitProvider}`, { defaultValue: overview.limitProvider })})`}
           </p>
+          <p className="text-xs text-text-3">{t("ai.dailyLimitHint")}</p>
           <ul className="flex flex-col gap-3">
             {overview.workloads.map((workload) => (
               <li key={workload.workload} className="flex flex-col gap-1">
@@ -158,7 +164,11 @@ export function AiSection() {
                 <span className="font-medium">
                   {t(`ai.workload.${run.workload}`)} · {run.model}
                 </span>
-                <Badge state={run.state} label={t(`ai.state.${run.state}`)} />
+                {waitsForBudgetDay(run) ? (
+                  <Badge state="WAITING_FOR_BUDGET" label={t("ai.budgetWait")} />
+                ) : (
+                  <Badge state={run.state} label={t(`ai.state.${run.state}`)} />
+                )}
               </div>
               <p className="text-text-3">
                 {t("ai.runLine", {
@@ -172,7 +182,11 @@ export function AiSection() {
                 })}
               </p>
               {run.cancelRequested && run.state === "RUNNING" && <p>{t("ai.cancelPending")}</p>}
-              {run.failureCategory && (
+              {waitsForBudgetDay(run) ? (
+                <p className="text-text-3" data-testid="ai-run-waiting-for-budget">
+                  {t("ai.waitingForBudget", { date: formatDateTime(run.nextAttemptAt ?? "", i18n.language) })}
+                </p>
+              ) : run.failureCategory && (
                 <p className={run.state === "FAILED" ? "text-danger" : "text-action"}>
                   {t(`ai.failure.${run.failureCategory}`)} ({run.failureCode})
                   {run.nextAttemptAt && run.state === "WAITING_RETRY" && <> · {t("ai.nextAttempt", { date: formatDateTime(run.nextAttemptAt, i18n.language) })}</>}

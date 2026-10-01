@@ -2028,6 +2028,7 @@
       "RunDto" : {
         "properties" : {
           "attempt" : {
+            "description" : "Attempts counted against maxAttempts; waits for the next budget day do not count",
             "format" : "int32",
             "type" : "integer"
           },

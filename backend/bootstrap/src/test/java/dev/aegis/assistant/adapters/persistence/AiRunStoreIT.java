@@ -95,6 +95,29 @@ class AiRunStoreIT extends PostgresIT {
     }
 
     @Test
+    void aWaitForTheNextBudgetDayRoundTripsWithoutCountingAsAnAttempt() {
+        AiRun run = newRun("store:" + UUID.randomUUID());
+        runs.save(run);
+        AiRun started = runs.findById(run.id()).orElseThrow();
+        started.start(AT);
+        Instant renewal = AT.plus(Duration.ofHours(13));
+        AiRun.Checkpoint halted = started.authorizeModelCall(1,
+                new AiRun.CallQuote(Money.of("0.001", "USD"), Money.of("5", "USD")),
+                new AiRun.DailyBudget(Money.of("0.25", "USD"), Money.of("0.25", "USD"), renewal), AT.plusSeconds(1));
+        runs.save(started);
+
+        AiRun loaded = runs.findById(run.id()).orElseThrow();
+
+        assertThat(halted).isEqualTo(new AiRun.Halted(RunState.WAITING_RETRY, renewal));
+        assertThat(loaded.state()).isEqualTo(RunState.WAITING_RETRY);
+        assertThat(loaded.nextAttemptAt()).contains(renewal);
+        assertThat(loaded.attempt()).isEqualTo(1);
+        assertThat(loaded.budgetWaits()).isEqualTo(1);
+        assertThat(loaded.attemptsUsed()).isZero();
+        assertThat(loaded.failure()).get().extracting(failure -> failure.code()).isEqualTo("budget.daily");
+    }
+
+    @Test
     void staleCopyCannotOverwriteANewerRun() {
         AiRun run = newRun("store:" + UUID.randomUUID());
         runs.save(run);

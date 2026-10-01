@@ -30,14 +30,20 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,12 +55,14 @@ import tools.jackson.databind.JsonNode;
 /**
  * Automatic classification end to end against PostgreSQL, the real job scheduler, REST API and a controlled model:
  * upload to archived to classified, both members' view, review decisions, friendly downloads and exports with
- * unchanged checksums, recovery from provider outage, budget exhaustion, duplicate delivery and a member edit
- * during the run, and uploads by a member who may not use AI.
+ * unchanged checksums, recovery from provider outage, duplicate delivery and a member edit during the run, a burst that
+ * waits for the next budget day, and uploads by a member who may not use AI.
  */
 class DocumentClassificationIT extends PostgresIT {
     private static final String INVOICE = "11111111-0000-4000-8000-000000000001";
     private static final String INTERNET = "22222222-0000-4000-8000-000000000001";
+    /** Zone of the household budget day. */
+    private static final ZoneId BERLIN = ZoneId.of("Europe/Berlin");
 
     @LocalServerPort
     int port;
@@ -407,32 +415,88 @@ class DocumentClassificationIT extends PostgresIT {
     }
 
     @Test
-    void anExhaustedDailyBudgetFailsVisiblyWithoutTouchingTheDocument() {
+    void aBurstLargerThanTheDailyBudgetWaitsForTheNextBudgetDayAndIsThenClassified() {
         ApiClient lisa = loggedIn(ANNA);
-        Invoice first = invoice(marker("F"));
-        organization(lisa, first);
-        model.answer(request -> json(answer(first, List.of())));
-        String classifiedId = uploadInvoice(lisa, first, "budget-a.pdf");
-        String runId = awaitAnalysis(lisa, classifiedId, "CLASSIFIED").path("analysis").path("runId").asText();
-        // Synthetic spending of today above the configured daily limit.
-        jdbc.sql("""
-                INSERT INTO ai_run_steps (run_id, seq, attempt, kind, name, outcome, cost, currency, at)
-                VALUES (?, 9999, 1, 'MODEL_CALL', 'synthetic', 'budget-test', 1000, 'USD', now())""")
-                .param(UUID.fromString(runId)).update();
-        try {
-            Invoice second = invoice(marker("G"));
-            model.answer(request -> json(answer(second, List.of())));
-            String id = uploadInvoice(lisa, second, "budget-b.pdf");
-
-            JsonNode failed = awaitAnalysis(lisa, id, "FAILED");
-            assertThat(failed.path("analysis").path("failureCategory").asText()).isEqualTo("BUDGET_EXHAUSTED");
-            assertThat(failed.path("classification").path("labels")).isEmpty();
-            assertThat(failed.path("title").asText()).isEqualTo("budget-b");
-            assertThat(model.requests).hasSize(1);
-        } finally {
-            jdbc.sql("DELETE FROM ai_run_steps WHERE run_id = ? AND seq = 9999").param(UUID.fromString(runId))
-                    .update();
+        MemberId anna = members.findCredentials(ANNA).orElseThrow().id();
+        List<Invoice> invoices = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            Invoice invoice = invoice(marker("B"));
+            organization(lisa, invoice);
+            invoices.add(invoice);
         }
+        // The model answers each invoice of the burst; its second answer uses up the rest of today's limit with
+        // synthetic spending far above it.
+        AtomicInteger answered = new AtomicInteger();
+        List<UUID> spentOn = new CopyOnWriteArrayList<>();
+        model.otherwise(request -> {
+            Invoice invoice = invoices.stream().filter(candidate -> documentText(request).contains(candidate.alias()))
+                    .findFirst().orElseThrow(() -> new IllegalStateException("not an invoice of this burst"));
+            if (answered.incrementAndGet() == 2) {
+                spentOn.add(jdbc.sql("""
+                        INSERT INTO ai_run_steps (run_id, seq, attempt, kind, name, outcome, cost, currency, at)
+                        SELECT id, 9998, 1, 'MODEL_CALL', 'synthetic', 'budget-test', 1000, 'USD', now()
+                          FROM ai_runs ORDER BY requested_at DESC LIMIT 1
+                        RETURNING run_id""").query(UUID.class).single());
+            }
+            return json(answer(invoice, List.of()));
+        });
+        try {
+            List<String> ids = new ArrayList<>();
+            for (Invoice invoice : invoices) {
+                ids.add(uploadInvoice(lisa, invoice, "burst-" + ids.size() + ".pdf"));
+            }
+
+            // Every document ends classified or visibly waiting; none failed, none was skipped.
+            await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(ids).allSatisfy(id ->
+                    assertThat(document(lisa, id).path("analysis").path("state").asText())
+                            .isIn("CLASSIFIED", "WAITING_FOR_BUDGET")));
+            List<JsonNode> waiting = ids.stream().map(id -> document(lisa, id))
+                    .filter(document -> "WAITING_FOR_BUDGET".equals(document.path("analysis").path("state").asText()))
+                    .toList();
+            assertThat(waiting).hasSizeBetween(1, 3);
+            assertThat(answered.get()).isEqualTo(ids.size() - waiting.size());
+            Instant midnight = LocalDate.now(BERLIN).plusDays(1).atStartOfDay(BERLIN).toInstant();
+            for (JsonNode document : waiting) {
+                JsonNode analysis = document.path("analysis");
+                assertThat(analysis.path("runState").asText()).isEqualTo("WAITING_RETRY");
+                assertThat(Instant.parse(analysis.path("nextAttemptAt").asText())).isEqualTo(midnight);
+                assertThat(analysis.path("failureCategory").isNull()).isTrue();
+                assertThat(analysis.path("failureCode").isNull()).isTrue();
+                assertThat(document.path("classification").path("labels")).isEmpty();
+                assertThat(document.path("title").asText()).startsWith("burst-");
+                JsonNode run = lisa.json(lisa.get("/api/ai/runs/" + analysis.path("runId").asText()));
+                assertThat(run.path("failureCode").asText()).isEqualTo("budget.daily");
+                assertThat(run.path("attempt").asInt()).as("a budget wait uses up no attempt").isZero();
+            }
+            Set<String> waitingIds = waiting.stream().map(document -> document.path("id").asText())
+                    .collect(Collectors.toSet());
+            assertThat(inbox.list(new Actor(anna), "OPEN", null))
+                    .noneMatch(card -> waitingIds.contains(card.sourceId()));
+
+            // The budget day rolls over: today's spending no longer counts, and the waiting runs become due.
+            jdbc.sql("DELETE FROM ai_run_steps WHERE seq = 9998 AND outcome = 'budget-test'").update();
+            List<UUID> runIds = waiting.stream()
+                    .map(document -> UUID.fromString(document.path("analysis").path("runId").asText())).toList();
+            jdbc.sql("UPDATE ai_runs SET next_attempt_at = now() WHERE id IN (:ids)").param("ids", runIds).update();
+            jdbc.sql("UPDATE scheduled_tasks SET execution_time = now() WHERE task_name = 'ai-run'"
+                    + " AND task_instance IN (:ids)")
+                    .param("ids", runIds.stream().map(UUID::toString).toList()).update();
+
+            await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(ids).allSatisfy(id ->
+                    assertThat(document(lisa, id).path("analysis").path("state").asText()).isEqualTo("CLASSIFIED")));
+            assertThat(answered.get()).isEqualTo(ids.size());
+            assertThat(spentOn).hasSize(1);
+        } finally {
+            jdbc.sql("DELETE FROM ai_run_steps WHERE seq = 9998 AND outcome = 'budget-test'").update();
+        }
+    }
+
+    /** The framed OCR text of the request; the rest of the prompt lists the household's names and aliases. */
+    private static String documentText(ModelRequest request) {
+        String prompt = ((ContentPart.Text) request.messages().getFirst().parts().getFirst()).text();
+        int start = prompt.indexOf("<untrusted_content source=\"document-text:");
+        int end = prompt.indexOf("</untrusted_content>", Math.max(start, 0));
+        return start < 0 || end < 0 ? "" : prompt.substring(start, end);
     }
 
     @Test

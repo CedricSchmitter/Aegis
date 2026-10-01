@@ -24,6 +24,7 @@ import dev.aegis.assistant.domain.RunState;
 import dev.aegis.assistant.domain.RunStep;
 import dev.aegis.assistant.domain.StepKind;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -254,18 +255,50 @@ class RunExecutorTest {
     }
 
     @Test
-    void dailyLimitStopsNewRunsBeforeAnyModelCall() {
+    void dailyLimitStopsNewRunsBeforeAnyModelCallUntilTheNextBudgetDay() {
         kit.dailyLimit = Money.of("0.0020", "USD");
-        kit.gateway.answer(json(Map.of("label", "invoice")));
+        kit.gateway.answer(json(Map.of("label", "invoice"))).answer(json(Map.of("label", "insurance")));
         RunId first = new RunId(kit.classify("doc-a", 1, "Rechnung", false).id());
         execute(first);
         RunId second = new RunId(kit.classify("doc-b", 1, "Rechnung", false).id());
 
-        execute(second);
+        // Midnight in Europe/Berlin after 2026-09-18T08:00Z.
+        Instant midnight = Instant.parse("2026-09-18T22:00:00Z");
+        assertThat(execute(second)).isEqualTo(new RunExecutor.RunAgainAt(midnight));
 
         assertThat(stored(first).state()).isEqualTo(RunState.SUCCEEDED);
-        assertThat(stored(second).failure()).get().extracting(RunFailure::code).isEqualTo("budget.daily");
+        AiRun waiting = stored(second);
+        assertThat(waiting.state()).isEqualTo(RunState.WAITING_RETRY);
+        assertThat(waiting.failure()).get().extracting(RunFailure::code).isEqualTo("budget.daily");
+        assertThat(kit.service().get(AS_LISA, second.value()).attempt()).isZero();
         assertThat(kit.gateway.requests).hasSize(1);
+        kit.clock.advance(Duration.between(kit.clock.instant(), midnight).minusMinutes(1));
+        assertThat(execute(second)).isEqualTo(new RunExecutor.RunAgainAt(midnight));
+        assertThat(kit.gateway.requests).hasSize(1);
+
+        kit.clock.advance(Duration.ofMinutes(1));
+        assertThat(execute(second)).isInstanceOf(RunExecutor.Done.class);
+
+        assertThat(stored(second).state()).isEqualTo(RunState.SUCCEEDED);
+        assertThat(stored(second).attemptsUsed()).isEqualTo(1);
+        assertThat(kit.workload.applied).containsExactly("doc-a=invoice", "doc-b=insurance");
+    }
+
+    @Test
+    void perRunCostExhaustionStillFailsWhenTheDayIsUsedUpToo() {
+        // After the first call (0.0015 USD) 0.0003 USD are left in the run and 0.0001 USD today. The daily limit is
+        // the smaller one, but a fresh day could not pay the next call either.
+        kit.budget = new RunBudget(Duration.ofMinutes(2), Money.of("0.0018", "USD"), 4, 3, 1024, 3);
+        kit.dailyLimit = Money.of("0.0016", "USD");
+        kit.gateway.answer(toolCalls(call("c1", "lookup", Map.of("name", "x"))));
+        RunId id = kit.classify("Rechnung");
+
+        execute(id);
+
+        AiRun run = stored(id);
+        assertThat(run.state()).isEqualTo(RunState.FAILED);
+        assertThat(run.failure()).get().extracting(RunFailure::code).isEqualTo("budget.cost");
+        assertThat(run.budgetWaits()).isZero();
     }
 
     @Test

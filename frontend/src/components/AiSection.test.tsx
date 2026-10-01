@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AiOverview } from "../api/types";
 import i18n from "../i18n";
+import { formatDateTime } from "../lib/format";
 import { AiSection } from "./AiSection";
 
 const api = vi.hoisted(() => ({ GET: vi.fn(), POST: vi.fn(), PUT: vi.fn() }));
@@ -62,6 +63,61 @@ const overview = (classification: Partial<AiOverview["workloads"][number]> = {})
     { family: "sonnet", model: "claude-sonnet-5-5", inputPerMillion: 2, outputPerMillion: 10 },
     { family: "haiku", model: "claude-haiku-4-5", inputPerMillion: 1, outputPerMillion: 5 },
   ],
+});
+
+describe("AI runs on the status page", () => {
+  const run = (fields: Record<string, unknown>) => ({
+    id: "r1",
+    workload: "DOCUMENT_CLASSIFICATION",
+    retryOf: null,
+    requestedBy: "m-lisa",
+    requestedAt: "2026-10-01T09:00:00Z",
+    provider: "anthropic",
+    model: "claude-sonnet-5-5",
+    attempt: 0,
+    maxAttempts: 3,
+    cancelRequested: false,
+    modelCalls: 0,
+    toolCalls: 0,
+    deniedToolCalls: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    cost: 0,
+    maxCost: 0.05,
+    currency: "USD",
+    output: null,
+    failureMessage: null,
+    finishedAt: null,
+    sources: [],
+    steps: [],
+    version: 1,
+    ...fields,
+  });
+
+  it("shows a run stopped by the daily limit as waiting for the next budget day, not as a failure", async () => {
+    const waiting = run({
+      state: "WAITING_RETRY",
+      failureCategory: "BUDGET_EXHAUSTED",
+      failureCode: "budget.daily",
+      nextAttemptAt: "2026-10-01T22:00:00Z",
+    });
+    const failed = run({ id: "r2", state: "FAILED", failureCategory: "BUDGET_EXHAUSTED", failureCode: "budget.cost" });
+    api.GET.mockImplementation((path: string) =>
+      Promise.resolve(ok(path === "/api/ai/runs" ? [waiting, failed] : overview())),
+    );
+
+    render(<AiSection />);
+
+    const waitingCard = await screen.findByTestId("ai-run-r1");
+    expect(waitingCard.textContent).toContain("Wartet auf KI-Budget");
+    expect(screen.getByTestId("ai-run-waiting-for-budget").textContent).toBe(
+      `Wartet auf das KI-Budget von morgen (Tageslimit erreicht) · geht am ${formatDateTime("2026-10-01T22:00:00Z", "de")} weiter`,
+    );
+    expect(waitingCard.textContent).not.toContain("Budget ausgeschöpft");
+    expect(waitingCard.textContent).toContain("Abbrechen");
+    expect(screen.getByTestId("ai-run-r2").textContent).toContain("Budget ausgeschöpft (budget.cost)");
+    expect(screen.getByText(/warten weitere Läufe bis Mitternacht/)).toBeTruthy();
+  });
 });
 
 describe("AI model choice", () => {
