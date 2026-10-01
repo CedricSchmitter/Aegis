@@ -174,4 +174,6 @@ more, which the member can reject again.
 - The review inbox (#50) can list pending placement proposals through the same read model; this change only shows
   them on the document page and as a badge in the list.
 - Bulk reorganization of the existing collection stays out of scope: existing documents are only analyzed when a
-  member selects them (ADR-0004), and nothing moves documents in bulk automatically.
+  member selects them (ADR-0004) or starts a bulk classification ([ADR-0022](ADR-0022-bulk-classification.md)), which
+  applies this policy per document unchanged and groups identical proposals; nothing moves documents in bulk on its
+  own.

@@ -81,6 +81,19 @@ public class JdbcDocumentCatalog implements DocumentCatalog {
     }
 
     @Override
+    public Page neverClassified(Criteria criteria, int limit) {
+        Conditions conditions = conditions(criteria);
+        String where = conditions.where() + " AND d.state = 'ARCHIVED' AND NOT EXISTS (SELECT 1"
+                + " FROM document_analyses da WHERE da.document_id = d.id AND da.completed_at IS NOT NULL)";
+        Map<String, Object> params = new LinkedHashMap<>(conditions.params());
+        params.put("limit", limit);
+        List<DocumentId> ids = jdbc.sql("SELECT d.id" + FROM + where + " ORDER BY d.uploaded_at ASC, d.id LIMIT :limit")
+                .params(params).query((rs, row) -> new DocumentId(rs.getObject("id", UUID.class))).list();
+        Long total = jdbc.sql("SELECT count(*)" + FROM + where).params(conditions.params()).query(Long.class).single();
+        return new Page(ids, total == null ? 0 : total);
+    }
+
+    @Override
     public long countNotArchived(Criteria criteria) {
         Conditions conditions = conditions(criteria);
         Long count = jdbc.sql("SELECT count(*)" + FROM + conditions.where() + " AND d.state <> 'ARCHIVED'")

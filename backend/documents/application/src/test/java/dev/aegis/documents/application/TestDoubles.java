@@ -56,6 +56,13 @@ final class TestDoubles {
         public Optional<Instant> nextPurgeAttempt(DocumentId id) {
             return purges.contains(id) ? Optional.of(Instant.parse("2026-09-13T10:00:05Z")) : Optional.empty();
         }
+
+        final Map<UUID, Instant> bulkSteps = new HashMap<>();
+
+        @Override
+        public void scheduleBulkAnalysis(UUID bulkId, Instant at) {
+            bulkSteps.put(bulkId, at);
+        }
     }
 
     static final class RecordingEvents implements DocumentEvents {
@@ -141,6 +148,30 @@ final class TestDoubles {
             Map<String, RunStatus> result = new HashMap<>();
             keys.forEach(key -> Optional.ofNullable(states.get(key)).ifPresent(status -> result.put(key, status)));
             return result;
+        }
+
+        /** Mean cost of earlier runs reported by {@link #estimate}; {@code null} as if none had run. */
+        java.math.BigDecimal averageCost = new java.math.BigDecimal("0.01");
+        java.math.BigDecimal spentToday = java.math.BigDecimal.ZERO;
+        java.math.BigDecimal dailyLimit = new java.math.BigDecimal("0.25");
+        final List<UUID> cancelled = new ArrayList<>();
+
+        @Override
+        public CostEstimate estimate(Actor requester) {
+            String refused = refusal != null ? refusal
+                    : notAllowed.contains(requester.memberId()) ? MEMBER_NOT_ALLOWED : null;
+            return new CostEstimate(refused, averageCost, averageCost == null ? 0 : 20,
+                    new java.math.BigDecimal("0.05"), dailyLimit, spentToday, "USD",
+                    Instant.parse("2026-09-14T22:00:00Z"));
+        }
+
+        @Override
+        public void cancel(Actor actor, UUID runId) {
+            cancelled.add(runId);
+            states.replaceAll((key, status) -> status.runId().equals(runId) && status.active()
+                    ? new RunStatus(runId, "CANCELLED", "CANCELLED", null, null,
+                            Instant.parse("2026-09-13T10:06:00Z"))
+                    : status);
         }
     }
 

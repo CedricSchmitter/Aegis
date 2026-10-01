@@ -71,6 +71,24 @@ public class InMemoryDocumentCatalog implements DocumentCatalog {
         return new GroupCounts(counts, missing);
     }
 
+    /** Analyses read by {@link #neverClassified}; without them every document counts as never classified. */
+    private InMemoryDocumentAnalysisRepository analyses;
+
+    InMemoryDocumentCatalog withAnalyses(InMemoryDocumentAnalysisRepository analyses) {
+        this.analyses = analyses;
+        return this;
+    }
+
+    @Override
+    public Page neverClassified(Criteria criteria, int limit) {
+        List<Document> matching = matching(criteria).stream().filter(d -> d.state() == ProcessingState.ARCHIVED)
+                .filter(d -> analyses == null || analyses.findById(d.id())
+                        .map(analysis -> !analysis.everCompleted()).orElse(true))
+                .sorted(Comparator.comparing(Document::uploadedAt).thenComparing(d -> d.id().value()))
+                .toList();
+        return new Page(matching.stream().limit(limit).map(Document::id).toList(), matching.size());
+    }
+
     @Override
     public long countNotArchived(Criteria criteria) {
         return matching(criteria).stream().filter(d -> d.state() != ProcessingState.ARCHIVED).count();

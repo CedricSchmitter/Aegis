@@ -507,6 +507,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/bulk-analyses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The running and the most recent bulk classifications */
+        get: operations["listBulkAnalyses"];
+        put?: never;
+        /** Start the bulk classification the preview showed; refused when the scope changed */
+        post: operations["startBulkAnalysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/bulk-analyses/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Show which never-classified documents a bulk classification would include and its cost */
+        post: operations["previewBulkAnalysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/bulk-analyses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One bulk classification with its progress and results */
+        get: operations["getBulkAnalysis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/bulk-analyses/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a running bulk classification; results already applied stay */
+        post: operations["cancelBulkAnalysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/placement": {
         parameters: {
             query?: never;
@@ -1662,12 +1731,111 @@ export interface components {
             /** @enum {string} */
             state: "OK" | "RUNNING" | "FAILED" | "STALE" | "INTERRUPTED" | "NOT_CONFIGURED" | "UNKNOWN";
         };
+        BulkAnalysisDto: {
+            /** Format: int32 */
+            cancelled: number;
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            cancelledBy?: string | null;
+            /** Format: int32 */
+            classified: number;
+            /** Format: int32 */
+            failed: number;
+            failures: components["schemas"]["BulkReasonGroupDto"][];
+            /** Format: date-time */
+            finishedAt?: string | null;
+            id: string;
+            /** Format: int32 */
+            inFlight: number;
+            /** Format: int32 */
+            needsReview: number;
+            /** Format: int32 */
+            notClassified: number;
+            /** Format: int32 */
+            pending: number;
+            placementGroups: components["schemas"]["BulkPlacementGroupDto"][];
+            /** Format: date-time */
+            requestedAt: string;
+            requestedBy: string;
+            reviewDocuments: components["schemas"]["BulkDocumentRefDto"][];
+            scope: components["schemas"]["BulkScopeDto"];
+            /** Format: int32 */
+            skipped: number;
+            skips: components["schemas"]["BulkReasonGroupDto"][];
+            state: string;
+            stopCode?: string | null;
+            /** Format: int32 */
+            superseded: number;
+            /** Format: int32 */
+            total: number;
+            /** Format: date-time */
+            waitingForBudgetUntil?: string | null;
+        };
         BulkAnalysisRequest: {
             documentIds: string[];
         };
         BulkAnalysisResponse: {
             requested: string[];
             skipped: components["schemas"]["SkippedDto"][];
+        };
+        BulkCostDto: {
+            basis: string;
+            currency: string;
+            dailyLimit: number;
+            /** Format: int32 */
+            days?: number | null;
+            /** Format: int32 */
+            documentsToday: number;
+            maximum: number;
+            /** Format: date-time */
+            nextBudgetDay: string;
+            perDocument: number;
+            remainingToday: number;
+            /** Format: int32 */
+            samples: number;
+            spentToday: number;
+            total: number;
+        };
+        BulkDocumentRefDto: {
+            id: string;
+            title: string;
+        };
+        BulkPlacementGroupDto: {
+            /** Format: int32 */
+            documents: number;
+            example: components["schemas"]["BulkDocumentRefDto"];
+            key: string;
+            newFolders: string[];
+            path: string[];
+        };
+        BulkPreviewDto: {
+            cost: components["schemas"]["BulkCostDto"];
+            /** Format: int32 */
+            documents: number;
+            limited: boolean;
+            /** Format: int32 */
+            maxDocuments: number;
+            refusal?: string | null;
+            runningId?: string | null;
+            sample: components["schemas"]["BulkDocumentRefDto"][];
+            scope: components["schemas"]["BulkScopeDto"];
+        };
+        BulkReasonGroupDto: {
+            code: string;
+            /** Format: int32 */
+            documents: number;
+            examples: components["schemas"]["BulkDocumentRefDto"][];
+        };
+        BulkScopeDto: {
+            folderId?: string | null;
+            folderPath?: string[] | null;
+            includeSubfolders: boolean;
+            kind: string;
+        };
+        BulkStartRequest: {
+            /** Format: int32 */
+            expectedDocuments: number;
+            scope: components["schemas"]["BulkScopeDto"];
         };
         CalendarStatusDto: {
             connected: boolean;
@@ -3362,6 +3530,118 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BulkAnalysisResponse"];
+                };
+            };
+        };
+    };
+    listBulkAnalyses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkAnalysisDto"][];
+                };
+            };
+        };
+    };
+    startBulkAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkStartRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkAnalysisDto"];
+                };
+            };
+        };
+    };
+    previewBulkAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkScopeDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkPreviewDto"];
+                };
+            };
+        };
+    };
+    getBulkAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkAnalysisDto"];
+                };
+            };
+        };
+    };
+    cancelBulkAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkAnalysisDto"];
                 };
             };
         };

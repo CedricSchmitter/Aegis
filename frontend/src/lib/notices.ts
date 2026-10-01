@@ -15,6 +15,7 @@ export const REVIEW_TITLE_PARAMS: Record<string, readonly string[]> = {
   "review.contractFact": ["contract", "type", "value"],
   "review.contractConflict": ["contract", "type"],
   "review.noText": ["title"],
+  "review.bulkAnalysis": ["total", "classified", "needsReview", "failed"],
 };
 
 /**

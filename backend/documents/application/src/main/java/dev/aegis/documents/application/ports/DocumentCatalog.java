@@ -96,6 +96,13 @@ public interface DocumentCatalog {
 
     GroupCounts countGroup(Criteria criteria, Group group);
 
+    /**
+     * Archived documents matching {@code criteria} for which no classification run ever produced a result, oldest
+     * upload first, at most {@code limit} ids (issue #115). Documents whose analysis is requested right now are
+     * included; callers check their runs.
+     */
+    Page neverClassified(Criteria criteria, int limit);
+
     /** Matching documents that are not archived yet and therefore have no full text. */
     long countNotArchived(Criteria criteria);
 

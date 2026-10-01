@@ -20,8 +20,9 @@ state.
 
 Producer adapters read public application contracts. The live producers are failed document archival, documents in
 which the archive recognized no or almost no text ([ADR-0012](ADR-0012-recognized-text.md)), failed or unavailable
-document analysis, classification suggestions awaiting decisions, proposed contract facts and contract fact
-conflicts. Fingerprints contain source, version and reason. Reconciliation preserves a dismissal while that
+document analysis, classification suggestions awaiting decisions, finished bulk classifications (one card per run
+in place of the cards of its documents, [ADR-0022](ADR-0022-bulk-classification.md)), proposed contract facts and
+contract fact conflicts. Fingerprints contain source, version and reason. Reconciliation preserves a dismissal while that
 fingerprint is unchanged, creates a linked new card for materially new evidence and supersedes an open card that is
 no longer current. Mail exceptions, duplicate/relationship suggestions and task candidates are not simulated.
 

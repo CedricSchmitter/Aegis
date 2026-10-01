@@ -22,7 +22,9 @@ public final class AnalysisTypes {
     /** Who started the current generation. */
     public enum Trigger {
         UPLOAD,
-        MANUAL
+        MANUAL,
+        /** A bulk run over existing documents that a member started explicitly (issue #115). */
+        BULK
     }
 
     /** Review state of a generated title, of a new label name or of a subject suggestion. */

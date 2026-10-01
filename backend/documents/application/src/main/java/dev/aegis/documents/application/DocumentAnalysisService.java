@@ -80,7 +80,7 @@ import java.util.regex.Pattern;
  * {@link #assess} read the archive and are called outside transactions.
  */
 public class DocumentAnalysisService implements DocumentAnalysisCommands, AutomaticClassification, AnalysisTrigger,
-        ImportDocumentAnalysis {
+        ImportDocumentAnalysis, BulkAnalysisRequests {
     public static final int MAX_TITLE = 120;
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
     private static final Pattern INVISIBLE = Pattern.compile("[\\p{Cc}\\p{Cf}\\p{Co}\\p{Cn}]");
@@ -196,26 +196,68 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
                     Map.of("max", String.valueOf(MAX_BULK)));
         }
         List<DocumentId> requested = new ArrayList<>();
-        List<Skipped> skipped = new ArrayList<>();
+        List<DocumentAnalysisCommands.Skipped> skipped = new ArrayList<>();
         for (DocumentId id : distinct) {
             Optional<Document> document = documents.findById(id);
             if (document.isEmpty()) {
-                skipped.add(new Skipped(id, "document.notFound"));
+                skipped.add(new DocumentAnalysisCommands.Skipped(id, "document.notFound"));
                 continue;
             }
             DocumentAnalysis analysis = analyses.findById(id).orElseGet(() -> DocumentAnalysis.none(id));
             Optional<String> refusal = refusal(document.get(), analysis);
             if (refusal.isPresent()) {
-                skipped.add(new Skipped(id, refusal.get()));
+                skipped.add(new DocumentAnalysisCommands.Skipped(id, refusal.get()));
                 continue;
             }
             if (requestRun(id, analysis, actor, Trigger.MANUAL) instanceof AnalysisRuns.Unavailable unavailable) {
-                skipped.add(new Skipped(id, unavailable.code()));
+                skipped.add(new DocumentAnalysisCommands.Skipped(id, unavailable.code()));
             } else {
                 requested.add(id);
             }
         }
         return new BulkResult(requested, skipped);
+    }
+
+    // Bulk runs ------------------------------------------------------------------------------------------------------
+
+    /**
+     * Requests one document of a bulk run (issue #115) with the same checks as a member's selection. A document that
+     * got a result since the run started is skipped, so a repeated step never classifies it twice. A refusal by the
+     * AI boundary leaves the analysis untouched and stops the bulk run instead of marking every document.
+     */
+    @Override
+    public BulkAnalysisRequests.Result requestForBulk(Actor requester, DocumentId id) {
+        access.requireMember(requester);
+        Optional<Document> document = documents.findById(id);
+        if (document.isEmpty()) {
+            return new BulkAnalysisRequests.Skipped("document.notFound");
+        }
+        DocumentAnalysis analysis = analyses.findById(id).orElseGet(() -> DocumentAnalysis.none(id));
+        if (analysis.everCompleted()) {
+            return new BulkAnalysisRequests.Skipped("analysis.classified");
+        }
+        Optional<String> refusal = refusal(document.get(), analysis);
+        if (refusal.isPresent()) {
+            return new BulkAnalysisRequests.Skipped(refusal.get());
+        }
+        long classificationVersion = classifications.findById(id).map(DocumentClassification::version).orElse(0L);
+        int generation = analysis.request(requester.memberId(), Trigger.BULK, clock.instant());
+        if (runs.request(requester, id, generation, classificationVersion)
+                instanceof AnalysisRuns.Unavailable unavailable) {
+            return new BulkAnalysisRequests.Refused(unavailable.code());
+        }
+        analyses.save(analysis);
+        return new BulkAnalysisRequests.Requested(generation);
+    }
+
+    @Override
+    public boolean withdraw(DocumentId id, int generation) {
+        Optional<DocumentAnalysis> analysis = analyses.findById(id);
+        if (analysis.isEmpty() || !analysis.get().withdraw(generation)) {
+            return false;
+        }
+        analyses.save(analysis.get());
+        return true;
     }
 
     private Optional<String> refusal(Document document, DocumentAnalysis analysis) {

@@ -12,4 +12,7 @@ public interface AiRunQueries {
 
     /** One run with its audit steps. */
     RunView get(Actor actor, UUID runId);
+
+    /** The expected cost of one run of {@code workload} for this member against today's budget. */
+    WorkloadEstimate estimate(Actor actor, String workload);
 }
