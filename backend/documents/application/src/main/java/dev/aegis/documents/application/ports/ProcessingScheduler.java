@@ -14,4 +14,10 @@ public interface ProcessingScheduler {
 
     /** Next planned execution of the archival job, if one is scheduled. */
     Optional<Instant> nextAttempt(DocumentId id);
+
+    /** Schedules the permanent deletion of a trashed document (ADR-0021) if no such job exists yet. */
+    void schedulePurge(DocumentId id);
+
+    /** Next planned execution of the purge job, if one is scheduled. */
+    Optional<Instant> nextPurgeAttempt(DocumentId id);
 }

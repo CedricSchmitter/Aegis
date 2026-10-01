@@ -58,6 +58,9 @@ public class TaskEntity {
     @Column(name = "contract_version")
     private Long contractVersion;
 
+    @Column(name = "contract_deleted", nullable = false)
+    private boolean contractDeleted;
+
     @Column(name = "created_by", nullable = false)
     private UUID createdBy;
 
@@ -165,6 +168,8 @@ public class TaskEntity {
     LocalDate getReminderDate() { return reminderDate; }
     void setReminderDate(LocalDate reminderDate) { this.reminderDate = reminderDate; }
     Long getContractVersion() { return contractVersion; }
+    boolean isContractDeleted() { return contractDeleted; }
+    void setContractDeleted(boolean contractDeleted) { this.contractDeleted = contractDeleted; }
     void setContractVersion(Long contractVersion) { this.contractVersion = contractVersion; }
 
     UUID getCreatedBy() {

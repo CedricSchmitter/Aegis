@@ -3,6 +3,7 @@ package dev.aegis.documents.application.api;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import java.util.List;
+import java.util.Optional;
 
 /** Member-initiated changes to a captured document. */
 public interface DocumentCommands {
@@ -24,4 +25,12 @@ public interface DocumentCommands {
      * the trash starts now. Repeating it for a document that is not in the trash returns it unchanged.
      */
     DocumentSummary restoreFromTrash(Actor actor, DocumentId id, long expectedVersion);
+
+    /**
+     * Deletes a trashed document permanently (ADR-0021): a background job removes the archive original including the
+     * archive's own trash entry, the staging copy and the record. Until the job is done the document stays in the
+     * trash as being deleted and can no longer be restored. After a failed attempt the same call starts it again.
+     * Repeating it while it is pending returns the document unchanged; once it is gone, the result is empty.
+     */
+    Optional<DocumentSummary> purge(Actor actor, DocumentId id, long expectedVersion);
 }

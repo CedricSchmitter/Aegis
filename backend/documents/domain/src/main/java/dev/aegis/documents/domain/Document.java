@@ -3,6 +3,7 @@ package dev.aegis.documents.domain;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.MemberId;
+import dev.aegis.shared.PurgeConflictException;
 import dev.aegis.shared.Trash;
 import dev.aegis.shared.TrashedException;
 import java.time.Instant;
@@ -41,6 +42,7 @@ public final class Document {
     private Instant submittedAt;
     private Instant archivedAt;
     private Trash trash;
+    private DocumentPurge purge;
     private long version;
 
     private Document(DocumentId id, String title, String originalFilename, String contentType, long sizeBytes,
@@ -86,7 +88,7 @@ public final class Document {
             long sizeBytes, Checksum checksum, MemberId uploadedBy, Instant uploadedAt, Set<Subject> subjects,
             String stagingPath, boolean stagingPresent, ProcessingState state, int attempts,
             ProcessingFailure lastFailure, String paperlessTaskId, Integer paperlessDocumentId, Instant submittedAt,
-            Instant archivedAt, long version, TitleOrigin titleOrigin, Trash trash) {
+            Instant archivedAt, long version, TitleOrigin titleOrigin, Trash trash, DocumentPurge purge) {
         Document document = new Document(id, title, originalFilename, contentType, sizeBytes, checksum, uploadedBy,
                 uploadedAt, subjects, stagingPath);
         document.stagingPresent = stagingPresent;
@@ -100,6 +102,7 @@ public final class Document {
         document.version = version;
         document.titleOrigin = titleOrigin == null ? TitleOrigin.MANUAL : titleOrigin;
         document.trash = trash;
+        document.purge = purge;
         return document;
     }
 
@@ -226,8 +229,59 @@ public final class Document {
         if (trash == null) {
             return false;
         }
+        if (purge != null) {
+            // The job may already have removed the archive original; a restored record would point at nothing.
+            throw new PurgeConflictException("document", id.toString(), "pending",
+                    "document " + id + " is being deleted permanently");
+        }
         trash = null;
         return true;
+    }
+
+    /**
+     * Requests permanent deletion (ADR-0021). Only a trashed document whose archival has settled qualifies: while a
+     * submission is still under way, the archive could create the original after the deletion. Requesting it again
+     * while it is pending changes nothing; after a failed attempt it starts the deletion anew.
+     *
+     * @return whether the document changed
+     */
+    public boolean requestPurge(MemberId by, Instant now) {
+        if (trash == null) {
+            throw PurgeConflictException.notTrashed("document", id.toString());
+        }
+        if (purge != null && !purge.failed()) {
+            return false;
+        }
+        if (state == ProcessingState.RECEIVED || state == ProcessingState.SUBMITTED) {
+            throw new PurgeConflictException("document", id.toString(), "archiving",
+                    "document " + id + " is still being archived");
+        }
+        purge = DocumentPurge.requested(by, now);
+        return true;
+    }
+
+    /**
+     * Records a purge attempt that did not finish. A retryable failure keeps the purge pending for another attempt;
+     * otherwise, or once the attempts are used up, the purge is marked failed and waits for a member.
+     *
+     * @return true when another automatic attempt is allowed
+     */
+    public boolean recordPurgeFailure(String code, Instant now, boolean retryable, int maxAttempts) {
+        if (purge == null || purge.failed()) {
+            throw new IllegalStateException("document " + id + " has no pending purge");
+        }
+        boolean retry = retryable && purge.attempts() + 1 < maxAttempts;
+        purge = retry ? purge.attempted() : purge.failedWith(code, now);
+        return retry;
+    }
+
+    /** Whether a purge is pending, the state in which the background job may delete the document. */
+    public boolean isPurgePending() {
+        return purge != null && !purge.failed();
+    }
+
+    public Optional<DocumentPurge> purge() {
+        return Optional.ofNullable(purge);
     }
 
     /** Refuses a member change while the document is in the trash. */

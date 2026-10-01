@@ -19,11 +19,12 @@ public final class ContractViews {
     }
 
     /**
-     * Where a fact was read; the title is resolved through the documents contract and may be unknown.
-     * {@code documentTrashed} says the document is in the trash, where it can be restored.
+     * Where a fact was read; the title is resolved through the documents contract. {@code documentTrashed} says the
+     * document is in the trash, where it can be restored; {@code documentDeleted} that a member deleted it
+     * permanently (ADR-0021), and then the title is null. Page and quote stay with the fact either way.
      */
-    public record SourceView(DocumentId documentId, String documentTitle, boolean documentTrashed, Integer page,
-            String quote) {
+    public record SourceView(DocumentId documentId, String documentTitle, boolean documentTrashed,
+            boolean documentDeleted, Integer page, String quote) {
     }
 
     /**

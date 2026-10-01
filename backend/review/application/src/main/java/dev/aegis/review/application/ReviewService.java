@@ -4,6 +4,7 @@ import dev.aegis.identity.application.api.MemberDirectory;
 import dev.aegis.identity.application.api.MemberSummary;
 import dev.aegis.notifications.application.api.NoticeDraft;
 import dev.aegis.notifications.application.api.PublishNotice;
+import dev.aegis.review.application.api.ForgetReviewCards;
 import dev.aegis.review.application.api.ReviewInbox;
 import dev.aegis.review.application.api.ReviewPortability;
 import dev.aegis.review.application.api.ReviewReconciliation;
@@ -35,7 +36,7 @@ import java.util.UUID;
  * Reconciliation runs when a member opens the inbox and in the background as {@link ReviewReconciliation#RECONCILER}
  * (ADR-0009); only members dismiss or act on cards.
  */
-public class ReviewService implements ReviewInbox, ReviewReconciliation, ReviewPortability {
+public class ReviewService implements ReviewInbox, ReviewReconciliation, ReviewPortability, ForgetReviewCards {
     private final ReviewRepository repository;
     private final List<ReviewProducer> producers;
     private final ReviewActionDispatcher actions;
@@ -66,6 +67,11 @@ public class ReviewService implements ReviewInbox, ReviewReconciliation, ReviewP
                 .filter(i -> status == null || status.isBlank() || i.status().name().equals(status))
                 .filter(i -> category == null || category.isBlank() || i.category().equals(category))
                 .sorted(Comparator.comparing(ReviewItem::createdAt).reversed()).map(ReviewService::view).toList();
+    }
+
+    @Override
+    public List<UUID> forgetRecord(String kind, String id) {
+        return repository.deleteByRecord(kind, id);
     }
 
     @Override

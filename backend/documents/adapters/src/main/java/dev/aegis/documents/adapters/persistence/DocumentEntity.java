@@ -87,6 +87,21 @@ public class DocumentEntity {
     @Column(name = "restorable_until")
     private Instant restorableUntil;
 
+    @Column(name = "purge_requested_by")
+    private UUID purgeRequestedBy;
+
+    @Column(name = "purge_requested_at")
+    private Instant purgeRequestedAt;
+
+    @Column(name = "purge_attempts", nullable = false)
+    private int purgeAttempts;
+
+    @Column(name = "purge_failure_code", length = 100)
+    private String purgeFailureCode;
+
+    @Column(name = "purge_failed_at")
+    private Instant purgeFailedAt;
+
     @Version
     private Long version;
 
@@ -273,6 +288,34 @@ public class DocumentEntity {
         this.trashedBy = trashedBy;
         this.trashedAt = trashedAt;
         this.restorableUntil = restorableUntil;
+    }
+
+    UUID getPurgeRequestedBy() {
+        return purgeRequestedBy;
+    }
+
+    Instant getPurgeRequestedAt() {
+        return purgeRequestedAt;
+    }
+
+    int getPurgeAttempts() {
+        return purgeAttempts;
+    }
+
+    String getPurgeFailureCode() {
+        return purgeFailureCode;
+    }
+
+    Instant getPurgeFailedAt() {
+        return purgeFailedAt;
+    }
+
+    void setPurge(UUID requestedBy, Instant requestedAt, int attempts, String failureCode, Instant failedAt) {
+        this.purgeRequestedBy = requestedBy;
+        this.purgeRequestedAt = requestedAt;
+        this.purgeAttempts = attempts;
+        this.purgeFailureCode = failureCode;
+        this.purgeFailedAt = failedAt;
     }
 
     Long getVersion() {

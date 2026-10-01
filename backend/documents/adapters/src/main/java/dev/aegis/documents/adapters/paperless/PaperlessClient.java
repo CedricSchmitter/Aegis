@@ -236,6 +236,58 @@ public class PaperlessClient implements PaperlessArchive {
         }
     }
 
+    /**
+     * Paperless moves a deleted document into its own trash, where it keeps the file and its checksum. The document
+     * is therefore deleted and then emptied from that trash by its id; the trash endpoint must never be called
+     * without ids, because that empties the whole Paperless trash. The empty action reports success even when it
+     * failed internally, so the result is checked: the document is gone when it is neither listed nor in the trash,
+     * which the trash endpoint confirms by refusing the id with 400. Should a second empty still find it there, the
+     * outcome is uncertain and the next attempt checks again.
+     */
+    @Override
+    public void purge(int paperlessDocumentId) {
+        if (exists(paperlessDocumentId)) {
+            delete("/api/documents/{id}/", paperlessDocumentId);
+        }
+        emptyFromTrash(paperlessDocumentId);
+        if (exists(paperlessDocumentId) || emptyFromTrash(paperlessDocumentId)) {
+            throw new ArchiveUnavailableException("Paperless still holds document " + paperlessDocumentId
+                    + " after its deletion");
+        }
+    }
+
+    private void delete(String uri, int paperlessDocumentId) {
+        try {
+            client.delete().uri(uri, paperlessDocumentId).retrieve().toBodilessEntity();
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().value() != 404) {
+                throw translate(e);
+            }
+        } catch (ResourceAccessException e) {
+            throw new ArchiveUnavailableException("Paperless unreachable: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Empties one document from the Paperless trash. True when Paperless accepted it, false when it refused the id
+     * because the document is not in its trash (400).
+     */
+    private boolean emptyFromTrash(int paperlessDocumentId) {
+        try {
+            client.post().uri("/api/trash/").contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"action\":\"empty\",\"documents\":[" + paperlessDocumentId + "]}").retrieve()
+                    .toBodilessEntity();
+            return true;
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().value() == 400) {
+                return false;
+            }
+            throw translate(e);
+        } catch (ResourceAccessException e) {
+            throw new ArchiveUnavailableException("Paperless unreachable: " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public List<Integer> searchContent(String query) {
         JsonNode page = getJson("/api/documents/?text={q}&fields=id&page_size=200", query);

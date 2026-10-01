@@ -15,6 +15,8 @@ import dev.aegis.contracts.application.api.ImportContract;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.NotAuthorizedException;
+import dev.aegis.shared.NotFoundException;
+import dev.aegis.shared.PurgeConflictException;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.Trash;
 import dev.aegis.shared.TrashedException;
@@ -33,6 +35,7 @@ class ContractTrashServiceTest {
     private final KnownDocuments documents = new KnownDocuments();
     private final Clock clock = ContractTestSupport.clockAt("2026-09-20T08:00:00Z");
     private final List<ContractId> reconciliations = new ArrayList<>();
+    private final List<ContractId> purged = new ArrayList<>();
     private ContractService commands;
     private ContractQueryService queries;
     private DocumentId contractPdf;
@@ -41,7 +44,8 @@ class ContractTrashServiceTest {
     void setUp() {
         ContractPresenter presenter = new ContractPresenter(documents);
         commands = new ContractService(repository, documents, presenter, ContractTestSupport.household(), clock,
-                (contractId, requestedBy) -> reconciliations.add(contractId), Trash.RecoveryWindow.DEFAULT);
+                (contractId, requestedBy) -> reconciliations.add(contractId), Trash.RecoveryWindow.DEFAULT,
+                purged::add);
         queries = new ContractQueryService(repository, presenter, ContractTestSupport.household(), clock);
         contractPdf = documents.add("Fitnessstudio Vertrag");
     }
@@ -140,7 +144,7 @@ class ContractTrashServiceTest {
         ContractPresenter presenter = new ContractPresenter(documents);
         ContractService restoreTarget = new ContractService(fresh, documents, presenter,
                 ContractTestSupport.household(), clock, (contractId, requestedBy) -> { },
-                Trash.RecoveryWindow.DEFAULT);
+                Trash.RecoveryWindow.DEFAULT, purged::add);
         ContractQueryService restored = new ContractQueryService(fresh, presenter, ContractTestSupport.household(),
                 clock);
 
@@ -158,5 +162,47 @@ class ContractTrashServiceTest {
         assertThatThrownBy(() -> commands.moveToTrash(STRANGER, contract.id(), contract.version()))
                 .isInstanceOf(NotAuthorizedException.class);
         assertThatThrownBy(() -> queries.trashed(STRANGER)).isInstanceOf(NotAuthorizedException.class);
+    }
+
+    @Test
+    void onlyATrashedContractIsDeletedPermanentlyWithItsFactsAndPlanningIsAsked() {
+        ContractView contract = contractWithDeadline();
+        assertThatThrownBy(() -> commands.purge(LISA, contract.id(), contract.version()))
+                .isInstanceOf(PurgeConflictException.class)
+                .hasFieldOrPropertyWithValue("code", "contract.purge.notTrashed");
+        ContractView trashed = commands.moveToTrash(LISA, contract.id(), contract.version());
+        assertThatThrownBy(() -> commands.purge(LISA, contract.id(), trashed.version() + 1))
+                .isInstanceOf(StaleVersionException.class);
+        assertThatThrownBy(() -> commands.purge(STRANGER, contract.id(), trashed.version()))
+                .isInstanceOf(NotAuthorizedException.class);
+        reconciliations.clear();
+
+        commands.purge(CEDRIC, contract.id(), trashed.version());
+
+        assertThat(repository.findById(contract.id())).isEmpty();
+        assertThat(queries.wasPurged(LISA, contract.id())).isTrue();
+        assertThat(queries.trashed(LISA)).isEmpty();
+        assertThat(reconciliations).containsExactly(contract.id());
+        assertThat(purged).containsExactly(contract.id());
+        assertThatThrownBy(() -> queries.get(LISA, contract.id())).isInstanceOf(NotFoundException.class);
+        // A repeated request after a lost response changes nothing.
+        commands.purge(LISA, contract.id(), trashed.version());
+        assertThat(purged).hasSize(1);
+        assertThatThrownBy(() -> commands.purge(LISA, ContractId.random(), 0)).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void aFactWhoseSourceWasDeletedPermanentlyKeepsPageAndQuoteAndSaysSo() {
+        ContractView contract = commands.create(LISA, new CreateContractCommand("Strom", null, null));
+        contract = commands.enterFact(LISA, contract.id(), new EnterFactCommand("NOTICE_PERIOD", "P3M", null, null,
+                contractPdf, 2, "drei Monate zum Laufzeitende", null), contract.version());
+
+        documents.purge(contractPdf);
+
+        var source = queries.get(LISA, contract.id()).facts().getFirst().source();
+        assertThat(source.documentDeleted()).isTrue();
+        assertThat(source.documentTitle()).isNull();
+        assertThat(source.page()).isEqualTo(2);
+        assertThat(source.quote()).isEqualTo("drei Monate zum Laufzeitende");
     }
 }

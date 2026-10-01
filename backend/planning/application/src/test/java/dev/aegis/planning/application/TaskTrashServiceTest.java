@@ -12,6 +12,8 @@ import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.NotAuthorizedException;
+import dev.aegis.shared.NotFoundException;
+import dev.aegis.shared.PurgeConflictException;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.TaskId;
 import dev.aegis.shared.Trash;
@@ -37,6 +39,7 @@ class TaskTrashServiceTest {
     private PlanningTestSupport.KnownDocuments documents;
     private PlanningTestSupport.Members access;
     private final List<ContractId> reconciled = new ArrayList<>();
+    private final PlanningTestSupport.RecordingEvents events = new PlanningTestSupport.RecordingEvents();
     private TaskCommandService commands;
     private TaskQueryService queries;
 
@@ -51,7 +54,7 @@ class TaskTrashServiceTest {
     private void rebuild() {
         var presenter = new TaskPresenter(documents);
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-        commands = new TaskCommandService(repository, documents, new PlanningTestSupport.RecordingEvents(),
+        commands = new TaskCommandService(repository, documents, events,
                 presenter, access, (actor, contract) -> reconciled.add(contract), Trash.RecoveryWindow.DEFAULT,
                 clock);
         queries = new TaskQueryService(repository, new PlanningTestSupport.NoCalendar(), presenter, access, clock);
@@ -161,5 +164,44 @@ class TaskTrashServiceTest {
         assertThatThrownBy(() -> commands.moveToTrash(stranger, task.id(), task.version()))
                 .isInstanceOf(NotAuthorizedException.class);
         assertThatThrownBy(() -> queries.trashed(stranger)).isInstanceOf(NotAuthorizedException.class);
+    }
+
+    @Test
+    void onlyATrashedTaskIsDeletedPermanentlyAndARepeatedRequestIsHarmless() {
+        TaskSummary task = create("Doppelt angelegt", anna, null);
+        assertThatThrownBy(() -> commands.purge(asAnna, task.id(), task.version()))
+                .isInstanceOf(PurgeConflictException.class).hasFieldOrPropertyWithValue("code", "task.purge.notTrashed");
+        TaskSummary trashed = commands.moveToTrash(asAnna, task.id(), task.version());
+        assertThatThrownBy(() -> commands.purge(asAnna, task.id(), trashed.version() + 1))
+                .isInstanceOf(StaleVersionException.class);
+        assertThatThrownBy(() -> commands.purge(new Actor(MemberId.random()), task.id(), trashed.version()))
+                .isInstanceOf(NotAuthorizedException.class);
+
+        commands.purge(new Actor(ben), task.id(), trashed.version());
+
+        assertThat(repository.findById(task.id())).isEmpty();
+        assertThat(repository.wasPurged(task.id())).isTrue();
+        assertThat(queries.trashed(asAnna)).isEmpty();
+        assertThat(events.events).contains("purged:" + task.id());
+        // After a lost response the same request succeeds without doing anything again.
+        commands.purge(asAnna, task.id(), trashed.version());
+        assertThat(events.events).filteredOn(event -> event.startsWith("purged:")).hasSize(1);
+        assertThatThrownBy(() -> commands.purge(asAnna, TaskId.random(), 0)).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void aTaskWhoseSourceWasDeletedPermanentlySaysSoInsteadOfLinkingToNothing() {
+        DocumentId scan = DocumentId.random();
+        documents.titles.put(scan, "Falscher Scan");
+        TaskSummary task = create("Prüfen", anna, scan);
+        assertThat(task.source().documentDeleted()).isFalse();
+
+        documents.titles.remove(scan);
+
+        TaskSummary.SourceView source = queries.get(asAnna, task.id()).source();
+        assertThat(source.documentId()).isEqualTo(scan);
+        assertThat(source.documentTitle()).isNull();
+        assertThat(source.documentDeleted()).isTrue();
+        assertThat(source.documentTrashed()).isFalse();
     }
 }

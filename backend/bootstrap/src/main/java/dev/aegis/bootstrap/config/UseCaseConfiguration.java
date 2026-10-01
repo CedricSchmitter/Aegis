@@ -10,6 +10,7 @@ import dev.aegis.contracts.application.api.ContractQueries;
 import dev.aegis.contracts.application.api.ImportContract;
 import dev.aegis.contracts.application.api.RecordContractObservation;
 import dev.aegis.contracts.application.api.ContractReconciliationScheduler;
+import dev.aegis.contracts.application.ports.ContractEvents;
 import dev.aegis.contracts.domain.ContractRepository;
 import dev.aegis.documents.application.AnalysisSettings;
 import dev.aegis.documents.application.AnalysisTrigger;
@@ -35,6 +36,8 @@ import dev.aegis.documents.application.DocumentQueryService;
 import dev.aegis.documents.application.LabelService;
 import dev.aegis.documents.application.DocumentRegistrar;
 import dev.aegis.documents.application.HouseholdSubjectMigrationService;
+import dev.aegis.documents.application.PurgeUseCases;
+import dev.aegis.documents.application.DocumentPurgeService;
 import dev.aegis.documents.application.ReconciliationService;
 import dev.aegis.documents.application.RegisterReceivedDocument;
 import dev.aegis.documents.application.api.CatalogQueries;
@@ -77,12 +80,14 @@ import dev.aegis.identity.application.api.ProvisionMembers;
 import dev.aegis.identity.domain.MemberRepository;
 import dev.aegis.identity.domain.PasswordHasher;
 import dev.aegis.notifications.application.NoticeService;
+import dev.aegis.notifications.application.api.ForgetNotices;
 import dev.aegis.notifications.application.api.NoticeInbox;
 import dev.aegis.notifications.application.api.PublishNotice;
 import dev.aegis.notifications.domain.NoticeRepository;
 import dev.aegis.review.adapters.jobs.ReviewReconciliationTask;
 import dev.aegis.review.application.ReviewService;
 import dev.aegis.review.application.api.ReviewInbox;
+import dev.aegis.review.application.api.ForgetReviewCards;
 import dev.aegis.review.application.api.ReviewPortability;
 import dev.aegis.review.application.api.ReviewReconciliation;
 import dev.aegis.review.application.ports.ReconciliationLock;
@@ -378,6 +383,14 @@ public class UseCaseConfiguration {
                 settings, clock), tm);
     }
 
+    /** Steps of a document's permanent deletion (ADR-0021); each one short transaction around the job's work. */
+    @Bean
+    PurgeUseCases purgeUseCases(DocumentRepository documents, DocumentEvents events, ArchivalSettings settings,
+            Clock clock, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(PurgeUseCases.class, new DocumentPurgeService(documents, events, settings,
+                clock), tm);
+    }
+
     @Bean
     ReconciliationService reconciliationService(DocumentRepository documents, OriginalStore store,
             PaperlessArchive archive, ProcessingScheduler scheduler, ArchivalSettings settings, Clock clock) {
@@ -405,9 +418,10 @@ public class UseCaseConfiguration {
     @Bean
     ContractServices contractServices(ContractRepository contracts, DocumentReferenceQuery documents,
             ContractPresenter presenter, HouseholdAccess access, Clock clock,
-            ContractReconciliationScheduler reconciliation, Trash.RecoveryWindow recoveryWindow) {
+            ContractReconciliationScheduler reconciliation, Trash.RecoveryWindow recoveryWindow,
+            ContractEvents events) {
         return new ContractServices(new ContractService(contracts, documents, presenter, access, clock,
-                reconciliation, recoveryWindow),
+                reconciliation, recoveryWindow, events),
                 new ContractQueryService(contracts, presenter, access, clock));
     }
 
@@ -489,9 +503,9 @@ public class UseCaseConfiguration {
     @Bean
     CancellationServices cancellationServices(ContractDeadlineQuery contracts, TaskRepository tasks,
             CancellationReminderScheduler reminders, MemberDirectory members, PublishNotice notices,
-            HouseholdAccess access, Clock clock) {
+            PlanningEvents events, HouseholdAccess access, Clock clock) {
         return new CancellationServices(new CancellationDeadlineService(contracts, tasks, reminders, members,
-                notices, access, clock));
+                notices, events, access, clock));
     }
 
     @Bean
@@ -526,6 +540,11 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(NoticeInbox.class, services.notices(), tm);
     }
 
+    @Bean
+    ForgetNotices forgetNotices(NotificationServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ForgetNotices.class, services.notices(), tm);
+    }
+
     // Review inbox -------------------------------------------------------------------------------------------
 
     record ReviewServices(ReviewService service) {
@@ -552,6 +571,11 @@ public class UseCaseConfiguration {
     @Bean
     ReviewPortability reviewPortability(ReviewServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ReviewPortability.class, services.service(), tm);
+    }
+
+    @Bean
+    ForgetReviewCards forgetReviewCards(ReviewServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ForgetReviewCards.class, services.service(), tm);
     }
 
     // Operations ----------------------------------------------------------------------------------------------

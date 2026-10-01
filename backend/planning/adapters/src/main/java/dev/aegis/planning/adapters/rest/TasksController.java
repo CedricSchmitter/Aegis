@@ -144,6 +144,14 @@ public class TasksController {
         return TaskDto.from(commands.restoreFromTrash(actor, TaskId.of(id), body.expectedVersion()));
     }
 
+    @Operation(operationId = "purgeTask", summary = "Delete a trashed task permanently (ADR-0021)",
+            description = "204 also when it is already gone, so a repeated request after a lost response is harmless.")
+    @PostMapping("/tasks/{id}/purge")
+    public ResponseEntity<Void> purge(Actor actor, @PathVariable("id") String id, @RequestBody VersionRequest body) {
+        commands.purge(actor, TaskId.of(id), body.expectedVersion());
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(operationId = "reopenTask", summary = "Reopen a completed task")
     @PostMapping("/tasks/{id}/reopen")
     public TaskDto reopen(Actor actor, @PathVariable("id") String id, @RequestBody VersionRequest body) {

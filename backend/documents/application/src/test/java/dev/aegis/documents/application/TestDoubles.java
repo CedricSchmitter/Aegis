@@ -44,6 +44,18 @@ final class TestDoubles {
         public Optional<Instant> nextAttempt(DocumentId id) {
             return Optional.ofNullable(next.get(id));
         }
+
+        final Set<DocumentId> purges = new LinkedHashSet<>();
+
+        @Override
+        public void schedulePurge(DocumentId id) {
+            purges.add(id);
+        }
+
+        @Override
+        public Optional<Instant> nextPurgeAttempt(DocumentId id) {
+            return purges.contains(id) ? Optional.of(Instant.parse("2026-09-13T10:00:05Z")) : Optional.empty();
+        }
     }
 
     static final class RecordingEvents implements DocumentEvents {
@@ -52,6 +64,11 @@ final class TestDoubles {
         @Override
         public void documentArchivalFailed(DocumentId id, String title, MemberId uploadedBy, String failureCode) {
             events.add("failed:" + id + ":" + failureCode);
+        }
+
+        @Override
+        public void documentPurged(DocumentId id) {
+            events.add("purged:" + id);
         }
     }
 
@@ -207,6 +224,15 @@ final class TestDoubles {
         public boolean exists(int paperlessDocumentId) {
             requireAvailable();
             return originals.containsKey(paperlessDocumentId);
+        }
+
+        final List<Integer> purged = new ArrayList<>();
+
+        @Override
+        public void purge(int paperlessDocumentId) {
+            requireAvailable();
+            originals.remove(paperlessDocumentId);
+            purged.add(paperlessDocumentId);
         }
 
         @Override

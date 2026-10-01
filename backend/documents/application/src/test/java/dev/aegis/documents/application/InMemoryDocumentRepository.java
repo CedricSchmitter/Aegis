@@ -68,7 +68,27 @@ public class InMemoryDocumentRepository implements DocumentRepository {
     }
 
     @Override
+    public List<Document> findPurgePending() {
+        return store.values().stream().filter(Document::isPurgePending).toList();
+    }
+
+    @Override
     public void save(Document document) {
         store.put(document.id(), document);
+    }
+
+    /** Deleted ids with the time of their deletion; the record keeps no content, like the real one. */
+    final Map<DocumentId, Instant> purged = new LinkedHashMap<>();
+
+    @Override
+    public void purge(Document document, Instant purgedAt) {
+        if (store.remove(document.id()) != null) {
+            purged.putIfAbsent(document.id(), purgedAt);
+        }
+    }
+
+    @Override
+    public boolean wasPurged(DocumentId id) {
+        return purged.containsKey(id);
     }
 }

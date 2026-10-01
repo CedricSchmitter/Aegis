@@ -2,6 +2,7 @@ package dev.aegis.documents.adapters.rest;
 
 import dev.aegis.documents.application.api.DocumentSummary;
 import dev.aegis.documents.application.api.ProcessingInfo;
+import dev.aegis.documents.application.api.PurgeView;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.application.api.TextRecognitionView;
 import dev.aegis.shared.MemberId;
@@ -41,11 +42,28 @@ public record DocumentDto(String id, String title, String titleOrigin, String or
         }
     }
 
-    /** Who moved the document to the trash, when, and until when it is guaranteed to stay restorable. */
-    public record DocumentTrashDto(String trashedBy, Instant trashedAt, Instant restorableUntil) {
-        static DocumentTrashDto from(Trash trash) {
+    /**
+     * Who moved the document to the trash, when, and until when it is guaranteed to stay restorable. {@code purge} is
+     * null unless a member asked to delete it permanently (ADR-0021).
+     */
+    public record DocumentTrashDto(String trashedBy, Instant trashedAt, Instant restorableUntil,
+            @Schema(nullable = true) PurgeDto purge) {
+        static DocumentTrashDto from(Trash trash, PurgeView purge) {
             return trash == null ? null : new DocumentTrashDto(trash.trashedBy().toString(), trash.trashedAt(),
-                    trash.restorableUntil());
+                    trash.restorableUntil(), PurgeDto.from(purge));
+        }
+    }
+
+    /**
+     * A requested permanent deletion: {@code PENDING} while the job removes the document, {@code FAILED} when it gave
+     * up with {@code failureCode}; a member can then request it again.
+     */
+    public record PurgeDto(@Schema(allowableValues = {"PENDING", "FAILED"}) String state, String requestedBy,
+            Instant requestedAt, @Schema(nullable = true) String failureCode,
+            @Schema(nullable = true) Instant failedAt) {
+        static PurgeDto from(PurgeView view) {
+            return view == null ? null : new PurgeDto(view.state(), view.requestedBy().toString(),
+                    view.requestedAt(), view.failureCode(), view.failedAt());
         }
     }
 
@@ -78,6 +96,6 @@ public record DocumentDto(String id, String title, String titleOrigin, String or
                 summary.originalAvailable(), summary.version(), ClassificationDto.from(summary.classification()),
                 AnalysisDto.FilenameDto.from(summary.filename()), AnalysisDto.from(summary.analysis()),
                 TextRecognitionDto.from(summary.textRecognition()), summary.archivePdfAvailable(),
-                DocumentTrashDto.from(summary.trash()));
+                DocumentTrashDto.from(summary.trash(), summary.purge()));
     }
 }

@@ -2,6 +2,8 @@ package dev.aegis.contracts.domain;
 
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
+import dev.aegis.shared.MemberId;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,4 +24,15 @@ public interface ContractRepository {
      * @throws dev.aegis.shared.StaleVersionException when the stored version differs from the aggregate version
      */
     void save(Contract contract);
+
+    /**
+     * Deletes the contract with all of its facts (ADR-0021) and records who deleted it and when, without its name or
+     * facts.
+     *
+     * @throws dev.aegis.shared.StaleVersionException when the stored version differs from the aggregate version
+     */
+    void purge(Contract contract, MemberId purgedBy, Instant purgedAt);
+
+    /** Whether a contract with this id was deleted permanently. */
+    boolean wasPurged(ContractId id);
 }

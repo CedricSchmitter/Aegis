@@ -2,14 +2,17 @@ package dev.aegis.documents.adapters.paperless;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withBadRequest;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withException;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import dev.aegis.documents.application.ports.ArchiveRejectedException;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import java.io.IOException;
@@ -188,6 +191,66 @@ class PaperlessClientTest {
         assertThatThrownBy(() -> client.checkTask("err")).isInstanceOf(ArchiveUnavailableException.class);
         assertThat(client.exists(9)).isFalse();
         assertThat(client.fetchOriginal(9).bytes()).containsExactly(37, 80, 68, 70);
+    }
+
+    @Test
+    void aPurgeDeletesTheDocumentAndEmptiesExactlyItFromThePaperlessTrash() {
+        server.expect(requestTo("http://paperless.test/api/documents/42/?fields=id")).andRespond(withSuccess());
+        server.expect(requestTo("http://paperless.test/api/documents/42/")).andExpect(method(HttpMethod.DELETE))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+        server.expect(requestTo("http://paperless.test/api/trash/")).andExpect(method(HttpMethod.POST))
+                .andExpect(content().string("{\"action\":\"empty\",\"documents\":[42]}"))
+                .andRespond(withSuccess("{\"result\":\"OK\",\"doc_ids\":[42]}", MediaType.APPLICATION_JSON));
+        // The check afterwards: no longer listed, and the trash refuses the id because it no longer holds it.
+        server.expect(requestTo("http://paperless.test/api/documents/42/?fields=id"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        server.expect(requestTo("http://paperless.test/api/trash/"))
+                .andRespond(withBadRequest().body("{\"documents\":[\"Some documents in the list have not yet been "
+                        + "deleted.\"]}").contentType(MediaType.APPLICATION_JSON));
+
+        client.purge(42);
+
+        server.verify();
+    }
+
+    @Test
+    void aRepeatedPurgeOfADocumentPaperlessNoLongerHoldsSucceedsWithoutDeleting() {
+        server.expect(requestTo("http://paperless.test/api/documents/42/?fields=id"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        server.expect(requestTo("http://paperless.test/api/trash/")).andRespond(withBadRequest());
+        server.expect(requestTo("http://paperless.test/api/documents/42/?fields=id"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        server.expect(requestTo("http://paperless.test/api/trash/")).andRespond(withBadRequest());
+
+        client.purge(42);
+
+        server.verify();
+    }
+
+    @Test
+    void aPurgeWhoseTrashEmptyingSilentlyFailedIsUncertainAndRetried() {
+        server.expect(requestTo("http://paperless.test/api/documents/42/?fields=id"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        // Paperless answers OK even when emptying failed internally; the second call still finds it in the trash.
+        server.expect(requestTo("http://paperless.test/api/trash/")).andRespond(withSuccess());
+        server.expect(requestTo("http://paperless.test/api/documents/42/?fields=id"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        server.expect(requestTo("http://paperless.test/api/trash/")).andRespond(withSuccess());
+
+        assertThatThrownBy(() -> client.purge(42)).isInstanceOf(ArchiveUnavailableException.class);
+    }
+
+    @Test
+    void aRefusedOrUnreachablePurgeIsReportedAsSuch() {
+        server.expect(requestTo("http://paperless.test/api/documents/7/?fields=id")).andRespond(withSuccess());
+        server.expect(requestTo("http://paperless.test/api/documents/7/")).andExpect(method(HttpMethod.DELETE))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN));
+        server.expect(requestTo("http://paperless.test/api/documents/8/?fields=id")).andRespond(withSuccess());
+        server.expect(requestTo("http://paperless.test/api/documents/8/")).andExpect(method(HttpMethod.DELETE))
+                .andRespond(withException(new IOException("connection reset")));
+
+        assertThatThrownBy(() -> client.purge(7)).isInstanceOf(ArchiveRejectedException.class);
+        assertThatThrownBy(() -> client.purge(8)).isInstanceOf(ArchiveUnavailableException.class);
     }
 
     @Test

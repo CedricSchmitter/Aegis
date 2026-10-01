@@ -31,12 +31,14 @@ public record ContractDto(String id, String name, @Schema(nullable = true) Strin
     }
 
     /**
-     * Where a fact was read. The title is null when the document is no longer available. The schema name is
-     * explicit because planning and the assistant publish their own {@code SourceDto}.
+     * Where a fact was read. {@code documentDeleted} says a member deleted the document permanently; the title is
+     * then null, and page and quote stay. The schema name is explicit because planning and the assistant publish
+     * their own {@code SourceDto}.
      */
     @Schema(name = "ContractSourceDto")
     public record SourceDto(String documentId, @Schema(nullable = true) String documentTitle,
-            boolean documentTrashed, @Schema(nullable = true) Integer page, @Schema(nullable = true) String quote) {
+            boolean documentTrashed, boolean documentDeleted, @Schema(nullable = true) Integer page,
+            @Schema(nullable = true) String quote) {
     }
 
     /**
@@ -98,7 +100,7 @@ public record ContractDto(String id, String name, @Schema(nullable = true) Strin
 
     private static SourceDto source(SourceView source) {
         return new SourceDto(source.documentId().toString(), source.documentTitle(), source.documentTrashed(),
-                source.page(), source.quote());
+                source.documentDeleted(), source.page(), source.quote());
     }
 
     private static ConflictDto conflict(ConflictView conflict) {

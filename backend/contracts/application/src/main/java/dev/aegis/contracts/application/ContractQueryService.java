@@ -92,6 +92,12 @@ public class ContractQueryService implements ContractQueries, ContractDeadlineQu
     }
 
     @Override
+    public boolean wasPurged(Actor actor, ContractId contractId) {
+        access.requireMember(actor);
+        return contracts.wasPurged(contractId);
+    }
+
+    @Override
     public List<ContractExportRecord> exportAll(Actor actor) {
         access.requireMember(actor);
         return contracts.findAll().stream().map(presenter::exportRecord).toList();

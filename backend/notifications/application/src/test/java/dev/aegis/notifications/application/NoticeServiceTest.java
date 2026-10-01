@@ -8,6 +8,7 @@ import dev.aegis.notifications.application.api.PublishNotice.PublishOutcome;
 import dev.aegis.notifications.domain.Notice;
 import dev.aegis.notifications.domain.NoticeId;
 import dev.aegis.notifications.domain.NoticeKind;
+import dev.aegis.notifications.domain.NoticeLink;
 import dev.aegis.notifications.domain.NoticeRepository;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
@@ -71,6 +72,14 @@ class NoticeServiceTest {
             }
             save(notice);
             return true;
+        }
+
+        @Override
+        public int deleteLinkedTo(NoticeLink link) {
+            List<NoticeId> linked = store.values().stream()
+                    .filter(n -> n.link().map(link::equals).orElse(false)).map(Notice::id).toList();
+            linked.forEach(store::remove);
+            return linked.size();
         }
     }
 

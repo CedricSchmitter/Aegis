@@ -143,6 +143,15 @@ public class ContractsController {
         return ContractDto.from(commands.restoreFromTrash(actor, ContractId.of(id), body.expectedVersion()));
     }
 
+    @Operation(operationId = "purgeContract",
+            summary = "Delete a trashed contract permanently with all of its facts (ADR-0021)",
+            description = "204 also when it is already gone, so a repeated request after a lost response is harmless.")
+    @PostMapping("/{id}/purge")
+    public ResponseEntity<Void> purge(Actor actor, @PathVariable("id") String id, @RequestBody VersionRequest body) {
+        commands.purge(actor, ContractId.of(id), body.expectedVersion());
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(operationId = "changeContractStatus",
             summary = "Record that the contract is active, cancelled or ended")
     @PostMapping("/{id}/status")

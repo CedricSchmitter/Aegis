@@ -42,6 +42,7 @@ class ContractServiceTest {
     private final InMemoryContractRepository repository = new InMemoryContractRepository();
     private final KnownDocuments documents = new KnownDocuments();
     private final List<ContractId> reconciliations = new ArrayList<>();
+    private final List<ContractId> purged = new ArrayList<>();
     private final Clock clock = ContractTestSupport.clockAt("2026-09-20T08:00:00Z");
     private ContractService commands;
     private ContractQueryService queries;
@@ -51,7 +52,8 @@ class ContractServiceTest {
     void setUp() {
         ContractPresenter presenter = new ContractPresenter(documents);
         commands = new ContractService(repository, documents, presenter, ContractTestSupport.household(), clock,
-                (contractId, requestedBy) -> reconciliations.add(contractId), Trash.RecoveryWindow.DEFAULT);
+                (contractId, requestedBy) -> reconciliations.add(contractId), Trash.RecoveryWindow.DEFAULT,
+                purged::add);
         queries = new ContractQueryService(repository, presenter, ContractTestSupport.household(), clock);
         contractPdf = documents.add("Fitnessstudio Vertrag");
     }
@@ -216,7 +218,7 @@ class ContractServiceTest {
         ContractPresenter presenter = new ContractPresenter(documents);
         ContractService restoreTarget = new ContractService(fresh, documents, presenter,
                 ContractTestSupport.household(), clock, (contractId, requestedBy) -> { },
-                Trash.RecoveryWindow.DEFAULT);
+                Trash.RecoveryWindow.DEFAULT, purged::add);
         ContractQueryService restored = new ContractQueryService(fresh, presenter,
                 ContractTestSupport.household(), clock);
 

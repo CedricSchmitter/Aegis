@@ -20,6 +20,7 @@ import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.Trash;
+import java.time.Instant;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.Currency;
@@ -33,7 +34,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Domain repository over JPA. Facts are appended and their review state updated; nothing is deleted, so the
- * observation history survives every edit. Optimistic locking failures become {@link StaleVersionException}.
+ * observation history survives every edit, until a member deletes the whole contract permanently from the trash
+ * (ADR-0021). Optimistic locking failures become {@link StaleVersionException}.
  */
 @Component
 public class JpaContractRepository implements ContractRepository {
@@ -88,6 +90,23 @@ public class JpaContractRepository implements ContractRepository {
             throw new StaleVersionException("contract", contract.id().toString(), contract.version(), -1);
         }
         saveFacts(contract);
+    }
+
+    @Override
+    public void purge(Contract contract, MemberId purgedBy, Instant purgedAt) {
+        if (contracts.deleteVersion(contract.id().value(), contract.version()) != 1) {
+            Long actual = contracts.findById(contract.id().value()).map(ContractEntity::getVersion).orElse(null);
+            if (actual == null) {
+                return;
+            }
+            throw new StaleVersionException("contract", contract.id().toString(), contract.version(), actual);
+        }
+        contracts.recordPurge(contract.id().value(), purgedBy.value(), purgedAt);
+    }
+
+    @Override
+    public boolean wasPurged(ContractId id) {
+        return contracts.existsPurge(id.value());
     }
 
     private void saveFacts(Contract contract) {

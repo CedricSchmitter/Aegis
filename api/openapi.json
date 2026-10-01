@@ -344,6 +344,9 @@
             "format" : "date",
             "type" : "string"
           },
+          "contractDeleted" : {
+            "type" : "boolean"
+          },
           "contractEnd" : {
             "format" : "date",
             "type" : [ "string", "null" ]
@@ -363,7 +366,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "cancellationDeadline", "contractId", "contractName", "contractVersion", "reminderDate" ],
+        "required" : [ "cancellationDeadline", "contractDeleted", "contractId", "contractName", "contractVersion", "reminderDate" ],
         "type" : "object"
       },
       "CandidateDecisionRequest" : {
@@ -629,6 +632,9 @@
       },
       "ContractSourceDto" : {
         "properties" : {
+          "documentDeleted" : {
+            "type" : "boolean"
+          },
           "documentId" : {
             "type" : "string"
           },
@@ -646,7 +652,7 @@
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "documentId", "documentTrashed" ],
+        "required" : [ "documentDeleted", "documentId", "documentTrashed" ],
         "type" : "object"
       },
       "ContractTrashDto" : {
@@ -1041,6 +1047,10 @@
       },
       "DocumentTrashDto" : {
         "properties" : {
+          "purge" : {
+            "$ref" : "#/components/schemas/PurgeDto",
+            "type" : "null"
+          },
           "restorableUntil" : {
             "format" : "date-time",
             "type" : "string"
@@ -1884,6 +1894,30 @@
         "required" : [ "attempts", "retryScheduled", "state" ],
         "type" : "object"
       },
+      "PurgeDto" : {
+        "properties" : {
+          "failedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "requestedBy" : {
+            "type" : "string"
+          },
+          "state" : {
+            "enum" : [ "PENDING", "FAILED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "requestedAt", "requestedBy", "state" ],
+        "type" : "object"
+      },
       "RenameCategoryRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -2165,6 +2199,9 @@
       },
       "SourceDto" : {
         "properties" : {
+          "documentDeleted" : {
+            "type" : "boolean"
+          },
           "documentId" : {
             "type" : "string"
           },
@@ -2175,7 +2212,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "documentId", "documentTrashed" ],
+        "required" : [ "documentDeleted", "documentId", "documentTrashed" ],
         "type" : "object"
       },
       "StatusRequest" : {
@@ -3444,6 +3481,37 @@
         "tags" : [ "contracts" ]
       }
     },
+    "/api/contracts/{id}/purge" : {
+      "post" : {
+        "description" : "204 also when it is already gone, so a repeated request after a lost response is harmless.",
+        "operationId" : "purgeContract",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ContractVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Delete a trashed contract permanently with all of its facts (ADR-0021)",
+        "tags" : [ "contracts" ]
+      }
+    },
     "/api/contracts/{id}/restore" : {
       "post" : {
         "operationId" : "restoreContract",
@@ -4384,6 +4452,44 @@
           }
         },
         "summary" : "Original bytes, unchanged, named with the friendly filename",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/purge" : {
+      "post" : {
+        "description" : "202 with the document while the deletion runs in the background; it can no longer be restored. 204 once it is gone, so a repeated request after a lost response is harmless.",
+        "operationId" : "purgeDocument",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LabelVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Delete a trashed document permanently, including its archive original (ADR-0021)",
         "tags" : [ "documents" ]
       }
     },
@@ -5662,6 +5768,37 @@
           }
         },
         "summary" : "Move the planned work date; the due date stays",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/purge" : {
+      "post" : {
+        "description" : "204 also when it is already gone, so a repeated request after a lost response is harmless.",
+        "operationId" : "purgeTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TaskVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Delete a trashed task permanently (ADR-0021)",
         "tags" : [ "tasks" ]
       }
     },

@@ -18,13 +18,16 @@ public record TaskSummary(TaskId id, String title, String note, MemberId ownerId
         Instant completedAt, MemberId completedBy, long version, Trash trash) {
 
     /**
-     * {@code documentTitle} is null when the linked document no longer exists; {@code documentTrashed} says that it
-     * is in the trash, where it can be restored.
+     * {@code documentTrashed} says that the linked document is in the trash, where it can be restored;
+     * {@code documentDeleted} that it no longer exists because a member deleted it permanently (ADR-0021), and then
+     * {@code documentTitle} is null.
      */
-    public record SourceView(DocumentId documentId, String documentTitle, boolean documentTrashed) {
+    public record SourceView(DocumentId documentId, String documentTitle, boolean documentTrashed,
+            boolean documentDeleted) {
     }
 
+    /** {@code contractDeleted}: a completed review kept as history after its contract was deleted permanently. */
     public record CancellationReviewView(ContractId contractId, String contractName, LocalDate contractEnd,
-            LocalDate cancellationDeadline, LocalDate reminderDate, long contractVersion) {
+            LocalDate cancellationDeadline, LocalDate reminderDate, long contractVersion, boolean contractDeleted) {
     }
 }

@@ -83,6 +83,28 @@ final class PlanningTestSupport {
                     task.completedBy().orElse(null), task.trash().orElse(null), next));
         }
 
+        /** Deleted ids; the record keeps no title or note, like the real one. */
+        final Set<TaskId> purged = new java.util.LinkedHashSet<>();
+
+        @Override
+        public void purge(Task task, MemberId purgedBy, java.time.Instant purgedAt) {
+            long stored = versions.getOrDefault(task.id(), -1L);
+            if (stored < 0) {
+                return;
+            }
+            if (stored != task.version()) {
+                throw new StaleVersionException("task", task.id().toString(), task.version(), stored);
+            }
+            store.remove(task.id());
+            versions.remove(task.id());
+            purged.add(task.id());
+        }
+
+        @Override
+        public boolean wasPurged(TaskId id) {
+            return purged.contains(id);
+        }
+
         private Task copy(Task task) {
             return Task.rehydrate(task.id(), task.title(), task.note(), task.owner().orElse(null), task.status(),
                     task.dueDate().orElse(null), task.plannedDate().orElse(null), task.source().orElse(null), task.cancellationReview().orElse(null),
@@ -112,6 +134,11 @@ final class PlanningTestSupport {
         @Override
         public void taskCompleted(TaskId taskId, String title, MemberId owner, MemberId completedBy) {
             events.add("completed:" + taskId + ":" + owner);
+        }
+
+        @Override
+        public void taskPurged(TaskId taskId) {
+            events.add("purged:" + taskId);
         }
     }
 
