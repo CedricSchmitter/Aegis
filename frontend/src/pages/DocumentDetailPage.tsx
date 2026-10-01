@@ -278,6 +278,9 @@ export function DocumentDetailPage() {
   const searchable = searchablePdf(document);
   const progress = documentProgress(document);
   const hint = "text-sm text-text-3";
+  // A desktop keeps the document page open next to the file. On a phone the file opens in place: a new window of the
+  // installed app has no history, so the back button would close the app instead of returning to the document.
+  const viewerTarget = desktop ? { target: "_blank", rel: "noreferrer" } : {};
 
   return (
     <div className="flex flex-col gap-4">
@@ -304,8 +307,7 @@ export function DocumentDetailPage() {
             <a
               className="btn-secondary"
               href={`/api/documents/${document.id}/original?inline=true`}
-              target="_blank"
-              rel="noreferrer"
+              {...viewerTarget}
               data-testid="open-original"
             >
               <Icon name="file" className="h-4 w-4" />
@@ -322,8 +324,7 @@ export function DocumentDetailPage() {
           <a
             className="btn-ghost"
             href={`/api/documents/${document.id}/archive-pdf?inline=true`}
-            target="_blank"
-            rel="noreferrer"
+            {...viewerTarget}
             data-testid="open-archive-pdf"
           >
             {t("documents.archivePdf")}
