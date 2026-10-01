@@ -10,8 +10,8 @@ import java.util.List;
 
 /**
  * REST representation of the automatic analysis of a document. {@code state} is NOT_REQUESTED,
- * WAITING_FOR_ARCHIVE, PENDING, CLASSIFIED, NEEDS_REVIEW, FAILED or UNAVAILABLE; confidence values are the model's
- * own estimates and not calibrated probabilities.
+ * WAITING_FOR_ARCHIVE, PENDING, CLASSIFIED, NEEDS_REVIEW, FAILED, UNAVAILABLE or NOT_CLASSIFIED (requested for a
+ * member who may not use AI); confidence values are the model's own estimates and not calibrated probabilities.
  */
 public record AnalysisDto(String state, int generation, @Schema(nullable = true) String trigger,
         @Schema(nullable = true) String requestedBy, @Schema(nullable = true) Instant requestedAt,

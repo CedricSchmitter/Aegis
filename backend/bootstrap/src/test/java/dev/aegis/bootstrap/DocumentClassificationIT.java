@@ -17,14 +17,19 @@ import dev.aegis.documents.application.AnalysisSettings;
 import dev.aegis.documents.application.ArchivalUseCases;
 import dev.aegis.portability.application.api.CreateExport;
 import dev.aegis.portability.application.api.ExportSummary;
+import dev.aegis.review.application.api.ReviewInbox;
+import dev.aegis.review.domain.ReviewItem;
+import dev.aegis.review.domain.ReviewRepository;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
+import dev.aegis.shared.MemberId;
 import dev.aegis.identity.application.api.MemberCredentialsQuery;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -44,8 +49,8 @@ import tools.jackson.databind.JsonNode;
 /**
  * Automatic classification end to end against PostgreSQL, the real job scheduler, REST API and a controlled model:
  * upload to archived to classified, both members' view, review decisions, friendly downloads and exports with
- * unchanged checksums, and recovery from provider outage, budget exhaustion, duplicate delivery and a member edit
- * during the run.
+ * unchanged checksums, recovery from provider outage, budget exhaustion, duplicate delivery and a member edit
+ * during the run, and uploads by a member who may not use AI.
  */
 class DocumentClassificationIT extends PostgresIT {
     private static final String INVOICE = "11111111-0000-4000-8000-000000000001";
@@ -69,6 +74,10 @@ class DocumentClassificationIT extends PostgresIT {
     MemberCredentialsQuery members;
     @Autowired
     JdbcClient jdbc;
+    @Autowired
+    ReviewInbox inbox;
+    @Autowired
+    ReviewRepository reviews;
 
     @BeforeEach
     void automaticAnalysis() {
@@ -463,5 +472,54 @@ class DocumentClassificationIT extends PostgresIT {
         assertThat(chip(after, created).path("origin").asText()).isEqualTo("MANUAL");
         assertThat(after.path("analysis").path("state").asText()).isEqualTo("CLASSIFIED");
         assertThat(after.path("filename").path("filename").asText()).startsWith("2026-09-17_Netzfunk-");
+    }
+
+    @Test
+    void anUploadByAMemberWithoutAiIsNotClassifiedWithoutAFailureCardUntilAMemberWithAiStartsIt() {
+        MemberId anna = members.findCredentials(ANNA).orElseThrow().id();
+        MemberId ben = members.findCredentials(BEN).orElseThrow().id();
+        model.notAllowed.add(anna);
+        ApiClient lisa = loggedIn(ANNA);
+        Invoice invoice = invoice(marker("N"));
+        String organization = organization(lisa, invoice);
+
+        String id = uploadInvoice(lisa, invoice, "ohne-ki.pdf");
+        JsonNode waiting = awaitAnalysis(lisa, id, "NOT_CLASSIFIED");
+        assertThat(waiting.path("processing").path("state").asText()).isEqualTo("ARCHIVED");
+        assertThat(waiting.path("analysis").path("failureCode").isNull()).isTrue();
+        assertThat(model.requests).isEmpty();
+
+        // A failure card created for this reason before issue #107 is superseded, keeping its history; no new card.
+        long analysisVersion = waiting.path("analysis").path("version").asLong();
+        String fingerprint = "analysis-failed:" + id + ":" + analysisVersion + ":ai.provider.memberNotAllowed";
+        UUID earlier = UUID.nameUUIDFromBytes(fingerprint.getBytes(StandardCharsets.UTF_8));
+        assertThat(reviews.insertIfAbsent(ReviewItem.create(earlier, new ReviewItem.Candidate(fingerprint,
+                "documents", "DOCUMENT", id, analysisVersion, "PROCESSING_FAILURE", "ANALYSIS_FAILED", "NORMAL",
+                "review.analysisFailed", Map.of("title", "ohne-ki", "errorCode", "ai.provider.memberNotAllowed"),
+                "DOCUMENT", id, List.of("RETRY_ANALYSIS")), Instant.now()))).isTrue();
+        List<ReviewInbox.Item> cards = inbox.list(new Actor(anna), null, null).stream()
+                .filter(card -> card.sourceId().equals(id)).toList();
+        assertThat(cards).singleElement().satisfies(card -> {
+            assertThat(card.id()).isEqualTo(earlier);
+            assertThat(card.status()).isEqualTo("SUPERSEDED");
+        });
+
+        // The member without AI is told why; a member with AI classifies the document under their own name.
+        ApiClient.Response refused = lisa.postJson("/api/documents/" + id + "/analysis",
+                "{\"expectedVersion\":" + analysisVersion + "}");
+        assertThat(refused.status()).as(refused.body()).isEqualTo(400);
+        assertThat(lisa.json(refused).path("code").asText()).isEqualTo("ai.provider.memberNotAllowed");
+        model.answer(request -> json(answer(invoice, List.of())));
+        ApiClient cedric = loggedIn(BEN);
+        ApiClient.Response started = cedric.postJson("/api/documents/" + id + "/analysis",
+                "{\"expectedVersion\":" + analysisVersion + "}");
+        assertThat(started.status()).as(started.body()).isEqualTo(200);
+
+        JsonNode classified = awaitAnalysis(lisa, id, "CLASSIFIED");
+        assertThat(classified.path("analysis").path("requestedBy").asText()).isEqualTo(ben.toString());
+        assertThat(classified.path("analysis").path("trigger").asText()).isEqualTo("MANUAL");
+        assertThat(chip(classified, organization).path("reviewState").asText()).isEqualTo("APPLIED");
+        assertThat(model.requests).hasSize(1);
+        assertThat(inbox.list(new Actor(anna), "OPEN", null)).noneMatch(card -> card.sourceId().equals(id));
     }
 }

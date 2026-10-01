@@ -16,7 +16,9 @@ interface Props {
 }
 
 /** States in which a member may start (or restart) the analysis of an archived document. */
-const REQUESTABLE = new Set(["NOT_REQUESTED", "FAILED", "UNAVAILABLE", "CLASSIFIED", "NEEDS_REVIEW"]);
+const REQUESTABLE = new Set(["NOT_REQUESTED", "NOT_CLASSIFIED", "FAILED", "UNAVAILABLE", "CLASSIFIED", "NEEDS_REVIEW"]);
+/** States in which the analysis has not produced anything yet, so starting it is the main action. */
+const NOT_STARTED = new Set(["NOT_REQUESTED", "NOT_CLASSIFIED"]);
 
 function percent(value: number | null | undefined, language: string): string | null {
   if (value === null || value === undefined) return null;
@@ -123,7 +125,7 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
         <Badge state={a.state} label={t(`analysis.stateShort.${a.state}`)} />
       </div>
       <p className="text-sm" data-testid="analysis-state">
-        {t(`analysis.state.${a.state}`)}
+        {t(`analysis.state.${a.state}`, { name: memberName(a.requestedBy ?? "") ?? t("app.unknownMember") })}
       </p>
       {a.state === "PENDING" && a.runState && (
         <p className="text-sm text-text-3">
@@ -313,12 +315,12 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className={a.state === "NOT_REQUESTED" ? "btn-primary" : "btn-secondary"}
+            className={NOT_STARTED.has(a.state) ? "btn-primary" : "btn-secondary"}
             disabled={busy}
             onClick={() => void request()}
             data-testid="request-analysis"
           >
-            {a.state === "NOT_REQUESTED"
+            {NOT_STARTED.has(a.state)
               ? t("analysis.start")
               : a.state === "FAILED" || a.state === "UNAVAILABLE"
                 ? t("analysis.retry")

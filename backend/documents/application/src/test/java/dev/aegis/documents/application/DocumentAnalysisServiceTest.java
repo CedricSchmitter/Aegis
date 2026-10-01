@@ -18,6 +18,7 @@ import dev.aegis.shared.MemberId;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.TitleOrigin;
 import dev.aegis.documents.domain.analysis.DocumentAnalysis;
+import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.StaleVersionException;
@@ -180,6 +181,67 @@ class DocumentAnalysisServiceTest {
         runs.refusal = null;
         service.requestAnalysis(f.actor, document.id(), analysis.version());
         assertThat(view(document).analysis().state()).isEqualTo(AnalysisView.PENDING);
+    }
+
+    @Test
+    void anUploadByAMemberWithoutAiStaysNotClassifiedUntilAMemberWithAiStartsIt() {
+        runs.notAllowed.add(f.lisa);
+        Document document = archived("Scan 0002b", TELEKOM_TEXT);
+        analyses.save(DocumentAnalysis.awaitingArchive(document.id(), f.lisa, CatalogFixture.NOW));
+
+        service.archived(document);
+
+        AnalysisView waiting = view(document).analysis();
+        assertThat(waiting.state()).isEqualTo(AnalysisView.NOT_CLASSIFIED);
+        assertThat(waiting.failureCategory()).isNull();
+        assertThat(waiting.failureCode()).isNull();
+        assertThat(runs.requested).isEmpty();
+        // The member without AI is told so and the analysis stays as it was.
+        assertThatThrownBy(() -> service.requestAnalysis(f.actor, document.id(), waiting.version()))
+                .isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "ai.provider.memberNotAllowed");
+        assertThat(view(document).analysis()).isEqualTo(waiting);
+
+        service.requestAnalysis(new Actor(f.cedric), document.id(), waiting.version());
+
+        assertThat(runs.requested).singleElement().asString().endsWith("by " + f.cedric);
+        AnalysisView pending = view(document).analysis();
+        assertThat(pending.state()).isEqualTo(AnalysisView.PENDING);
+        assertThat(pending.requestedBy()).isEqualTo(f.cedric);
+        assertThat(pending.trigger()).isEqualTo("MANUAL");
+    }
+
+    @Test
+    void aMemberWithoutAiNeitherReplacesAnEarlierResultNorStartsABulkRequest() {
+        Document document = archived("Scan 0002c", TELEKOM_TEXT);
+        assessAndApply(document, telekomProposal(request(document), 0, List.of()));
+        AnalysisView classified = view(document).analysis();
+        runs.notAllowed.add(f.lisa);
+
+        assertThatThrownBy(() -> service.requestAnalysis(f.actor, document.id(), classified.version()))
+                .isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "ai.provider.memberNotAllowed");
+        assertThatThrownBy(() -> service.requestAnalyses(f.actor, List.of(document.id())))
+                .isInstanceOf(InvalidInputException.class)
+                .hasFieldOrPropertyWithValue("code", "ai.provider.memberNotAllowed");
+
+        assertThat(view(document).analysis()).isEqualTo(classified);
+        assertThat(classified.state()).isEqualTo(AnalysisView.CLASSIFIED);
+    }
+
+    @Test
+    void aQueuedRunWhoseMemberLostAiAccessIsNotClassifiedWhileOtherFailuresStayFailures() {
+        Document withdrawn = archived("Scan 0002d", TELEKOM_TEXT);
+        runs.finish(withdrawn.id(), request(withdrawn), "FAILED", "NOT_AUTHORIZED", "ai.provider.memberNotAllowed");
+        Document invalid = archived("Scan 0002e", TELEKOM_TEXT);
+        runs.finish(invalid.id(), request(invalid), "FAILED", "INVALID_OUTPUT", "ai.output.invalid");
+
+        assertThat(view(withdrawn).analysis().state()).isEqualTo(AnalysisView.NOT_CLASSIFIED);
+        assertThat(view(withdrawn).analysis().failureCode()).isNull();
+        AnalysisView failed = view(invalid).analysis();
+        assertThat(failed.state()).isEqualTo(AnalysisView.FAILED);
+        assertThat(failed.failureCategory()).isEqualTo("INVALID_OUTPUT");
+        assertThat(failed.failureCode()).isEqualTo("ai.output.invalid");
     }
 
     @Test

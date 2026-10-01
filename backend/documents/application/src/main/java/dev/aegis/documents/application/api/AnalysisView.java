@@ -11,8 +11,10 @@ import java.util.UUID;
  *
  * <p>{@code state}: {@code NOT_REQUESTED}, {@code WAITING_FOR_ARCHIVE}, {@code PENDING} (run queued, running or
  * waiting for a retry), {@code CLASSIFIED}, {@code NEEDS_REVIEW} (suggestions wait for a member), {@code FAILED} (run
- * failed or was cancelled; {@code failureCategory}/{@code failureCode} tell why) or {@code UNAVAILABLE} (AI not
- * configured when it was requested; {@code failureCode}). Confidence values are the model's own estimates.
+ * failed or was cancelled; {@code failureCategory}/{@code failureCode} tell why), {@code UNAVAILABLE} (AI not
+ * configured when it was requested; {@code failureCode}) or {@code NOT_CLASSIFIED} (requested on behalf of a member
+ * who may not use AI, which is no failure; a member who may can start it). Confidence values are the model's own
+ * estimates.
  * {@code version} guards member decisions on the analysis.
  */
 public record AnalysisView(String state, int generation, String trigger, MemberId requestedBy, Instant requestedAt,
@@ -29,6 +31,7 @@ public record AnalysisView(String state, int generation, String trigger, MemberI
     public static final String NEEDS_REVIEW = "NEEDS_REVIEW";
     public static final String FAILED = "FAILED";
     public static final String UNAVAILABLE = "UNAVAILABLE";
+    public static final String NOT_CLASSIFIED = "NOT_CLASSIFIED";
 
     public static final AnalysisView NONE = new AnalysisView(NOT_REQUESTED, 0, null, null, null, null, null, null,
             null, null, null, null, null, null, null, null, "UNKNOWN", null, null, List.of(), List.of(), List.of(),

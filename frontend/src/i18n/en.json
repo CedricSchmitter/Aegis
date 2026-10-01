@@ -1185,7 +1185,8 @@
       "CLASSIFIED": "Classified. You can change automatically set values at any time.",
       "NEEDS_REVIEW": "Classified. Some suggestions are waiting for your review.",
       "FAILED": "Classification failed. The document itself is saved and archived.",
-      "UNAVAILABLE": "AI was not available. The document itself is saved."
+      "UNAVAILABLE": "AI was not available. The document itself is saved.",
+      "NOT_CLASSIFIED": "Not classified automatically because AI is not enabled for {{name}}. A member with AI access can classify the document with “Classify now”. The document itself is saved and archived."
     },
     "stateShort": {
       "NOT_REQUESTED": "Not classified",
@@ -1194,7 +1195,8 @@
       "CLASSIFIED": "Classified",
       "NEEDS_REVIEW": "Review",
       "FAILED": "Classification failed",
-      "UNAVAILABLE": "AI unavailable"
+      "UNAVAILABLE": "AI unavailable",
+      "NOT_CLASSIFIED": "Not classified"
     },
     "completed": "Last classified on {{date}} with {{model}}, started by {{name}}.",
     "flag": {
