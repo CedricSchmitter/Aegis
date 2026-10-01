@@ -28,10 +28,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * A profile's {@code family} is its default until the household chooses another one. {@code providers} lists the
  * providers of a profile in order of preference; each run uses the first one that is usable for its requester. A
  * single {@code provider} is accepted as shorthand for a one-element list; setting both is rejected.
+ * {@code slot-wait} is how long a run that found no free slot waits before it checks again (default 15s).
  */
 @ConfigurationProperties(prefix = "aegis.ai")
 public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer maxConcurrentRuns,
-        Duration callTimeout, Map<String, Price> prices, Map<String, CatalogModel> models,
+        Duration callTimeout, Duration slotWait, Map<String, Price> prices, Map<String, CatalogModel> models,
         Map<String, Profile> workloads, Map<String, Limits> providerLimits) {
 
     /** Own limits of a provider (keys are provider names); unset values keep the household defaults. */
@@ -56,6 +57,7 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         currency = currency == null || currency.isBlank() ? "USD" : currency;
         maxConcurrentRuns = maxConcurrentRuns == null ? 2 : maxConcurrentRuns;
         callTimeout = callTimeout == null ? Duration.ofSeconds(120) : callTimeout;
+        slotWait = slotWait == null ? Duration.ofSeconds(15) : slotWait;
         prices = prices == null ? Map.of() : Map.copyOf(prices);
         models = models == null ? Map.of() : Map.copyOf(models);
         workloads = workloads == null ? Map.of() : Map.copyOf(workloads);
@@ -95,7 +97,7 @@ public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer m
         Map<String, ProviderLimits> limits = new LinkedHashMap<>();
         providerLimits.forEach((provider, limit) -> limits.put(provider,
                 new ProviderLimits(money(limit.dailyCostLimit(), unit), money(limit.maxRunCost(), unit))));
-        return new AiSettings(profiles, new Money(dailyCostLimit, unit), maxConcurrentRuns, callTimeout, zone,
+        return new AiSettings(profiles, new Money(dailyCostLimit, unit), maxConcurrentRuns, callTimeout, slotWait, zone,
                 new PriceBook(modelPrices), limits, new ModelCatalog(catalog));
     }
 

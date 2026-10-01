@@ -530,15 +530,16 @@ class RunExecutorTest {
     }
 
     @Test
-    void concurrencyLimitDefersRunsWithoutConsumingAttempts() {
+    void concurrencyLimitDefersRunsByTheSlotWaitWithoutConsumingAttempts() {
         kit.workloadConcurrency = 1;
+        kit.slotWait = Duration.ofSeconds(2);
         RunId busy = new RunId(kit.classify("doc-a", 1, "Rechnung", false).id());
         RunId waiting = new RunId(kit.classify("doc-b", 1, "Rechnung", false).id());
         kit.execution().begin(busy);
 
         RunExecutor.Outcome outcome = execute(waiting);
 
-        assertThat(outcome).isEqualTo(new RunExecutor.RunAgainAt(AiTestKit.T0.plusSeconds(15)));
+        assertThat(outcome).isEqualTo(new RunExecutor.RunAgainAt(AiTestKit.T0.plusSeconds(2)));
         assertThat(stored(waiting).state()).isEqualTo(RunState.QUEUED);
         assertThat(stored(waiting).attempt()).isZero();
         assertThat(kit.gateway.requests).isEmpty();

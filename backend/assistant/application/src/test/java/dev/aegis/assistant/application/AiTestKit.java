@@ -83,6 +83,7 @@ class AiTestKit {
     Map<String, ProviderLimits> providerLimits = new LinkedHashMap<>(Map.of(SUBSCRIPTION,
             new ProviderLimits(Money.of("50.00", "USD"), Money.of("0.50", "USD"))));
     int maxConcurrentRuns = 2;
+    Duration slotWait = Duration.ofSeconds(15);
     int workloadConcurrency = 2;
     String classificationEffort;
     Map<String, ModelPrice> prices = new LinkedHashMap<>(Map.of(
@@ -109,7 +110,7 @@ class AiTestKit {
                     new WorkloadProfile(Workload.DOCUMENT_REVIEW, providers, ModelFamily.SONNET, budget, 1, "high"));
             profiles.put(Workload.CONNECTION_CHECK, new WorkloadProfile(Workload.CONNECTION_CHECK, List.of(), null,
                     new RunBudget(Duration.ofSeconds(90), Money.of("0.05", "USD"), 1, 0, 256, 2), 2, null));
-            settings = new AiSettings(profiles, dailyLimit, maxConcurrentRuns, Duration.ofSeconds(60),
+            settings = new AiSettings(profiles, dailyLimit, maxConcurrentRuns, Duration.ofSeconds(60), slotWait,
                     ZoneId.of("Europe/Berlin"), new PriceBook(prices), providerLimits, new ModelCatalog(catalog));
         }
         return settings;

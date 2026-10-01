@@ -16,21 +16,26 @@ import java.util.Optional;
  * Household-wide AI limits and the per-workload profiles. Daily cost limits count the model calls of one provider
  * per household day in {@code zone}: {@code dailyCostLimit} is the default, {@code providerLimits} can set a
  * provider's own daily limit and run budget. All amounts share one currency. Every model of the {@code catalog} needs
- * a price, and every workload's default family must be in the catalog.
+ * a price, and every workload's default family must be in the catalog. A run that finds no free slot under
+ * {@code maxConcurrentRuns} or its workload's limit checks again after {@code slotWait}.
  */
 public record AiSettings(Map<Workload, WorkloadProfile> profiles, Money dailyCostLimit, int maxConcurrentRuns,
-        Duration callTimeout, ZoneId zone, PriceBook prices, Map<String, ProviderLimits> providerLimits,
+        Duration callTimeout, Duration slotWait, ZoneId zone, PriceBook prices, Map<String, ProviderLimits> providerLimits,
         ModelCatalog catalog) {
     public AiSettings {
         Objects.requireNonNull(dailyCostLimit, "daily cost limit");
         Objects.requireNonNull(catalog, "catalog");
         Objects.requireNonNull(callTimeout, "call timeout");
+        Objects.requireNonNull(slotWait, "slot wait");
         Objects.requireNonNull(zone, "zone");
         Objects.requireNonNull(prices, "prices");
         profiles = profiles.isEmpty() ? Map.of() : Map.copyOf(new EnumMap<>(profiles));
         providerLimits = providerLimits == null ? Map.of() : Map.copyOf(providerLimits);
         if (maxConcurrentRuns < 1) {
             throw new IllegalArgumentException("max concurrent runs must be positive");
+        }
+        if (!slotWait.isPositive()) {
+            throw new IllegalArgumentException("slot wait must be positive");
         }
         Currency currency = dailyCostLimit.currency();
         for (WorkloadProfile profile : profiles.values()) {

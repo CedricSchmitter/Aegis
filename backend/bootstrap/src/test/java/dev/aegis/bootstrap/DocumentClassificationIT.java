@@ -446,10 +446,10 @@ class DocumentClassificationIT extends PostgresIT {
                 ids.add(uploadInvoice(lisa, invoice, "burst-" + ids.size() + ".pdf"));
             }
 
-            // Every document ends classified or visibly waiting; none failed, none was skipped.
+            // Every document ends classified or visibly waiting; none failed, none was skipped. The runs share the
+            // household's single slot; PostgresIT's short slot wait starts each queued run right after the previous one.
             await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(ids).allSatisfy(id ->
-                    assertThat(document(lisa, id).path("analysis").path("state").asText())
-                            .isIn("CLASSIFIED", "WAITING_FOR_BUDGET")));
+                    assertAnalysis(lisa, id, "CLASSIFIED", "WAITING_FOR_BUDGET")));
             List<JsonNode> waiting = ids.stream().map(id -> document(lisa, id))
                     .filter(document -> "WAITING_FOR_BUDGET".equals(document.path("analysis").path("state").asText()))
                     .toList();
@@ -483,12 +483,20 @@ class DocumentClassificationIT extends PostgresIT {
                     .param("ids", runIds.stream().map(UUID::toString).toList()).update();
 
             await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(ids).allSatisfy(id ->
-                    assertThat(document(lisa, id).path("analysis").path("state").asText()).isEqualTo("CLASSIFIED")));
+                    assertAnalysis(lisa, id, "CLASSIFIED")));
             assertThat(answered.get()).isEqualTo(ids.size());
             assertThat(spentOn).hasSize(1);
         } finally {
             jdbc.sql("DELETE FROM ai_run_steps WHERE seq = 9998 AND outcome = 'budget-test'").update();
         }
+    }
+
+    /** Asserts the document's analysis state; a mismatch names the run's state, failure and next attempt. */
+    private void assertAnalysis(ApiClient client, String id, String... expected) {
+        JsonNode analysis = document(client, id).path("analysis");
+        assertThat(analysis.path("state").asText()).as("analysis of %s (run %s, failure %s, next attempt %s)", id,
+                analysis.path("runState").asText(), analysis.path("failureCode").asText(),
+                analysis.path("nextAttemptAt").asText()).isIn((Object[]) expected);
     }
 
     /** The framed OCR text of the request; the rest of the prompt lists the household's names and aliases. */
