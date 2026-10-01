@@ -41,7 +41,9 @@ public final class AiDtos {
             @Schema(allowableValues = {"QUEUED", "RUNNING", "WAITING_RETRY", "SUCCEEDED", "FAILED", "CANCELLED"})
             String state,
             @Schema(nullable = true) UUID retryOf, UUID requestedBy, Instant requestedAt, String provider,
-            String model, int attempt, int maxAttempts, boolean cancelRequested, int modelCalls, int toolCalls,
+            String model,
+            @Schema(description = "Attempts counted against maxAttempts; waits for the next budget day do not count")
+            int attempt, int maxAttempts, boolean cancelRequested, int modelCalls, int toolCalls,
             int deniedToolCalls, long inputTokens, long outputTokens, BigDecimal cost, BigDecimal maxCost,
             String currency, @Schema(nullable = true, description = "Validated result as JSON") String output,
             @Schema(nullable = true) String failureCategory, @Schema(nullable = true) String failureCode,

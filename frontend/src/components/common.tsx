@@ -86,6 +86,8 @@ const STATE_TONES: Record<string, Tone> = {
   NOT_REQUESTED: "neutral",
   // Requested for a member who may not use AI: an expected state, not a failure (issue #107).
   NOT_CLASSIFIED: "neutral",
+  // Today's AI cost limit is used up and the run continues on the next budget day: expected, not a failure (issue #109).
+  WAITING_FOR_BUDGET: "neutral",
   WAITING_FOR_ARCHIVE: "neutral",
   PENDING: "data",
   CLASSIFIED: "data",

@@ -9,10 +9,10 @@ export interface DocumentBadge {
 
 /**
  * Analysis states worth a badge: running, failed or waiting for a member, including an upload that waits for a member
- * with AI access. A finished, never-requested or not-yet-startable analysis stays quiet; waiting for the archive is
+ * with AI access, or waiting for the next day's AI budget. A finished, never-requested or not-yet-startable analysis stays quiet; waiting for the archive is
  * already told by the processing badge.
  */
-const VISIBLE_ANALYSIS = new Set(["PENDING", "NEEDS_REVIEW", "FAILED", "UNAVAILABLE", "NOT_CLASSIFIED"]);
+const VISIBLE_ANALYSIS = new Set(["PENDING", "NEEDS_REVIEW", "FAILED", "UNAVAILABLE", "NOT_CLASSIFIED", "WAITING_FOR_BUDGET"]);
 
 /**
  * The badges of a document card. Only what deviates from an archived, readable, settled document gets one, so the

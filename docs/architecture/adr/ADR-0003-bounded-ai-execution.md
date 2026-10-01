@@ -93,6 +93,12 @@ allowance shrinks so that the worst-case cost (conservative input estimate plus 
 fits the remaining run and daily budgets; after the call the reported usage is recorded and checked again. Retryable
 failures (rate limit, provider outage, timeout, invalid output, interruption, source outage, internal error) wait with
 exponential backoff that respects the provider's retry-after; all others end the run.
+An attempt stopped only by the daily limit (`budget.daily`) is not a failure of the run (issue #109): when the full
+limit of a fresh day could pay the call, the run waits (`WAITING_RETRY`, failure `BUDGET_EXHAUSTED`/`budget.daily`)
+until the next household day starts and then continues. Such a wait is counted separately (`budget_waits`) and does not
+use up one of the run's attempts, so a burst larger than one day's budget is worked off over the following days. The
+cost budget still spans all attempts: a run whose own budget is used up fails as `budget.cost`, and a daily limit too
+small for a single call fails as `budget.daily` instead of waiting forever. Members can cancel a waiting run.
 
 ### Execution and exactly-once effects
 
@@ -148,7 +154,8 @@ run: not listed without credentials; a problem when a selected provider lacks cr
 failed for a provider reason; "not checked yet", a neutral state, while a model is unverified; otherwise OK
 ([ADR-0018](ADR-0018-status-overview.md), which replaced "degraded" for unverified models on 2026-09-26). Its
 technical details show the workload profiles with their budgets, today's spending, the connection check and recent
-runs with cancel and retry. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`, `/api/ai/runs/{id}/cancel`,
+runs with cancel and retry; a run waiting for the next budget day is shown as waiting with the time it continues, not as
+failed. REST: `/api/ai/overview`, `/api/ai/runs`, `/api/ai/runs/{id}`, `/api/ai/runs/{id}/cancel`,
 `/api/ai/runs/{id}/retry`, `/api/ai/connection-checks`.
 
 ## Consequences

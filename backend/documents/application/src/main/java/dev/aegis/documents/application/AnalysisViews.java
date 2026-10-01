@@ -118,7 +118,10 @@ public class AnalysisViews {
                     yield AnalysisView.FAILED;
                 }
                 if (run.active()) {
-                    yield AnalysisView.PENDING;
+                    // Stopped only by the household's daily limit: the run resumes on the next budget day, which is
+                    // no failure (issue #109).
+                    yield "WAITING_RETRY".equals(run.state()) && AnalysisRuns.DAILY_LIMIT.equals(run.failureCode())
+                            ? AnalysisView.WAITING_FOR_BUDGET : AnalysisView.PENDING;
                 }
                 if ("SUCCEEDED".equals(run.state())) {
                     yield AnalysisView.CLASSIFIED;

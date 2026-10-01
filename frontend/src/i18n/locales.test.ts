@@ -85,6 +85,9 @@ describe("locale catalogs", () => {
       ...["pending", "uploading", "saved", "duplicate", "failed", "rejected"].map((s) => `share.status.${s}`),
       ...["CONNECTION_CHECK", "DOCUMENT_CLASSIFICATION", "DOCUMENT_REVIEW", "CHAT"].map((w) => `ai.workload.${w}`),
       ...["QUEUED", "RUNNING", "WAITING_RETRY", "SUCCEEDED", "FAILED", "CANCELLED"].map((s) => `ai.state.${s}`),
+      // Analysis states of a document (ADR-0004), including the neutral NOT_CLASSIFIED and WAITING_FOR_BUDGET.
+      ...["NOT_REQUESTED", "WAITING_FOR_ARCHIVE", "PENDING", "CLASSIFIED", "NEEDS_REVIEW", "FAILED", "UNAVAILABLE",
+        "NOT_CLASSIFIED", "WAITING_FOR_BUDGET"].flatMap((s) => [`analysis.state.${s}`, `analysis.stateShort.${s}`]),
       ...["NOT_CONFIGURED", "AUTHENTICATION", "MODEL_UNAVAILABLE", "INVALID_REQUEST", "RATE_LIMITED",
         "PROVIDER_UNAVAILABLE", "TIMEOUT", "INVALID_OUTPUT", "REFUSED", "BUDGET_EXHAUSTED", "TOOL_DENIED",
         "NOT_AUTHORIZED", "STALE_SOURCE", "SOURCE_UNAVAILABLE", "INTERRUPTED", "INTERNAL"].map((c) => `ai.failure.${c}`),

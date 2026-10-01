@@ -125,7 +125,10 @@ export function AnalysisPanel({ document, onChange, onError, onMessage, reload }
         <Badge state={a.state} label={t(`analysis.stateShort.${a.state}`)} />
       </div>
       <p className="text-sm" data-testid="analysis-state">
-        {t(`analysis.state.${a.state}`, { name: memberName(a.requestedBy ?? "") ?? t("app.unknownMember") })}
+        {t(`analysis.state.${a.state}`, {
+          name: memberName(a.requestedBy ?? "") ?? t("app.unknownMember"),
+          date: a.nextAttemptAt ? formatDateTime(a.nextAttemptAt, i18n.language) : "",
+        })}
       </p>
       {a.state === "PENDING" && a.runState && (
         <p className="text-sm text-text-3">

@@ -20,6 +20,11 @@ public interface AnalysisRuns {
      * personal subscription that serves only its owner. An expected configuration state, not a failure.
      */
     String MEMBER_NOT_ALLOWED = "ai.provider.memberNotAllowed";
+    /**
+     * Failure code of a run stopped by the household's daily AI cost limit. While such a run is waiting for a retry,
+     * it resumes on the next budget day ({@code nextAttemptAt}); an expected state, not a failure.
+     */
+    String DAILY_LIMIT = "budget.daily";
 
     static String key(DocumentId id, int generation) {
         return "document-classification:" + id + ":g" + generation;

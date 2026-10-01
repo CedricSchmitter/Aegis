@@ -15,6 +15,11 @@ class AiRunTest {
     static final MemberId LISA = MemberId.random();
     static final Money DAY = Money.of("2.00", "USD");
     static final Money NOTHING = Money.of("0", "USD");
+    /** Start of the next budget day after {@link #T0} (midnight in Europe/Berlin). */
+    static final Instant NEXT_DAY = Instant.parse("2026-09-18T22:00:00Z");
+    static final AiRun.DailyBudget FRESH_DAY = new AiRun.DailyBudget(DAY, NOTHING, NEXT_DAY);
+    /** A day of which 0.0005 USD are left: not enough for a call with the quote below. */
+    static final AiRun.DailyBudget USED_UP_DAY = new AiRun.DailyBudget(DAY, Money.of("1.9995", "USD"), NEXT_DAY);
     /** Output price of 5 USD per million tokens: 1000 tokens cost 0.005. */
     static final AiRun.CallQuote QUOTE = new AiRun.CallQuote(Money.of("0.001", "USD"), Money.of("5", "USD"));
 
@@ -108,7 +113,7 @@ class AiRunTest {
         AiRun run = started(3);
         run.start(T0.plusSeconds(5));
 
-        assertThat(run.authorizeModelCall(1, QUOTE, NOTHING, DAY, T0.plusSeconds(6)))
+        assertThat(run.authorizeModelCall(1, QUOTE, FRESH_DAY, T0.plusSeconds(6)))
                 .isInstanceOf(AiRun.Superseded.class);
         assertThat(run.authorizeToolCall(1, "lookup", true, T0.plusSeconds(6))).isInstanceOf(AiRun.Superseded.class);
         assertThat(run.readyToComplete(1, T0.plusSeconds(6))).isInstanceOf(AiRun.Superseded.class);
@@ -138,7 +143,7 @@ class AiRunTest {
         AiRun run = started(3);
         run.recordModelCall(1, "m", "stop.tool_use", new TokenUsage(1000, 100, 0, 0), Money.of("0.045", "USD"), T0);
 
-        AiRun.Checkpoint allowance = run.authorizeModelCall(1, QUOTE, NOTHING, DAY, T0.plusSeconds(1));
+        AiRun.Checkpoint allowance = run.authorizeModelCall(1, QUOTE, FRESH_DAY, T0.plusSeconds(1));
 
         // 0.05 - 0.045 - 0.001 input = 0.004 USD -> 800 output tokens at 5 USD per million.
         assertThat(allowance).isEqualTo(new AiRun.Allowed(800, Duration.ofSeconds(119)));
@@ -149,21 +154,94 @@ class AiRunTest {
         AiRun run = started(3);
         run.recordModelCall(1, "m", "stop.tool_use", new TokenUsage(1000, 100, 0, 0), Money.of("0.0495", "USD"), T0);
 
-        AiRun.Checkpoint allowance = run.authorizeModelCall(1, QUOTE, NOTHING, DAY, T0.plusSeconds(1));
+        AiRun.Checkpoint allowance = run.authorizeModelCall(1, QUOTE, FRESH_DAY, T0.plusSeconds(1));
 
         assertThat(allowance).isEqualTo(new AiRun.Halted(RunState.FAILED, null));
         assertThat(run.failure()).get().extracting(RunFailure::code).isEqualTo("budget.cost");
     }
 
     @Test
-    void dailyLimitStopsCallsAcrossRuns() {
+    void dailyLimitStopsCallsAcrossRunsAndTheRunWaitsForTheNextBudgetDay() {
         AiRun run = started(3);
 
-        AiRun.Checkpoint allowance = run.authorizeModelCall(1, QUOTE, Money.of("1.9995", "USD"), DAY, T0);
+        AiRun.Checkpoint allowance = run.authorizeModelCall(1, QUOTE, USED_UP_DAY, T0);
 
-        assertThat(allowance).isEqualTo(new AiRun.Halted(RunState.FAILED, null));
+        assertThat(allowance).isEqualTo(new AiRun.Halted(RunState.WAITING_RETRY, NEXT_DAY));
+        assertThat(run.nextAttemptAt()).contains(NEXT_DAY);
         assertThat(run.failure()).get().extracting(RunFailure::category, RunFailure::code)
                 .containsExactly(FailureCategory.BUDGET_EXHAUSTED, "budget.daily");
+        assertThat(run.start(NEXT_DAY.minusSeconds(1))).isEqualTo(new AiRun.NotDue(NEXT_DAY));
+        assertThat(run.start(NEXT_DAY)).isEqualTo(new AiRun.Started(2));
+        AiRun.DailyBudget nextDay = new AiRun.DailyBudget(DAY, NOTHING, NEXT_DAY.plus(Duration.ofDays(1)));
+        assertThat(run.authorizeModelCall(2, QUOTE, nextDay, NEXT_DAY)).isInstanceOf(AiRun.Allowed.class);
+        assertThat(run.attemptsUsed()).isEqualTo(1);
+    }
+
+    @Test
+    void waitingForTheBudgetDayDoesNotUseUpAttempts() {
+        AiRun run = started(1);
+        Instant day = T0;
+        for (int wait = 1; wait <= 3; wait++) {
+            Instant renewal = day.plus(Duration.ofDays(1));
+            assertThat(run.authorizeModelCall(run.attempt(), QUOTE,
+                    new AiRun.DailyBudget(DAY, Money.of("1.9995", "USD"), renewal), day))
+                    .isEqualTo(new AiRun.Halted(RunState.WAITING_RETRY, renewal));
+            day = renewal;
+            assertThat(run.start(day)).isEqualTo(new AiRun.Started(wait + 1));
+        }
+        assertThat(run.budgetWaits()).isEqualTo(3);
+        assertThat(run.attemptsUsed()).isEqualTo(1);
+
+        // The attempt that finally runs is the single one the budget allows: a retryable failure now ends the run.
+        assertThat(run.fail(4, FailureCategory.TIMEOUT, "provider.timeout", "slow", null, day))
+                .isEqualTo(new AiRun.Halted(RunState.FAILED, null));
+    }
+
+    @Test
+    void anInterruptedAttemptAfterABudgetWaitCountsAsTheOnlyAttempt() {
+        AiRun run = started(1);
+        run.authorizeModelCall(1, QUOTE, USED_UP_DAY, T0);
+        run.start(NEXT_DAY);
+
+        assertThat(run.start(NEXT_DAY.plusSeconds(5))).isEqualTo(new AiRun.Ended(RunState.FAILED));
+        assertThat(run.failure()).get().extracting(RunFailure::code).isEqualTo("attempt.interrupted");
+    }
+
+    @Test
+    void exhaustedRunBudgetStillFailsWhenTheDayIsUsedUpToo() {
+        AiRun run = started(3);
+        run.recordModelCall(1, "m", "stop.tool_use", new TokenUsage(1000, 100, 0, 0), Money.of("0.0495", "USD"), T0);
+
+        // 0.0001 left today is less than the 0.0005 left in the run, but a fresh day would not help the run either.
+        AiRun.Checkpoint allowance = run.authorizeModelCall(1, QUOTE,
+                new AiRun.DailyBudget(DAY, Money.of("1.9999", "USD"), NEXT_DAY), T0.plusSeconds(1));
+
+        assertThat(allowance).isEqualTo(new AiRun.Halted(RunState.FAILED, null));
+        assertThat(run.failure()).get().extracting(RunFailure::code).isEqualTo("budget.cost");
+        assertThat(run.budgetWaits()).isZero();
+    }
+
+    @Test
+    void aDailyLimitTooSmallForASingleCallFailsInsteadOfWaitingForever() {
+        AiRun run = started(3);
+
+        AiRun.Checkpoint allowance = run.authorizeModelCall(1, QUOTE,
+                new AiRun.DailyBudget(Money.of("0.0012", "USD"), NOTHING, NEXT_DAY), T0);
+
+        assertThat(allowance).isEqualTo(new AiRun.Halted(RunState.FAILED, null));
+        assertThat(run.failure()).get().extracting(RunFailure::code).isEqualTo("budget.daily");
+        assertThat(run.budgetWaits()).isZero();
+    }
+
+    @Test
+    void cancellingARunThatWaitsForTheBudgetDayEndsItImmediately() {
+        AiRun run = started(3);
+        run.authorizeModelCall(1, QUOTE, USED_UP_DAY, T0);
+
+        assertThat(run.requestCancel(LISA, T0.plusSeconds(1))).isTrue();
+
+        assertThat(run.state()).isEqualTo(RunState.CANCELLED);
+        assertThat(run.start(NEXT_DAY)).isEqualTo(new AiRun.Ended(RunState.CANCELLED));
     }
 
     @Test
@@ -181,11 +259,11 @@ class AiRunTest {
     void modelCallBudgetIsPerAttempt() {
         AiRun run = started(3);
         for (int i = 0; i < 3; i++) {
-            assertThat(run.authorizeModelCall(1, QUOTE, NOTHING, DAY, T0)).isInstanceOf(AiRun.Allowed.class);
+            assertThat(run.authorizeModelCall(1, QUOTE, FRESH_DAY, T0)).isInstanceOf(AiRun.Allowed.class);
             run.recordModelCall(1, "m", "stop.tool_use", TokenUsage.NONE, Money.of("0.0001", "USD"), T0);
         }
 
-        assertThat(run.authorizeModelCall(1, QUOTE, NOTHING, DAY, T0))
+        assertThat(run.authorizeModelCall(1, QUOTE, FRESH_DAY, T0))
                 .isEqualTo(new AiRun.Halted(RunState.FAILED, null));
         assertThat(run.failure()).get().extracting(RunFailure::code).isEqualTo("budget.modelCalls");
     }
@@ -194,7 +272,7 @@ class AiRunTest {
     void timeBudgetEndsTheAttempt() {
         AiRun run = started(3);
 
-        assertThat(run.authorizeModelCall(1, QUOTE, NOTHING, DAY, T0.plus(Duration.ofMinutes(2))))
+        assertThat(run.authorizeModelCall(1, QUOTE, FRESH_DAY, T0.plus(Duration.ofMinutes(2))))
                 .isEqualTo(new AiRun.Halted(RunState.FAILED, null));
         assertThat(run.failure()).get().extracting(RunFailure::code).isEqualTo("budget.time");
     }

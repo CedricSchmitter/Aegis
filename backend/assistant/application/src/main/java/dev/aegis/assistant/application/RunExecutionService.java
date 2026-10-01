@@ -107,8 +107,9 @@ public class RunExecutionService implements RunExecution {
         }
         String provider = run.model().provider();
         Money spentToday = runs.costSince(settings.startOfDay(now), provider, settings.currency());
-        AiRun.Checkpoint checkpoint = run.authorizeModelCall(attempt, quote, spentToday,
-                settings.dailyCostLimit(provider), now);
+        AiRun.Checkpoint checkpoint = run.authorizeModelCall(attempt, quote,
+                new AiRun.DailyBudget(settings.dailyCostLimit(provider), spentToday, settings.startOfNextDay(now)),
+                now);
         saveIfChanged(run);
         return checkpoint;
     }

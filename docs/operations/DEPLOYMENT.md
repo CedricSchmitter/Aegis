@@ -269,8 +269,11 @@ manual requests keep working. Filenames for downloads and exports use German nam
 
 The default household daily cost limit is **0.25 USD**, with one run at a time. Classification is limited to
 0.05 USD per run (one structured call at low effort; at most 20,000 characters of OCR text are sent);
-review/chat profiles to 0.10 USD. When the daily limit is reached, further classifications fail visibly as
-"Budget exhausted" and can be started again the next day. These are application estimates from reported usage, not a
+review/chat profiles to 0.10 USD. When the daily limit is reached, further runs wait for the next household day
+(midnight Europe/Berlin) and then continue automatically (issue #109); their documents read "Wartet auf KI-Budget"
+without a failure card, and the status page shows the time they continue. Such a wait does not use up an attempt.
+A run whose own budget is used up, or a daily limit too small for a single call, still fails visibly as "Budget
+exhausted". Cancelling a waiting run on the status page stops it. These are application estimates from reported usage, not a
 provider balance or an exact billing ceiling: interrupted requests may be billed without recorded usage.
 The provider's billing controls remain authoritative. No automatic top-up exists. The only provider fallback is the
 choice at request time described above; a failing API call is never repeated on the subscription.

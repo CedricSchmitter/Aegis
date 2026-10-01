@@ -22,6 +22,7 @@ import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.StaleVersionException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -466,6 +467,27 @@ class DocumentAnalysisServiceTest {
 
         service.requestAnalysis(f.actor, document.id(), failed.version());
         assertThat(view(document).analysis().generation()).isEqualTo(first + 1);
+    }
+
+    @Test
+    void aRunWaitingForTheNextBudgetDayIsShownAsWaitingWithoutAFailure() {
+        Document waiting = archived("Scan 0012b", TELEKOM_TEXT);
+        int generation = request(waiting);
+        Instant midnight = Instant.parse("2026-09-13T22:00:00Z");
+        runs.waitForRetry(waiting.id(), generation, "BUDGET_EXHAUSTED", "budget.daily", midnight);
+        Document retrying = archived("Scan 0012c", TELEKOM_TEXT);
+        runs.waitForRetry(retrying.id(), request(retrying), "TIMEOUT", "provider.timeout", midnight);
+
+        AnalysisView budget = view(waiting).analysis();
+        assertThat(budget.state()).isEqualTo(AnalysisView.WAITING_FOR_BUDGET);
+        assertThat(budget.runState()).isEqualTo("WAITING_RETRY");
+        assertThat(budget.nextAttemptAt()).isEqualTo(midnight);
+        assertThat(budget.failureCategory()).isNull();
+        assertThat(budget.failureCode()).isNull();
+        assertThat(view(retrying).analysis().state()).isEqualTo(AnalysisView.PENDING);
+        // The run resumes by itself, so a second request would only duplicate it.
+        assertThatThrownBy(() -> service.requestAnalysis(f.actor, waiting.id(), budget.version()))
+                .isInstanceOf(InvalidInputException.class).hasFieldOrPropertyWithValue("code", "analysis.pending");
     }
 
     @Test

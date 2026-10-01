@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DocumentDto } from "../api/types";
 import i18n from "../i18n";
+import { formatDateTime } from "../lib/format";
 import { AnalysisPanel } from "./AnalysisPanel";
 
 const api = vi.hoisted(() => ({ GET: vi.fn(), POST: vi.fn(), PUT: vi.fn(), DELETE: vi.fn() }));
@@ -38,10 +39,39 @@ const document = {
   },
 } as unknown as DocumentDto;
 
-function renderPanel(onError = vi.fn()) {
-  render(<AnalysisPanel document={document} onChange={vi.fn()} onError={onError} onMessage={vi.fn()} reload={vi.fn()} />);
+function renderPanel(onError = vi.fn(), shown: DocumentDto = document) {
+  render(<AnalysisPanel document={shown} onChange={vi.fn()} onError={onError} onMessage={vi.fn()} reload={vi.fn()} />);
   return onError;
 }
+
+describe("analysis panel while today's AI budget is used up", () => {
+  const waiting = {
+    ...document,
+    analysis: {
+      ...document.analysis,
+      state: "WAITING_FOR_BUDGET",
+      runState: "WAITING_RETRY",
+      nextAttemptAt: "2026-10-01T22:00:00Z",
+      failureCategory: null,
+      failureCode: null,
+    },
+  } as unknown as DocumentDto;
+
+  it.each([
+    ["de", "Die Einordnung läuft am {date} automatisch weiter.", "Wartet auf KI-Budget"],
+    ["en", "Classification continues automatically on {date}.", "Waiting for AI budget"],
+  ])("shows a neutral waiting state with the time it continues (%s)", async (language, explanation, badge) => {
+    await i18n.changeLanguage(language);
+    renderPanel(vi.fn(), waiting);
+
+    const date = formatDateTime("2026-10-01T22:00:00Z", language);
+    expect(screen.getByTestId("analysis-state").textContent).toContain(explanation.replace("{date}", date));
+    expect(screen.getByText(badge)).toBeTruthy();
+    expect(screen.queryByTestId("analysis-failure")).toBeNull();
+    // The run continues by itself, so nothing needs to be started again.
+    expect(screen.queryByTestId("request-analysis")).toBeNull();
+  });
+});
 
 describe("analysis panel for an upload by a member without AI", () => {
   it.each([

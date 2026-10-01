@@ -790,6 +790,9 @@
       "claude-code": "Claude subscription"
     },
     "spentToday": "Spent today: {{spent}} of the {{limit}} daily limit",
+    "dailyLimitHint": "Once the daily limit is reached, further runs wait until midnight and then continue on their own.",
+    "waitingForBudget": "Waiting for tomorrow's AI budget (daily limit reached) · continues on {{date}}",
+    "budgetWait": "Waiting for AI budget",
     "budgetLine": "up to {{cost}} per run, {{attempts}} attempts, {{seconds}} s per attempt",
     "available": "ready",
     "noWorkflow": "no workflow yet",
@@ -1186,7 +1189,8 @@
       "NEEDS_REVIEW": "Classified. Some suggestions are waiting for your review.",
       "FAILED": "Classification failed. The document itself is saved and archived.",
       "UNAVAILABLE": "AI was not available. The document itself is saved.",
-      "NOT_CLASSIFIED": "Not classified automatically because AI is not enabled for {{name}}. A member with AI access can classify the document with “Classify now”. The document itself is saved and archived."
+      "NOT_CLASSIFIED": "Not classified automatically because AI is not enabled for {{name}}. A member with AI access can classify the document with “Classify now”. The document itself is saved and archived.",
+      "WAITING_FOR_BUDGET": "Waiting for tomorrow's AI budget: today's AI cost limit is used up. Classification continues automatically on {{date}}. The document itself is saved and archived."
     },
     "stateShort": {
       "NOT_REQUESTED": "Not classified",
@@ -1196,7 +1200,8 @@
       "NEEDS_REVIEW": "Review",
       "FAILED": "Classification failed",
       "UNAVAILABLE": "AI unavailable",
-      "NOT_CLASSIFIED": "Not classified"
+      "NOT_CLASSIFIED": "Not classified",
+      "WAITING_FOR_BUDGET": "Waiting for AI budget"
     },
     "completed": "Last classified on {{date}} with {{model}}, started by {{name}}.",
     "flag": {

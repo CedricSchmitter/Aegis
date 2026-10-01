@@ -22,6 +22,9 @@ import java.util.Optional;
  * <li>The cost budget spans all attempts. Before each model call the output allowance is reduced so that the
  * worst-case cost stays within the remaining run and daily budgets; the reported cost is checked again after the
  * call.</li>
+ * <li>An attempt stopped only by the household's daily limit waits for the next budget day instead of failing, as
+ * long as a fresh day could pay the call. Such a wait does not use up one of the run's attempts; the cost budget still
+ * spans all of them.</li>
  * <li>Cancellation of a running attempt takes effect at the next checkpoint and always before a result is applied.
  * </li>
  * <li>A result is accepted once; a terminal run never changes state again.</li>
@@ -85,6 +88,25 @@ public final class AiRun {
         }
     }
 
+    /**
+     * The household's daily limit for the run's provider, what its model calls spent so far on the current budget
+     * day, and when the next budget day starts.
+     */
+    public record DailyBudget(Money limit, Money spent, Instant renewsAt) {
+        public DailyBudget {
+            Objects.requireNonNull(limit, "daily limit");
+            Objects.requireNonNull(spent, "spent today");
+            Objects.requireNonNull(renewsAt, "renewal");
+        }
+
+        Money remaining() {
+            return limit.minus(spent);
+        }
+    }
+
+    /** Failure code of an attempt stopped by the daily limit; the run waits for the next budget day. */
+    public static final String DAILY_LIMIT = "budget.daily";
+
     private final RunId id;
     private final Workload workload;
     private final String idempotencyKey;
@@ -115,6 +137,7 @@ public final class AiRun {
     private long version;
     private boolean fresh;
     private int stepCount;
+    private int budgetWaits;
     private final List<RunStep> pendingSteps = new ArrayList<>();
 
     private AiRun(RunId id, Workload workload, String idempotencyKey, RunId retryOf, MemberId requestedBy,
@@ -145,11 +168,14 @@ public final class AiRun {
         return run;
     }
 
-    /** Persisted state; counters and usage are the stored totals. */
+    /**
+     * Persisted state; counters and usage are the stored totals. {@code budgetWaits} counts the attempts that ended
+     * only because the daily limit was reached.
+     */
     public record Snapshot(RunState state, int attempt, Instant attemptStartedAt, Instant nextAttemptAt,
             Instant finishedAt, boolean cancelRequested, MemberId cancelRequestedBy, int modelCalls, int toolCalls,
             int deniedToolCalls, int attemptModelCalls, int attemptToolCalls, TokenUsage tokens, Money cost,
-            String output, RunFailure failure, long version, int stepCount) {
+            String output, RunFailure failure, long version, int stepCount, int budgetWaits) {
     }
 
     public static AiRun rehydrate(RunId id, Workload workload, String idempotencyKey, RunId retryOf,
@@ -175,6 +201,7 @@ public final class AiRun {
         run.failure = snapshot.failure();
         run.version = snapshot.version();
         run.stepCount = snapshot.stepCount();
+        run.budgetWaits = snapshot.budgetWaits();
         run.fresh = false;
         return run;
     }
@@ -199,7 +226,7 @@ public final class AiRun {
         if (state == RunState.RUNNING) {
             recordFailure(FailureCategory.INTERRUPTED, "attempt.interrupted",
                     "attempt " + attempt + " did not finish; the process stopped or the job was revived", now);
-            if (attempt >= budget.maxAttempts()) {
+            if (attemptsUsed() >= budget.maxAttempts()) {
                 finish(RunState.FAILED, now);
                 return new Ended(state);
             }
@@ -222,9 +249,13 @@ public final class AiRun {
     /**
      * Admits the next model call of {@code forAttempt} or stops the attempt. The output allowance is the smaller of
      * the per-call cap and what the remaining run and daily budgets can pay after the estimated input cost.
+     *
+     * <p>When only the daily limit stands in the way and the full limit of a fresh day could pay the call, the run
+     * waits for {@link DailyBudget#renewsAt()} without using up an attempt (issue #109). Otherwise waiting would not
+     * help, and the run fails: with {@code budget.cost} when its own budget is used up, with {@code budget.daily} when
+     * the daily limit is too small for a single call.
      */
-    public Checkpoint authorizeModelCall(int forAttempt, CallQuote quote, Money spentToday, Money dailyLimit,
-            Instant now) {
+    public Checkpoint authorizeModelCall(int forAttempt, CallQuote quote, DailyBudget day, Instant now) {
         Optional<Checkpoint> stop = interruptions(forAttempt, now);
         if (stop.isPresent()) {
             return stop.get();
@@ -234,15 +265,44 @@ public final class AiRun {
                     "model call budget of " + budget.maxModelCalls() + " per attempt reached", null, now);
         }
         Money remainingRun = budget.maxCost().minus(cost);
-        Money remainingDay = dailyLimit.minus(spentToday);
-        boolean dailyLimits = remainingDay.compareTo(remainingRun) < 0;
-        Money available = remainingRun.min(remainingDay).minus(quote.inputCost());
-        int allowance = affordableTokens(available, quote.outputPricePerMillion());
-        if (allowance < Math.min(MIN_OUTPUT_TOKENS, budget.maxOutputTokens())) {
-            return failAttempt(FailureCategory.BUDGET_EXHAUSTED, dailyLimits ? "budget.daily" : "budget.cost",
-                    dailyLimits ? "daily AI cost limit reached" : "cost budget of this run is used up", null, now);
+        boolean dailyLimits = day.remaining().compareTo(remainingRun) < 0;
+        int allowance = affordableTokens(remainingRun.min(day.remaining()).minus(quote.inputCost()),
+                quote.outputPricePerMillion());
+        if (allowance >= minimumAllowance()) {
+            return new Allowed(allowance, remaining(now));
         }
-        return new Allowed(allowance, remaining(now));
+        if (!dailyLimits) {
+            return failAttempt(FailureCategory.BUDGET_EXHAUSTED, "budget.cost", "cost budget of this run is used up",
+                    null, now);
+        }
+        int freshDayAllowance = affordableTokens(remainingRun.min(day.limit()).minus(quote.inputCost()),
+                quote.outputPricePerMillion());
+        if (freshDayAllowance < minimumAllowance()) {
+            boolean runLimits = remainingRun.compareTo(day.limit()) <= 0;
+            return failAttempt(FailureCategory.BUDGET_EXHAUSTED, runLimits ? "budget.cost" : DAILY_LIMIT,
+                    runLimits ? "cost budget of this run is used up"
+                            : "the daily AI cost limit of " + day.limit() + " cannot pay a single call",
+                    null, now);
+        }
+        return waitForNextBudgetDay(day.renewsAt(), now);
+    }
+
+    private int minimumAllowance() {
+        return Math.min(MIN_OUTPUT_TOKENS, budget.maxOutputTokens());
+    }
+
+    /**
+     * Ends the attempt because the daily limit is used up and lets the run wait for the next budget day. The failure
+     * stays visible as {@code BUDGET_EXHAUSTED}/{@code budget.daily} while the run waits; the attempt is not counted
+     * against the attempt budget.
+     */
+    private Checkpoint waitForNextBudgetDay(Instant renewsAt, Instant now) {
+        recordFailure(FailureCategory.BUDGET_EXHAUSTED, DAILY_LIMIT,
+                "daily AI cost limit reached; waiting for the next budget day", now);
+        budgetWaits++;
+        state = RunState.WAITING_RETRY;
+        nextAttemptAt = renewsAt.isAfter(now) ? renewsAt : now.plus(RETRY_BASE);
+        return new Halted(state, nextAttemptAt);
     }
 
     private int affordableTokens(Money available, Money outputPricePerMillion) {
@@ -408,7 +468,8 @@ public final class AiRun {
             cancel(now);
             return new Halted(state, null);
         }
-        boolean retry = category.retryable() && attempt < budget.maxAttempts() && cost.compareTo(budget.maxCost()) < 0;
+        boolean retry = category.retryable() && attemptsUsed() < budget.maxAttempts()
+                && cost.compareTo(budget.maxCost()) < 0;
         if (retry) {
             state = RunState.WAITING_RETRY;
             nextAttemptAt = now.plus(backoff(attempt, retryAfter));
@@ -552,8 +613,18 @@ public final class AiRun {
         return state;
     }
 
+    /** Number of the current or latest attempt; it identifies the attempt and also counts budget waits. */
     public int attempt() {
         return attempt;
+    }
+
+    /** Attempts counted against {@link RunBudget#maxAttempts()}: all but those that only waited for the daily limit. */
+    public int attemptsUsed() {
+        return attempt - budgetWaits;
+    }
+
+    public int budgetWaits() {
+        return budgetWaits;
     }
 
     public Optional<Instant> attemptStartedAt() {

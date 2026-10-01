@@ -790,6 +790,9 @@
       "claude-code": "Claude-Abo"
     },
     "spentToday": "Heute verbraucht: {{spent}} von {{limit}} Tageslimit",
+    "dailyLimitHint": "Ist das Tageslimit erreicht, warten weitere Läufe bis Mitternacht und laufen dann von selbst weiter.",
+    "waitingForBudget": "Wartet auf das KI-Budget von morgen (Tageslimit erreicht) · geht am {{date}} weiter",
+    "budgetWait": "Wartet auf KI-Budget",
     "budgetLine": "bis {{cost}} je Lauf, {{attempts}} Versuche, {{seconds}} s je Versuch",
     "available": "bereit",
     "noWorkflow": "noch kein Ablauf",
@@ -1186,7 +1189,8 @@
       "NEEDS_REVIEW": "Eingeordnet. Einige Vorschläge warten auf deine Prüfung.",
       "FAILED": "Die Einordnung ist fehlgeschlagen. Das Dokument selbst ist gespeichert und archiviert.",
       "UNAVAILABLE": "Die KI war nicht verfügbar. Das Dokument selbst ist gespeichert.",
-      "NOT_CLASSIFIED": "Nicht automatisch eingeordnet, weil die KI für {{name}} nicht freigegeben ist. Ein Mitglied mit KI-Zugang kann das Dokument mit „Jetzt einordnen“ einordnen. Das Dokument selbst ist gespeichert und archiviert."
+      "NOT_CLASSIFIED": "Nicht automatisch eingeordnet, weil die KI für {{name}} nicht freigegeben ist. Ein Mitglied mit KI-Zugang kann das Dokument mit „Jetzt einordnen“ einordnen. Das Dokument selbst ist gespeichert und archiviert.",
+      "WAITING_FOR_BUDGET": "Wartet auf das KI-Budget von morgen: Das heutige KI-Kostenlimit ist ausgeschöpft. Die Einordnung läuft am {{date}} automatisch weiter. Das Dokument selbst ist gespeichert und archiviert."
     },
     "stateShort": {
       "NOT_REQUESTED": "Nicht eingeordnet",
@@ -1196,7 +1200,8 @@
       "NEEDS_REVIEW": "Prüfen",
       "FAILED": "Einordnung fehlgeschlagen",
       "UNAVAILABLE": "KI nicht verfügbar",
-      "NOT_CLASSIFIED": "Nicht eingeordnet"
+      "NOT_CLASSIFIED": "Nicht eingeordnet",
+      "WAITING_FOR_BUDGET": "Wartet auf KI-Budget"
     },
     "completed": "Zuletzt eingeordnet am {{date}} mit {{model}}, angestoßen von {{name}}.",
     "flag": {

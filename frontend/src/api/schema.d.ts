@@ -2243,7 +2243,10 @@ export interface components {
             expectedVersion: number;
         };
         RunDto: {
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description Attempts counted against maxAttempts; waits for the next budget day do not count
+             */
             attempt: number;
             cancelRequested: boolean;
             cost: number;

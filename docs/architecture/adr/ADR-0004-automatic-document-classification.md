@@ -23,7 +23,7 @@ Storage, archival/OCR and AI processing are three separate visible states:
 |---|---|---|
 | Capture | Documents (`documents`) | saved once the original is in ingress and the record committed |
 | Archival/OCR | Documents (`ProcessingInfo`) | `RECEIVED`, `SUBMITTED`, `ARCHIVED`, `FAILED` |
-| Analysis | Documents (`document_analyses`) plus the run state from the assistant context | `NOT_REQUESTED`, `WAITING_FOR_ARCHIVE`, `PENDING`, `CLASSIFIED`, `NEEDS_REVIEW`, `FAILED`, `UNAVAILABLE`, `NOT_CLASSIFIED` |
+| Analysis | Documents (`document_analyses`) plus the run state from the assistant context | `NOT_REQUESTED`, `WAITING_FOR_ARCHIVE`, `PENDING`, `CLASSIFIED`, `NEEDS_REVIEW`, `FAILED`, `UNAVAILABLE`, `NOT_CLASSIFIED`, `WAITING_FOR_BUDGET` |
 
 The documents context owns a `DocumentAnalysis` aggregate per analyzed document: a request **generation**, who
 requested it and why (upload or member), the generated values of the latest finished run (title, issue date,
@@ -31,7 +31,9 @@ short topic, correspondent, doubt flags, new-name and subject suggestions) with 
 member's filename override and a bounded history of earlier generated values. Run progress is not copied: while a
 generation is requested, the view reads the latest run for the key `document-classification:<id>:g<generation>`
 through `AiRunStatusQuery` (a port implemented in the composition root), so a failed, cancelled or waiting run is
-shown truthfully. `PENDING` covers queued, running and waiting-for-retry runs; `FAILED` shows the run's failure
+shown truthfully. `PENDING` covers queued, running and waiting-for-retry runs, except a run waiting because the
+household's daily limit is used up, which is `WAITING_FOR_BUDGET` with the time it continues (`nextAttemptAt`) and,
+like `NOT_CLASSIFIED`, gets no failure card (issue #109); `FAILED` shows the run's failure
 category (for example `BUDGET_EXHAUSTED`, `PROVIDER_UNAVAILABLE`, `STALE_SOURCE`). `NEEDS_REVIEW` means a finished
 result left suggestions (labels, title, new names or subjects) for a member, or a result with doubt flags left the
 document without any effective label (for example an unreadable scan) until a member labels it.
@@ -143,8 +145,9 @@ count as chosen by a member.
 ## Consequences
 
 - Each automatic upload costs one Sonnet 5 call within the classification run budget (0.05 USD) and the household
-  daily limit (0.25 USD). When the daily limit is reached, further analyses fail visibly as `BUDGET_EXHAUSTED`
-  and can be requested again later; they are not retried automatically.
+  daily limit (0.25 USD). When the daily limit is reached, further analyses wait for the next budget day and then
+  continue automatically (issue #109, ADR-0003); they are shown as `WAITING_FOR_BUDGET` without a failure card. An
+  analysis whose run budget is used up still fails visibly as `BUDGET_EXHAUSTED`.
 - A member editing labels or the folder while a run is working makes that run fail as `STALE_SOURCE`; the member
   can request it again.
 - The document list shows analysis badges for waiting, running, review, failed and unavailable states; a central

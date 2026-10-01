@@ -113,6 +113,12 @@ final class TestDoubles {
                     Instant.parse("2026-09-13T10:05:00Z")));
         }
 
+        /** The run's attempt failed with {@code code} and the run waits for its next attempt at {@code at}. */
+        void waitForRetry(DocumentId id, int generation, String category, String code, Instant at) {
+            String key = AnalysisRuns.key(id, generation);
+            states.put(key, new RunStatus(states.get(key).runId(), "WAITING_RETRY", category, code, at, null));
+        }
+
         @Override
         public Map<String, RunStatus> latest(Collection<String> keys) {
             Map<String, RunStatus> result = new HashMap<>();

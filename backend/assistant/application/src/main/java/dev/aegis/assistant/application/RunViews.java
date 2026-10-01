@@ -18,7 +18,7 @@ final class RunViews {
         RunFailure failure = run.failure().orElse(null);
         return new RunView(run.id().value(), run.workload().name(), run.state().name(),
                 run.retryOf().map(RunId::value).orElse(null), run.requestedBy().value(), run.requestedAt(),
-                run.model().provider(), run.model().model(), run.attempt(), run.budget().maxAttempts(),
+                run.model().provider(), run.model().model(), run.attemptsUsed(), run.budget().maxAttempts(),
                 run.cancelRequested(), run.modelCalls(), run.toolCalls(), run.deniedToolCalls(),
                 run.tokens().inputTokens(), run.tokens().outputTokens(), run.cost().amount(),
                 run.budget().maxCost().amount(), run.cost().currency().getCurrencyCode(), run.output().orElse(null),
