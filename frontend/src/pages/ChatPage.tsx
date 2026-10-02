@@ -262,15 +262,17 @@ function ConversationThread({ id, overview, onChanged }: { id: string; overview:
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="lg:hidden">
-          <BackLink to="/chat">{t("chat.title")}</BackLink>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="lg:hidden">
+            <BackLink to="/chat">{t("chat.title")}</BackLink>
+          </div>
+          <Button variant="ghost" className="ml-auto" onClick={() => setConfirmDelete(true)} disabled={busy} data-testid="chat-delete">
+            <Icon name="trash" className="h-4 w-4" />
+            {t("chat.delete")}
+          </Button>
         </div>
-        <h2 className="min-w-0 flex-1 text-lg font-semibold break-words">{conversation.title}</h2>
-        <Button variant="ghost" onClick={() => setConfirmDelete(true)} disabled={busy} data-testid="chat-delete">
-          <Icon name="trash" className="h-4 w-4" />
-          {t("chat.delete")}
-        </Button>
+        <h2 className="text-lg font-semibold break-words">{conversation.title}</h2>
       </div>
       <ol className="flex flex-col gap-5" data-testid="chat-turns">
         {conversation.turns.map((turn) => (
@@ -452,7 +454,7 @@ function Composer({ disabled, waiting = false, onSend, autoFocus = false }: { di
   };
 
   return (
-    <form className="sticky bottom-[calc(60px+env(safe-area-inset-bottom))] z-10 flex flex-col gap-2 bg-void/95 py-2 lg:bottom-7" onSubmit={(event) => void submit(event)} data-testid="chat-composer">
+    <form className="sticky bottom-[calc(60px+env(safe-area-inset-bottom))] z-10 flex flex-col gap-2 border-t border-line bg-void py-2 lg:bottom-7" onSubmit={(event) => void submit(event)} data-testid="chat-composer">
       <label className="sr-only" htmlFor="chat-question">
         {t("chat.questionLabel")}
       </label>
