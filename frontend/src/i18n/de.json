@@ -1606,7 +1606,9 @@
     },
     "pages": {
       "single": "Seite {{page}}",
-      "many": "Seiten {{list}}"
+      "many": "Seiten {{list}}",
+      "singleLeading": "Seite {{page}}",
+      "manyLeading": "Seiten {{list}}"
     },
     "derivations": {
       "section": "Seiten",
