@@ -276,7 +276,6 @@ class DocumentClassificationHandlerTest {
         return ((ContentPart.Text) handler.prepare(context).messages().getFirst().parts().getFirst()).text();
     }
 
-    /** Controlled documents contract. */
     static final class FakeDocuments implements AutomaticClassification {
         final List<Proposal> assessed = new ArrayList<>();
         final List<String> appliedRefs = new ArrayList<>();

@@ -105,7 +105,6 @@ test.describe("document tree, labels and faceted search", () => {
     await mapFolder(page, invoicesId, "DOCUMENT_TYPE", "Rechnung");
     await mapFolder(page, internetId, "TOPIC", "Internet");
 
-    // Upload straight into the leaf folder.
     await page.goto("/documents");
     await openUpload(page);
     await page.locator("#upload-folder").selectOption(internetId);

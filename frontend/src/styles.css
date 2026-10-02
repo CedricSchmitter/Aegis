@@ -771,7 +771,6 @@
     }
   }
 
-  /* Drop zone for files on a desktop. */
   .ui-drop {
     @apply flex flex-col items-center gap-2 border border-dashed px-4 py-5 text-center;
     border-color: var(--color-data);
@@ -997,7 +996,6 @@
     }
   }
 
-  /* A colour sample of a palette. */
   .ui-swatch {
     @apply inline-block h-3.5 w-3.5 flex-none border;
     border-color: var(--color-line-strong);

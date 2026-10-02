@@ -4,7 +4,6 @@ import dev.aegis.shared.MemberId;
 import java.util.List;
 import java.util.Optional;
 
-/** Aggregate persistence contract for members. */
 public interface MemberRepository {
     Optional<Member> findById(MemberId id);
 

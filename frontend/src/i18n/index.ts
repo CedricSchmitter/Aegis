@@ -21,7 +21,7 @@ export function rememberLocale(locale: ProductLocale) {
   try {
     window.localStorage.setItem(STORAGE_KEY, locale);
   } catch {
-    // ignore
+    // storage unavailable (private mode); the language then applies to this visit only
   }
 }
 

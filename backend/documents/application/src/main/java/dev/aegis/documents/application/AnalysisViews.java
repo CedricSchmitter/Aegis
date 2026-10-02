@@ -28,7 +28,6 @@ import java.util.UUID;
  * labels and the evidenced analysis values, so equal inputs always give the same name.
  */
 public class AnalysisViews {
-    /** Analysis and filename of one document. */
     public record Parts(AnalysisView analysis, FilenameView filename) {
     }
 

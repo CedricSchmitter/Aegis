@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.Map;
 
-/** REST representation of a notice. */
 public record NoticeDto(String id, String kind, Map<String, String> params,
         @Schema(nullable = true) String linkType, @Schema(nullable = true) String linkId, Instant createdAt,
         @Schema(nullable = true) Instant readAt) {

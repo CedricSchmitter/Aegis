@@ -69,7 +69,6 @@ public final class AiRun {
     public record Superseded() implements Checkpoint {
     }
 
-    /** Result of starting a job execution. */
     public sealed interface StartResult permits Started, NotDue, Ended {
     }
 

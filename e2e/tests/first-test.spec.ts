@@ -146,7 +146,6 @@ test.describe("first runnable test", () => {
     await login(page, userA);
     await ensureGerman(page);
 
-    // Upload a synthetic PDF and wait for real archival.
     await page.getByRole("link", { name: "Dokumente" }).first().click();
     await openUpload(page);
     // Nothing is ticked at first and "both" is no choice: a document about both persons names each.
@@ -188,7 +187,6 @@ test.describe("first runnable test", () => {
     await searchDocuments(page, "Kuendigungsfrist");
     await expect(page.locator("[data-testid=document-card]", { hasText: `Stromvertrag e2e ${runId}` })).toBeVisible();
 
-    // Create a linked task assigned to the other member with a deadline and a planned date.
     await page.goto(documentUrl);
     await page.getByTestId("new-task-toggle").click();
     await page.getByTestId("task-title").fill(`Kündigen ${runId}`);
