@@ -77,9 +77,9 @@ public class JdbcDerivationRepository implements DerivationRepository {
 
     @Override
     public List<Derivation> findBySource(DocumentId source) {
-        return group(jdbc.sql(SELECT + """
-                 WHERE document_id IN (SELECT document_id FROM document_derivations WHERE source_document_id = ?)
-                 ORDER BY created_at, document_id, position""").param(source.value()).query(this::row).list());
+        return group(jdbc.sql(SELECT
+                + " WHERE document_id IN (SELECT document_id FROM document_derivations WHERE source_document_id = ?)"
+                + " ORDER BY created_at, document_id, position").param(source.value()).query(this::row).list());
     }
 
     private Row row(ResultSet rs, int rowNumber) throws SQLException {

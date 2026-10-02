@@ -780,6 +780,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/{id}/derivations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where a document's pages came from and which documents were created from its pages */
+        get: operations["getDocumentDerivations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{id}/filename": {
         parameters: {
             query?: never;
@@ -857,6 +874,40 @@ export interface paths {
         };
         /** Original bytes, unchanged, named with the friendly filename */
         get: operations["downloadOriginal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pages of a document for the page editor; may fetch the original from the archive once */
+        get: operations["getDocumentPages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/pages/{index}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A small JPEG of one page of a document */
+        get: operations["getPagePreview"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1306,6 +1357,40 @@ export interface paths {
         put?: never;
         /** Mark one notice as read */
         post: operations["markNoticeRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/page-edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create new documents from pages of stored documents and newly scanned pages; answered once the plan and the scan are stored durably */
+        post: operations["requestPageEdit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/page-edits/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** State and results of a page editor operation */
+        get: operations["getPageEdit"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2040,6 +2125,19 @@ export interface components {
             /** Format: int32 */
             subjectsKept: number;
         };
+        DerivationsDto: {
+            derived: components["schemas"]["DerivedDto"][];
+            origin?: components["schemas"]["OriginDto"];
+        };
+        DerivedDto: {
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            documentId: string;
+            sourcePages: components["schemas"]["PageSpanDto"][];
+            title: string;
+            trashed: boolean;
+        };
         /** @description Free space of a disk Aegis depends on; byte values are null when it could not be measured */
         DiskSpaceDto: {
             /** Format: int64 */
@@ -2346,6 +2444,67 @@ export interface components {
             /** Format: date-time */
             readAt?: string | null;
         };
+        OriginDto: {
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            pageEditId: string;
+            ranges: components["schemas"]["SourceRangeDto"][];
+        };
+        OutputDto: {
+            categoryId?: string | null;
+            pages: components["schemas"]["PageRefDto"][];
+            subjects: components["schemas"]["SubjectDto"][];
+            title: string;
+            titleChosen: boolean;
+        };
+        PageDto: {
+            /** Format: float */
+            height: number;
+            /** Format: int32 */
+            index: number;
+            /** Format: float */
+            width: number;
+        };
+        PageEditDto: {
+            failureCode?: string | null;
+            /** Format: date-time */
+            finishedAt?: string | null;
+            id: string;
+            /** Format: date-time */
+            requestedAt: string;
+            requestedBy: string;
+            results: components["schemas"]["ResultDto"][];
+            /** @enum {string} */
+            state: "REQUESTED" | "COMPLETED" | "FAILED";
+        };
+        PageEditRequestDto: {
+            id: string;
+            outputs: components["schemas"]["OutputDto"][];
+        };
+        PageRefDto: {
+            documentId?: string | null;
+            /** Format: int32 */
+            pageIndex: number;
+            /** Format: int32 */
+            rotation: number;
+            /** @enum {string} */
+            source: "DOCUMENT" | "SCAN";
+        };
+        PageSpanDto: {
+            /** Format: int32 */
+            firstPage: number;
+            /** Format: int32 */
+            lastPage: number;
+        };
+        PagesDto: {
+            documentId: string;
+            pages: components["schemas"]["PageDto"][];
+            refusal?: string | null;
+            /** @enum {string} */
+            sourceKind: "PDF" | "PHOTO";
+            warnings: string[];
+        };
         PasswordChangeRequest: {
             currentPassword: string;
             newPassword: string;
@@ -2450,6 +2609,14 @@ export interface components {
             expectedVersion: number;
             title: string;
         };
+        ResultDto: {
+            documentId: string;
+            existing: boolean;
+            /** Format: int32 */
+            output: number;
+            title: string;
+            trashed: boolean;
+        };
         ReviewItemDto: {
             actions: string[];
             category: string;
@@ -2546,6 +2713,24 @@ export interface components {
             documentId: string;
             documentTitle?: string | null;
             documentTrashed: boolean;
+        };
+        SourceRangeDto: {
+            /** Format: int32 */
+            firstPage: number;
+            /** Format: int32 */
+            firstSourcePage: number;
+            /** Format: int32 */
+            lastPage: number;
+            /** Format: int32 */
+            lastSourcePage: number;
+            /** Format: int32 */
+            rotation: number;
+            sourceDocumentId?: string | null;
+            /** @enum {string} */
+            sourceKind: "DOCUMENT" | "SCAN";
+            /** @enum {string|null} */
+            sourceState?: "AVAILABLE" | "TRASHED" | "DELETED" | null;
+            sourceTitle?: string | null;
         };
         StatusRequest: {
             /** Format: int64 */
@@ -3944,6 +4129,28 @@ export interface operations {
             };
         };
     };
+    getDocumentDerivations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DerivationsDto"];
+                };
+            };
+        };
+    };
     setDocumentFilename: {
         parameters: {
             query?: never;
@@ -4070,6 +4277,51 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": string;
+                };
+            };
+        };
+    };
+    getDocumentPages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagesDto"];
+                };
+            };
+        };
+    };
+    getPagePreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                index: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
                 };
             };
         };
@@ -4725,6 +4977,56 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["NoticeDto"];
+                };
+            };
+        };
+    };
+    requestPageEdit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    plan: components["schemas"]["PageEditRequestDto"];
+                    /** Format: binary */
+                    scan?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageEditDto"];
+                };
+            };
+        };
+    };
+    getPageEdit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageEditDto"];
                 };
             };
         };
