@@ -151,8 +151,6 @@ public final class BulkAnalysis {
                 cancelledAt, finishedAt, items, version, false);
     }
 
-    // Progress ------------------------------------------------------------------------------------------------------
-
     public boolean running() {
         return state == State.RUNNING;
     }
@@ -278,8 +276,6 @@ public final class BulkAnalysis {
         items.put(document, require(document).with(newState, generation, outcome, code, now));
         changed.add(document);
     }
-
-    // Accessors -----------------------------------------------------------------------------------------------------
 
     public UUID id() {
         return id;

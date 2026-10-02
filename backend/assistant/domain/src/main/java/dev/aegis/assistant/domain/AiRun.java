@@ -211,8 +211,6 @@ public final class AiRun {
         return run;
     }
 
-    // Execution ----------------------------------------------------------------------------------------------------
-
     /**
      * Starts the next attempt when due. A run found {@code RUNNING} belongs to an attempt that was interrupted by a
      * restart; it is recorded as such and retried within the attempt and cost budgets.
@@ -422,8 +420,6 @@ public final class AiRun {
         return failAttempt(category, code, message, retryAfter, now);
     }
 
-    // Member commands -----------------------------------------------------------------------------------------------
-
     /**
      * Requests cancellation. Waiting runs stop immediately; a running attempt stops at its next checkpoint and never
      * applies its result. Returns false when the run had already ended.
@@ -471,8 +467,6 @@ public final class AiRun {
     public boolean retryable() {
         return state == RunState.FAILED || state == RunState.CANCELLED;
     }
-
-    // Internals -----------------------------------------------------------------------------------------------------
 
     private Optional<Checkpoint> interruptions(int forAttempt, Instant now) {
         if (!isCurrent(forAttempt)) {
@@ -565,8 +559,6 @@ public final class AiRun {
         return key;
     }
 
-    // Persistence support ---------------------------------------------------------------------------------------------
-
     /** Steps appended since the run was loaded or last saved. */
     public List<RunStep> pendingSteps() {
         return List.copyOf(pendingSteps);
@@ -585,8 +577,6 @@ public final class AiRun {
     public boolean isNew() {
         return fresh;
     }
-
-    // Accessors -------------------------------------------------------------------------------------------------------
 
     public RunId id() {
         return id;

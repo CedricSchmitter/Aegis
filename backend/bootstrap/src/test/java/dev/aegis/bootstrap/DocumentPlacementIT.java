@@ -60,8 +60,6 @@ class DocumentPlacementIT extends PostgresIT {
         model.reset();
     }
 
-    // Helpers ---------------------------------------------------------------------------------------------------
-
     private ApiClient loggedIn(String username) {
         ApiClient client = new ApiClient(port);
         assertThat(client.login(username, PASSWORD)).isTrue();
@@ -164,8 +162,6 @@ class DocumentPlacementIT extends PostgresIT {
     private long folderCount(String name) {
         return jdbc.sql("SELECT count(*) FROM categories WHERE name = ?").param(name).query(Long.class).single();
     }
-
-    // Tests -----------------------------------------------------------------------------------------------------
 
     @Test
     void aMatchingFolderTakesTheDocumentAutomaticallyAndTheMoveCanBeReverted() {

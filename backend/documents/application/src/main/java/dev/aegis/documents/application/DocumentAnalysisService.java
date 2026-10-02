@@ -130,8 +130,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         this.clock = clock;
     }
 
-    // Trigger -------------------------------------------------------------------------------------------------------
-
     /**
      * Called in the archival transaction: an upload marked for automatic analysis gets its run now that the archive
      * holds the OCR text. The run is requested on behalf of the uploader. Duplicate archival events find the
@@ -171,8 +169,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         analyses.save(analysis);
         return outcome;
     }
-
-    // Member requests -----------------------------------------------------------------------------------------------
 
     @Override
     public DocumentSummary requestAnalysis(Actor actor, DocumentId id, long expectedVersion) {
@@ -217,8 +213,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         }
         return new BulkResult(requested, skipped);
     }
-
-    // Bulk runs ------------------------------------------------------------------------------------------------------
 
     /**
      * Requests one document of a bulk run with the same checks as a member's selection. A document that
@@ -276,8 +270,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         }
         return Optional.empty();
     }
-
-    // Member decisions ----------------------------------------------------------------------------------------------
 
     @Override
     public DocumentSummary decideTitle(Actor actor, DocumentId id, boolean accept, long expectedVersion) {
@@ -374,8 +366,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         analyses.save(analysis);
         return presenter.summarize(load(id));
     }
-
-    // Classifier contract -------------------------------------------------------------------------------------------
 
     @Override
     public Input input(Actor actor, DocumentId id, int generation) {
@@ -617,8 +607,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
                 ClassificationPolicy.doubtful(flags), assessment.generation(), model);
     }
 
-    // Restore -------------------------------------------------------------------------------------------------------
-
     @Override
     public ImportDocumentAnalysis.Outcome importAnalysis(Actor actor, DocumentId id, AnalysisRecord record) {
         access.requireMember(actor);
@@ -639,8 +627,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         analyses.save(analysis);
         return ImportDocumentAnalysis.Outcome.APPLIED;
     }
-
-    // Helpers -------------------------------------------------------------------------------------------------------
 
     private String ocrText(Document document) {
         if (document.state() != ProcessingState.ARCHIVED || document.paperlessDocumentId().isEmpty()) {

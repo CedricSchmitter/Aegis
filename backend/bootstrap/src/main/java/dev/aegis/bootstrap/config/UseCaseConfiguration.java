@@ -171,8 +171,6 @@ import org.springframework.util.unit.DataSize;
 @Configuration
 public class UseCaseConfiguration {
 
-    // Identity ------------------------------------------------------------------------------------------------
-
     @Bean
     HouseholdAccess householdAccess(MemberRepository members) {
         return new HouseholdAccessPolicy(members);
@@ -218,8 +216,6 @@ public class UseCaseConfiguration {
     Trash.RecoveryWindow trashRecoveryWindow(@Value("${aegis.trash.recovery-window:30d}") Duration window) {
         return new Trash.RecoveryWindow(window);
     }
-
-    // Documents -----------------------------------------------------------------------------------------------
 
     /**
      * The persons a document can be about, read through the identity contract (ADR-0017). The documents context
@@ -480,8 +476,6 @@ public class UseCaseConfiguration {
         return new ArchiveTextService(documents, checks, archive, batchSize, clock);
     }
 
-    // Contracts -----------------------------------------------------------------------------------------------
-
     @Bean
     ContractPresenter contractPresenter(DocumentReferenceQuery documents) {
         return new ContractPresenter(documents);
@@ -531,8 +525,6 @@ public class UseCaseConfiguration {
     ContractExportQuery contractExportQuery(ContractServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ContractExportQuery.class, services.queries(), tm);
     }
-
-    // Planning ------------------------------------------------------------------------------------------------
 
     @Bean
     TaskPresenter taskPresenter(DocumentReferenceQuery documents) {
@@ -595,8 +587,6 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(CancellationReminderPublication.class, services.service(), tm);
     }
 
-    // Notifications -------------------------------------------------------------------------------------------
-
     record NotificationServices(NoticeService notices) {
     }
 
@@ -619,8 +609,6 @@ public class UseCaseConfiguration {
     ForgetNotices forgetNotices(NotificationServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ForgetNotices.class, services.notices(), tm);
     }
-
-    // Review inbox -------------------------------------------------------------------------------------------
 
     record ReviewServices(ReviewService service) {
     }
@@ -652,8 +640,6 @@ public class UseCaseConfiguration {
     ForgetReviewCards forgetReviewCards(ReviewServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ForgetReviewCards.class, services.service(), tm);
     }
-
-    // Operations ----------------------------------------------------------------------------------------------
 
     /**
      * Each recurring job the status page reports (ADR-0013) is declared with the interval it runs at: the
@@ -704,8 +690,6 @@ public class UseCaseConfiguration {
                 new RecurringJob(ArchiveTextCheckTask.NAME, ArchiveTextCheckTask.INTERVAL),
                 new RecurringJob(ReconciliationTask.NAME, ReconciliationTask.INTERVAL));
     }
-
-    // Portability ---------------------------------------------------------------------------------------------
 
     record PortabilityServices(ExportService exports) {
     }

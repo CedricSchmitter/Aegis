@@ -265,8 +265,6 @@ public class DocumentClassificationHandler implements WorkloadHandler {
         documents.apply(run.actor(), (Assessment) output.value(), "ai-run:" + run.id(), run.model().model());
     }
 
-    // Output schema and parsing ---------------------------------------------------------------------------------------
-
     static Map<String, Object> schema() {
         Map<String, Object> nullableString = Map.of("anyOf", List.of(Map.of("type", "string"),
                 Map.of("type", "null")));

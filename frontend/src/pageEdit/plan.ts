@@ -94,8 +94,6 @@ export function usedDocuments(plan: PagePlan): string[] {
   return ids;
 }
 
-// --- Editing -------------------------------------------------------------------------------------------------------
-
 /*
  * Moves work on a flat sequence of tokens: the pages of all outputs in order, with a marker before every output but
  * the first. A page moved over a marker changes document, and a document left without pages disappears together
@@ -282,8 +280,6 @@ export function setDetails(plan: PagePlan, outputKey: string, details: OutputDet
   return withOutputs(plan, plan.outputs.map((output) => (output.key === outputKey ? { ...output, details } : output)));
 }
 
-// --- Prefill -------------------------------------------------------------------------------------------------------
-
 export function sourceOf(plan: PagePlan, documentId: string): SourceInfo | undefined {
   return plan.sources.find((source) => source.documentId === documentId);
 }
@@ -328,8 +324,6 @@ export function detailsOf(plan: PagePlan, output: PlanOutput): OutputDetails {
 export function sourceSubjects(subjects: components["schemas"]["SubjectDto"][]): string[] {
   return subjects.map(subjectKey);
 }
-
-// --- Checks and the request ----------------------------------------------------------------------------------------
 
 /** Why the plan cannot be sent yet, as error codes of the API (localized under `errors.`). */
 export function planProblems(plan: PagePlan, words: TitleWords): string[] {

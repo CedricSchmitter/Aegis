@@ -318,7 +318,6 @@ class AiRunServiceTest {
         assertThat(Workload.fromConfigKey(" Connection-Check ")).isEqualTo(Workload.CONNECTION_CHECK);
         assertThatThrownBy(() -> Workload.fromConfigKey("shell")).isInstanceOf(IllegalArgumentException.class);
     }
-    // Provider preference ---------------------------------------------------------------------------------------------
 
     private RunView classifyAs(Actor actor, String documentId) {
         return kit.service().request(actor, new RunRequest("DOCUMENT_CLASSIFICATION", "classification:" + documentId,

@@ -103,8 +103,6 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
         this.clock = clock;
     }
 
-    // Preview and start ---------------------------------------------------------------------------------------------
-
     @Override
     public BulkAnalysisPreview preview(Actor actor, ScopeRequest request) {
         access.requireMember(actor);
@@ -200,8 +198,6 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
         }
     }
 
-    // Cancellation --------------------------------------------------------------------------------------------------
-
     @Override
     public BulkAnalysisView cancel(Actor actor, UUID id) {
         access.requireMember(actor);
@@ -226,8 +222,6 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
         bulks.save(bulk);
         return view(load(id), categories.load());
     }
-
-    // Job step ------------------------------------------------------------------------------------------------------
 
     @Override
     public Step advance(UUID bulkId) {
@@ -338,8 +332,6 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
         }
         return true;
     }
-
-    // Queries -------------------------------------------------------------------------------------------------------
 
     @Override
     public List<BulkAnalysisView> recent(Actor actor) {
