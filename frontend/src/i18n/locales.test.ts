@@ -115,6 +115,8 @@ describe("locale catalogs", () => {
       ...SKIP_REASONS.map((reason) => `bulkAnalysis.skipReason.${reason}`),
       ...["classified", "needsReview", "failed", "skipped", "pending", "notClassified", "cancelled", "superseded"]
         .map((count) => `bulkAnalysis.count.${count}`),
+      // What the page editor's new documents do not carry over (ADR-0024).
+      ...["SIGNED", "EMBEDDED_FILES"].map((warning) => `pageEdit.warning.${warning}`),
       // Short reasons for the failure codes of review cards and archival notices (issue #96).
       ...FAILURE_REASONS.map((reason) => `review.failureReason.${reason}`),
     ];

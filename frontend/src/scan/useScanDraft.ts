@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AUTOMATIC, MAX_PAGES, movePage, nextQuarterTurn, settledSettings, type ScanDraft, type ScanPage } from "./draft";
-import { clearDraft, deletePage, loadDraft, saveDraft } from "./draftStore";
+import { uploadScanDrafts, type DraftStore } from "./draftStore";
 import type { Quad } from "./geometry";
 import { buildPdf } from "./pdf";
 import type { PageSettings } from "./process";
@@ -15,6 +15,8 @@ export interface ScanDraftState {
   name: string | null;
   /** Number of pages restored from an earlier visit (0 if none), for a notice. */
   restored: number;
+  /** False until a scan stored on an earlier visit has been looked up. */
+  ready: boolean;
   problem: ScanProblem | null;
   /** True while any page is being processed; the scan cannot be saved then. */
   processing: boolean;
@@ -28,8 +30,11 @@ export interface ScanDraftState {
   /** Keep the whole photo without the scan look. */
   keepPhoto(id: string): void;
   clear(): Promise<void>;
-  /** The scan as one PDF file; only when no page is being processed. */
-  toPdf(): Promise<File>;
+  /**
+   * The scan as one PDF file; only when no page is being processed. `order` names the pages to include and their
+   * order (the page editor arranges new pages itself); without it, all pages in the scan's order.
+   */
+  toPdf(order?: readonly string[]): Promise<File>;
 }
 
 /**
@@ -37,9 +42,15 @@ export interface ScanDraftState {
  * after another in a worker and kept in IndexedDB until the scan is saved or discarded. `draftRef` is the source of
  * truth; React state mirrors it for rendering, so asynchronous results always apply to the latest pages.
  */
-export function useScanDraft(memberId: string | null, newName: () => string): ScanDraftState {
+export function useScanDraft(
+  memberId: string | null,
+  newName: () => string,
+  store: DraftStore = uploadScanDrafts,
+): ScanDraftState {
+  const { loadDraft, saveDraft, deletePage, clearDraft } = store;
   const [draft, setDraft] = useState<ScanDraft | null>(null);
   const [restored, setRestored] = useState(0);
+  const [ready, setReady] = useState(false);
   const [problem, setProblem] = useState<ScanProblem | null>(null);
   const draftRef = useRef<ScanDraft | null>(null);
   const processor = useRef<PageProcessor | null>(null);
@@ -48,7 +59,7 @@ export function useScanDraft(memberId: string | null, newName: () => string): Sc
     draftRef.current = next;
     setDraft(next);
     if (next) void saveDraft(next, changed);
-  }, []);
+  }, [saveDraft]);
 
   const replacePage = useCallback(
     (id: string, change: (page: ScanPage) => ScanPage): ScanPage | null => {
@@ -78,7 +89,7 @@ export function useScanDraft(memberId: string | null, newName: () => string): Sc
         commit({ ...current, pages });
       }
     },
-    [commit, memberId],
+    [clearDraft, commit, deletePage, memberId],
   );
 
   const processPage = useCallback(
@@ -115,7 +126,9 @@ export function useScanDraft(memberId: string | null, newName: () => string): Sc
     if (!memberId) return;
     let active = true;
     void loadDraft(memberId).then((stored) => {
-      if (!active || !stored || draftRef.current) return;
+      if (!active) return;
+      setReady(true);
+      if (!stored || draftRef.current) return;
       commit(stored);
       setRestored(stored.pages.length);
       // Pages whose processing was interrupted by the reload are processed again.
@@ -124,7 +137,7 @@ export function useScanDraft(memberId: string | null, newName: () => string): Sc
     return () => {
       active = false;
     };
-  }, [commit, memberId, processPage]);
+  }, [commit, loadDraft, memberId, processPage]);
 
   useEffect(
     () => () => {
@@ -158,6 +171,7 @@ export function useScanDraft(memberId: string | null, newName: () => string): Sc
     pages,
     name: draft?.name ?? null,
     restored,
+    ready,
     problem,
     processing: pages.some((page) => page.result === null),
     addPhotos,
@@ -191,11 +205,16 @@ export function useScanDraft(memberId: string | null, newName: () => string): Sc
       setRestored(0);
       if (memberId) await clearDraft(memberId);
     },
-    toPdf: async () => {
+    toPdf: async (order) => {
       const current = draftRef.current;
-      if (!current || current.pages.some((page) => page.result === null)) throw new Error("scan is not ready");
+      const chosen = order
+        ? order.map((id) => current?.pages.find((page) => page.id === id))
+        : (current?.pages ?? []);
+      if (!current || chosen.length === 0 || chosen.some((page) => !page || page.result === null)) {
+        throw new Error("scan is not ready");
+      }
       const pdfPages = await Promise.all(
-        current.pages.map(async (page) => ({
+        (chosen as ScanPage[]).map(async (page) => ({
           jpeg: new Uint8Array(await page.result!.page.arrayBuffer()),
           width: page.result!.width,
           height: page.result!.height,

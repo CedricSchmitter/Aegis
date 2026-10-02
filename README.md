@@ -142,12 +142,15 @@ days; its results are grouped on one page and in one inbox card
 finds the sheet, straightens it, gives it a scan look and assembles all pages held before saving into one PDF,
 which is the original; pages can be corrected, rotated, reordered and survive a closed tab. Such a scan has no
 text layer, so its page also offers the searchable PDF the archive generated from it
-([ADR-0016](docs/architecture/adr/ADR-0016-scanned-photo-pages.md)). The page editor's API creates new documents
-from pages of stored documents, photos and newly scanned pages: split, merge, reorder, rotate and remove pages.
-Sources stay unchanged, every result is captured like an upload and records where its pages came from, which
-portable export schema 11 carries and a restore reinstates, and page previews are rendered on the server
-([ADR-0024](docs/architecture/adr/ADR-0024-page-editor.md)); the editor screen of the app is not built yet
-(issue #82). Photos chosen as a file or shared from
+([ADR-0016](docs/architecture/adr/ADR-0016-scanned-photo-pages.md)). The page editor ("Seiten bearbeiten" on a
+document's page or for the documents ticked in the list) creates new documents from pages of stored documents, photos
+and pages photographed in the editor with the same scan pipeline: markers between pages split, added documents
+merge, and pages can be dragged or moved with buttons, rotated and left out. Titles, folder and subjects are prefilled
+from the first page's source, the plan survives a closed tab, and the result is followed until the new documents
+exist. Sources stay unchanged, every result is captured like an upload and its page shows where its pages came from
+("Erstellt aus Seiten 1–3 von …", "Daraus erstellt" on the source), which the portable export schema 11 carries and
+a restore reinstates; page previews are rendered on the server
+([ADR-0024](docs/architecture/adr/ADR-0024-page-editor.md)). Photos chosen as a file or shared from
 Android (JPEG, PNG, WebP, HEIC) are accepted by their content, stay the original and are archived by Paperless into
 a searchable PDF that is offered next to the photo ([ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md)).
 After archival Aegis records, without AI, whether the archive recognized text in a document; a photo held at an
