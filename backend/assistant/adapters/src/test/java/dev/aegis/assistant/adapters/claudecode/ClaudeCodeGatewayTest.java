@@ -208,7 +208,7 @@ class ClaudeCodeGatewayTest {
         assertThat(cli.calls).singleElement().satisfies(call -> {
             assertThat(call.systemPrompt()).startsWith("You answer household questions.")
                     .contains("- search_documents: Searches the documents.")
-                    .contains("Input schema: {\"type\":\"object\"");
+                    .contains("Input schema: {").contains("\"query\":{\"type\":\"string\"}");
             assertThat(call.jsonSchema()).extractingByKey("required")
                     .isEqualTo(List.of(ToolProtocol.TOOL_CALLS, ToolProtocol.ANSWER));
             assertThat(conversationSent(call)).containsExactly(
