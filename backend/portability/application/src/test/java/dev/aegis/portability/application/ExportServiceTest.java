@@ -6,6 +6,9 @@ import dev.aegis.contracts.application.api.ContractExportQuery;
 import dev.aegis.contracts.application.api.ContractExportRecord;
 import dev.aegis.contracts.application.api.ContractExportRecord.FactExportRecord;
 import dev.aegis.documents.application.api.CatalogExport;
+import dev.aegis.documents.application.api.DerivationPortability;
+import dev.aegis.documents.application.api.DerivationPortability.DerivationRecord;
+import dev.aegis.documents.application.api.DerivationPortability.RangeRecord;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentExportRecord;
 import dev.aegis.documents.application.api.OriginalContent;
@@ -18,6 +21,7 @@ import dev.aegis.planning.application.api.TaskExportRecord;
 import dev.aegis.portability.application.api.ExportSummary;
 import dev.aegis.portability.application.ports.ExportSerializer;
 import dev.aegis.portability.application.ports.ExportStore;
+import dev.aegis.review.application.api.ReviewPortability;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
@@ -277,6 +281,100 @@ class ExportServiceTest {
         assertThat(names.get(second.toString())).isEqualTo("RECHNUNG_aaaaaaaa000040008000000000000002.pdf");
         assertThat(names.get(third.toString())).isEqualTo("Rechnung_bbbbbbbb.pdf");
         assertThat(names.values()).doesNotHaveDuplicates();
+    }
+
+    /** Schema 11 carries where the pages of a page-editor document came from, by Aegis document id. */
+    @Test
+    void exportsWhereThePagesOfAPageEditorDocumentCameFromInDataAndReadableFiles() {
+        DocumentId source = DocumentId.of("cccccccc-0000-4000-8000-000000000001");
+        DocumentId result = DocumentId.of("dddddddd-0000-4000-8000-000000000002");
+        DocumentId deleted = DocumentId.of("eeeeeeee-0000-4000-8000-000000000003");
+        java.util.UUID pageEdit = java.util.UUID.fromString("ffffffff-0000-4000-8000-000000000004");
+        List<DocumentExportRecord> records = List.of(
+                new DocumentExportRecord(source, "Stromrechnung", "FILENAME", "strom.pdf", "Strom_cccccccc.pdf",
+                        "application/pdf", 1, "b".repeat(64), anna, NOW, List.of(), "ARCHIVED", 1, NOW, null, null,
+                        null),
+                new DocumentExportRecord(result, "Stromrechnung, Teil 2", "FILENAME", "teil2.pdf",
+                        "Teil2_dddddddd.pdf", "application/pdf", 1, "c".repeat(64), anna, NOW, List.of(),
+                        "ARCHIVED", 2, NOW, null, null, null));
+        DocumentExportQuery documents = new DocumentExportQuery() {
+            @Override
+            public List<DocumentExportRecord> exportAll(Actor actor) {
+                return records;
+            }
+
+            @Override
+            public OriginalContent originalForExport(Actor actor, DocumentId id) {
+                throw new OriginalUnavailableException("not needed here");
+            }
+
+            @Override
+            public CatalogExport exportCatalog(Actor actor) {
+                return new CatalogExport(List.of(), List.of());
+            }
+        };
+        DerivationPortability derivations = new DerivationPortability() {
+            @Override
+            public List<DerivationRecord> exportAll(Actor actor) {
+                return List.of(new DerivationRecord(result, pageEdit, anna, NOW, List.of(
+                        new RangeRecord(1, 2, "DOCUMENT", source, 3, 4, 90),
+                        new RangeRecord(3, 3, "SCAN", null, 1, 1, 0),
+                        new RangeRecord(4, 4, "DOCUMENT", null, 7, 7, 0))));
+            }
+
+            @Override
+            public ImportResult importDerivation(Actor actor, DerivationRecord record) {
+                throw new UnsupportedOperationException();
+            }
+        };
+        MemoryStore store = new MemoryStore();
+        ExportService service = new ExportService(documents, derivations, actor -> List.of(), actor -> List.of(),
+                new ReviewPortability() {
+                    @Override
+                    public List<Record> exportAll(Actor actor) {
+                        return List.of();
+                    }
+
+                    @Override
+                    public void importAll(Actor actor, List<Record> records) {
+                    }
+                }, onlyAnna(), store, new StubSerializer(), actor -> {
+                }, Clock.fixed(NOW, ZoneOffset.UTC), "test");
+
+        service.export(new Actor(anna));
+
+        String data = new String(store.staged.get(ExportFormat.DOCUMENTS_JSON), StandardCharsets.UTF_8);
+        assertThat(data).contains("schemaVersion=11")
+                .contains("derivedFrom=DerivationEntry[pageEditId=" + pageEdit + ", createdBy=" + anna
+                        + ", createdAt=" + NOW + ", ranges=[DerivationRangeEntry[firstPage=1, lastPage=2, "
+                        + "sourceKind=DOCUMENT, sourceDocumentId=" + source + ", firstSourcePage=3, "
+                        + "lastSourcePage=4, rotation=90], DerivationRangeEntry[firstPage=3, lastPage=3, "
+                        + "sourceKind=SCAN, sourceDocumentId=null")
+                .contains("sourceKind=DOCUMENT, sourceDocumentId=null, firstSourcePage=7")
+                .contains("trash=null, derivedFrom=null]")
+                .doesNotContain(deleted.toString());
+        String summary = "pages 1-2: pages 3-4 of Stromrechnung (turned 90 degrees); page 3: scanned page 1; "
+                + "page 4: page 7 of a deleted document";
+        String documentsCsv = new String(store.staged.get(ExportFormat.DOCUMENTS_CSV), StandardCharsets.UTF_8);
+        assertThat(documentsCsv).contains("analysisStatus,trashedAt,derivedFrom")
+                .contains("NOT_REQUESTED,," + Csv.quote(summary));
+        String index = new String(store.staged.get(ExportFormat.INDEX_MD), StandardCharsets.UTF_8);
+        assertThat(index).contains("Stromrechnung, Teil 2 (original not included)")
+                .contains(", created from " + summary);
+    }
+
+    private MemberDirectory onlyAnna() {
+        return new MemberDirectory() {
+            @Override
+            public List<MemberSummary> listMembers(Actor actor) {
+                return List.of(new MemberSummary(anna, "anna", "Anna", ProductLocale.DE, true));
+            }
+
+            @Override
+            public Optional<MemberSummary> findMember(MemberId id) {
+                return Optional.empty();
+            }
+        };
     }
 
     private static DocumentExportRecord record(DocumentId id, String filename) {

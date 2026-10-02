@@ -202,6 +202,11 @@ final class PageEditDoubles {
                     .toList();
         }
 
+        @Override
+        public List<Derivation> findAll() {
+            return List.copyOf(derivations.values());
+        }
+
         /** What permanently deleting a source does to the ranges that name it. */
         void sourceDeleted(DocumentId source) {
             derivations.replaceAll((document, derivation) -> new Derivation(document, derivation.pageEdit(),

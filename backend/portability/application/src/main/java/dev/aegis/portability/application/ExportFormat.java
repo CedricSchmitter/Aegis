@@ -14,13 +14,14 @@ import java.util.Set;
  * adds the contracts with every observed fact, its provenance, validity period and review state; schema 8 adds
  * the trash state of documents, tasks and contracts (ADR-0010); schema 9 adds whether a member is a person or the
  * household's assistant account and no longer contains the subject "both" (ADR-0017); schema 10 adds each member's
- * palette and effects preference (ADR-0019). Older files restore without
+ * palette and effects preference (ADR-0019); schema 11 adds where the pages of a document created by the page editor
+ * came from (ADR-0024). Older files restore without
  * the newer parts, records from files before schema 8 come back as not trashed, and a {@code HOUSEHOLD} subject of
  * an older file comes back as one subject per person.
  */
 public final class ExportFormat {
-    public static final int SCHEMA_VERSION = 10;
-    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    public static final int SCHEMA_VERSION = 11;
+    public static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
     public static final String MANIFEST = "manifest.json";
     public static final String DOCUMENTS_JSON = "data/documents.json";
     public static final String TASKS_JSON = "data/tasks.json";
@@ -81,13 +82,32 @@ public final class ExportFormat {
     /**
      * {@code originalFilename} is the immutable upload name; {@code filename} the friendly name under which the
      * unchanged original is stored in {@code originalPath}. {@code titleOrigin} and {@code analysis} are absent
-     * before schema 3.
+     * before schema 3. {@code derivedFrom} is present only for a document created by the page editor and absent
+     * before schema 11.
      */
     public record DocumentEntry(String id, String title, String titleOrigin, String originalFilename,
             String filename, String contentType, long sizeBytes, String checksumSha256, String uploadedBy,
             Instant uploadedAt, List<SubjectEntry> subjects, String processingState, Integer paperlessDocumentId,
             Instant archivedAt, String originalPath, ClassificationEntry classification, AnalysisEntry analysis,
-            TrashEntry trash) {
+            TrashEntry trash, DerivationEntry derivedFrom) {
+    }
+
+    /**
+     * Where the pages of a document created by the page editor came from: who created it in which operation, and
+     * its pages as ordered ranges. The operation itself is not exported (ADR-0024).
+     */
+    public record DerivationEntry(String pageEditId, String createdBy, Instant createdAt,
+            List<DerivationRangeEntry> ranges) {
+    }
+
+    /**
+     * Pages {@code firstPage}..{@code lastPage} (one-based) are pages {@code firstSourcePage}..{@code lastSourcePage}
+     * of the source turned by {@code rotation} degrees. {@code sourceKind} is {@code DOCUMENT} or {@code SCAN};
+     * {@code sourceDocumentId} is an Aegis document id, null for newly scanned pages and for a source deleted
+     * permanently.
+     */
+    public record DerivationRangeEntry(int firstPage, int lastPage, String sourceKind, String sourceDocumentId,
+            int firstSourcePage, int lastSourcePage, int rotation) {
     }
 
     /** A name the classifier found that was not in the vocabulary, with the member's decision. */

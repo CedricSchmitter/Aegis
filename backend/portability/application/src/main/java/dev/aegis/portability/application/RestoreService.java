@@ -3,6 +3,9 @@ package dev.aegis.portability.application;
 import dev.aegis.contracts.application.api.ContractExportRecord;
 import dev.aegis.contracts.application.api.ContractExportRecord.FactExportRecord;
 import dev.aegis.contracts.application.api.ImportContract;
+import dev.aegis.documents.application.api.DerivationPortability;
+import dev.aegis.documents.application.api.DerivationPortability.DerivationRecord;
+import dev.aegis.documents.application.api.DerivationPortability.RangeRecord;
 import dev.aegis.documents.application.api.ImportCatalog;
 import dev.aegis.documents.application.api.ImportCatalog.AssignmentImport;
 import dev.aegis.documents.application.api.ImportCatalog.CatalogImportResult;
@@ -27,6 +30,7 @@ import dev.aegis.portability.application.ExportFormat.CatalogFile;
 import dev.aegis.portability.application.ExportFormat.ClassificationEntry;
 import dev.aegis.portability.application.ExportFormat.ContractEntry;
 import dev.aegis.portability.application.ExportFormat.ContractsFile;
+import dev.aegis.portability.application.ExportFormat.DerivationEntry;
 import dev.aegis.portability.application.ExportFormat.DocumentEntry;
 import dev.aegis.portability.application.ExportFormat.DocumentsFile;
 import dev.aegis.portability.application.ExportFormat.Manifest;
@@ -67,7 +71,9 @@ import java.util.UUID;
  * Restore into a (fresh or existing) instance. Verifies manifest checksums, maps members by username, restores the
  * shared catalog, re-imports originals under their stable ids and restores tasks and contracts with their source
  * links. The subject "both" of an export before schema 9 becomes one subject per person of this household, the
- * same mapping the startup migration applies (ADR-0017). An exported classification is applied only to a document that is still unclassified and an existing
+ * same mapping the startup migration applies (ADR-0017). Once all documents are back, a document created by the
+ * page editor gets its page ranges back; a range whose source is not stored here names a deleted source (ADR-0024).
+ * An exported classification is applied only to a document that is still unclassified, an existing derivation or
  * contract is left untouched, so a repeated restore never overwrites newer local edits.
  */
 public class RestoreService implements RestoreExport {
@@ -81,21 +87,14 @@ public class RestoreService implements RestoreExport {
     private final ImportTask importTask;
     private final ImportContract importContract;
     private final ReviewPortability reviews;
+    private final DerivationPortability derivations;
     private final HouseholdAccess access;
     private final SecureRandom random = new SecureRandom();
 
     public RestoreService(ExportSourceOpener opener, ExportSerializer serializer, MemberDirectory members,
             ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
             ImportDocumentAnalysis importAnalysis, ImportTask importTask, ImportContract importContract,
-            HouseholdAccess access) {
-        this(opener,serializer,members,provisioning,importDocument,importCatalog,importAnalysis,importTask,importContract,
-                new ReviewPortability(){public List<Record> exportAll(Actor actor){return List.of();}public void importAll(Actor actor,List<Record> records){}},access);
-    }
-
-    public RestoreService(ExportSourceOpener opener, ExportSerializer serializer, MemberDirectory members,
-            ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
-            ImportDocumentAnalysis importAnalysis, ImportTask importTask, ImportContract importContract,
-            ReviewPortability reviews, HouseholdAccess access) {
+            ReviewPortability reviews, DerivationPortability derivations, HouseholdAccess access) {
         this.opener = opener;
         this.serializer = serializer;
         this.members = members;
@@ -106,6 +105,7 @@ public class RestoreService implements RestoreExport {
         this.importTask = importTask;
         this.importContract = importContract;
         this.reviews = reviews;
+        this.derivations = derivations;
         this.access = access;
     }
 
@@ -127,16 +127,18 @@ public class RestoreService implements RestoreExport {
             List<MemberId> persons = members.listMembers(actor).stream()
                     .filter(member -> member.active() && member.isPerson()).map(MemberSummary::id).toList();
             CatalogImportResult catalog = restoreCatalog(actor, source, persons, warnings);
-            int[] documentCounts = restoreDocuments(actor, source, read(source, ExportFormat.DOCUMENTS_JSON,
-                    DocumentsFile.class), memberMapping, persons, catalog, warnings);
+            DocumentsFile documentsFile = read(source, ExportFormat.DOCUMENTS_JSON, DocumentsFile.class);
+            int[] documentCounts = restoreDocuments(actor, source, documentsFile, memberMapping, persons, catalog,
+                    warnings);
+            int[] derivationCounts = restoreDerivations(actor, documentsFile, memberMapping, warnings);
             int[] taskCounts = restoreTasks(actor, read(source, ExportFormat.TASKS_JSON, TasksFile.class),
                     memberMapping);
             int[] contractCounts = restoreContracts(actor, source, memberMapping);
             restoreReviews(actor, source, memberMapping);
             return new RestoreReport(manifest.generation(), documentCounts[0], documentCounts[1], taskCounts[0],
                     taskCounts[1], catalog.labelsCreated(), catalog.foldersCreated(), documentCounts[2],
-                    documentCounts[3], documentCounts[4], contractCounts[0], contractCounts[1], memberMapping,
-                    warnings);
+                    documentCounts[3], documentCounts[4], contractCounts[0], contractCounts[1], derivationCounts[0],
+                    derivationCounts[1], memberMapping, warnings);
         } catch (IOException e) {
             throw new UncheckedIOException("restore from " + sourceLocation + " failed", e);
         }
@@ -270,6 +272,53 @@ public class RestoreService implements RestoreExport {
             }
         }
         return new int[] {imported, present, classificationsApplied, classificationsKept, analysesApplied};
+    }
+
+    /**
+     * The page ranges of documents created by the page editor, after every document is restored so that sources
+     * listed later in the file are found; absent before schema 11. A document skipped above has none restored.
+     *
+     * @return imported, already present
+     */
+    private int[] restoreDerivations(Actor actor, DocumentsFile file, Map<String, String> memberMapping,
+            List<String> warnings) {
+        int imported = 0;
+        int present = 0;
+        for (DocumentEntry entry : file.documents()) {
+            DerivationEntry derivation = entry.derivedFrom();
+            if (derivation == null) {
+                continue;
+            }
+            var result = derivations.importDerivation(actor, derivationRecord(entry.id(), derivation,
+                    memberMapping));
+            switch (result.outcome()) {
+                case IMPORTED -> imported++;
+                case ALREADY_PRESENT -> present++;
+                case DOCUMENT_MISSING -> {
+                    // already reported as a skipped document
+                }
+            }
+            if (result.sourcesCleared() > 0) {
+                warnings.add("document " + entry.id() + ": " + result.sourcesCleared()
+                        + " page range(s) restored as from a deleted source, because the source is not stored here");
+            }
+        }
+        return new int[] {imported, present};
+    }
+
+    private static DerivationRecord derivationRecord(String documentId, DerivationEntry entry,
+            Map<String, String> memberMapping) {
+        if (entry.pageEditId() == null || entry.createdBy() == null || entry.createdAt() == null
+                || entry.ranges() == null) {
+            throw new InvalidInputException("export.derivation.invalid",
+                    "Incomplete derivation of document " + documentId);
+        }
+        return new DerivationRecord(DocumentId.of(documentId), UUID.fromString(entry.pageEditId()),
+                mapOptionalMember(memberMapping, entry.createdBy()), entry.createdAt(), entry.ranges().stream()
+                        .map(range -> new RangeRecord(range.firstPage(), range.lastPage(), range.sourceKind(),
+                                range.sourceDocumentId() == null ? null : DocumentId.of(range.sourceDocumentId()),
+                                range.firstSourcePage(), range.lastSourcePage(), range.rotation()))
+                        .toList());
     }
 
     private ClassificationOutcome restoreClassification(Actor actor, DocumentEntry entry,
