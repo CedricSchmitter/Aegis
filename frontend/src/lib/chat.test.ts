@@ -24,6 +24,13 @@ describe("answer segments", () => {
     ]);
   });
 
+  it("drops bold markers, because answers are shown as plain text", () => {
+    expect(answerSegments("**Telekom** zuerst [1]", [citation(1)])).toEqual([
+      { kind: "text", text: "Telekom zuerst " },
+      { kind: "citation", number: 1 },
+    ]);
+  });
+
   it("leaves bracketed numbers that name no citation as text", () => {
     expect(answerSegments("Vertrag [4711] gilt [3].", [citation(1)])).toEqual([{ kind: "text", text: "Vertrag [4711] gilt [3]." }]);
   });

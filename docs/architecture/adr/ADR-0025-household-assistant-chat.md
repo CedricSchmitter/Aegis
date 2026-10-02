@@ -91,6 +91,8 @@ subscription has no streaming, and the progress already shows what happens.
 - Every model call resends the conversation, so long research costs more input tokens on the subscription than on the
   API; the chat run budget (0.10 USD on the API, 0.50 USD per run on the subscription) and the tool and model call
   limits bound it.
+- The text Paperless delivers for the household's documents carried no page breaks in the live check on 2026-10-02,
+  so document citations show no page yet. Page-accurate quotes need the text per page of the archive PDF.
 - Quotes are checked for presence, not for whether they support the sentence that cites them; the evidence level and
   caveats remain the model's assessment.
 - Conversations are not part of the portable export; they are personal working notes in the database backup.

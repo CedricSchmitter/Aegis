@@ -11,7 +11,9 @@ export type AnswerSegment = { kind: "text"; text: string } | { kind: "citation";
  * Splits an answer into text and citation markers such as [2] or [1, 3]. A marker that names no citation stays text,
  * so a bracketed number in the answer itself is never turned into a broken link.
  */
-export function answerSegments(text: string, citations: readonly ChatCitationDto[]): AnswerSegment[] {
+export function answerSegments(answer: string, citations: readonly ChatCitationDto[]): AnswerSegment[] {
+  // Answers are plain text; bold markers a model adds anyway would show as asterisks.
+  const text = answer.replace(/\*\*(.+?)\*\*/g, "$1");
   const known = new Set(citations.map((citation) => citation.number));
   const segments: AnswerSegment[] = [];
   let rest = 0;

@@ -90,7 +90,8 @@ public class ChatHandler implements WorkloadHandler {
 
             How to answer:
             - Answer in the language of the question; if that is unclear, in %s. Be concise and concrete: dates, \
-            amounts, names and deadlines.
+            amounts, names and deadlines. Write plain text without Markdown: short paragraphs, and lines that \
+            start with "- " for lists.
             - Support every statement about the household's records with a citation. Number the citations in the \
             order of the citations array and refer to them in the text as [1], [2] and so on.
             - A document citation quotes the words exactly as read_document returned them: a short passage of at \
