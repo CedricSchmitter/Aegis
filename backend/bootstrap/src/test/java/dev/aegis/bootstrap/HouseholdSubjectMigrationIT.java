@@ -94,7 +94,7 @@ class HouseholdSubjectMigrationIT extends PostgresIT {
         // Archival changes record versions; wait for it so that only the migration could change them below.
         awaitArchived(anna, house, withBen, filed, withAnna);
 
-        // State as the previous release stored it: "both" on documents, on a folder and in analysis suggestions.
+        // Legacy state: "both" on documents, on a folder and in analysis suggestions.
         jdbc.update("INSERT INTO document_subjects (document_id, kind) VALUES (?, 'HOUSEHOLD'), (?, 'HOUSEHOLD')",
                 house.value(), withBen.value());
         jdbc.update("INSERT INTO category_implied_subjects (category_id, kind) VALUES (?, 'HOUSEHOLD')", folder.id());

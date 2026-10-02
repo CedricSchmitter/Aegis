@@ -126,7 +126,7 @@ class TextRecognitionIT extends PostgresIT {
         String id = upload(anna, photo);
         awaitTextState(anna, id, "RECOGNIZED");
 
-        // A document archived before this feature has no check yet.
+        // A document archived before text checks existed has no check yet.
         jdbc.sql("DELETE FROM document_text_checks WHERE document_id = ?").param(UUID.fromString(id)).update();
         assertThat(anna.json(anna.get("/api/documents/" + id)).path("textRecognition").path("state").asText())
                 .isEqualTo("PENDING");

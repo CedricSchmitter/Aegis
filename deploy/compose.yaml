@@ -1,5 +1,5 @@
-# Aegis first runnable test stack. Run from /srv/aegis/deploy on the Aegis VM with the generated .env next to it.
-# Only the reverse proxy publishes a port (LAN HTTP preview). PostgreSQL, Valkey and Paperless stay on the
+# Aegis stack. Run from /srv/aegis/deploy on the Aegis VM with the generated .env next to it.
+# Only the reverse proxy publishes ports (HTTP here, HTTPS through compose.https.yaml). PostgreSQL, Valkey and Paperless stay on the
 # internal network; Paperless is reached by Aegis over that network only.
 name: aegis
 

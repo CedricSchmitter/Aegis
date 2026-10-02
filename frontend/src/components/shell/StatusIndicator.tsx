@@ -30,7 +30,7 @@ export function StatusIndicator() {
   );
 }
 
-/** The status line on Today, which took the place of the Status tab. */
+/** The status line on Today, the phone's way to the status page besides the avatar. */
 export function StatusLine() {
   const { t, i18n } = useTranslation();
   const { status } = useShellData();

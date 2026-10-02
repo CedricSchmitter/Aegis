@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runs on the Aegis VM: switches the stack back to a previously built commit image and brings every service of the
 # stack back to running. A failed deployment can leave a dependent service such as Caddy in state `Created` (it
-# waits for a healthy application), so starting only the application is not enough (2026-09-26).
+# waits for a healthy application), so starting only the application is not enough.
 # Database migrations are additive; rolling back the application does not undo applied migrations.
 set -eu
 COMMIT="${1:?previously deployed commit sha required}"

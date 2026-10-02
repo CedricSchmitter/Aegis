@@ -13,7 +13,7 @@ export function PageTitle({ children, actions }: { children: ReactNode; actions?
   );
 }
 
-/** The big uppercase page title of the redesigned areas, with an optional eyebrow and count. */
+/** The big uppercase page title, with an optional eyebrow and count. */
 export function BigTitle({ children, count, eyebrow }: { children: ReactNode; count?: ReactNode; eyebrow?: ReactNode }) {
   return (
     <div className="mb-4 flex flex-col gap-1.5">

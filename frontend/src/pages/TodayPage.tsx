@@ -73,7 +73,6 @@ export function TodayPage() {
         {t("today.title")}
       </BigTitle>
       <div className="flex flex-col gap-5">
-        {/* The status line replaces the former Status tab; it opens the status page. */}
         <StatusLine />
         <ErrorBox message={error} />
         {!today && !error && <Loading />}

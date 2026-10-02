@@ -1,4 +1,4 @@
-# Prepared LAN HTTPS mode. Install the public root certificate on each client before switching.
+# Trusted LAN HTTPS mode (compose.https.yaml). Every client must trust the local root certificate first.
 {
     admin off
     skip_install_trust

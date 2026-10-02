@@ -117,7 +117,7 @@ test.describe("scanned photos", () => {
     const editor = page.getByTestId("page-editor");
     await expect(editor).toHaveAttribute("data-purpose", "check");
     // The editor is a modal of its own above the sheet: a swipe on it, outside the corners, scrolls neither the
-    // sheet nor the page behind it. Before, it chained into the page and Android redrew the sheet while it moved.
+    // sheet nor the page behind it; a chained scroll would make Android redraw the sheet while it moves.
     await expect(editor).toBeFocused();
     const touch = info.project.use.hasTouch === true;
     if (touch) {

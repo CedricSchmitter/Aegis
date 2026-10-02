@@ -109,7 +109,7 @@ export function TaskDetail({ task, onChange, heading, onCompleted, onTrashed }: 
       {task.note && <p className="text-sm whitespace-pre-wrap text-text-2">{task.note}</p>}
 
       {task.source && task.source.documentDeleted && (
-        // A source deleted permanently (ADR-0021) has no page to open any more.
+        // A source deleted permanently (ADR-0021) has no page to open.
         <div className="card flex flex-col gap-1" data-testid="task-source-deleted">
           <span className="ui-eyebrow">{t("tasks.sourceLabel")}</span>
           <span className="text-[15px] leading-snug font-semibold break-words text-text-3">{t("trash.sourceDeleted")}</span>

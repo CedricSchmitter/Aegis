@@ -121,7 +121,7 @@ aegis:
   storage:
     # Free space and backup health (ADR-0015). The data path is measured through the JDK; on the VM it is
     # the disk that also holds the archive and the databases. A disk is low below 10 % or 5 GB free, whichever is
-    # higher (owner's choice, 2026-09-24); the same watch then notifies the members once per incident.
+    # higher (owner's choice); the same watch then notifies the members once per incident.
     data-path: ${AEGIS_STORAGE_DATA_PATH:${aegis.ingress.dir}}
     low-free-fraction: 0.10
     low-free-space: 5GB

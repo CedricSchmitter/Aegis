@@ -1,5 +1,5 @@
-# LAN-only HTTP preview for the first runnable test. No TLS is terminated here, so no secure-context features
-# (installable PWA, Web Push) are claimed. HTTPS follow-up: see docs/operations/DEPLOYMENT.md.
+# Plain LAN HTTP mode, used by CI and until clients trust the local CA. No TLS is terminated here, so no
+# secure-context features (installable PWA, Web Push) are available. Trusted HTTPS mode: Caddyfile.https.
 {
 	auto_https off
 	admin off

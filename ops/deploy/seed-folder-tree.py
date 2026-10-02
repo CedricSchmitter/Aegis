@@ -36,7 +36,7 @@ import urllib.request
 SCHEMA_VERSION = 1
 MAX_DEPTH = 8
 MAX_NAME_LENGTH = 80
-# "Both" (HOUSEHOLD) is no subject kind any more (ADR-0017); a folder about people would be a person folder.
+# There is no "both" (HOUSEHOLD) subject kind (ADR-0017); a folder about people would be a person folder.
 SUBJECT_KINDS = ("HOUSE",)
 
 

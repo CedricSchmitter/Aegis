@@ -82,7 +82,7 @@ test.describe("first runnable test", () => {
   test("language switch persists per member and does not change stored data", async ({ page }) => {
     await login(page, userA);
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/Heute|Today/);
-    // The header has no language switch any more; it sits in Settings only.
+    // The language switch sits in Settings only, not in the header.
     await expect(page.getByTestId("language-switch")).toHaveCount(0);
     await page.goto("/settings");
     const toggle = page.getByTestId("language-switch");
@@ -218,7 +218,7 @@ test.describe("first runnable test", () => {
     const pageB = await contextB.newPage();
     await login(pageB, userB);
     await ensureGerman(pageB);
-    // "Prüfen" and "Hinweise" are one inbox; the old address still leads to its messages.
+    // Review cards and messages share one inbox; the /notices address leads to its messages.
     await pageB.goto("/notices");
     await expect(pageB).toHaveURL(/\/inbox#messages$/);
     await pageB.getByRole("link", { name: /^Eingang/ }).first().click();
@@ -226,7 +226,7 @@ test.describe("first runnable test", () => {
     await expect(pageB.getByRole("heading", { level: 2, name: "Zu prüfen" })).toBeVisible();
     const messages = pageB.getByTestId("inbox-messages");
     await expect(messages.getByRole("heading", { level: 2, name: "Mitteilungen" })).toBeVisible();
-    // A successful archival no longer adds a message; the upload already confirmed saving.
+    // A successful archival adds no message; the upload already confirmed saving.
     await expect(messages.locator("[data-testid=notice]", { hasText: "archiviert" })).toHaveCount(0);
     const notice = messages.locator("[data-testid=notice]", { hasText: `Kündigen ${runId}` });
     await expect(notice).toBeVisible();
@@ -241,7 +241,7 @@ test.describe("first runnable test", () => {
     await expect(pageB.getByTestId("processing-state")).toContainText("Archiviert");
     await pageB.getByRole("link", { name: "Heute", exact: true }).first().click();
     await expect(pageB.getByRole("heading", { level: 1 })).toContainText("Heute");
-    // Notes that only describe the setup are gone: no calendar note and no pilot banner.
+    // No notes that only describe the setup: no calendar note and no pilot banner.
     await expect(pageB.getByText("Kein Kalender verbunden")).toHaveCount(0);
     await expect(pageB.getByText("Haushaltstest über HTTPS")).toHaveCount(0);
     await contextB.close();
@@ -250,7 +250,7 @@ test.describe("first runnable test", () => {
     await login(page, userA);
     await page.goto(documentUrl);
     await expect(page.locator("[data-testid=task-item]", { hasText: `Kündigen ${runId}` })).toContainText("Erledigt");
-    // Status left the tab bar; it opens from the avatar, the header and Today's status line.
+    // Status is no tab; it opens from the avatar, the header and Today's status line.
     await openAvatarMenu(page);
     await page.getByTestId("avatar-menu-status").click();
     const overview = page.getByTestId("status-overview");
@@ -301,7 +301,7 @@ test.describe("first runnable test", () => {
   test("mobile layout shows the bottom navigation and the upload controls @mobile", async ({ page }) => {
     await login(page, userA);
     if (isPhoneWidth(page)) {
-      // Five areas; Status moved behind the avatar and into the status line on Today.
+      // Five areas; Status is reached through the avatar and the status line on Today.
       const tabs = page.getByTestId("bottom-nav");
       await expect(tabs).toBeVisible();
       await expect(tabs.getByRole("link")).toHaveText([

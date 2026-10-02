@@ -3,11 +3,11 @@ import type { NoticeSummary } from "../api/types";
 /** Dispatched after something changed the inbox badge: a card was decided or notices were read. */
 export const INBOX_CHANGED = "aegis:inbox-changed";
 
-/** Anchor of the messages section, used by old `/notices` links. */
+/** Anchor of the messages section, used by `/notices` links. */
 export const MESSAGES_ANCHOR = "messages";
 
 /**
- * Where an old inbox link leads since "Prüfen" and "Hinweise" became one inbox. `/review?item=<id>` keeps
+ * Where a `/review` or `/notices` link leads in the combined inbox. `/review?item=<id>` keeps
  * its card focus, `/notices` opens the messages section; links from notices, bookmarks and the share flow keep working.
  */
 export function legacyInboxTarget(pathname: string, search: string): string {
