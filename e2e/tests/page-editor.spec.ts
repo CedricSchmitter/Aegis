@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { openUpload } from "./documents";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const PHOTO = path.resolve(here, "../../fixtures/synthetic-letter-photo.jpg");
+const PHOTO = path.resolve(here, "../../fixtures/synthetic-letter-photo-skewed.jpg");
 const runId = Date.now().toString(36);
 
 const userA = { username: process.env.AEGIS_USER_A ?? "anna", password: process.env.AEGIS_PASSWORD_A ?? "" };
@@ -139,7 +139,7 @@ test.describe("page editor", () => {
     await outputs.nth(1).getByTestId("page-edit-later").first().click();
     await outputs.nth(1).getByTestId("page-edit-rotate").last().click();
     await page.reload();
-    await expect(page.getByRole("status").first()).toContainText("angefangener Seitenplan mit 4 Seiten");
+    await expect(page.getByText("Dein angefangener Seitenplan mit 4 Seiten ist wieder da.")).toBeVisible();
     await expect(outputs).toHaveCount(2);
     await expect(outputs.nth(1).getByTestId("page-edit-page").nth(0)).toContainText("Seite 3");
     await expect(outputs.nth(1).getByTestId("page-edit-page").nth(1)).toContainText("Seite 2");

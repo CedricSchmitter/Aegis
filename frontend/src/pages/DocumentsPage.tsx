@@ -30,6 +30,8 @@ import { todayIso } from "../lib/format";
 import { problemMessage } from "../lib/problem";
 import { awaitingTextCheck } from "../lib/textRecognition";
 import { useScanDraft } from "../scan/useScanDraft";
+import { pageCount } from "../pageEdit/plan";
+import { loadPlan } from "../pageEdit/planStore";
 
 /** Upper bound of one explicit analysis request; matches the server's bulk limit. */
 const MAX_ANALYSIS_SELECTION = 10;
@@ -88,6 +90,18 @@ export function DocumentsPage() {
       { replace: true },
     );
   }, [uploadRequested, setParams]);
+  // An unfinished page editor plan is offered here too, so it is found again after leaving the editor.
+  const [planPages, setPlanPages] = useState(0);
+  useEffect(() => {
+    if (!member) return;
+    let active = true;
+    void loadPlan(member.id).then((plan) => {
+      if (active) setPlanPages(plan ? pageCount(plan) : 0);
+    });
+    return () => {
+      active = false;
+    };
+  }, [member]);
   // A scan restored after a reload is shown at once, so its pages are not forgotten.
   useEffect(() => {
     if (scan.restored > 0) setUploadOpen(true);
@@ -236,6 +250,11 @@ export function DocumentsPage() {
           </button>
         )}
 
+        {planPages > 0 && (
+          <Link to="/documents/pages" className="btn-secondary w-full" data-testid="continue-page-plan">
+            {t("pageEdit.continuePlan", { count: planPages })}
+          </Link>
+        )}
         {message && <InfoBox>{message}</InfoBox>}
         <ErrorBox message={error} />
 

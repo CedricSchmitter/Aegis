@@ -1513,6 +1513,8 @@
     "edit": "Seiten bearbeiten",
     "editHint": "Teilen, mit anderen Dokumenten zusammenfügen, drehen oder Seiten weglassen. Das Original bleibt unverändert.",
     "editSelected": "Seiten bearbeiten",
+    "continuePlan_one": "Angefangenen Seitenplan fortsetzen ({{count}} Seite)",
+    "continuePlan": "Angefangenen Seitenplan fortsetzen ({{count}} Seiten)",
     "restored_one": "Dein angefangener Seitenplan mit {{count}} Seite ist wieder da.",
     "restored": "Dein angefangener Seitenplan mit {{count}} Seiten ist wieder da.",
     "refused": "„{{title}}“ kann nicht verwendet werden: {{reason}}",

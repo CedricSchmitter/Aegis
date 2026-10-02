@@ -1513,6 +1513,8 @@
     "edit": "Edit pages",
     "editHint": "Split, merge with other documents, rotate or leave out pages. The original stays unchanged.",
     "editSelected": "Edit pages",
+    "continuePlan_one": "Continue the unfinished page plan ({{count}} page)",
+    "continuePlan": "Continue the unfinished page plan ({{count}} pages)",
     "restored_one": "Your unfinished page plan with {{count}} page is back.",
     "restored": "Your unfinished page plan with {{count}} pages is back.",
     "refused": "“{{title}}” cannot be used: {{reason}}",
