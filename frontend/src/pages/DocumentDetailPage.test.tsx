@@ -61,6 +61,7 @@ function answer(documentReload: () => unknown) {
   api.GET.mockImplementation((path: string) => {
     if (path === "/api/documents/{id}") return documentCalls++ === 0 ? Promise.resolve(ok(document)) : documentReload();
     if (path === "/api/categories") return Promise.resolve(ok({ categories: [], unsortedCount: 0, totalDocuments: 1 }));
+    if (path === "/api/documents/{id}/derivations") return Promise.resolve(ok({ origin: null, derived: [] }));
     return Promise.resolve(ok([]));
   });
 }

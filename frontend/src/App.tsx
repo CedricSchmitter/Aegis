@@ -19,6 +19,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { SharePage } from "./pages/SharePage";
 import { TrashPage } from "./pages/TrashPage";
 import { BulkClassificationPage } from "./pages/BulkClassificationPage";
+import { PageEditorPage } from "./pages/PageEditorPage";
 
 export function App() {
   const { member, loading } = useSession();
@@ -50,6 +51,7 @@ export function App() {
         <Route path="/documents/folders" element={<FoldersPage />} />
         <Route path="/documents/labels" element={<LabelsPage />} />
         <Route path="/documents/classify" element={<BulkClassificationPage />} />
+        <Route path="/documents/pages" element={<PageEditorPage />} />
         <Route path="/documents/:id" element={<DocumentDetailPage />} />
         <Route path="/contracts" element={<ContractsPage />} />
         <Route path="/contracts/:id" element={<ContractDetailPage />} />

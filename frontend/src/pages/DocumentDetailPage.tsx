@@ -26,6 +26,7 @@ import { TaskForm } from "../components/TaskForm";
 import { TextRecognitionHint } from "../components/TextRecognitionHint";
 import { TaskCard } from "../components/tasks/TaskCard";
 import { MoveToTrashButton, TrashBanner, useTrashUndo } from "../components/TrashControls";
+import { Derivations } from "../components/pageEdit/Derivations";
 import { ProcessingSteps } from "../components/ui";
 import { EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
 import { documentProgress } from "../lib/documentView";
@@ -380,6 +381,26 @@ export function DocumentDetailPage() {
                 </button>
               </div>
             )}
+          </Block>
+
+          <Block
+            id="document-pages"
+            title={t("pageEdit.derivations.section")}
+            testId="document-pages"
+            action={
+              !trashed && (
+                <Link
+                  to={`/documents/pages?add=${encodeURIComponent(document.id)}`}
+                  className="btn-ghost -mr-3 font-sans normal-case tracking-normal"
+                  data-testid="edit-pages"
+                >
+                  {t("pageEdit.edit")}
+                </Link>
+              )
+            }
+          >
+            {!trashed && <p className={hint}>{t("pageEdit.editHint")}</p>}
+            <Derivations documentId={document.id} />
           </Block>
 
           {p.state !== "FAILED" && !trashed && (
