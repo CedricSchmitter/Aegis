@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Recurring reconciliation of the review inbox (issue #89, ADR-0009), by default once a day, so a new card and its
+ * Recurring reconciliation of the review inbox (ADR-0009), by default once a day, so a new card and its
  * notices reach both members even if nobody opens the inbox, which reconciles at once when opened. It runs as the
  * review reconciler, never as a member. db-scheduler keeps the schedule in PostgreSQL, runs one execution at a time and
  * continues after a restart; a failed run is not retried early but repeated at the next interval, and because the

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Member decisions about a proposed folder placement (issue #67). Accepting creates the missing folders and moves
+ * Member decisions about a proposed folder placement. Accepting creates the missing folders and moves
  * the document in one transaction; the member may edit the path and its anchor first. Rejecting remembers the
  * decision, and an automatic move can be reverted.
  */

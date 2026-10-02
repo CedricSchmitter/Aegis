@@ -324,7 +324,7 @@ public class UseCaseConfiguration {
                 placements, lock, presenter, access, clock));
     }
 
-    /** Member decisions about proposed folder placements (issue #67); accepting creates folders and moves. */
+    /** Member decisions about proposed folder placements; accepting creates folders and moves. */
     @Bean
     PlacementCommands placementCommands(ClassificationRepository classifications,
             PlacementSuggestionRepository placements, CategoryRepository categories, LabelRepository labels,
@@ -340,7 +340,7 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ClassificationCommands.class, services.classification(), tm);
     }
 
-    /** Label proposals of automatic classification (issue #23), used through the document analysis service. */
+    /** Label proposals of automatic classification, used through the document analysis service. */
     @Bean
     ProposeClassification proposeClassification(ClassificationServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ProposeClassification.class, services.classification(), tm);
@@ -505,7 +505,7 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ContractCommands.class, services.commands(), tm);
     }
 
-    /** Proposed facts from an extraction run (issues #23 and #24); they are stored for review, never applied. */
+    /** Proposed facts from an extraction run; they are stored for review, never applied. */
     @Bean
     RecordContractObservation recordContractObservation(ContractServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(RecordContractObservation.class, services.commands(), tm);
@@ -521,7 +521,7 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ContractQueries.class, services.queries(), tm);
     }
 
-    /** Public contract for confirmed cancellation deadlines, consumed by planning (issue #63). */
+    /** Public contract for confirmed cancellation deadlines, consumed by planning. */
     @Bean
     ContractDeadlineQuery contractDeadlineQuery(ContractServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ContractDeadlineQuery.class, services.queries(), tm);
@@ -637,7 +637,7 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ReviewInbox.class, services.service(), tm);
     }
 
-    /** Background reconciliation (issue #89): one transaction per run, so a card and its notices commit together. */
+    /** Background reconciliation: one transaction per run, so a card and its notices commit together. */
     @Bean
     ReviewReconciliation reviewReconciliation(ReviewServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ReviewReconciliation.class, services.service(), tm);
@@ -656,7 +656,7 @@ public class UseCaseConfiguration {
     // Operations ----------------------------------------------------------------------------------------------
 
     /**
-     * Each recurring job the status page reports (issue #92, ADR-0013) is declared with the interval it runs at: the
+     * Each recurring job the status page reports (ADR-0013) is declared with the interval it runs at: the
      * household jobs and the watch over them.
      */
     @Bean
@@ -668,7 +668,7 @@ public class UseCaseConfiguration {
         return new IntegrationStatusService(sources, processing, recurringJobs, jobStates, storage, access, clock);
     }
 
-    /** The external backup and free disk space (issue #100, ADR-0015); the owner chose 10 % and 5 GB. */
+    /** The external backup and free disk space (ADR-0015); the owner chose 10 % and 5 GB. */
     @Bean
     StorageHealthService storageHealthService(BackupStateSource backupStates, DataStorageSource dataStorage,
             @Value("${aegis.storage.low-free-fraction:0.10}") double lowFreeFraction,
@@ -688,7 +688,7 @@ public class UseCaseConfiguration {
     }
 
     /**
-     * Members are told when a household job stops running (issue #94, ADR-0014); the watch does not watch itself. It
+     * Members are told when a household job stops running (ADR-0014); the watch does not watch itself. It
      * runs without a surrounding transaction: each step is idempotent, and one job's failure must not roll back the
      * others.
      */

@@ -34,7 +34,7 @@ function HeaderInbox() {
 }
 
 /**
- * The application shell (issue #27, ADR-0019). On a phone: a header with the wordmark and the avatar, the page, and a
+ * The application shell (ADR-0019). On a phone: a header with the wordmark and the avatar, the page, and a
  * tab bar with the five areas. From 1024 px: a header with search, status and inbox, a sidebar, the work area, a
  * context panel from 1280 px while a page fills it, and a status bar.
  */

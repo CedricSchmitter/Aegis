@@ -40,7 +40,7 @@ function parseAdd(value: string | null): string[] {
 }
 
 /**
- * The page editor (ADR-0024, issue #82): one view to split documents with markers between pages, merge pages of
+ * The page editor (ADR-0024): one view to split documents with markers between pages, merge pages of
  * several documents, add newly photographed pages, reorder, rotate and remove pages. Every new document is created
  * from the plan by the server; the sources stay unchanged. The plan is kept on the phone until it is sent.
  */

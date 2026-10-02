@@ -36,7 +36,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Automatic classification of one document (issues #23 and #67, ADR-0004 and ADR-0005). One structured model call
+ * Automatic classification of one document (ADR-0004 and ADR-0005). One structured model call
  * without tools: the model sees the label vocabulary, the folder tree, the household's persons and the archive's OCR
  * text framed as untrusted data, and proposes a title, the issue date, type, organization, topics, a short topic,
  * subject associations, a folder placement and doubt flags, each claim with a verbatim quote. The documents context

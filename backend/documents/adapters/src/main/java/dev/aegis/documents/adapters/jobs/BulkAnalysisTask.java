@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Durable driver of a bulk analysis (issue #115). One job instance per run, created in the transaction that starts
+ * Durable driver of a bulk analysis. One job instance per run, created in the transaction that starts
  * the run; each execution performs one step and reschedules itself until the run ended. Nothing schedules this job
  * on startup: only a member's start does, and a restart continues a run that was already started.
  */

@@ -15,10 +15,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Recurring watch over the other recurring jobs (issue #94, ADR-0014), by default every five minutes. It is a job of
+ * Recurring watch over the other recurring jobs (ADR-0014), by default every five minutes. It is a job of
  * its own, so a watched job that fails or is no longer scheduled cannot stop it. A run in which a job could not be
  * checked fails after checking all others, so the status page shows the watch itself as failing. The same run also
- * watches the external backup and the free disk space (issue #100, ADR-0015); the job keeps its name so that its
+ * watches the external backup and the free disk space (ADR-0015); the job keeps its name so that its
  * persisted schedule stays valid.
  */
 @Configuration

@@ -3,7 +3,7 @@ package dev.aegis.documents.application.api;
 import java.time.Instant;
 
 /**
- * Whether the archive recognized text in the document (issue #87, ADR-0012), derived from the archive's OCR text and
+ * Whether the archive recognized text in the document (ADR-0012), derived from the archive's OCR text and
  * independent of AI. {@code state} is {@code NOT_ARCHIVED}, {@code PENDING} (archived, not checked yet),
  * {@code UNAVAILABLE} (the archive text could not be read; tried again at {@code nextAttemptAt}), {@code NONE},
  * {@code LITTLE} or {@code RECOGNIZED}. {@code recognizedCharacters} counts letters and digits once measured.

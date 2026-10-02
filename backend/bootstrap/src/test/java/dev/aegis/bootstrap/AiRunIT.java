@@ -258,7 +258,7 @@ class AiRunIT extends PostgresIT {
         }
     }
 
-    /** Regression for issue #59 against PostgreSQL: concurrent requests with one key never run different work. */
+    /** Against PostgreSQL, concurrent requests with one key never run different work. */
     @Test
     void concurrentRequestsReusingAKeyForDifferentWorkAreRejected() throws Exception {
         ApiClient anna = loggedIn(ANNA);

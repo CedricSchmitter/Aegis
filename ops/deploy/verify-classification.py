@@ -2,7 +2,7 @@
 
 Uploads generated PDFs with a text layer as one synthetic member, waits for archival and classification, lets the
 second member review a suggestion, and checks friendly downloads and exports against the upload checksums. It also
-exercises the folder placement of issue #67: a small tree exists before the uploads, and the check verifies that no
+exercises the folder placement: a small tree exists before the uploads, and the check verifies that no
 run creates a folder by itself and that accepting a proposal creates the path and moves the document. Flow
 invariants fail the check; model judgments are reported. Never prints credentials or the API key.
 """

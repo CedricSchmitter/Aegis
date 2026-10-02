@@ -97,7 +97,7 @@ describe("locale catalogs", () => {
       // Recurring background jobs on the status page (ADR-0013).
       ...["OK", "PENDING", "FAILING", "STALE", "NOT_SCHEDULED", "UNKNOWN"].map((s) => `status.jobs.state.${s}`),
       ...KNOWN_JOBS.flatMap((job) => [`status.jobs.name.${job}`, `status.jobs.purpose.${job}`]),
-      // The status overview (issue #83, F4): areas, states, reasons and the generic fallbacks.
+      // The status overview: areas, states, reasons and the generic fallbacks.
       ...CHECK_AREAS.map((area) => `status.area.${area}`),
       ...CHECK_STATES.flatMap((state) => [`status.checkState.${state}`, `status.check.fallback.${state}`]),
       ...CHECK_REASONS.map((reason) => `status.check.${reason}`),
@@ -105,7 +105,7 @@ describe("locale catalogs", () => {
       // Keys the document review producer publishes for documents without recognized text (ADR-0012).
       "review.noText",
       "review.reason.NO_TEXT_RECOGNIZED",
-      // Bulk classification (issue #115): its single review card, run states, cost bases, scopes and skip reasons.
+      // Bulk classification: its single review card, run states, cost bases, scopes and skip reasons.
       "review.bulkAnalysis",
       "review.reason.BULK_CLASSIFICATION",
       "review.openBulkAnalysis",
@@ -117,7 +117,7 @@ describe("locale catalogs", () => {
         .map((count) => `bulkAnalysis.count.${count}`),
       // What the page editor's new documents do not carry over (ADR-0024).
       ...["SIGNED", "EMBEDDED_FILES"].map((warning) => `pageEdit.warning.${warning}`),
-      // Short reasons for the failure codes of review cards and archival notices (issue #96).
+      // Short reasons for the failure codes of review cards and archival notices.
       ...FAILURE_REASONS.map((reason) => `review.failureReason.${reason}`),
     ];
 

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A bulk classification of existing documents (issue #115) with its progress and grouped results. {@code state} is
+ * A bulk classification of existing documents with its progress and grouped results. {@code state} is
  * {@code RUNNING}, {@code COMPLETED}, {@code CANCELLED} or {@code STOPPED} (with {@code stopCode}). Counts:
  * {@code pending} documents wait for their turn, {@code inFlight} are being classified; of the finished ones,
  * {@code classified} got a result, {@code needsReview} of those still wait for a member, {@code failed} still show a

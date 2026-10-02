@@ -561,7 +561,7 @@ class DocumentClassificationIT extends PostgresIT {
         assertThat(waiting.path("analysis").path("failureCode").isNull()).isTrue();
         assertThat(model.requests).isEmpty();
 
-        // A failure card created for this reason before issue #107 is superseded, keeping its history; no new card.
+        // A failure card an earlier release created for this reason is superseded, keeping its history; no new card.
         long analysisVersion = waiting.path("analysis").path("version").asLong();
         String fingerprint = "analysis-failed:" + id + ":" + analysisVersion + ":ai.provider.memberNotAllowed";
         UUID earlier = UUID.nameUUIDFromBytes(fingerprint.getBytes(StandardCharsets.UTF_8));

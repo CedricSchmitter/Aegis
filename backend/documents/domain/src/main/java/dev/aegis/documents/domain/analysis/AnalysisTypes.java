@@ -23,7 +23,7 @@ public final class AnalysisTypes {
     public enum Trigger {
         UPLOAD,
         MANUAL,
-        /** A bulk run over existing documents that a member started explicitly (issue #115). */
+        /** A bulk run over existing documents that a member started explicitly. */
         BULK
     }
 

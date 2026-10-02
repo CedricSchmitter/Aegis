@@ -52,7 +52,7 @@ class ArchivalServiceTest {
         assertThat(service.prepare(document.id())).isInstanceOf(Finished.class);
         assertThat(repository.findById(document.id()).orElseThrow().paperlessDocumentId()).contains(42);
         assertThat(triggered).containsExactly(document.id());
-        // The upload already confirmed saving; a successful archival notifies nobody (issue #83).
+        // The upload already confirmed saving; a successful archival notifies nobody.
         assertThat(events.events).isEmpty();
     }
 

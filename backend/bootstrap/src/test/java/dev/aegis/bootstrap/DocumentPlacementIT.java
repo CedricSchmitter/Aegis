@@ -28,7 +28,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Folder placement against PostgreSQL, the real job scheduler, the REST API and a controlled model (issue #67):
+ * Folder placement against PostgreSQL, the real job scheduler, the REST API and a controlled model:
  * the automatic move into a matching folder with its provenance and revert, and accepting a proposed path, which
  * creates the missing folders and moves the document in one transaction - either both or neither, also when two
  * members accept the same path at the same time.

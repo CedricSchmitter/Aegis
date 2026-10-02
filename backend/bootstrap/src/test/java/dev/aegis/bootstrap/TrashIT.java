@@ -36,7 +36,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Recoverable trash (issue #48, ADR-0010) against PostgreSQL, the scheduler and the HTTP API: records keep their
+ * Recoverable trash (ADR-0010) against PostgreSQL, the scheduler and the HTTP API: records keep their
  * identity and data, ordinary views hide them, commands are version-checked and the trash state survives export
  * and restore.
  */

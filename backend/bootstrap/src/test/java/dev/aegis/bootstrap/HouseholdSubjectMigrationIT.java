@@ -47,7 +47,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The retired subject "both" ({@code HOUSEHOLD}) becomes one subject per person, both in the stored data at startup
- * and in a restore of an export written before schema 9 (issue #83, ADR-0017). The assistant account {@code helper}
+ * and in a restore of an export written before schema 9 (ADR-0017). The assistant account {@code helper}
  * is a member but never one of the persons.
  */
 class HouseholdSubjectMigrationIT extends PostgresIT {

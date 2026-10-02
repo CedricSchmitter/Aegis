@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Bulk classification of existing documents that were never classified (issue #115): preview with cost estimate,
+ * Bulk classification of existing documents that were never classified: preview with cost estimate,
  * explicit start, progress and cancellation. Nothing here runs without a member's start.
  */
 @RestController

@@ -3,7 +3,7 @@ package dev.aegis.operations.application.api;
 import java.time.Instant;
 
 /**
- * Whether the external backup works (issue #100, ADR-0015), from the state file the backup script writes. {@code state}
+ * Whether the external backup works (ADR-0015), from the state file the backup script writes. {@code state}
  * is OK, RUNNING (a run is active), FAILED (the latest attempt failed, {@code failureCode} says why), STALE (no success
  * for more than 26 hours), INTERRUPTED (a run started but never finished), NOT_CONFIGURED (no verified destination or
  * no success recorded yet) or UNKNOWN (the state file cannot be read). {@code failureCode} is a stable English code

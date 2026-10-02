@@ -5,7 +5,7 @@ import java.util.Set;
 
 /**
  * Stable notice types; the UI localizes the message from kind and parameters. Each kind has one place in the combined
- * inbox (issue #83): listed as a message, represented by the review card it announces, or retired.
+ * inbox: listed as a message, represented by the review card it announces, or retired.
  */
 public enum NoticeKind {
     TASK_ASSIGNED(Placement.MESSAGE),

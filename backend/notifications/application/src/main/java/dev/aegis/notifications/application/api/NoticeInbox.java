@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * The member's own inbox. Read state is per member and never shared. The inbox lists messages: notices that no review
- * card represents (issue #83). Notices announcing a review card are not listed, because the inbox shows the card.
+ * card represents. Notices announcing a review card are not listed, because the inbox shows the card.
  */
 public interface NoticeInbox {
     /** The member's messages, newest first. */

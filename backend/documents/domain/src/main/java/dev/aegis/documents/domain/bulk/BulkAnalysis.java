@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * An explicitly started classification of existing documents (issue #115). The document list is fixed when a member
+ * An explicitly started classification of existing documents. The document list is fixed when a member
  * starts it; the run then requests the documents' classification runs in bounded batches, one item at a time, and
  * records how each ended.
  *
@@ -53,7 +53,7 @@ public final class BulkAnalysis {
     public enum Outcome {
         CLASSIFIED,
         FAILED,
-        /** The requester may not use the configured AI provider (issue #107): no failure. */
+        /** The requester may not use the configured AI provider: no failure. */
         NOT_CLASSIFIED,
         /** A member requested the document's analysis again; that request owns the result. */
         SUPERSEDED

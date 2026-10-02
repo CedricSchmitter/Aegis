@@ -68,7 +68,7 @@ export function TaskMeta({ task }: { task: TaskDto }) {
   );
 }
 
-/** Whether a click is a plain single mouse click, which selects instead of opening (issue #27). */
+/** Whether a click is a plain single mouse click, which selects instead of opening. */
 export function isSelectClick(event: MouseEvent<HTMLAnchorElement>): boolean {
   return event.detail > 0 && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
 }
@@ -84,7 +84,7 @@ interface Props {
 }
 
 /**
- * A task in a list (issue #27): the checkbox completes it at once, the rest of the card opens it. An overdue task has
+ * A task in a list: the checkbox completes it at once, the rest of the card opens it. An overdue task has
  * a red frame; the task open in the context panel has the action frame.
  */
 export function TaskCard({ task, onChange, onCompleted, selected = false, onSelect = null }: Props) {

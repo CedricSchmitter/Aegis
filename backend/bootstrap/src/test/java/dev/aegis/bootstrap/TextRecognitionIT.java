@@ -27,7 +27,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Whether the archive recognized text (issue #87, ADR-0012) against PostgreSQL and the HTTP API: measured right after
+ * Whether the archive recognized text (ADR-0012) against PostgreSQL and the HTTP API: measured right after
  * archival without AI, shown on the document and in the list, a review card for documents without text, archival
  * unaffected when the text cannot be read, and a bounded sweep that catches up on documents archived before.
  */

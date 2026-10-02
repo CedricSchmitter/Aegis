@@ -5,7 +5,7 @@ import { Diamond } from "./icons";
 import { useShellData } from "./ShellData";
 import { TONE_TEXT } from "./StatusIndicator";
 
-/** The desktop status bar: overall state, document count, last backup and the running version (issue #27). */
+/** The desktop status bar: overall state, document count, last backup and the running version. */
 export function StatusBar() {
   const { t, i18n } = useTranslation();
   const { status, catalog, version } = useShellData();

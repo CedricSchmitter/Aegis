@@ -21,7 +21,7 @@ interface Props {
 }
 
 /**
- * The selected document in the context panel of the desktop list (issue #27): preview, where it stands, and the
+ * The selected document in the context panel of the desktop list: preview, where it stands, and the
  * suggestions to take over or reject, without leaving the list. "Open large" leads to the document view.
  */
 export function DocumentPanel({ document, categories, folderName, onChange, onError, onMessage, reload }: Props) {

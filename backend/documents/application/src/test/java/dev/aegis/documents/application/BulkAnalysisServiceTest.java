@@ -36,7 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Bulk classification (issue #115) against in-memory repositories and a controlled AI boundary: preview and cost,
+ * Bulk classification against in-memory repositories and a controlled AI boundary: preview and cost,
  * the explicit start, bounded batches, repeated steps after a restart, the budget wait, stale and skipped documents,
  * cancellation, refusals, authorization and the grouped results.
  */

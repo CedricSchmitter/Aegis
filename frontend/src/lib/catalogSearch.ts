@@ -163,7 +163,7 @@ export function withoutFilters(filters: CatalogFilters): CatalogFilters {
 
 /**
  * Whether the filter shows a facet group. A group without any value to choose would only offer "not set", which
- * every listed document matches, so it is left out (issue #83); an active "not set" filter keeps it to be cleared.
+ * every listed document matches, so it is left out; an active "not set" filter keeps it to be cleared.
  */
 export function showsFacetGroup(valueKeys: string[], missingSelected: boolean): boolean {
   return valueKeys.length > 0 || missingSelected;

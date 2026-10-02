@@ -68,7 +68,7 @@ describe("noticeText", () => {
   });
 
   it("has texts only for the kinds the inbox lists as messages", () => {
-    // Card notices are shown as their card and the archived notice is retired (issue #83).
+    // Card notices are shown as their card and the archived notice is retired.
     for (const catalog of [de, en]) {
       expect(Object.keys(catalog.notices.kind).sort()).toEqual(
         ["BACKUP_FAILED", "CONTRACT_CANCELLATION_REMINDER", "DISK_SPACE_LOW", "JOB_STALE", "TASK_ASSIGNED", "TASK_COMPLETED"],

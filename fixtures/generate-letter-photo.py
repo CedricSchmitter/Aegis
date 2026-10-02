@@ -3,7 +3,7 @@
 The letter, sender and numbers are invented. The "photo" is simulated: the page lies slightly rotated on a darker
 surface with uneven light and sensor noise, and the JPEG carries 72 dpi like most phone cameras. It keeps the
 fixture small while giving the archive's text recognition realistic work. The "skewed" variant is the same letter
-held at 10 degrees, which the archive's text recognition cannot read (issue #87).
+held at 10 degrees, which the archive's text recognition cannot read.
 
     python fixtures/generate-letter-photo.py            # needs Pillow; writes the JPEG and its .sha256 next to it
     python fixtures/generate-letter-photo.py skewed     # writes synthetic-letter-photo-skewed.jpg instead

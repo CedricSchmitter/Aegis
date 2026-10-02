@@ -9,7 +9,7 @@ export const RUN_POLL_MS = 4000;
 export const SCOPE_ALL = "ALL";
 export const SCOPE_UNSORTED = "UNSORTED";
 
-/** The scope a picker value stands for: the whole collection, Unsorted, or one folder (issue #115). */
+/** The scope a picker value stands for: the whole collection, Unsorted, or one folder. */
 export function scopeOf(value: string, includeSubfolders: boolean): BulkScopeDto {
   if (value === SCOPE_ALL || value === SCOPE_UNSORTED) return { kind: value, includeSubfolders: false };
   return { kind: "FOLDER", folderId: value, includeSubfolders };

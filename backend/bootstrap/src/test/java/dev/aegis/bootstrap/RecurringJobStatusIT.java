@@ -37,7 +37,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Recurring job health on the status page (issue #92, ADR-0013) against PostgreSQL: every recurring db-scheduler
+ * Recurring job health on the status page (ADR-0013) against PostgreSQL: every recurring db-scheduler
  * job is reported with its interval, a job run through the scheduler shows its success, and the scheduler adapter
  * turns stored rows into healthy, failing and stale jobs. The rows this test evaluates are its own, because other
  * test classes may truncate scheduled_tasks (RestoreIT).

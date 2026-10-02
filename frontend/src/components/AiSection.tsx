@@ -10,7 +10,7 @@ import { Badge, EmptyState, ErrorBox, InfoBox } from "./common";
 const ACTIVE = ["QUEUED", "RUNNING", "WAITING_RETRY"];
 const POLL_MS = 3000;
 
-/** A run stopped by today's AI cost limit that continues on the next budget day: no failure (issue #109). */
+/** A run stopped by today's AI cost limit that continues on the next budget day: no failure. */
 function waitsForBudgetDay(run: AiRun): boolean {
   return run.state === "WAITING_RETRY" && run.failureCode === "budget.daily" && !!run.nextAttemptAt;
 }

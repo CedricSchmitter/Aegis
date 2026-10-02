@@ -52,7 +52,7 @@ function Block({ id, title, action, children, testId }: { id: string; title: Rea
 }
 
 /**
- * One document (issue #27): the folder path, the title and the file actions, then the preview on a phone or the
+ * One document: the folder path, the title and the file actions, then the preview on a phone or the
  * document itself on a desktop. Where it stands, the suggestions, the folder, labels, subjects, tasks and the trash
  * follow in the page on a phone and fill the context panel from 1280 px.
  */
@@ -117,7 +117,7 @@ export function DocumentDetailPage() {
 
   /**
    * Trash and restore carry the version the member saw; a concurrent change reloads instead of guessing. Moving to
-   * the trash asks nothing and offers undo in a message (issue #27). The reload after the action no longer holds the
+   * the trash asks nothing and offers undo in a message. The reload after the action no longer holds the
    * buttons: should it hang, the member can still act, and a tap with the stale version only meets another conflict.
    */
   const changeTrash = async (action: "trash" | "restore", version: number) => {
@@ -342,7 +342,7 @@ export function DocumentDetailPage() {
         <div className="flex flex-col gap-5">
           <Block id="document-processing" title={t("documents.processing")} testId="processing">
             <ProcessingSteps completed={progress.completed} current={progress.current} />
-            {/* The processing state is shown once, here; an archived document names its archival date (issue #83). */}
+            {/* The processing state is shown once, here; an archived document names its archival date. */}
             <p className={`text-sm ${p.state === "FAILED" ? "text-danger" : "text-text-2"}`} data-testid="processing-state">
               {p.state === "ARCHIVED" && p.archivedAt
                 ? t("documents.archivedAt", { date: formatDateTime(p.archivedAt, i18n.language) })

@@ -257,7 +257,7 @@ public final class AiRun {
      * the per-call cap and what the remaining run and daily budgets can pay after the estimated input cost.
      *
      * <p>When only the daily limit stands in the way and the full limit of a fresh day could pay the call, the run
-     * waits for {@link DailyBudget#renewsAt()} without using up an attempt (issue #109). Otherwise waiting would not
+     * waits for {@link DailyBudget#renewsAt()} without using up an attempt. Otherwise waiting would not
      * help, and the run fails: with {@code budget.cost} when its own budget is used up, with {@code budget.daily} when
      * the daily limit is too small for a single call.
      */

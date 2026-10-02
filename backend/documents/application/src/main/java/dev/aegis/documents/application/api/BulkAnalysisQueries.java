@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /** Bulk classification runs; both members see every run of the household. */
 public interface BulkAnalysisQueries {
-    /** A finished run whose documents still need a member; the review inbox shows it as one card (issue #115). */
+    /** A finished run whose documents still need a member; the review inbox shows it as one card. */
     record Attention(UUID id, String state, Instant finishedAt, int total, int classified, int needsReview,
             int failed) {
     }

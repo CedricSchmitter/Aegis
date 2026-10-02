@@ -16,7 +16,7 @@ const VISIBLE_ANALYSIS = new Set(["PENDING", "NEEDS_REVIEW", "FAILED", "UNAVAILA
 
 /**
  * The badges of a document card. Only what deviates from an archived, readable, settled document gets one, so the
- * usual "archived" state is not repeated on every card (issue #83, F10).
+ * usual "archived" state is not repeated on every card.
  */
 export function documentBadges(document: DocumentDto): DocumentBadge[] {
   const badges: DocumentBadge[] = [];

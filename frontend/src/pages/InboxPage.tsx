@@ -17,7 +17,7 @@ function SegmentCount({ count }: { count: number }) {
 }
 
 /**
- * The combined inbox (issues #83 and #27): the shared review cards to decide and the member's messages. A phone shows
+ * The combined inbox: the shared review cards to decide and the member's messages. A phone shows
  * one of them at a time as two segments; a desktop shows them side by side, from 1280 px with the messages in the
  * context panel. Notices announcing a review card are not listed; once the cards are shown, they are marked read.
  */

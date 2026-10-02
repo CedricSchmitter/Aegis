@@ -21,7 +21,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Photos of paper documents (issue #80, ADR-0011) through the HTTP API: the type comes from the content, the photo
+ * Photos of paper documents (ADR-0011) through the HTTP API: the type comes from the content, the photo
  * stays the original with its own type, the archive's searchable PDF is served separately (and offered for scanned
  * PDFs, ADR-0016), duplicates are found by checksum and unsupported or damaged files are refused before anything is
  * saved.

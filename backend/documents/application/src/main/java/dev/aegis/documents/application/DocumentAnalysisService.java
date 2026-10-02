@@ -72,7 +72,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
- * Automatic document analysis (issue #23, ADR-0004): requesting runs when an upload is archived or a member asks,
+ * Automatic document analysis (ADR-0004): requesting runs when an upload is archived or a member asks,
  * assessing the classifier's proposal under {@link ClassificationPolicy}, applying it once, and the member decisions
  * on generated titles, new names, subject suggestions and filenames.
  *
@@ -154,7 +154,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
 
     /**
      * Requests the run of a new generation. An upload by a member who may not use AI stays not classified until a
-     * member who may starts it (issue #107). Such a member's own request is refused instead, without touching the
+     * member who may starts it. Such a member's own request is refused instead, without touching the
      * analysis: the refusal concerns the member, not the document, so it never replaces an earlier result.
      */
     private AnalysisRuns.Outcome requestRun(DocumentId id, DocumentAnalysis analysis, Actor actor, Trigger trigger) {
@@ -221,7 +221,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
     // Bulk runs ------------------------------------------------------------------------------------------------------
 
     /**
-     * Requests one document of a bulk run (issue #115) with the same checks as a member's selection. A document that
+     * Requests one document of a bulk run with the same checks as a member's selection. A document that
      * got a result since the run started is skipped, so a repeated step never classifies it twice. A refusal by the
      * AI boundary leaves the analysis untouched and stops the bulk run instead of marking every document.
      */

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Member decisions about a proposed folder placement (issue #67, ADR-0005). Accepting a proposed path creates the
+ * Member decisions about a proposed folder placement (ADR-0005). Accepting a proposed path creates the
  * missing folders and moves the document in one transaction; rejecting remembers the decision so later runs do not
  * propose the same target again; reverting takes an automatic move back.
  */

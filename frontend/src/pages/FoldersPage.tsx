@@ -13,7 +13,7 @@ import { problemMessage } from "../lib/problem";
 import { buildTree, flatten, subtreeCount } from "../lib/tree";
 
 /**
- * Managing the shared folders (issue #27): create, rename, move, the labels and subjects a folder passes on, and
+ * Managing the shared folders: create, rename, move, the labels and subjects a folder passes on, and
  * deletion, which moves documents and subfolders one level up and never deletes a document.
  */
 export function FoldersPage() {

@@ -109,7 +109,7 @@ public class AnalysisViews {
         return switch (analysis.status()) {
             case NOT_REQUESTED -> AnalysisView.NOT_REQUESTED;
             case AWAITING_ARCHIVE -> AnalysisView.WAITING_FOR_ARCHIVE;
-            // A requester who may not use AI is an expected configuration state (issue #107), whether the request was
+            // A requester who may not use AI is an expected configuration state, whether the request was
             // refused at once or the queued run found the access withdrawn.
             case UNAVAILABLE -> AnalysisRuns.MEMBER_NOT_ALLOWED.equals(analysis.snapshot().unavailableCode())
                     ? AnalysisView.NOT_CLASSIFIED : AnalysisView.UNAVAILABLE;
@@ -119,7 +119,7 @@ public class AnalysisViews {
                 }
                 if (run.active()) {
                     // Stopped only by the household's daily limit: the run resumes on the next budget day, which is
-                    // no failure (issue #109).
+                    // no failure.
                     yield "WAITING_RETRY".equals(run.state()) && AnalysisRuns.DAILY_LIMIT.equals(run.failureCode())
                             ? AnalysisView.WAITING_FOR_BUDGET : AnalysisView.PENDING;
                 }

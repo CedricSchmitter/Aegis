@@ -9,11 +9,11 @@ import java.util.Locale;
 public enum Workload {
     /** Minimal structured call that proves credentials, model availability and structured output. */
     CONNECTION_CHECK("connection-check"),
-    /** Lightweight classification of uploaded documents (issue #23). */
+    /** Lightweight classification of uploaded documents. */
     DOCUMENT_CLASSIFICATION("classification"),
-    /** Scheduled review of new or changed documents by a stronger model (issue #24). */
+    /** Scheduled review of new or changed documents by a stronger model. */
     DOCUMENT_REVIEW("review"),
-    /** Source-grounded questions over household data (issue #25). */
+    /** Source-grounded questions over household data. */
     CHAT("chat");
 
     private final String configKey;

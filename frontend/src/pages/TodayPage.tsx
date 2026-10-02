@@ -15,7 +15,7 @@ import { problemMessage } from "../lib/problem";
 import { todayBuckets, upcomingDeadlines, type TodayBucket } from "../lib/tasks";
 
 /**
- * Today (issue #27): the status line, then overdue, due today, planned today, the cancellation deadlines of the next
+ * Today: the status line, then overdue, due today, planned today, the cancellation deadlines of the next
  * 30 days with their countdown and the next seven days. On a desktop the urgent tasks stand left and the next seven
  * days right; the deadlines and the inbox fill the context panel from 1280 px and follow below the columns before.
  */
@@ -73,7 +73,7 @@ export function TodayPage() {
         {t("today.title")}
       </BigTitle>
       <div className="flex flex-col gap-5">
-        {/* The status line replaces the former Status tab (issue #83 F5); it opens the status page. */}
+        {/* The status line replaces the former Status tab; it opens the status page. */}
         <StatusLine />
         <ErrorBox message={error} />
         {!today && !error && <Loading />}

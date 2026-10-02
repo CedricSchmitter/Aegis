@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Folder placement by the classifier (issue #67, ADR-0005) against in-memory repositories and a controlled AI
+ * Folder placement by the classifier (ADR-0005) against in-memory repositories and a controlled AI
  * boundary: the automatic move into an existing folder, proposals for paths that do not exist yet, the deterministic
  * reuse of folders, and the member decisions that every later run has to respect.
  */

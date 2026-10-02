@@ -8,7 +8,7 @@ import { ErrorBox, InfoBox } from "../components/common";
 import { Wordmark } from "../components/ui";
 import { problemMessage } from "../lib/problem";
 
-/** The login in the design system (issue #27): the wordmark, one framed form and the running version. */
+/** The login in the design system: the wordmark, one framed form and the running version. */
 export function LoginPage() {
   const { t } = useTranslation();
   const { login } = useSession();

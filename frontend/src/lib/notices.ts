@@ -6,7 +6,7 @@ import { backupReasonText, diskName } from "./storage";
 
 /**
  * Review card title keys with the parameters their text needs. A failure code (`errorCode`) is stored as is and shown
- * as a short localized reason (issue #96).
+ * as a short localized reason.
  */
 export const REVIEW_TITLE_PARAMS: Record<string, readonly string[]> = {
   "review.archiveFailed": ["title", "errorCode"],
@@ -30,7 +30,7 @@ export function reviewTitle(t: TFunction, titleKey: string, params: Record<strin
 }
 
 /**
- * A JOB_STALE notice (issue #94) names the job by its localized status page name and its state at the start of the
+ * A JOB_STALE notice names the job by its localized status page name and its state at the start of the
  * outage: stale since the last success, stale without any success, or no longer scheduled.
  */
 function jobStaleText(t: TFunction, params: Record<string, string>, language: string): string {
@@ -46,7 +46,7 @@ function jobStaleText(t: TFunction, params: Record<string, string>, language: st
 }
 
 /**
- * A BACKUP_FAILED notice (issue #100) names the backup state at the start of the incident: a failed attempt with its
+ * A BACKUP_FAILED notice names the backup state at the start of the incident: a failed attempt with its
  * localized reason, no success for more than 26 hours, an interrupted run or an unreadable state.
  */
 function backupFailedText(t: TFunction, params: Record<string, string>, language: string): string {
@@ -60,7 +60,7 @@ function backupFailedText(t: TFunction, params: Record<string, string>, language
   );
 }
 
-/** A DISK_SPACE_LOW notice (issue #100) names the disk and its free space when the incident opened. */
+/** A DISK_SPACE_LOW notice names the disk and its free space when the incident opened. */
 function diskSpaceLowText(t: TFunction, params: Record<string, string>, language: string): string {
   const free = Number(params.freeBytes);
   const total = Number(params.totalBytes);
@@ -76,7 +76,7 @@ function diskSpaceLowText(t: TFunction, params: Record<string, string>, language
 
 /**
  * The localized text of a message from its stable kind and parameters. Notices announcing a review card are not
- * listed (issue #83); the inbox shows their card with {@link reviewTitle}.
+ * listed; the inbox shows their card with {@link reviewTitle}.
  */
 export function noticeText(t: TFunction, notice: NoticeSummary, language: string): string {
   const params = notice.params ?? {};

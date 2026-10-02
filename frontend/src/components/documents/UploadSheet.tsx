@@ -28,7 +28,7 @@ interface Props {
 }
 
 /**
- * Upload and scan in one sheet (issue #27): a bottom sheet on a phone, a centred panel on a desktop. The scan draft
+ * Upload and scan in one sheet: a bottom sheet on a phone, a centred panel on a desktop. The scan draft
  * lives outside the sheet, so closing it keeps the pages; an upload is only reported as saved once the server has
  * stored it durably, and a failed attempt keeps everything for a retry.
  */

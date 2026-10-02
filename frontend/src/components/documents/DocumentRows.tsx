@@ -21,7 +21,7 @@ function FolderPath({ document }: { document: DocumentDto }) {
   );
 }
 
-/** State badges only where a document deviates from archived, readable and settled (F10); found by data-state. */
+/** State badges only where a document deviates from archived, readable and settled; found by data-state. */
 export function StateBadges({ document }: { document: DocumentDto }) {
   const { t } = useTranslation();
   const badges = documentBadges(document);
@@ -62,7 +62,7 @@ interface CardProps extends SelectProps {
   folderName?: (folderId: string) => string;
 }
 
-/** A document in the phone list; the whole card opens it (issue #27). */
+/** A document in the phone list; the whole card opens it. */
 export function DocumentCard({ document, selected, onSelectedChange, folderName }: CardProps) {
   const { i18n } = useTranslation();
   return (
@@ -98,7 +98,7 @@ interface TableProps {
   folderName?: (folderId: string) => string;
 }
 
-/** Whether a click on the title is a plain single mouse click, which previews instead of opening (issue #27). */
+/** Whether a click on the title is a plain single mouse click, which previews instead of opening. */
 function isPreviewClick(event: MouseEvent<HTMLAnchorElement>): boolean {
   return event.detail > 0 && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
 }

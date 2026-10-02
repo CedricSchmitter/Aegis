@@ -22,7 +22,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Whether the archive recognized text (issue #87, ADR-0012): measured after archival, caught up by the sweep. */
+/** Whether the archive recognized text (ADR-0012): measured after archival, caught up by the sweep. */
 class ArchiveTextServiceTest {
     private static final Instant NOW = Instant.parse("2026-09-23T10:00:00Z");
     private static final String LETTER = "Sehr geehrte Frau Muster, anbei erhalten Sie die Rechnung für September.";

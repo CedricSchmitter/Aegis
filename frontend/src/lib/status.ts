@@ -4,7 +4,7 @@ import { formatDateTime } from "./format";
 import { backupHintText, backupReasonText, diskName } from "./storage";
 
 /**
- * The status overview that answers "is everything OK?" (issue #83, F4). The API sends stable area and reason codes
+ * The status overview that answers "is everything OK?". The API sends stable area and reason codes
  * with stable parameters; this module turns them into words and never shows a code or parameter as it is.
  */
 export const CHECK_AREAS = ["database", "archive", "backup", "storage", "ai", "jobs"] as const;
@@ -135,7 +135,7 @@ export const WHAT_NOW_REASONS = [
 ] as const;
 
 /**
- * "Was jetzt?" under a broken area (issue #27): what to check or do. A backup problem names its own hint and adds that
+ * "Was jetzt?" under a broken area: what to check or do. A backup problem names its own hint and adds that
  * the documents in Aegis are not affected.
  */
 export function whatNowText(t: TFunction, check: HealthCheck): string {

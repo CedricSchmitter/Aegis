@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * What a bulk classification would cover and cost before a member starts it (issue #115). {@code documents} is the
+ * What a bulk classification would cover and cost before a member starts it. {@code documents} is the
  * number that would be included, at most {@code maxDocuments}; {@code limited} tells that the scope holds more, which
  * a later run can cover. {@code sample} lists the first of them. {@code refusal} is the code a start would be refused
  * with for this member ({@code ai.provider.memberNotAllowed}, {@code ai.notConfigured}, ...), {@code runningId} the

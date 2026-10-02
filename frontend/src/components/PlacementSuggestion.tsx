@@ -22,7 +22,7 @@ function percent(value: number | null | undefined, language: string): string | n
 }
 
 /**
- * The folder placement a classification run proposed, and the revert of a move it made on its own (#67).
+ * The folder placement a classification run proposed, and the revert of a move it made on its own.
  * The proposed parent and the new folder names can be edited before accepting; the labels and subjects the
  * target would add are shown first, because moving a document into a folder inherits them.
  */

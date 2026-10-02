@@ -50,7 +50,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Bulk classification of existing documents (issue #115, ADR-0022): the preview with its cost estimate, the explicit
+ * Bulk classification of existing documents (ADR-0022): the preview with its cost estimate, the explicit
  * start, the cancellation, the views, and the steps of the run's persisted job.
  *
  * <p>A run fixes its document list at the start and requests the documents one by one through
@@ -288,7 +288,7 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
             } else if ("SUCCEEDED".equals(run.state())) {
                 bulk.finished(item.documentId(), Outcome.CLASSIFIED, null, now);
             } else if (AnalysisRuns.MEMBER_NOT_ALLOWED.equals(run.failureCode())) {
-                // The requester lost AI access (issue #107): no failure, but nothing more can run on their behalf.
+                // The requester lost AI access: no failure, but nothing more can run on their behalf.
                 bulk.finished(item.documentId(), Outcome.NOT_CLASSIFIED, run.failureCode(), now);
                 bulk.stop(run.failureCode());
             } else {

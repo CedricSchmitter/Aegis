@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Cost estimate of a bulk analysis against the household's daily AI budget (issue #115). The per-document cost is the
+ * Cost estimate of a bulk analysis against the household's daily AI budget. The per-document cost is the
  * mean of recent classification runs once there are enough of them, otherwise the run budget, which no run may
  * exceed; both are estimates from list prices.
  */

@@ -33,7 +33,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Bulk classification of existing documents (issue #115) against PostgreSQL, the real job scheduler, the REST API and
+ * Bulk classification of existing documents against PostgreSQL, the real job scheduler, the REST API and
  * a controlled model: preview and explicit start, bounded batches, repeated job steps, cancellation of runs in
  * flight, a member edit that makes a result stale, one grouped review card, and who may start a run. Each test
  * scopes its run to a folder of its own, because the collection is shared by all integration tests.

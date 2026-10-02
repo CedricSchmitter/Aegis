@@ -8,7 +8,7 @@ import { useShellData } from "../shell/ShellData";
 import { cardClass } from "../ui";
 
 /**
- * The answer to "Ist alles in Ordnung?" (issues #83 and #27): a head card, then one row per area. A broken area is red
+ * The answer to "Ist alles in Ordnung?": a head card, then one row per area. A broken area is red
  * with its reason; "Nicht geprüft" stays grey and neutral. `compact` drops the test ids and the "what now?" card for
  * the context panel of other pages.
  */
@@ -62,7 +62,7 @@ export function StatusOverview({ checks, compact = false }: { checks: HealthChec
   );
 }
 
-/** The status overview in the context panel of Settings and Trash (issue #27), from the shell's once-a-minute check. */
+/** The status overview in the context panel of Settings and Trash, from the shell's once-a-minute check. */
 export function StatusPanel() {
   const { t } = useTranslation();
   const { checks } = useShellData();

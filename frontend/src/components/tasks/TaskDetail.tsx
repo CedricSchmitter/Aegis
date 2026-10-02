@@ -24,7 +24,7 @@ interface Props {
 type Editing = "assign" | "plan" | "due" | "edit" | null;
 
 /**
- * One task (issue #27): deadline, planned work day and responsibility, the source, then "Done" as the one primary
+ * One task: deadline, planned work day and responsibility, the source, then "Done" as the one primary
  * action with assigning and rescheduling below it. Rescheduling changes the work day only; the contractual deadline
  * of a cancellation review cannot be changed here at all.
  */

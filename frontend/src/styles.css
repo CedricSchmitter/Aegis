@@ -545,7 +545,7 @@
     }
   }
   /* Full screen above everything, an open sheet included (the scan's corner editor). It scrolls itself if it has to,
-     and its overscroll stays contained: a swipe on it neither chains into the sheet nor into the page (#125). */
+     and its overscroll stays contained: a swipe on it neither chains into the sheet nor into the page. */
   .ui-overlay {
     position: fixed;
     inset: 0;
@@ -635,7 +635,7 @@
     }
   }
 
-  /* ---- Document screens (issue #27, PR 3) ---- */
+  /* ---- Document screens ---- */
 
   /* Mono section heading with an optional count or control at the right. */
   .ui-sec {
@@ -854,7 +854,7 @@
     }
   }
 
-  /* ---- Today, tasks and contracts (issue #27, PR 4) ---- */
+  /* ---- Today, tasks and contracts ---- */
 
   /* The value in an eyebrow line, such as the date on Today or the state of a task. */
   .ui-eyebrow b {
@@ -937,7 +937,7 @@
     }
   }
 
-  /* ---- Inbox, status, trash, management, login and share (issue #27, PR 5) ---- */
+  /* ---- Inbox, status, trash, management, login and share ---- */
 
   /* A settings or status row: a name with one line of explanation, and a state or control at the right. */
   .ui-row {

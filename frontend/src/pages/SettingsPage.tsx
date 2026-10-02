@@ -36,7 +36,7 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-/** Status, trash and the folder and label management, each one row that leads there (issue #27). */
+/** Status, trash and the folder and label management, each one row that leads there. */
 function Places() {
   const { t } = useTranslation();
   const { status } = useShellData();
@@ -69,7 +69,7 @@ function Places() {
   );
 }
 
-/** Palette and effects, stored for the member like the language (issue #27, ADR-0019). */
+/** Palette and effects, stored for the member like the language (ADR-0019). */
 function AppearanceSettings() {
   const { t } = useTranslation();
   const { appearance, changeAppearance } = useSession();
@@ -167,7 +167,7 @@ function PasswordForm() {
 }
 
 /**
- * Settings (issue #27): where Status, Trash and the management pages are, then the member's own look, language,
+ * Settings: where Status, Trash and the management pages are, then the member's own look, language,
  * password and logout. From 1280 px the context panel shows the status overview.
  */
 export function SettingsPage() {

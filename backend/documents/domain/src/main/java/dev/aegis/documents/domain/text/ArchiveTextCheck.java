@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Whether the archive recognized text in an archived document (issue #87, ADR-0012) and whether it keeps a separate
+ * Whether the archive recognized text in an archived document (ADR-0012) and whether it keeps a separate
  * searchable archive version of it (ADR-0016). Both are read from one archive document in one request. The check keeps
  * only the number of letters and digits in the OCR text, never the text itself, so it can always be measured again
  * from the archive. A check that could not read the archive document names when the next automatic attempt is due; a
@@ -25,7 +25,7 @@ public record ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, I
 
     /**
      * Fewer letters and digits than this count as almost no text. A one-page letter has several hundred; the rotated
-     * and dark test photos of issue #81 gave none at all.
+     * and dark test photos gave none at all.
      */
     public static final int LITTLE_TEXT_BELOW = 50;
     static final Duration RETRY_BASE = Duration.ofMinutes(5);

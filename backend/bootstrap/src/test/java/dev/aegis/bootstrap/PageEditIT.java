@@ -35,7 +35,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * The page editor (issue #82, ADR-0024) through the HTTP API against PostgreSQL and the real job scheduler: splitting
+ * The page editor (ADR-0024) through the HTTP API against PostgreSQL and the real job scheduler: splitting
  * a scan of two letters, merging a photo with newly scanned pages, repeated and concurrent requests that create every
  * document once, refused sources, and source relationships that survive the permanent deletion of a source.
  */

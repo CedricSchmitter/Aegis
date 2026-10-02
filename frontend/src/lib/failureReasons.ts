@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 
 /**
- * Short, localized reasons for failed archival and analysis (issue #96). Review cards and notices keep the stable
+ * Short, localized reasons for failed archival and analysis. Review cards and notices keep the stable
  * failure code in their stored parameters; only the presentation turns it into words. The full code stays visible
  * on the document detail page.
  */

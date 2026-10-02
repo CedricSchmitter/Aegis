@@ -1,6 +1,6 @@
 import type { ContractSummaryDto, DocumentDto, TaskDto } from "../api/types";
 
-/** The three kinds of household records that can be moved to the trash (issue #48). */
+/** The three kinds of household records that can be moved to the trash. */
 export const TRASH_KINDS = ["document", "task", "contract"] as const;
 export type TrashKind = (typeof TRASH_KINDS)[number];
 

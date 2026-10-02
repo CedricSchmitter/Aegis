@@ -6,7 +6,7 @@ import { Icon, type IconName } from "./icons";
 import { useShellData } from "./ShellData";
 
 /**
- * The five areas, in the order of the phone tab bar (issue #83 F5). Status, Settings and Trash are reached through
+ * The five areas, in the order of the phone tab bar. Status, Settings and Trash are reached through
  * the avatar; on the desktop, Trash and Settings also sit at the bottom of the sidebar.
  */
 export const AREAS: readonly { to: string; key: string; icon: IconName }[] = [
@@ -63,7 +63,7 @@ function RowCount({ value, className = "text-text-4" }: { value: number | string
 }
 
 /**
- * The folder tree with the documents in each folder and below it, plus Unsorted, and "Manage folders" (issue #27).
+ * The folder tree with the documents in each folder and below it, plus Unsorted, and "Manage folders".
  * Choosing a folder on the document list keeps the search and filters; elsewhere it opens the list of that folder.
  */
 function FolderList() {
@@ -101,7 +101,7 @@ function FolderList() {
 }
 
 /**
- * Desktop sidebar (issue #27): Upload as the one primary action, the five areas, the folders with their counts, and
+ * Desktop sidebar: Upload as the one primary action, the five areas, the folders with their counts, and
  * Trash and Settings at the bottom. It stays in place while the work area scrolls.
  */
 export function Sidebar() {

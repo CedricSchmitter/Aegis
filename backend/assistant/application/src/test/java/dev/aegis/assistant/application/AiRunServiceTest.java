@@ -58,7 +58,7 @@ class AiRunServiceTest {
         assertThat(kit.scheduled).hasSize(2);
     }
 
-    /** Regression for issue #59: a key names one unit of work and cannot be reused for different work. */
+    /** A key names one unit of work and cannot be reused for different work. */
     @Test
     void aReusedKeyForDifferentWorkIsRejectedWhileActiveAndAfterSuccess() {
         RunView active = kit.classify("doc-1", 3, "Rechnung", false);

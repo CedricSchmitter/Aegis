@@ -11,7 +11,7 @@ import java.util.UUID;
 
 /**
  * The public contract other contexts use for confirmed cancellation deadlines, for example to create a
- * source-linked review task with a reminder (issue #63). Only contracts whose confirmed facts are sufficient
+ * source-linked review task with a reminder. Only contracts whose confirmed facts are sufficient
  * appear here: an unreviewed extraction, a rejected value or contradicting sources produce no deadline at all.
  *
  * <p>The evaluation day is passed in, not taken from a clock inside this context, so a caller that catches up

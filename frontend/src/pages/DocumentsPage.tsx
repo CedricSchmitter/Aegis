@@ -40,7 +40,7 @@ const MAX_ANALYSIS_SELECTION = 10;
 const catalogChanged = () => window.dispatchEvent(new Event(CATALOG_CHANGED));
 
 /**
- * The document list (issue #27, #108). Phone: upload as the one primary action, search, the folder rail with
+ * The document list. Phone: upload as the one primary action, search, the folder rail with
  * "Manage folders", the filter with "Manage labels", cards and the trash link at the end. Desktop: the folders live
  * in the sidebar and the search in the header; a table, the selected document in the context panel from 1280 px
  * and a drop target at the end.
@@ -306,7 +306,7 @@ export function DocumentsPage() {
               {t("documents.clearFilters")}
             </button>
           )}
-          {/* Existing documents that were never classified, in one explicitly started run (issue #115). */}
+          {/* Existing documents that were never classified, in one explicitly started run. */}
           <Link to="/documents/classify" className="btn-ghost" data-testid="open-bulk-analysis">
             {t("bulkAnalysis.open")}
           </Link>

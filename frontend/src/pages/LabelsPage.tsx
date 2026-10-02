@@ -8,7 +8,7 @@ import { activeLabels, labelName } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
 
 /**
- * Managing the household's labels by group (issue #27): create, rename, other spellings, merge, change the group,
+ * Managing the household's labels by group: create, rename, other spellings, merge, change the group,
  * retire and delete an unused one. No action deletes a document or loses an assignment.
  */
 export function LabelsPage() {

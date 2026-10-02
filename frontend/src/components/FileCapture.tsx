@@ -27,9 +27,9 @@ function carriesFiles(event: DragEvent): boolean {
 }
 
 /**
- * The ways to capture a document (issue #27). The camera (opens directly on Android) and the gallery add pages to a
+ * The ways to capture a document. The camera (opens directly on Android) and the gallery add pages to a
  * scan, which becomes one PDF; the file chooser and the desktop drop zone upload a PDF or photo unchanged. The
- * options say which one scans and which one keeps the file (issue #83). While a scan is in progress the file choice
+ * options say which one scans and which one keeps the file. While a scan is in progress the file choice
  * is hidden, so a chosen file can never silently replace scanned pages.
  */
 export function FileCapture({ file, format, pageCount, disabled, desktop = false, onPhotos, onFile, onClear }: Props) {

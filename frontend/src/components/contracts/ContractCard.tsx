@@ -39,7 +39,7 @@ interface Props {
 }
 
 /**
- * A contract in the list (issue #27): the cancellation date with its countdown, highlighted from 30 days before it;
+ * A contract in the list: the cancellation date with its countdown, highlighted from 30 days before it;
  * a passed deadline is red. The status appears only when the contract is no longer active.
  */
 export function ContractCard({ contract, on, selected = false, onSelect = null }: Props) {

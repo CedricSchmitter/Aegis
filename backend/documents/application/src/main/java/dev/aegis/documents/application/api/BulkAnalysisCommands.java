@@ -4,7 +4,7 @@ import dev.aegis.shared.Actor;
 import java.util.UUID;
 
 /**
- * Explicitly started classification of existing documents that were never classified (issue #115). Only a member who
+ * Explicitly started classification of existing documents that were never classified. Only a member who
  * may use AI starts a run; it is never started automatically. Any member may cancel it.
  */
 public interface BulkAnalysisCommands {

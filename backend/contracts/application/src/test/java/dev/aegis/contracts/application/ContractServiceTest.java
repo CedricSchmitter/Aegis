@@ -33,7 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The manual path that makes the feature work without AI, and the public contract issue #63 consumes: entering,
+ * The manual path that makes the feature work without AI, and the public contract planning consumes: entering,
  * confirming and correcting facts, and reading a deadline only when confirmed rules are sufficient.
  */
 class ContractServiceTest {

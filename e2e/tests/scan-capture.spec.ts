@@ -19,7 +19,7 @@ async function login(page: Page, user: { username: string; password: string }) {
   await expect(page).not.toHaveURL(/\/login$/);
 }
 
-/** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
+/** The language switch lives in Settings only; switch there if needed and return to the page. */
 async function ensureGerman(page: Page) {
   const back = page.url();
   await page.goto("/settings");
@@ -116,7 +116,7 @@ test.describe("scanned photos", () => {
     await page.getByTestId("upload-image-input").setInputFiles(photoFile);
     const editor = page.getByTestId("page-editor");
     await expect(editor).toHaveAttribute("data-purpose", "check");
-    // The editor is a modal of its own above the sheet (#125): a swipe on it, outside the corners, scrolls neither the
+    // The editor is a modal of its own above the sheet: a swipe on it, outside the corners, scrolls neither the
     // sheet nor the page behind it. Before, it chained into the page and Android redrew the sheet while it moved.
     await expect(editor).toBeFocused();
     const touch = info.project.use.hasTouch === true;
@@ -155,7 +155,7 @@ test.describe("scanned photos", () => {
     }
     // While scanning, a file cannot be chosen: it would replace the pages.
     await expect(page.getByTestId("upload-choose-file")).toHaveCount(0);
-    // One short sentence per state (issue #83): while scanning, the panel explains the pages, not the file choice.
+    // One short sentence per state: while scanning, the panel explains the pages, not the file choice.
     await expect(page.getByTestId("upload-form")).toContainText("Tipp auf eine Seite, um ihre Ecken zu korrigieren");
     await expect(page.getByTestId("upload-form")).not.toContainText("bleibt unverändert");
     await expect(page.getByTestId("upload-submit")).toHaveText("1 Seite als Dokument speichern");

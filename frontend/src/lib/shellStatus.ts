@@ -5,7 +5,7 @@ import { areaLabel, problemCount } from "./status";
 
 /**
  * What the shell says about the status overview (ADR-0018) in the header, the status bar, the avatar and the status
- * line on Today (issue #27): red only when something is broken, the data colour when everything works, grey while
+ * line on Today: red only when something is broken, the data colour when everything works, grey while
  * the overview is not known.
  */
 export type StatusTone = "ok" | "problem" | "unknown";

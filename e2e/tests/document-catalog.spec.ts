@@ -26,7 +26,7 @@ async function login(page: Page, user: { username: string; password: string }) {
   await expect(page).not.toHaveURL(/\/login$/);
 }
 
-/** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
+/** The language switch lives in Settings only; switch there if needed and return to the page. */
 async function ensureGerman(page: Page) {
   const back = page.url();
   await openSettings(page);
@@ -201,7 +201,7 @@ test.describe("document tree, labels and faceted search", () => {
     await login(page, userA);
     await ensureGerman(page);
 
-    // Folders: one create button, no example structure, and a row opens its form only on "Bearbeiten" (issue #83).
+    // Folders: one create button, no example structure, and a row opens its form only on "Bearbeiten".
     const folderName = `Zeilen e2e ${runId}`;
     const folderId = await createFolder(page, folderName, null);
     await expect(page.getByRole("button", { name: "Ordner anlegen" })).toHaveCount(1);
@@ -288,7 +288,7 @@ test.describe("document folders on a phone", () => {
     await ensureGerman(page);
     await page.goto("/documents");
 
-    // The folder rail with "Manage folders" at its end (issue #27, #108).
+    // The folder rail with "Manage folders" at its end.
     const rail = page.getByTestId("folder-rail");
     await expect(rail).toBeVisible();
     await expect(rail.getByTestId("folder-all")).toHaveAttribute("aria-pressed", "true");

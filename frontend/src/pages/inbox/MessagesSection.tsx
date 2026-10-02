@@ -18,7 +18,7 @@ interface Props {
 
 /**
  * The "Messages" section of the inbox: the member's notices that no review card represents, such as task
- * assignments, cancellation reminders and operational notices (issues #83 and #27). A message opens its target and
+ * assignments, cancellation reminders and operational notices. A message opens its target and
  * is read by that; anything broken, such as a failed backup, is red.
  */
 export function MessagesSection({ hidden = false, compactHeading = false }: Props) {

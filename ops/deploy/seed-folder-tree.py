@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create or update a household's starting folder tree from tracked data (issue #72, ADR-0006).
+"""Create or update a household's starting folder tree from tracked data (ADR-0006).
 
 The tree lives in `folder-tree.json`, not in this file. Seeding goes through the ordinary REST API, so it obeys
 the same authorization, validation and versioning as a member working in the UI. It is idempotent: folders are

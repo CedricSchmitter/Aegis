@@ -12,7 +12,7 @@ interface Props {
 }
 
 /**
- * The swipeable folder rail of the phone (issue #27, #108): All, Unsorted and the folders of the current level with
+ * The swipeable folder rail of the phone: All, Unsorted and the folders of the current level with
  * their counts, and "Manage folders" at the end. Deeper levels open below a folder; the breadcrumb leads back up.
  */
 export function FolderRail({ catalog, selected, onSelect }: Props) {

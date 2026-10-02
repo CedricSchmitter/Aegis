@@ -41,7 +41,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Notices about the external backup and low disk space (issue #100, ADR-0015) against PostgreSQL: the incident store
+ * Notices about the external backup and low disk space (ADR-0015) against PostgreSQL: the incident store
  * keeps one open incident per subject under concurrent opening, and a watch over a temporary backup state file
  * notifies both members once per incident through the real notice inbox. The live state file is never touched.
  */
