@@ -13,7 +13,7 @@ export function HeaderSearch() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const input = useRef<HTMLInputElement>(null);
   const listQuery = pathname === "/documents" ? (params.get("query") ?? "") : "";
   const [text, setText] = useState(listQuery);
@@ -32,6 +32,18 @@ export function HeaderSearch() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Emptying the field (the clear button or deleting the text) drops the search at once; the other filters stay.
+  const change = (value: string) => {
+    setText(value);
+    if (value.trim() || !listQuery) return;
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete("query");
+      next.delete("page");
+      return next;
+    });
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const query = text.trim();
@@ -46,7 +58,7 @@ export function HeaderSearch() {
         placeholder={t("shell.search.label")}
         shortcut={t("shell.search.shortcut")}
         value={text}
-        onChange={(event) => setText(event.target.value)}
+        onChange={(event) => change(event.target.value)}
         enterKeyHint="search"
       />
     </form>

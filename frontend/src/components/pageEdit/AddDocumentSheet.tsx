@@ -64,7 +64,11 @@ export function AddDocumentSheet({ open, onClose, inPlan, onAdd }: Props) {
             className="field"
             value={text}
             placeholder={t("pageEdit.add.search")}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setText(event.target.value);
+              // Emptying the field (the clear button or deleting the text) shows the newest documents again at once.
+              if (!event.target.value.trim()) setQuery("");
+            }}
             data-testid="page-edit-search"
           />
         </label>

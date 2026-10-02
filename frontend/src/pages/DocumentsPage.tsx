@@ -270,7 +270,11 @@ export function DocumentsPage() {
               label={t("documents.search")}
               placeholder={t("documents.searchPlaceholder")}
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              onChange={(event) => {
+                setSearchText(event.target.value);
+                // Emptying the field (the clear button or deleting the text) drops the search at once.
+                if (!event.target.value.trim() && filters.query.trim()) apply({ ...filters, query: "", page: 0 });
+              }}
               enterKeyHint="search"
               data-testid="search-input"
             />

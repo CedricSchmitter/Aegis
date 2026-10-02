@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { MemoryRouter, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "../../i18n";
 import type { StatusSummary } from "../../lib/shellStatus";
 import { AvatarMenu } from "./AvatarMenu";
+import { HeaderSearch } from "./HeaderSearch";
 import { BottomNav } from "./Navigation";
 
 const shell = vi.hoisted(() => ({
@@ -83,5 +84,43 @@ describe("avatar menu", () => {
     fireEvent.click(screen.getByTestId("avatar-menu-toggle"));
     fireEvent.pointerDown(document.body);
     expect(screen.getByTestId("avatar-menu-toggle").getAttribute("aria-expanded")).toBe("false");
+  });
+});
+
+describe("header search", () => {
+  function Location() {
+    const location = useLocation();
+    return <output data-testid="location">{location.pathname + location.search}</output>;
+  }
+
+  it("drops the search at once when the field is emptied and keeps the other filters", async () => {
+    await i18n.changeLanguage("de");
+    at(
+      "/documents?query=strom&category=c1&page=2",
+      <>
+        <HeaderSearch />
+        <Location />
+      </>,
+    );
+    const field = screen.getByRole("searchbox");
+    expect((field as HTMLInputElement).value).toBe("strom");
+
+    fireEvent.change(field, { target: { value: "" } });
+    expect(screen.getByTestId("location").textContent).toBe("/documents?category=c1");
+  });
+
+  it("does not navigate when the field is emptied outside the document list", async () => {
+    await i18n.changeLanguage("de");
+    at(
+      "/tasks",
+      <>
+        <HeaderSearch />
+        <Location />
+      </>,
+    );
+    const field = screen.getByRole("searchbox");
+    fireEvent.change(field, { target: { value: "strom" } });
+    fireEvent.change(field, { target: { value: "" } });
+    expect(screen.getByTestId("location").textContent).toBe("/tasks");
   });
 });
