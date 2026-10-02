@@ -1,0 +1,67 @@
+package dev.aegis.documents.adapters.pdf;
+
+import dev.aegis.documents.application.ports.PdfRefusedException;
+import dev.aegis.documents.application.ports.PdfText;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.springframework.stereotype.Component;
+
+/**
+ * Reads the text layer of a PDF page by page with Apache PDFBox, such as the one OCR adds to the archive's searchable
+ * PDF. Text is ordered by its position on the page, like the archive's own extraction, so quotes taken from either
+ * read the same.
+ */
+@Component
+public class PdfBoxText implements PdfText {
+
+    @Override
+    public Optional<List<String>> pageTexts(byte[] pdf, int maxPages, int maxCharacters) {
+        try (PDDocument document = open(pdf)) {
+            int pageCount = document.getNumberOfPages();
+            if (pageCount > maxPages) {
+                return Optional.empty();
+            }
+            PDFTextStripper stripper = new PDFTextStripper();
+            stripper.setSortByPosition(true);
+            stripper.setLineSeparator("\n");
+            stripper.setPageStart("");
+            stripper.setPageEnd("");
+            List<String> pages = new ArrayList<>(pageCount);
+            long characters = 0;
+            for (int page = 1; page <= pageCount; page++) {
+                stripper.setStartPage(page);
+                stripper.setEndPage(page);
+                String text = clean(stripper.getText(document));
+                characters += text.length();
+                if (characters > maxCharacters) {
+                    return Optional.empty();
+                }
+                pages.add(text);
+            }
+            return Optional.of(pages);
+        } catch (IOException damaged) {
+            throw new PdfRefusedException(PdfRefusedException.UNREADABLE, "the PDF text cannot be read: "
+                    + damaged.getMessage());
+        }
+    }
+
+    private static PDDocument open(byte[] pdf) throws IOException {
+        try {
+            return Loader.loadPDF(pdf, "", null, null, IOUtils.createTempFileOnlyStreamCache());
+        } catch (InvalidPasswordException encrypted) {
+            throw new PdfRefusedException(PdfRefusedException.ENCRYPTED, "the PDF needs a password");
+        }
+    }
+
+    /** Page breaks are expressed by the page list, so a form feed inside a page would only mislead. */
+    private static String clean(String text) {
+        return text.replace("\r", "").replace('\f', '\n').strip();
+    }
+}

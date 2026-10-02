@@ -2,13 +2,18 @@ package dev.aegis.assistant.application.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.aegis.documents.application.api.DocumentTextQuery.DocumentText;
+import dev.aegis.shared.DocumentId;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class QuoteMatchTest {
-    static final String TEXT = "Stadtwerke Muster GmbH\nStromliefervertrag Nr. 4711\n\fMindestlaufzeit 24 Monate. "
-            + "Der Vertrag verlängert sich um jeweils 12 Monate, wenn er nicht mit einer Frist von 3 Monaten zum "
-            + "Ende der Lauf-\nzeit gekündigt wird.\n\fSeite 3: „Grundpreis“ 14,50 EUR – monatlich";
+    static final DocumentText TEXT = new DocumentText(DocumentId.random(), "Stromvertrag", List.of(
+            "Stadtwerke Muster GmbH\nStromliefervertrag Nr. 4711",
+            "Mindestlaufzeit 24 Monate. Der Vertrag verlängert sich um jeweils 12 Monate, wenn er nicht mit einer "
+                    + "Frist von 3 Monaten zum Ende der Laufzeit gekündigt wird. Die Kündigung bedarf der Text-",
+            "form.\nSeite 3: „Grundpreis“ 14,50 EUR – monatlich"), true);
 
     @Test
     void aQuoteIsFoundDespiteCaseLineBreaksAndBlanks() {
@@ -17,14 +22,25 @@ class QuoteMatchTest {
     }
 
     @Test
-    void wordsHyphenatedAcrossLinesMatchTheWholeWord() {
-        assertThat(QuoteMatch.find(TEXT, "zum Ende der Laufzeit gekündigt")).isPresent();
+    void wordsHyphenatedAcrossLinesAndPagesMatchTheWholeWord() {
+        assertThat(QuoteMatch.find(unpaged("zum Ende der Lauf-\nzeit gekündigt"), "zum Ende der Laufzeit gekündigt"))
+                .isPresent();
+        assertThat(QuoteMatch.find(TEXT, "Die Kündigung bedarf der Textform"))
+                .as("the page where the quote starts").contains(new QuoteMatch.Found(Optional.of(2)));
     }
 
     @Test
     void typographicQuotesAndDashesMatchTheirPlainForms() {
         assertThat(QuoteMatch.find(TEXT, "\"Grundpreis\" 14,50 EUR - monatlich"))
                 .contains(new QuoteMatch.Found(Optional.of(3)));
+    }
+
+    @Test
+    void theFirstAndLastWordOfAPageBelongToThatPage() {
+        assertThat(QuoteMatch.find(TEXT, "Stadtwerke")).contains(new QuoteMatch.Found(Optional.of(1)));
+        assertThat(QuoteMatch.find(TEXT, "Nr. 4711")).contains(new QuoteMatch.Found(Optional.of(1)));
+        assertThat(QuoteMatch.find(TEXT, "Mindestlaufzeit")).contains(new QuoteMatch.Found(Optional.of(2)));
+        assertThat(QuoteMatch.find(TEXT, "monatlich")).contains(new QuoteMatch.Found(Optional.of(3)));
     }
 
     @Test
@@ -40,8 +56,12 @@ class QuoteMatchTest {
     }
 
     @Test
-    void aTextWithoutPageBreaksGivesNoPage() {
-        assertThat(QuoteMatch.find("Kfz-Haftpflicht, Beitrag 300 EUR.", "Beitrag 300 EUR"))
+    void aTextWithoutKnownPagesGivesNoPage() {
+        assertThat(QuoteMatch.find(unpaged("Kfz-Haftpflicht, Beitrag 300 EUR."), "Beitrag 300 EUR"))
                 .contains(new QuoteMatch.Found(Optional.empty()));
+    }
+
+    private static DocumentText unpaged(String text) {
+        return DocumentText.unpaged(DocumentId.random(), "Versicherung", text);
     }
 }

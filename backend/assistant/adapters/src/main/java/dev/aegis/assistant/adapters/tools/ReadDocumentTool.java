@@ -21,21 +21,19 @@ import org.springframework.stereotype.Component;
 
 /**
  * Reads the archived text of one document in parts, framed as untrusted data, with its metadata and the contracts
- * that cite it. The archive separates pages with form feeds; they are shown as page markers so the model can say
- * where a statement stands.
+ * that cite it. Where the document's pages are known, page markers let the model say where a statement stands.
  */
 @Component
 public class ReadDocumentTool implements AiTool {
     static final int PART = 12_000;
     /** How far a part may end early to end at a line or word boundary instead of inside a word. */
     static final int BOUNDARY_WINDOW = 400;
-    private static final char PAGE_BREAK = '\f';
 
     private static final ToolSpec SPEC = new ToolSpec(ChatTools.READ_DOCUMENT,
             "Reads the text the archive recognized in one document, in parts of about " + PART + " characters, "
                     + "with title, folder, labels, document date and the contracts that cite it. Page markers such "
-                    + "as '--- page 2 ---' separate pages when the archive knows them; they are not part of the "
-                    + "text. Read the next part with offset = nextOffset.",
+                    + "as '--- page 2 ---' separate pages when they are known; they are not part of the text. Read "
+                    + "the next part with offset = nextOffset.",
             Map.of("type", "object",
                     "properties", Map.of(
                             "id", Map.of("type", "string", "description", "Document id from search_documents"),
@@ -97,15 +95,14 @@ public class ReadDocumentTool implements AiTool {
                     + "not read. Its content is unknown.");
             return Result.ok(JsonText.write(answer));
         }
-        boolean paged = content.indexOf(PAGE_BREAK) >= 0;
-        if (paged) {
-            answer.put("pages", count(content, content.length()) + 1);
+        if (text.paged()) {
+            answer.put("pages", text.pages().size());
         }
         int start = Math.min(offset, content.length());
         int end = end(content, start);
         answer.put("offset", start);
         answer.put("nextOffset", end < content.length() ? end : null);
-        answer.put("text", UntrustedContent.wrap("document", id.toString(), render(content, start, end, paged),
+        answer.put("text", UntrustedContent.wrap("document", id.toString(), render(text, content, start, end),
                 Integer.MAX_VALUE));
         return Result.ok(JsonText.write(answer));
     }
@@ -117,7 +114,7 @@ public class ReadDocumentTool implements AiTool {
             return limit;
         }
         for (int i = limit; i > limit - BOUNDARY_WINDOW && i > start; i--) {
-            if (content.charAt(i - 1) == '\n' || content.charAt(i - 1) == PAGE_BREAK) {
+            if (content.charAt(i - 1) == '\n') {
                 return i;
             }
         }
@@ -129,31 +126,27 @@ public class ReadDocumentTool implements AiTool {
         return limit;
     }
 
-    static String render(String content, int start, int end, boolean paged) {
-        if (!paged) {
+    /** The part {@code [start, end)} of {@code content}, the document's text, with a marker before every page. */
+    static String render(DocumentText document, String content, int start, int end) {
+        if (!document.paged()) {
             return content.substring(start, end);
         }
-        int page = count(content, start) + 1;
-        StringBuilder out = new StringBuilder("--- page ").append(page).append(" ---\n");
-        for (int i = start; i < end; i++) {
-            char c = content.charAt(i);
-            if (c == PAGE_BREAK) {
-                page++;
-                out.append("\n--- page ").append(page).append(" ---\n");
-            } else {
-                out.append(c);
+        int page = document.pageAt(start).getAsInt();
+        StringBuilder out = new StringBuilder(marker(page));
+        int from = start;
+        while (page < document.pages().size()) {
+            int next = document.pageStart(page + 1);
+            if (next >= end) {
+                break;
             }
+            page++;
+            out.append(content, from, next - DocumentText.PAGE_SEPARATOR.length()).append('\n').append(marker(page));
+            from = next;
         }
-        return out.toString();
+        return out.append(content, from, end).toString();
     }
 
-    private static int count(String content, int before) {
-        int breaks = 0;
-        for (int i = 0; i < before; i++) {
-            if (content.charAt(i) == PAGE_BREAK) {
-                breaks++;
-            }
-        }
-        return breaks;
+    private static String marker(int page) {
+        return "--- page " + page + " ---\n";
     }
 }
