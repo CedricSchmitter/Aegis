@@ -39,6 +39,17 @@ export function turnRetryable(turn: Pick<ChatTurnDto, "state" | "answer">): bool
   return (turn.state === "FAILED" || turn.state === "CANCELLED") && !turn.answer;
 }
 
+/**
+ * What a waiting question tells the member. Only the daily budget names a time: its renewal is exact, while a retry
+ * after a provider failure is a guess that can lie hours before the provider's own reset.
+ */
+export function waitingMessage(turn: Pick<ChatTurnDto, "failureCode" | "nextAttemptAt">): { key: string; at?: string } {
+  if (turn.failureCode === "budget.daily" && turn.nextAttemptAt) return { key: "chat.waitingUntil", at: turn.nextAttemptAt };
+  if (turn.failureCode === "provider.rateLimited") return { key: "chat.waitingRateLimited" };
+  if (turn.failureCode) return { key: "chat.waitingRetry" };
+  return { key: "chat.waiting" };
+}
+
 const TOOL_KEYS: Record<string, string> = {
   household_catalog: "chat.progress.catalog",
   search_documents: "chat.progress.searchDocuments",
