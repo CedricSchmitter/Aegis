@@ -22,9 +22,6 @@ import java.util.Optional;
 
 /** Transactional steps of run execution; wrapped by a transaction decorator in the composition root. */
 public class RunExecutionService implements RunExecution {
-    /** Delay before a run that found no free slot tries again. */
-    static final Duration SLOT_WAIT = Duration.ofSeconds(15);
-
     private final AiRunRepository runs;
     private final AiLock lock;
     private final EffectLedger ledger;
@@ -60,7 +57,7 @@ public class RunExecutionService implements RunExecution {
             return new Later(run.nextAttemptAt().get());
         }
         if (!run.cancelRequested() && !slotFree(run, now)) {
-            return new Later(now.plus(SLOT_WAIT));
+            return new Later(now.plus(settings.slotWait()));
         }
         AiRun.StartResult start = run.start(now);
         switch (start) {

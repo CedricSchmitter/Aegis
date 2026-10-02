@@ -152,6 +152,8 @@ aegis:
     # Sum of one provider's model calls per household day (aegis.household.zone), unless provider-limits sets its own.
     daily-cost-limit: ${AEGIS_AI_DAILY_COST_LIMIT:0.25}
     max-concurrent-runs: 1
+    # A run that finds every slot taken stays queued and checks again after this wait.
+    slot-wait: 15s
     call-timeout: 120s
     providers:
       # Claude API with a Console key, billed per token to the key owner.

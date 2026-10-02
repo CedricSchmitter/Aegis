@@ -32,7 +32,7 @@ class AiPropertiesTest {
 
     private static AiSettings settings(Map<String, AiProperties.Price> prices,
             Map<String, AiProperties.CatalogModel> catalog, AiProperties.Profile classification) {
-        return new AiProperties(null, null, null, null, prices, catalog, Map.of("classification", classification),
+        return new AiProperties(null, null, null, null, null, prices, catalog, Map.of("classification", classification),
                 null).toSettings(ZoneId.of("Europe/Berlin"));
     }
 
@@ -70,6 +70,14 @@ class AiPropertiesTest {
                 new ModelCatalog.Entry(ModelFamily.HAIKU, "claude-haiku-4-5", false));
         assertThat(settings.catalog().acceptsEffort("claude-haiku-4-5")).isFalse();
         assertThat(settings.catalog().acceptsEffort("claude-sonnet-5")).isTrue();
+    }
+
+    @Test
+    void aRunWithoutAFreeSlotChecksAgainAfterFifteenSecondsUnlessConfigured() {
+        assertThat(settings(PRICES, CATALOG, profile(null, null, "sonnet")).slotWait())
+                .isEqualTo(Duration.ofSeconds(15));
+        assertThat(new AiProperties(null, null, null, null, Duration.ofMillis(200), PRICES, CATALOG, Map.of(), null)
+                .toSettings(ZoneId.of("Europe/Berlin")).slotWait()).isEqualTo(Duration.ofMillis(200));
     }
 
     @Test
