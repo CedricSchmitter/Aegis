@@ -240,9 +240,15 @@ def ask(client, reference, state, mode, repetitions, only, out):
                                                              "question": question["question"],
                                                              "locale": question["locale"]})
             try:
+                raced = False
                 while True:
                     _, body = client.call("GET", "/api/chat/conversations/" + conversation)
                     latest = body["turns"][-1]
+                    # The view reads the conversation before the run, so an answer stored in between shows as
+                    # missing once; reading again shows it.
+                    if latest.get("failureCode") == "chat.answerMissing" and not raced:
+                        raced = True
+                        continue
                     if latest["state"] not in OPEN_STATES or time.monotonic() - started > 600:
                         break
                     time.sleep(1.5)
@@ -309,7 +315,8 @@ def score(run, question):
     verified = [c["source"] for c in run["citations"] if c["check"] == "VERIFIED"]
     cited = [c["source"] for c in run["citations"]]
     expected = question["expectedSources"]
-    allowed = set(expected) | set(question["acceptableSources"])
+    # A distractor may be cited to contrast it with the answer; it is reported, but only the facts decide.
+    allowed = set(expected) | set(question["acceptableSources"]) | set(question["distractors"])
     answer = (run.get("answer") or "").lower()
     facts = all(any(alternative.lower() in answer for alternative in group) for group in question["expectedFacts"])
     missed = [key for key in expected if key not in verified]
@@ -345,8 +352,8 @@ def report(reference, files):
         for run in data["runs"]:
             groups.setdefault((run["harness"], run["mode"]), []).append(run)
     lines = ["| Harness | Retrieval | Runs | Answered | Passed | Source recall | Missed sources | Unrelated citations "
-             "| Latency median s | Model calls | Tool calls | Input tokens | Input chars | Output tokens | Cost USD |",
-             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+             "| Distractors cited | Latency median s | Model calls | Tool calls | Input tokens | Input chars | Output tokens | Cost USD |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     details = {}
     for (harness, mode), runs in sorted(groups.items()):
         scores = [score(run, questions[run["question"]]) for run in runs]
@@ -355,11 +362,11 @@ def report(reference, files):
             for key in result["missed"]:
                 missed[key] = missed.get(key, 0) + 1
             details.setdefault(run["question"], {}).setdefault((harness, mode), []).append(result)
-        lines.append("| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
+        lines.append("| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
             harness, mode, len(runs), sum(s["answered"] for s in scores), sum(s["passed"] for s in scores),
             number(mean([s["recall"] for s in scores]), 2),
             ", ".join(f"{key} x{count}" for key, count in sorted(missed.items())) or "none",
-            sum(len(s["unrelated"]) for s in scores),
+            sum(len(s["unrelated"]) for s in scores), sum(s["distractorCited"] for s in scores),
             number(statistics.median(run["latencySeconds"] for run in runs)),
             number(mean([run["modelCalls"] for run in runs])), number(mean([run["toolCalls"] for run in runs])),
             number(mean([total_input(run) for run in runs]), 0), number(mean([run.get("inputCharacters")

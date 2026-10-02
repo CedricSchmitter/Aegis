@@ -72,6 +72,9 @@ public class ChatHandler implements WorkloadHandler {
 
             How to research:
             %s
+            - A search result's title, folder and labels can be wrong too. When a result matches your search words \
+            but its title or labels do not seem to fit, read it before you leave it out, above all when the question \
+            asks for every document, contract or insurance of a kind.
             - list_contracts and read_contract show the contracts with their facts. Each fact names the document, \
             page and quote it comes from and whether a member confirmed it; the cancellation deadline is calculated \
             from confirmed facts only. Prefer confirmed facts, and check them in the documents when they matter.

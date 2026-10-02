@@ -54,14 +54,16 @@ class ScoreTest(unittest.TestCase):
         self.assertEqual(0.5, result["recall"])
         self.assertEqual(1, result["unverified"])
 
-    def test_citing_an_unrelated_household_document_fails_and_a_distractor_is_flagged(self):
-        result = check.score(run("q02-current-energy-price", [("nordlicht-price-change", "VERIFIED"),
-                                                              ("other-document", "VERIFIED"),
-                                                              ("nordlicht-magazine", "VERIFIED")],
-                                 "29,80 Cent/kWh"), QUESTIONS["q02-current-energy-price"])
-        self.assertFalse(result["passed"])
-        self.assertEqual(["nordlicht-magazine", "other-document"], result["unrelated"])
-        self.assertTrue(result["distractorCited"])
+    def test_a_distractor_cited_for_contrast_is_flagged_but_an_unrelated_document_fails(self):
+        question = QUESTIONS["q02-current-energy-price"]
+        contrast = check.score(run(question["id"], [("nordlicht-price-change", "VERIFIED"),
+                                                    ("nordlicht-magazine", "VERIFIED")], "29,80 Cent/kWh"), question)
+        self.assertTrue(contrast["passed"])
+        self.assertTrue(contrast["distractorCited"])
+        unrelated = check.score(run(question["id"], [("nordlicht-price-change", "VERIFIED"),
+                                                     ("other-document", "VERIFIED")], "29,80 Cent/kWh"), question)
+        self.assertFalse(unrelated["passed"])
+        self.assertEqual(["other-document"], unrelated["unrelated"])
 
     def test_a_question_without_sources_passes_only_when_nothing_was_found(self):
         question = QUESTIONS["q10-not-in-records"]
@@ -81,8 +83,8 @@ class ScoreTest(unittest.TestCase):
                 run("q03-mislabeled-car-insurance", [("falkenried-car-policy", "VERIFIED")], "486,20 EUR"),
                 run("q03-mislabeled-car-insurance", [], "Nicht gefunden.", "NOT_FOUND", mode="TEXT_ONLY")]}))
             text = check.report(REFERENCE, [file])
-        self.assertIn("| live-app | LABELS_AND_TEXT | 1 | 1 | 1 | 1.00 | none | 0 |", text)
-        self.assertIn("| live-app | TEXT_ONLY | 1 | 1 | 0 | 0.00 | falkenried-car-policy x1 | 0 |", text)
+        self.assertIn("| live-app | LABELS_AND_TEXT | 1 | 1 | 1 | 1.00 | none | 0 | 0 |", text)
+        self.assertIn("| live-app | TEXT_ONLY | 1 | 1 | 0 | 0.00 | falkenried-car-policy x1 | 0 | 0 |", text)
         self.assertIn("| q03-mislabeled-car-insurance | mislabeled | 1/1 | 0/1 missed falkenried-car-policy |", text)
         self.assertIn("| 1,000 |", text)
 
