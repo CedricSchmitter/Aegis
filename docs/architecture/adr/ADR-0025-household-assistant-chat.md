@@ -1,6 +1,6 @@
 # ADR-0025: Household assistant chat with checked citations
 
-Status: accepted (first part of issue #25 implemented). Date: 2026-10-02.
+Status: accepted (first part of issue #25 implemented, reference questions evaluated). Date: 2026-10-02.
 
 ## Context
 
@@ -54,10 +54,17 @@ The `chat` workload is granted six read-only tools, each calling public applicat
 - `list_tasks`: tasks with due date and planned day kept apart, the source document and cancellation reviews.
 
 The system prompt tells the model to narrow with labels but to search with words as well when a filtered search finds
-little, and to say when documents may have been missed, because labels can be wrong or missing; to compare an original
+little, and to say when documents may have been missed, because labels can be wrong or missing; to read a result that
+matches its search words even when its title or labels do not seem to fit, above all for questions about every
+document of a kind (see "Reference questions"); to compare an original
 contract with its amendments by date; to cite every statement; to name missing, contradictory or outdated evidence;
 and to answer in the language of the question (the member's locale as fallback). A request to change something is
 answered with where the member can do it; the chat has no writing tool.
+
+`AEGIS_AI_CHAT_RETRIEVAL` (`aegis.ai.chat-retrieval`) selects the retrieval. `LABELS_AND_TEXT`, the default, is the
+behavior above. `TEXT_ONLY` exists to compare retrieval with the reference questions: it withholds
+`household_catalog` and grants `search_document_text` instead of `search_documents`, the same structured search
+without folder and label filters. Results still show a document's folder and labels.
 
 ### Checked citations
 
@@ -97,7 +104,10 @@ request with tools or with more than one message is sent as one stateless CLI ru
 as a JSON array (user messages, earlier answers, tool calls, tool results) and whose JSON schema is
 `{toolCalls: [{name, input}], answer: <workload schema> | null}`. Aegis turns requested calls into ordinary tool calls
 of the run, so grants, refusals, budgets, audit steps and the executor are identical to the API provider; the CLI still
-runs without any tool, and a single prompt without tools is sent unchanged as before. JSON keeps content inside a tool
+runs without any tool, and a single prompt without tools is sent unchanged as before. The protocol tells the model
+that its own environment offers no tools and that toolCalls always works, because in 2 of 80 evaluation runs the model
+answered that the tools were unavailable without having requested any through toolCalls, apparently after trying to
+call them directly in the CLI, and in one more the CLI stopped without an answer. JSON keeps content inside a tool
 result from closing its frame and posing as another role. The subscription still serves only its owner's runs.
 
 ### Delivery
@@ -105,6 +115,60 @@ result from closing its frame and posing as another role. The subscription still
 The web app polls an open question every 1.5 seconds and shows the run's steps as progress ("searching documents",
 "reading a document"); leaving and returning shows the same state. Answers are not streamed token by token: the
 subscription has no streaming, and the progress already shows what happens.
+
+### Reference questions
+
+`fixtures/assistant-eval/reference-set.json` holds twelve synthetic documents of a fictional household (contracts,
+an amendment, a termination, invoices, a distractor, one deliberately mislabeled document with a meaningless title
+and one unsorted document without labels) and ten questions with expected and acceptable sources, expected facts and
+evidence levels. The questions name only fictional organizations, so a real collection cannot answer them. Two
+harnesses ask them and share the scoring of `ops/eval/chat_reference_check.py report`:
+
+- `ChatReferenceLiveTest` (opt-in, `AEGIS_CHAT_EVAL=true`) runs the real handler, tools, run executor and `AiRun`
+  budgets in a household that holds only the reference documents, and records which documents the searches returned
+  and the model read. Its word search approximates the archive's (every word, ignoring case and accents).
+- `ops/eval/chat_reference_check.py` uploads and files the documents on a running instance as `aegis-dev`, probes the
+  application's own search without AI, asks every question in a new conversation and cleans up through the trash.
+
+A run passes when every expected source is cited with a verified quote, the expected facts appear in the answer, the
+evidence level is one of the expected ones and no other document is cited. Distractors and acceptable sources may be
+cited, for example to contrast them with the answer.
+
+Results on 2026-10-02 with Sonnet 5.5 on the owner's subscription, two repetitions per question and retrieval; the
+live runs used VM 102 with the household's real collection besides the reference documents:
+
+| Harness, retrieval | Passed | Source recall | Median latency | Model / tool calls | Input tokens | Cost (API-eq.) |
+|---|---|---|---|---|---|---|
+| in-process, labels and text | 16/20 | 0.90 | 16.4 s | 3.2 / 4.4 | 38,127 | 0.037 USD |
+| in-process, text only | 18/20 | 0.95 | 16.7 s | 3.2 / 4.5 | 33,137 | 0.036 USD |
+| live, labels and text | 15/20 | 0.90 | 21.2 s | 3.2 / 4.7 | 40,020 | 0.041 USD |
+| live, text only | 16/20 | 0.90 | 22.0 s | 3.1 / 4.2 | 31,145 | 0.035 USD |
+| live, labels and text, read-despite-labels prompt | 17/18 | 1.00 | 22.0 s | 3.2 / 5.1 | 46,563 | 0.045 USD |
+
+Input tokens include the provider's cached input, which runs now report (`cacheReadTokens`, `cacheWriteTokens`); on
+the subscription it is nearly all of the input.
+
+- Apart from the failures listed last, neither retrieval found a source that the other missed, at the same latency
+  and number of calls. The
+  model called `household_catalog` in only 2 of 20 runs per harness; the label-capable search definition, sent with
+  every call, made the input 15 to 28 percent larger. The set is small and its organization names make word search
+  easy, so this shows no advantage of labels here, not that labels never help.
+- The application's search without AI excludes the mislabeled document when filtering by its organization or by type
+  and topic, and finds it by words ("Falkenried", "MU-ST 123", "Kfz Versicherung"); the unsorted document is found by
+  words and under Unsorted only. Asked about the mislabeled document directly, the assistant found it in 7 of 8
+  runs of both retrievals before the prompt change; the miss was a subscription protocol failure.
+- Asked for every policy of the insurer, the assistant missed the mislabeled one in 6 of 8 runs of both retrievals
+  while reporting complete evidence. In the in-process runs, which record search results, the searches returned it
+  every time, but the model did not read a result whose title and labels did not fit. With the read-despite-labels instruction it was found in 5 of 5 runs and every expected source
+  was cited in all 18 verification runs, at about 16 percent more input.
+- Other failures: 3 of 80 runs on the subscription answered without research or stopped without an answer (see "Tool
+  loop on the subscription"); one English question was answered in German; on the live instance, a question about a
+  fictional provider was answered with "not found" plus a real household document of the same kind, rated PARTIAL.
+  One live text-only run showed a stored answer as missing because the conversation view reads the conversation
+  before the run (its rerun passed); making that read consistent is a separate fix.
+
+The default stays `LABELS_AND_TEXT`: the evaluation shows no retrieval advantage of either, and the instruction to
+read results despite their labels removed the misses that labels and titles caused.
 
 ## Consequences
 
@@ -121,5 +185,5 @@ subscription has no streaming, and the progress already shows what happens.
   caveats remain the model's assessment.
 - Conversations are not part of the portable export; they are personal working notes in the database backup.
   Permanently deleting a document does not remove quotes from earlier answers; deleting the conversation does.
-- Not yet done in #25: writing actions with concrete authorization, token streaming, a fixed set of reference
-  questions with expected sources, and the evaluation of labels plus full text against full text alone.
+- Not yet done in #25: writing actions with concrete authorization and token streaming. The reference questions
+  cost about 0.04 USD API-equivalent each; rerun them after changing the prompt, tools or model.

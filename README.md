@@ -48,7 +48,7 @@ AEGIS_AI_LIVE_TEST=true AEGIS_ANTHROPIC_API_KEY_FILE=/path/to/anthropic-api-key 
 ```
 
 The household assistant's reference questions (`fixtures/assistant-eval`, issue #25) run as a live evaluation that
-is skipped unless enabled. Each question costs about ten cents API-equivalent per retrieval and repetition; without a
+is skipped unless enabled. Each question costs about 0.04 USD API-equivalent per retrieval and repetition; without a
 key file it uses the owner's subscription through the host runner socket, which needs the owner's consent. The raw
 results go to `backend/assistant/adapters/target/assistant-eval/` and are summarized by the ops script below:
 

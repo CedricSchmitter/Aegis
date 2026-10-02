@@ -72,7 +72,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * LIVE evaluation of the household assistant with the reference questions (issue #25). It is skipped unless
- * {@code AEGIS_CHAT_EVAL=true} and costs money or subscription usage: about ten cents API-equivalent per question.
+ * {@code AEGIS_CHAT_EVAL=true} and costs money or subscription usage: about 0.04 USD API-equivalent per question.
  *
  * <p>The real chat handler, tools and run executor answer every question of {@code fixtures/assistant-eval} in a
  * household that holds only the synthetic reference documents, once per retrieval ({@code LABELS_AND_TEXT},

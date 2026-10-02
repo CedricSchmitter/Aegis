@@ -357,7 +357,7 @@
       "question": "When does our household contents insurance with Falkenried renew, and how much notice do we have to give?",
       "purpose": ["label-narrowing", "english"],
       "expectedSources": ["falkenried-contents-policy"],
-      "acceptableSources": [],
+      "acceptableSources": ["falkenried-car-policy"],
       "distractors": [],
       "expectedFacts": [["three months", "3 months"]],
       "expectedEvidence": ["COMPLETE"]

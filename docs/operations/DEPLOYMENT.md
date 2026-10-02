@@ -317,7 +317,7 @@ the owner adds `aegis-dev` to `AEGIS_AI_SUBSCRIPTION_MEMBERS` for the duration o
 restore it afterwards). To compare with full text alone, set `AEGIS_AI_CHAT_RETRIEVAL=TEXT_ONLY` in `.env`, recreate
 the application container (`sudo -n sh -c 'cd /srv/aegis/deploy && docker compose up -d aegis'`), ask with
 `--mode TEXT_ONLY`, and restore `LABELS_AND_TEXT` (the default) the same way. The script stops when the runs show the
-other retrieval's tools. Each question costs about 0.03 to 0.10 USD API-equivalent.
+other retrieval's tools. Each question cost 0.04 USD API-equivalent on average on 2026-10-02 (0.01 to 0.13).
 
 ## Installable app and Android share target
 
