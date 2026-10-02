@@ -263,6 +263,99 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether the member can ask now, and their conversations */
+        get: operations["chatOverview"];
+        put?: never;
+        /**
+         * Start a conversation with its first question
+         * @description Idempotent for the same conversation id, turn id and question.
+         */
+        post: operations["startConversation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/conversations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the member's conversations with every question */
+        get: operations["getConversation"];
+        put?: never;
+        post?: never;
+        /** Delete a conversation */
+        delete: operations["deleteConversation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/conversations/{id}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a further question in a conversation
+         * @description Refused with chat.turnActive while the previous question is being answered. Idempotent for the same turn id and question.
+         */
+        post: operations["askQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/conversations/{id}/turns/{turnId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop answering a question */
+        post: operations["cancelQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/conversations/{id}/turns/{turnId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the latest question again after it failed or was cancelled */
+        post: operations["retryQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/contracts": {
         parameters: {
             query?: never;
@@ -1798,6 +1891,19 @@ export interface components {
             /** @enum {string} */
             palette: "STREETKID" | "CORPO" | "NOMAD";
         };
+        /** @description A question; the client chooses the ids so that a repeated request does not ask twice */
+        AskQuestionRequest: {
+            /** Format: uuid */
+            conversationId: string;
+            /**
+             * @description Answer language when the question's is unclear
+             * @enum {string}
+             */
+            locale: "DE" | "EN";
+            question: string;
+            /** Format: uuid */
+            turnId: string;
+        };
         AssignRequest: {
             /** Format: int64 */
             expectedVersion: number;
@@ -1984,6 +2090,63 @@ export interface components {
             /** Format: int64 */
             expectedVersion: number;
         };
+        ChatAnswerDto: {
+            caveats: string[];
+            citations: components["schemas"]["ChatCitationDto"][];
+            /** @enum {string} */
+            evidence: "COMPLETE" | "PARTIAL" | "NOT_FOUND";
+            text: string;
+        };
+        ChatCitationDto: {
+            /** @enum {string} */
+            check: "VERIFIED" | "NOT_IN_SOURCE" | "SOURCE_UNAVAILABLE";
+            /** @enum {string} */
+            kind: "DOCUMENT" | "CONTRACT" | "TASK";
+            /** Format: int32 */
+            number: number;
+            /** Format: int32 */
+            page?: number | null;
+            quote?: string | null;
+            /** Format: uuid */
+            sourceId: string;
+            title?: string | null;
+        };
+        ChatOverviewDto: {
+            available: boolean;
+            conversations: components["schemas"]["ConversationSummaryDto"][];
+            /** @description Why a question would be refused now, for example ai.notConfigured */
+            unavailableReason?: string | null;
+        };
+        ChatProgressDto: {
+            /** Format: date-time */
+            at: string;
+            /** @enum {string} */
+            kind: "ATTEMPT" | "MODEL" | "TOOL";
+            tool?: string | null;
+        };
+        ChatTurnDto: {
+            answer?: components["schemas"]["ChatAnswerDto"];
+            /** Format: date-time */
+            answeredAt?: string | null;
+            /** Format: date-time */
+            askedAt: string;
+            failureCategory?: string | null;
+            failureCode?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            locale: "DE" | "EN";
+            /** Format: date-time */
+            nextAttemptAt?: string | null;
+            progress: components["schemas"]["ChatProgressDto"][];
+            question: string;
+            /** Format: uuid */
+            runId: string;
+            /** Format: int32 */
+            seq: number;
+            /** @enum {string} */
+            state: "WAITING" | "WORKING" | "ANSWERED" | "FAILED" | "CANCELLED";
+        };
         /** @description New model family of a workload with the choice version the member saw */
         ChooseModelRequest: {
             /** Format: int64 */
@@ -2046,6 +2209,27 @@ export interface components {
         ContractVersionRequest: {
             /** Format: int64 */
             expectedVersion: number;
+        };
+        ConversationDto: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            title: string;
+            turns: components["schemas"]["ChatTurnDto"][];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ConversationSummaryDto: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            questions: number;
+            title: string;
+            /** Format: date-time */
+            updatedAt: string;
         };
         CorrectFactRequest: {
             /** Format: int64 */
@@ -3281,6 +3465,164 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CategoryDto"];
+                };
+            };
+        };
+    };
+    chatOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ChatOverviewDto"];
+                };
+            };
+        };
+    };
+    startConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskQuestionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationDto"];
+                };
+            };
+        };
+    };
+    getConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationDto"];
+                };
+            };
+        };
+    };
+    deleteConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    askQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskQuestionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationDto"];
+                };
+            };
+        };
+    };
+    cancelQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                turnId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationDto"];
+                };
+            };
+        };
+    };
+    retryQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                turnId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationDto"];
                 };
             };
         };

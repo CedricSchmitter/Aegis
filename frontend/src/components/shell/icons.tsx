@@ -72,6 +72,12 @@ const PATHS = {
     </>
   ),
   filter: <path d="M3 5h18l-7 8v6l-4 2v-8z" />,
+  chat: (
+    <>
+      <path d="M3 4h18v12H11l-5 4v-4H3z" />
+      <path d="M7 9h10M7 12h6" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof PATHS;

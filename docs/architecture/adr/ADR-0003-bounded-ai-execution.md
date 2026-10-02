@@ -1,7 +1,8 @@
 # ADR-0003: Bounded, replaceable AI execution
 
 Status: accepted (implemented for issue #21). Date: 2026-09-18. Amended 2026-09-19: subscription fallback through a
-host runner for `claude -p`.
+host runner for `claude -p`. Amended 2026-10-02: tool calls and conversations on the subscription
+([ADR-0025](ADR-0025-household-assistant-chat.md)).
 
 ## Context
 
@@ -52,7 +53,10 @@ error classification) apart from the transport (`HostRunnerClient`). The subscri
 serves only the members listed in `AEGIS_AI_SUBSCRIPTION_MEMBERS` (`ModelGateway.allows`); requests of other members
 are refused as `ai.provider.memberNotAllowed` and a queued run whose member lost access fails as `NOT_AUTHORIZED`.
 Document classification shows both as "not classified" rather than as a failure (ADR-0004).
-The provider accepts one user prompt without tools, which fits classification; tool workloads need the API.
+A single prompt without tools, such as classification, goes to the CLI unchanged. Since ADR-0025, a request with tools
+or several messages is sent as one stateless CLI run with the conversation as JSON and a schema in which the model
+either requests tool calls or answers; Aegis executes the calls as ordinary, granted and audited tool calls of the run.
+The CLI itself still runs without tools.
 
 Provider choice: a workload profile lists providers in order of preference (`AEGIS_AI_PROVIDERS`, default
 `anthropic,claude-code`) with one model. A run uses the first provider that has credentials and serves the requesting

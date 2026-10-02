@@ -117,6 +117,14 @@ describe("locale catalogs", () => {
         .map((count) => `bulkAnalysis.count.${count}`),
       // What the page editor's new documents do not carry over (ADR-0024).
       ...["SIGNED", "EMBEDDED_FILES"].map((warning) => `pageEdit.warning.${warning}`),
+      // The household assistant: evidence, citation checks, source kinds, progress steps and unavailable reasons.
+      ...["COMPLETE", "PARTIAL", "NOT_FOUND"].map((evidence) => `chat.evidence.${evidence}`),
+      ...["VERIFIED", "NOT_IN_SOURCE", "SOURCE_UNAVAILABLE"].map((check) => `chat.check.${check}`),
+      ...["DOCUMENT", "CONTRACT", "TASK"].map((kind) => `chat.sourceKind.${kind}`),
+      ...["started", "catalog", "searchDocuments", "readDocument", "listContracts", "readContract", "listTasks",
+        "otherTool"].map((step) => `chat.progress.${step}`),
+      ...["generic", "ai.notConfigured", "ai.provider.memberNotAllowed", "ai.workload.unavailable", "ai.price.unknown"]
+        .map((reason) => `chat.unavailable.${reason}`),
       // Short reasons for the failure codes of review cards and archival notices.
       ...FAILURE_REASONS.map((reason) => `review.failureReason.${reason}`),
     ];

@@ -20,6 +20,7 @@ const PUBLISHED_CODES = [
   "provider.conversationUnsupported", "tool.notGranted",
   "budget.cost", "budget.daily", "budget.time", "budget.modelCalls", "budget.toolCalls",
   "output.schemaMismatch", "output.truncated", "output.unexpectedStop", "output.tooLarge", "output.missingToolCall",
+  "output.unknownSource",
   "provider.invalidResponse", "model.refused",
   "source.changed", "source.missing", "source.unavailable",
   "attempt.interrupted", "ai.run.cancelled", "ai.run.failed", "ai.run.missing",

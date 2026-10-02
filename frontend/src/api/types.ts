@@ -39,6 +39,12 @@ export type ContractConflictDto = Schemas["ConflictDto"];
 export type ContractDeadlineDto = Schemas["DeadlineDto"];
 export type ContractDeadlineItemDto = Schemas["DeadlineItemDto"];
 export type ProductLocale = MemberDto["locale"];
+export type ChatOverviewDto = Schemas["ChatOverviewDto"];
+export type ConversationDto = Schemas["ConversationDto"];
+export type ChatTurnDto = Schemas["ChatTurnDto"];
+export type ChatProgressDto = Schemas["ChatProgressDto"];
+export type ChatAnswerDto = Schemas["ChatAnswerDto"];
+export type ChatCitationDto = Schemas["ChatCitationDto"];
 
 /** Facet groups in display order; subjects and the folder are separate groups. */
 export const FACETS = ["DOCUMENT_TYPE", "ORGANIZATION", "TOPIC", "TAG"] as const;

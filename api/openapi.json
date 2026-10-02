@@ -250,6 +250,29 @@
         "required" : [ "effects", "palette" ],
         "type" : "object"
       },
+      "AskQuestionRequest" : {
+        "description" : "A question; the client chooses the ids so that a repeated request does not ask twice",
+        "properties" : {
+          "conversationId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "locale" : {
+            "description" : "Answer language when the question's is unclear",
+            "enum" : [ "DE", "EN" ],
+            "type" : "string"
+          },
+          "question" : {
+            "type" : "string"
+          },
+          "turnId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [ "conversationId", "locale", "question", "turnId" ],
+        "type" : "object"
+      },
       "AssignRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -774,6 +797,156 @@
         "required" : [ "expectedVersion" ],
         "type" : "object"
       },
+      "ChatAnswerDto" : {
+        "properties" : {
+          "caveats" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "citations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChatCitationDto"
+            },
+            "type" : "array"
+          },
+          "evidence" : {
+            "enum" : [ "COMPLETE", "PARTIAL", "NOT_FOUND" ],
+            "type" : "string"
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "caveats", "citations", "evidence", "text" ],
+        "type" : "object"
+      },
+      "ChatCitationDto" : {
+        "properties" : {
+          "check" : {
+            "enum" : [ "VERIFIED", "NOT_IN_SOURCE", "SOURCE_UNAVAILABLE" ],
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "DOCUMENT", "CONTRACT", "TASK" ],
+            "type" : "string"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "quote" : {
+            "type" : [ "string", "null" ]
+          },
+          "sourceId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "check", "kind", "number", "sourceId" ],
+        "type" : "object"
+      },
+      "ChatOverviewDto" : {
+        "properties" : {
+          "available" : {
+            "type" : "boolean"
+          },
+          "conversations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ConversationSummaryDto"
+            },
+            "type" : "array"
+          },
+          "unavailableReason" : {
+            "description" : "Why a question would be refused now, for example ai.notConfigured",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "available", "conversations" ],
+        "type" : "object"
+      },
+      "ChatProgressDto" : {
+        "properties" : {
+          "at" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "kind" : {
+            "enum" : [ "ATTEMPT", "MODEL", "TOOL" ],
+            "type" : "string"
+          },
+          "tool" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "at", "kind" ],
+        "type" : "object"
+      },
+      "ChatTurnDto" : {
+        "properties" : {
+          "answer" : {
+            "$ref" : "#/components/schemas/ChatAnswerDto",
+            "type" : "null"
+          },
+          "answeredAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "askedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "failureCategory" : {
+            "type" : [ "string", "null" ]
+          },
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "locale" : {
+            "enum" : [ "DE", "EN" ],
+            "type" : "string"
+          },
+          "nextAttemptAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "progress" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChatProgressDto"
+            },
+            "type" : "array"
+          },
+          "question" : {
+            "type" : "string"
+          },
+          "runId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "seq" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "state" : {
+            "enum" : [ "WAITING", "WORKING", "ANSWERED", "FAILED", "CANCELLED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "askedAt", "id", "locale", "progress", "question", "runId", "seq", "state" ],
+        "type" : "object"
+      },
       "ChooseModelRequest" : {
         "description" : "New model family of a workload with the choice version the member saw",
         "properties" : {
@@ -960,6 +1133,58 @@
           }
         },
         "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "ConversationDto" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "turns" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChatTurnDto"
+            },
+            "type" : "array"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "createdAt", "id", "title", "turns", "updatedAt" ],
+        "type" : "object"
+      },
+      "ConversationSummaryDto" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "questions" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "createdAt", "id", "questions", "title", "updatedAt" ],
         "type" : "object"
       },
       "CorrectFactRequest" : {
@@ -3705,6 +3930,211 @@
         },
         "summary" : "Move a folder; an empty parent means the top level",
         "tags" : [ "categories" ]
+      }
+    },
+    "/api/chat/conversations" : {
+      "get" : {
+        "operationId" : "chatOverview",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChatOverviewDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Whether the member can ask now, and their conversations",
+        "tags" : [ "chat" ]
+      },
+      "post" : {
+        "description" : "Idempotent for the same conversation id, turn id and question.",
+        "operationId" : "startConversation",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AskQuestionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "summary" : "Start a conversation with its first question",
+        "tags" : [ "chat" ]
+      }
+    },
+    "/api/chat/conversations/{id}" : {
+      "delete" : {
+        "operationId" : "deleteConversation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Delete a conversation",
+        "tags" : [ "chat" ]
+      },
+      "get" : {
+        "operationId" : "getConversation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "One of the member's conversations with every question",
+        "tags" : [ "chat" ]
+      }
+    },
+    "/api/chat/conversations/{id}/turns" : {
+      "post" : {
+        "description" : "Refused with chat.turnActive while the previous question is being answered. Idempotent for the same turn id and question.",
+        "operationId" : "askQuestion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AskQuestionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "summary" : "Ask a further question in a conversation",
+        "tags" : [ "chat" ]
+      }
+    },
+    "/api/chat/conversations/{id}/turns/{turnId}/cancel" : {
+      "post" : {
+        "operationId" : "cancelQuestion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "turnId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Stop answering a question",
+        "tags" : [ "chat" ]
+      }
+    },
+    "/api/chat/conversations/{id}/turns/{turnId}/retry" : {
+      "post" : {
+        "operationId" : "retryQuestion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "turnId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Ask the latest question again after it failed or was cancelled",
+        "tags" : [ "chat" ]
       }
     },
     "/api/contracts" : {
