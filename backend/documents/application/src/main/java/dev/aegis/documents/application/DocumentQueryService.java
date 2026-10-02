@@ -4,7 +4,6 @@ import dev.aegis.documents.application.api.ArchiveHealth;
 import dev.aegis.documents.application.api.ArchivePdf;
 import dev.aegis.documents.application.api.CatalogExport;
 import dev.aegis.documents.application.api.ClassificationView;
-import dev.aegis.documents.application.api.ContentUnavailableException;
 import dev.aegis.documents.application.api.ContentSearchState;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentExportRecord;
@@ -15,12 +14,10 @@ import dev.aegis.documents.application.api.DocumentSearchRequest;
 import dev.aegis.documents.application.api.DocumentSearchResult;
 import dev.aegis.documents.application.api.DocumentStatusQuery;
 import dev.aegis.documents.application.api.DocumentSummary;
-import dev.aegis.documents.application.api.DocumentTextQuery;
 import dev.aegis.documents.application.api.DocumentThumbnail;
 import dev.aegis.documents.application.api.FacetCounts;
 import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.api.OriginalUnavailableException;
-import dev.aegis.documents.application.ports.ArchiveRejectedException;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
 import dev.aegis.documents.application.ports.DocumentCatalog;
 import dev.aegis.documents.application.ports.DocumentCatalog.Criteria;
@@ -76,7 +73,7 @@ import java.util.UUID;
  * archive health. Not wrapped in a database transaction because archive calls happen inline.
  */
 public class DocumentQueryService implements DocumentQueries, DocumentReferenceQuery, DocumentExportQuery,
-        DocumentStatusQuery, DocumentTextQuery {
+        DocumentStatusQuery {
     private final DocumentRepository documents;
     private final PaperlessArchive archive;
     private final OriginalStore store;
@@ -174,22 +171,6 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
                 .orElseThrow(() -> new NotFoundException("archivePdf", id.toString()));
         return new ArchivePdf(FriendlyFilename.withExtensionFor(friendlyFilename(document), "application/pdf"),
                 bytes);
-    }
-
-    @Override
-    public DocumentText text(Actor actor, DocumentId id) {
-        access.requireMember(actor);
-        Document document = load(id);
-        document.requireNotTrashed();
-        if (document.state() != ProcessingState.ARCHIVED || document.paperlessDocumentId().isEmpty()) {
-            throw new InvalidInputException("document.notArchived", "The document is not archived yet");
-        }
-        try {
-            String text = archive.fetchContent(document.paperlessDocumentId().get());
-            return new DocumentText(id, document.title(), text == null ? "" : text);
-        } catch (ArchiveUnavailableException | ArchiveRejectedException unavailable) {
-            throw new ContentUnavailableException("the archive text of " + id + " is unavailable", unavailable);
-        }
     }
 
     @Override

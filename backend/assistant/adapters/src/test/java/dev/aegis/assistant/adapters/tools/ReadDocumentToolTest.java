@@ -2,24 +2,33 @@ package dev.aegis.assistant.adapters.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.aegis.documents.application.api.DocumentTextQuery.DocumentText;
+import dev.aegis.shared.DocumentId;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ReadDocumentToolTest {
 
-    @Test
-    void pageBreaksBecomeMarkersNumberedFromTheStartOfTheDocument() {
-        String content = "Seite eins\fSeite zwei\fSeite drei";
+    private static final DocumentText PAGED = new DocumentText(DocumentId.random(), "Brief",
+            List.of("Seite eins", "", "Seite drei\nZeile zwei"), true);
 
-        assertThat(ReadDocumentTool.render(content, 0, content.length(), true))
-                .isEqualTo("--- page 1 ---\nSeite eins\n--- page 2 ---\nSeite zwei\n--- page 3 ---\nSeite drei");
-        int second = content.indexOf("Seite zwei");
-        assertThat(ReadDocumentTool.render(content, second, content.length(), true))
-                .startsWith("--- page 2 ---\nSeite zwei");
+    @Test
+    void everyPageGetsAMarkerNumberedFromTheStartOfTheDocument() {
+        String content = PAGED.text();
+
+        assertThat(ReadDocumentTool.render(PAGED, content, 0, content.length())).isEqualTo(
+                "--- page 1 ---\nSeite eins\n--- page 2 ---\n\n--- page 3 ---\nSeite drei\nZeile zwei");
+        int third = content.indexOf("Seite drei");
+        assertThat(ReadDocumentTool.render(PAGED, content, third, content.length()))
+                .isEqualTo("--- page 3 ---\nSeite drei\nZeile zwei");
+        assertThat(ReadDocumentTool.render(PAGED, content, 6, third + 5))
+                .isEqualTo("--- page 1 ---\neins\n--- page 2 ---\n\n--- page 3 ---\nSeite");
     }
 
     @Test
-    void aTextWithoutPageBreaksIsShownAsItIs() {
-        assertThat(ReadDocumentTool.render("Kein Umbruch", 0, 12, false)).isEqualTo("Kein Umbruch");
+    void aTextWithoutPagesIsShownAsItIs() {
+        DocumentText unpaged = DocumentText.unpaged(DocumentId.random(), "Brief", "Kein Umbruch\fhier");
+        assertThat(ReadDocumentTool.render(unpaged, unpaged.text(), 0, 12)).isEqualTo("Kein Umbruch");
     }
 
     @Test

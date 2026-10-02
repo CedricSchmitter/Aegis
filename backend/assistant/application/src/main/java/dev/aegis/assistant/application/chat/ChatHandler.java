@@ -267,7 +267,7 @@ public class ChatHandler implements WorkloadHandler {
                     Check.SOURCE_UNAVAILABLE);
         }
         Optional<QuoteMatch.Found> found = quote.isEmpty() ? Optional.empty()
-                : QuoteMatch.find(text.get().text(), quote);
+                : QuoteMatch.find(text.get(), quote);
         return new Citation(number, SourceKind.DOCUMENT, id, text.get().title(), blankToNull(quote),
                 found.flatMap(QuoteMatch.Found::page).orElse(null),
                 found.isPresent() ? Check.VERIFIED : Check.NOT_IN_SOURCE);

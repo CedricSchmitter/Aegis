@@ -33,6 +33,7 @@ import dev.aegis.documents.application.ClassificationService;
 import dev.aegis.documents.application.PlacementService;
 import dev.aegis.documents.application.ClassificationViews;
 import dev.aegis.documents.application.DocumentQueryService;
+import dev.aegis.documents.application.DocumentTextService;
 import dev.aegis.documents.application.LabelService;
 import dev.aegis.documents.application.DocumentRegistrar;
 import dev.aegis.documents.application.HouseholdSubjectMigrationService;
@@ -50,6 +51,7 @@ import dev.aegis.documents.application.api.PageEditCommands;
 import dev.aegis.documents.application.api.PageQueries;
 import dev.aegis.documents.application.ports.PageCache;
 import dev.aegis.documents.application.ports.PdfPages;
+import dev.aegis.documents.application.ports.PdfText;
 import dev.aegis.documents.application.ports.ScanStore;
 import dev.aegis.documents.domain.pages.DerivationRepository;
 import dev.aegis.documents.domain.pages.PageEditPlan;
@@ -368,8 +370,10 @@ public class UseCaseConfiguration {
     }
 
     @Bean
-    DocumentTextQuery documentTextQuery(DocumentServices services) {
-        return TransactionalProxy.expose(DocumentTextQuery.class, services.queries());
+    DocumentTextQuery documentTextQuery(DocumentRepository documents, PaperlessArchive archive, OriginalStore store,
+            PdfText pdfText, HouseholdAccess access) {
+        return TransactionalProxy.expose(DocumentTextQuery.class,
+                new DocumentTextService(documents, archive, store, pdfText, access));
     }
 
     @Bean

@@ -46,9 +46,9 @@ The `chat` workload is granted six read-only tools, each calling public applicat
 - `search_documents`: the documents context's structured search (`DocumentSearchRequest`) with words, folder scope,
   label groups and ALL for topics and tags. It therefore matches exactly like the web app: AND across groups, OR
   within a group, explicit ALL, words in title and archived full text. It returns metadata only.
-- `read_document`: the archived text through the new `DocumentTextQuery` contract, in parts of about 12,000
-  characters framed as untrusted content, with page markers where the archive separates pages by form feeds, plus
-  title, folder, labels, document date and the contracts that cite the document.
+- `read_document`: the document's text through the `DocumentTextQuery` contract (see "Text per page"), in parts of
+  about 12,000 characters framed as untrusted content, with a marker such as `--- page 2 ---` before every page when
+  the pages are known, plus title, folder, labels, document date and the contracts that cite the document.
 - `list_contracts`, `read_contract`: contracts with every fact, its review state, validity period, source document,
   page and quote, contradictions and the cancellation deadline with its rule.
 - `list_tasks`: tasks with due date and planned day kept apart, the source document and cancellation reviews.
@@ -63,10 +63,32 @@ answered with where the member can do it; the chat has no writing tool.
 
 The answer is JSON: text with markers such as `[2]`, an evidence level (`COMPLETE`, `PARTIAL`, `NOT_FOUND`), up to 12
 citations (kind, id, quote) and up to 8 caveats. Before it is stored, Aegis checks every citation against its source:
-a document quote must occur in the document's archived text, ignoring case, line breaks, words hyphenated across
-lines, typographic quotes and dashes, with `...` skipping text; the page is counted from the archive's page breaks. A
-contract or task must exist and not be in the trash. A citation that fails is kept and marked `NOT_IN_SOURCE` or
-`SOURCE_UNAVAILABLE`, so the member sees which statement lacks support instead of losing the hint that it was made.
+a document quote must occur in the document's text, ignoring case, line breaks, words hyphenated across lines and
+pages, typographic quotes and dashes, with `...` skipping text; the citation's page is the page on which the quote
+starts, when the document's pages are known. A contract or task must exist and not be in the trash. A citation that
+fails is kept and marked `NOT_IN_SOURCE` or `SOURCE_UNAVAILABLE`, so the member sees which statement lacks support
+instead of losing the hint that it was made.
+
+### Text per page
+
+The OCR text Paperless delivers carries no page breaks, even for a two-page PDF (live check on 2026-10-02), so the
+documents context reads the text page by page from the PDF itself. `DocumentTextQuery` returns the pages in order
+together with whether they are known; positions in the joined text name their page. The text comes from the text
+layer of:
+
+1. the archive's searchable PDF, which OCR generates for photos and scans, or otherwise
+2. a PDF original, as for a born-digital PDF of which the archive keeps no archive version: the staging copy while it
+   is present, else the archive's original, each only when it matches the original's checksum.
+
+Apache PDFBox reads the text layer behind the documents port `PdfText` in `documents.adapters.pdf` (ADR-0024), ordered
+by position on the page like the archive's own extraction. The archive's OCR text without pages remains the fallback
+for a photo without an archive version, a PDF that needs a password, cannot be parsed or has no text at all, and a PDF
+of more than 1,000 pages or 2,000,000 characters. The assistant uses only the public contract.
+
+One answer reads the same document several times (in parts, then to check its quotes), so the extracted texts of
+recently read documents are kept in memory, at most 8,000,000 characters in total, keyed by the document, its archive
+id and the original's checksum. They are derived data: never stored, exported or logged, and read again after a
+restart. An unreachable archive is reported and not remembered.
 
 ### Tool loop on the subscription
 
@@ -91,8 +113,10 @@ subscription has no streaming, and the progress already shows what happens.
 - Every model call resends the conversation, so long research costs more input tokens on the subscription than on the
   API; the chat run budget (0.10 USD on the API, 0.50 USD per run on the subscription) and the tool and model call
   limits bound it.
-- The text Paperless delivers for the household's documents carried no page breaks in the live check on 2026-10-02,
-  so document citations show no page yet. Page-accurate quotes need the text per page of the archive PDF.
+- Document citations name the page on which the quote starts. A document read from the archive's OCR text without
+  pages (see "Text per page") is still cited without a page.
+- The assistant reads and quotes the PDF's text layer, while full-text search uses the archive's index of its OCR
+  text. Both come from the same PDF and differ at most in line order and spacing, which the quote check ignores.
 - Quotes are checked for presence, not for whether they support the sentence that cites them; the evidence level and
   caveats remain the model's assessment.
 - Conversations are not part of the portable export; they are personal working notes in the database backup.

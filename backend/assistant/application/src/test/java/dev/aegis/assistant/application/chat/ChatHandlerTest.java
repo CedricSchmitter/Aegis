@@ -55,8 +55,8 @@ class ChatHandlerTest {
     static final UUID CONTRACT = UUID.randomUUID();
     static final UUID OPEN_TASK = UUID.randomUUID();
     static final UUID TRASHED_TASK = UUID.randomUUID();
-    static final String CONTRACT_TEXT = "Stromliefervertrag Nr. 4711\n\fMindestlaufzeit 24 Monate.\nKündigungsfrist "
-            + "3 Monate zum Ende der Laufzeit.";
+    static final List<String> CONTRACT_PAGES = List.of("Stromliefervertrag Nr. 4711", "Mindestlaufzeit 24 Monate.\nKündigungsfrist "
+            + "3 Monate zum Ende der Laufzeit.");
 
     private final InMemoryConversations conversations = new InMemoryConversations();
     private final ChatHandler handler = new ChatHandler(conversations, new Texts(), new Contracts(), new Tasks(),
@@ -224,7 +224,7 @@ class ChatHandlerTest {
         @Override
         public DocumentText text(Actor actor, DocumentId id) {
             if (id.value().equals(CONTRACT_DOC)) {
-                return new DocumentText(id, "Stromvertrag", CONTRACT_TEXT);
+                return new DocumentText(id, "Stromvertrag", CONTRACT_PAGES, true);
             }
             if (id.value().equals(TRASHED_DOC)) {
                 throw new TrashedException("document", id.toString());
