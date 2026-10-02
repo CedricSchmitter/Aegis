@@ -152,7 +152,8 @@ aegis:
     # Sum of one provider's model calls per household day (aegis.household.zone), unless provider-limits sets its own.
     daily-cost-limit: ${AEGIS_AI_DAILY_COST_LIMIT:0.25}
     max-concurrent-runs: 1
-    # A run that finds every slot taken stays queued and checks again after this wait.
+    # A run that finds every slot taken stays queued. A freed slot is handed to the oldest waiting run right away
+    # (ADR-0023); this wait is the fallback after which a waiting run checks again on its own.
     slot-wait: 15s
     call-timeout: 120s
     providers:

@@ -17,7 +17,8 @@ import java.util.Optional;
  * per household day in {@code zone}: {@code dailyCostLimit} is the default, {@code providerLimits} can set a
  * provider's own daily limit and run budget. All amounts share one currency. Every model of the {@code catalog} needs
  * a price, and every workload's default family must be in the catalog. A run that finds no free slot under
- * {@code maxConcurrentRuns} or its workload's limit checks again after {@code slotWait}.
+ * {@code maxConcurrentRuns} or its workload's limit checks again after {@code slotWait} unless a freed slot is handed to
+ * it earlier; a slot offered to a run stays reserved for it for one {@code slotWait}.
  */
 public record AiSettings(Map<Workload, WorkloadProfile> profiles, Money dailyCostLimit, int maxConcurrentRuns,
         Duration callTimeout, Duration slotWait, ZoneId zone, PriceBook prices, Map<String, ProviderLimits> providerLimits,

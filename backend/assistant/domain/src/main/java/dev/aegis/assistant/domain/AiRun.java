@@ -28,6 +28,8 @@ import java.util.Optional;
  * <li>Cancellation of a running attempt takes effect at the next checkpoint and always before a result is applied.
  * </li>
  * <li>A result is accepted once; a terminal run never changes state again.</li>
+ * <li>A slot offered to a waiting run is reserved for it until its next attempt starts, it ends or the offer lapses.
+ * </li>
  * </ul>
  */
 public final class AiRun {
@@ -138,6 +140,7 @@ public final class AiRun {
     private boolean fresh;
     private int stepCount;
     private int budgetWaits;
+    private Instant slotOfferedAt;
     private final List<RunStep> pendingSteps = new ArrayList<>();
 
     private AiRun(RunId id, Workload workload, String idempotencyKey, RunId retryOf, MemberId requestedBy,
@@ -170,12 +173,13 @@ public final class AiRun {
 
     /**
      * Persisted state; counters and usage are the stored totals. {@code budgetWaits} counts the attempts that ended
-     * only because the daily limit was reached.
+     * only because the daily limit was reached; {@code slotOfferedAt} is when a freed slot was last offered to the
+     * waiting run.
      */
     public record Snapshot(RunState state, int attempt, Instant attemptStartedAt, Instant nextAttemptAt,
             Instant finishedAt, boolean cancelRequested, MemberId cancelRequestedBy, int modelCalls, int toolCalls,
             int deniedToolCalls, int attemptModelCalls, int attemptToolCalls, TokenUsage tokens, Money cost,
-            String output, RunFailure failure, long version, int stepCount, int budgetWaits) {
+            String output, RunFailure failure, long version, int stepCount, int budgetWaits, Instant slotOfferedAt) {
     }
 
     public static AiRun rehydrate(RunId id, Workload workload, String idempotencyKey, RunId retryOf,
@@ -202,6 +206,7 @@ public final class AiRun {
         run.version = snapshot.version();
         run.stepCount = snapshot.stepCount();
         run.budgetWaits = snapshot.budgetWaits();
+        run.slotOfferedAt = snapshot.slotOfferedAt();
         run.fresh = false;
         return run;
     }
@@ -240,6 +245,7 @@ public final class AiRun {
         attempt++;
         attemptStartedAt = now;
         nextAttemptAt = null;
+        slotOfferedAt = null;
         attemptModelCalls = 0;
         attemptToolCalls = 0;
         step(StepKind.ATTEMPT_STARTED, model.model(), "attempt." + attempt, null, null, now);
@@ -440,6 +446,28 @@ public final class AiRun {
                 && attemptStartedAt.plus(budget.maxDuration()).plus(SLOT_GRACE).isAfter(now);
     }
 
+    /** Whether this run is due to start its next attempt and only a free slot is missing. */
+    public boolean awaitsSlot(Instant now) {
+        return !cancelRequested && (state == RunState.QUEUED
+                || state == RunState.WAITING_RETRY && (nextAttemptAt == null || !nextAttemptAt.isAfter(now)));
+    }
+
+    /**
+     * Reserves a freed slot for this waiting run. The offer ends when the next attempt starts, when the run ends, or
+     * when it is not taken up within the validity the caller checks with {@link #holdsSlotOffer}.
+     */
+    public void offerSlot(Instant now) {
+        if (!awaitsSlot(now)) {
+            throw new IllegalStateException("run " + id + " does not wait for a slot");
+        }
+        slotOfferedAt = Objects.requireNonNull(now, "now");
+    }
+
+    /** Whether a slot offered to this waiting run within {@code validity} before {@code now} is still reserved. */
+    public boolean holdsSlotOffer(Instant now, Duration validity) {
+        return slotOfferedAt != null && awaitsSlot(now) && slotOfferedAt.plus(validity).isAfter(now);
+    }
+
     public boolean retryable() {
         return state == RunState.FAILED || state == RunState.CANCELLED;
     }
@@ -505,6 +533,7 @@ public final class AiRun {
         state = terminal;
         finishedAt = now;
         nextAttemptAt = null;
+        slotOfferedAt = null;
     }
 
     private boolean isCurrent(int forAttempt) {
@@ -641,6 +670,10 @@ public final class AiRun {
 
     public boolean cancelRequested() {
         return cancelRequested;
+    }
+
+    public Optional<Instant> slotOfferedAt() {
+        return Optional.ofNullable(slotOfferedAt);
     }
 
     public Optional<MemberId> cancelRequestedBy() {

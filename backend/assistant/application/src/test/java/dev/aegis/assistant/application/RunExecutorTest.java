@@ -558,4 +558,152 @@ class RunExecutorTest {
 
         assertThat(stored(next).state()).isEqualTo(RunState.SUCCEEDED);
     }
+
+    // Slot hand-over ---------------------------------------------------------------------------------------------------
+
+    /** Requests a classification of its own document one second after the previous request. */
+    private RunId queued(String documentId) {
+        kit.clock.advance(Duration.ofSeconds(1));
+        return new RunId(kit.classify(documentId, 1, "Rechnung", false).id());
+    }
+
+    private static ValidatedOutput invoice() {
+        return new ValidatedOutput("{\"label\":\"invoice\"}", "invoice");
+    }
+
+    private RunExecutor.RunAgainAt afterSlotWait() {
+        return new RunExecutor.RunAgainAt(kit.clock.instant().plus(kit.slotWait));
+    }
+
+    @Test
+    void aFreedSlotGoesToTheOldestWaitingRunWhoseJobMovesToNow() {
+        kit.maxConcurrentRuns = 1;
+        RunId first = queued("doc-a");
+        RunId second = queued("doc-b");
+        RunId third = queued("doc-c");
+        kit.gateway.answer(request -> {
+            // While the first run holds the only slot, the others find it taken; the younger one is deferred first.
+            assertThat(kit.runJob(third)).isEqualTo(afterSlotWait());
+            assertThat(kit.runJob(second)).isEqualTo(afterSlotWait());
+            return json(Map.of("label", "invoice"));
+        });
+
+        kit.runJob(first);
+
+        assertThat(stored(first).state()).isEqualTo(RunState.SUCCEEDED);
+        assertThat(kit.woken).containsExactly(second);
+        assertThat(stored(second).slotOfferedAt()).contains(kit.clock.instant());
+        assertThat(kit.jobs).containsEntry(second, kit.clock.instant())
+                .containsEntry(third, kit.clock.instant().plus(kit.slotWait));
+
+        kit.gateway.answer(json(Map.of("label", "invoice")));
+        kit.runJob(second);
+
+        assertThat(stored(second).state()).isEqualTo(RunState.SUCCEEDED);
+        assertThat(stored(second).slotOfferedAt()).isEmpty();
+        assertThat(kit.woken).containsExactly(second, third);
+        assertThat(kit.jobs).containsEntry(third, kit.clock.instant());
+    }
+
+    @Test
+    void anOfferedSlotIsReservedForItsRunAgainstYoungerRunsWhoseJobsComeFirst() {
+        kit.maxConcurrentRuns = 1;
+        RunId first = queued("doc-a");
+        RunId older = queued("doc-b");
+        RunId younger = queued("doc-c");
+        kit.execution().begin(first);
+        kit.runJob(older);
+        kit.execution().complete(first, 1, invoice());
+        kit.execution().offerFreeSlots();
+
+        assertThat(kit.runJob(younger)).isEqualTo(afterSlotWait());
+        assertThat(stored(younger).state()).isEqualTo(RunState.QUEUED);
+
+        kit.gateway.answer(json(Map.of("label", "invoice")));
+        kit.runJob(older);
+
+        assertThat(stored(older).state()).isEqualTo(RunState.SUCCEEDED);
+        assertThat(kit.woken).containsExactly(older, younger);
+    }
+
+    @Test
+    void anOfferMadeWhileTheWaitingJobIsExecutingIsTakenUpOnceTheJobIsRescheduled() {
+        kit.maxConcurrentRuns = 1;
+        RunId first = queued("doc-a");
+        RunId waiting = queued("doc-b");
+        kit.execution().begin(first);
+
+        RunExecutor.Outcome outcome = kit.runJob(waiting, () -> {
+            // The first run ends after the waiting run decided to wait, before its job stored the next time.
+            kit.execution().complete(first, 1, invoice());
+            kit.execution().offerFreeSlots();
+            assertThat(kit.woken).isEmpty();
+        });
+
+        assertThat(outcome).isEqualTo(afterSlotWait());
+        assertThat(kit.woken).containsExactly(waiting);
+        assertThat(kit.jobs).containsEntry(waiting, kit.clock.instant());
+        kit.gateway.answer(json(Map.of("label", "invoice")));
+        kit.runJob(waiting);
+        assertThat(stored(waiting).state()).isEqualTo(RunState.SUCCEEDED);
+    }
+
+    @Test
+    void anOfferThatIsNotTakenUpLapsesAfterTheSlotWait() {
+        kit.maxConcurrentRuns = 1;
+        RunId first = queued("doc-a");
+        RunId offered = queued("doc-b");
+        RunId other = queued("doc-c");
+        kit.execution().begin(first);
+        kit.runJob(offered);
+        kit.execution().complete(first, 1, invoice());
+        kit.execution().offerFreeSlots();
+        assertThat(kit.runJob(other)).isEqualTo(afterSlotWait());
+
+        // The offered run's job does not execute within the slot wait (a stalled scheduler).
+        kit.clock.advance(kit.slotWait);
+        kit.gateway.answer(json(Map.of("label", "invoice")));
+        kit.runJob(other);
+
+        assertThat(stored(other).state()).isEqualTo(RunState.SUCCEEDED);
+    }
+
+    @Test
+    void aWaitingRunWithoutAJobGetsNoOffer() {
+        kit.maxConcurrentRuns = 1;
+        RunId first = queued("doc-a");
+        RunId orphan = queued("doc-b");
+        RunId next = queued("doc-c");
+        kit.execution().begin(first);
+        kit.runJob(next);
+        kit.jobs.remove(orphan);
+        kit.execution().complete(first, 1, invoice());
+
+        kit.execution().offerFreeSlots();
+
+        assertThat(stored(orphan).slotOfferedAt()).isEmpty();
+        assertThat(stored(next).slotOfferedAt()).isPresent();
+        assertThat(kit.woken).containsExactly(next);
+    }
+
+    @Test
+    void cancellingARunThatHoldsAnOfferHandsTheSlotToTheNextWaitingRun() {
+        kit.maxConcurrentRuns = 1;
+        RunId first = queued("doc-a");
+        RunId offered = queued("doc-b");
+        RunId next = queued("doc-c");
+        kit.execution().begin(first);
+        kit.runJob(offered);
+        kit.runJob(next);
+        kit.execution().complete(first, 1, invoice());
+        kit.execution().offerFreeSlots();
+
+        kit.service().cancel(AS_LISA, offered.value());
+        kit.runJob(offered);
+
+        assertThat(stored(offered).state()).isEqualTo(RunState.CANCELLED);
+        assertThat(stored(offered).slotOfferedAt()).isEmpty();
+        assertThat(kit.woken).containsExactly(offered, next);
+        assertThat(kit.jobs).containsEntry(next, kit.clock.instant());
+    }
 }

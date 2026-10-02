@@ -79,10 +79,11 @@ public class AssistantConfiguration {
     }
 
     @Bean
-    RunExecution runExecution(AiRunRepository runs, AiLock lock, EffectLedger ledger, AssistantParts parts,
-            HouseholdAccess access, AiSettings settings, Clock clock, PlatformTransactionManager tm) {
+    RunExecution runExecution(AiRunRepository runs, AiLock lock, EffectLedger ledger, RunScheduler scheduler,
+            AssistantParts parts, HouseholdAccess access, AiSettings settings, Clock clock,
+            PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(RunExecution.class,
-                new RunExecutionService(runs, lock, ledger, parts.handlers(), access, settings, clock), tm);
+                new RunExecutionService(runs, lock, ledger, scheduler, parts.handlers(), access, settings, clock), tm);
     }
 
     @Bean

@@ -2,6 +2,7 @@ package dev.aegis.assistant.application;
 
 import dev.aegis.assistant.application.ports.AiLock;
 import dev.aegis.assistant.application.ports.EffectLedger;
+import dev.aegis.assistant.application.ports.RunScheduler;
 import dev.aegis.assistant.domain.AiRun;
 import dev.aegis.assistant.domain.AiRunRepository;
 import dev.aegis.assistant.domain.FailureCategory;
@@ -16,6 +17,7 @@ import dev.aegis.shared.NotAuthorizedException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,16 +27,18 @@ public class RunExecutionService implements RunExecution {
     private final AiRunRepository runs;
     private final AiLock lock;
     private final EffectLedger ledger;
+    private final RunScheduler scheduler;
     private final Map<Workload, WorkloadHandler> handlers;
     private final HouseholdAccess access;
     private final AiSettings settings;
     private final Clock clock;
 
-    public RunExecutionService(AiRunRepository runs, AiLock lock, EffectLedger ledger,
+    public RunExecutionService(AiRunRepository runs, AiLock lock, EffectLedger ledger, RunScheduler scheduler,
             Map<Workload, WorkloadHandler> handlers, HouseholdAccess access, AiSettings settings, Clock clock) {
         this.runs = runs;
         this.lock = lock;
         this.ledger = ledger;
+        this.scheduler = scheduler;
         this.handlers = Map.copyOf(handlers);
         this.access = access;
         this.settings = settings;
@@ -83,14 +87,59 @@ public class RunExecutionService implements RunExecution {
         }
     }
 
+    @Override
+    public void offerFreeSlots() {
+        lock.exclusive();
+        Instant now = clock.instant();
+        List<AiRun> waiting = runs.findAwaitingSlot(now);
+        if (waiting.isEmpty()) {
+            return;
+        }
+        List<AiRun> holders = slotHolders(waiting, now);
+        for (AiRun candidate : waiting) {
+            if (holders.stream().anyMatch(holder -> holder.id().equals(candidate.id())) || !fits(candidate, holders)) {
+                continue;
+            }
+            // Locked like every other change of the run, so a concurrent cancellation is not overwritten. A run
+            // without a job (restored data) would hold the slot without ever taking it up, so it gets no offer.
+            Optional<AiRun> current = runs.findByIdForUpdate(candidate.id()).filter(run -> run.awaitsSlot(now));
+            if (current.isPresent() && scheduler.wake(candidate.id(), now)) {
+                current.get().offerSlot(now);
+                runs.save(current.get());
+                holders.add(current.get());
+            }
+        }
+    }
+
+    @Override
+    public void wakeIfOffered(RunId id) {
+        lock.exclusive();
+        Instant now = clock.instant();
+        if (runs.findById(id).filter(run -> run.holdsSlotOffer(now, settings.slotWait())).isPresent()) {
+            scheduler.wake(id, now);
+        }
+    }
+
     private boolean slotFree(AiRun run, Instant now) {
-        List<AiRun> occupying = runs.findRunning().stream()
-                .filter(other -> !other.id().equals(run.id()) && other.occupiesSlot(now)).toList();
-        if (occupying.size() >= settings.maxConcurrentRuns()) {
+        return fits(run, slotHolders(runs.findAwaitingSlot(now), now));
+    }
+
+    /** Runs holding a slot: running attempts and waiting runs with a valid offer. */
+    private List<AiRun> slotHolders(List<AiRun> waiting, Instant now) {
+        List<AiRun> holders = new ArrayList<>(
+                runs.findRunning().stream().filter(run -> run.occupiesSlot(now)).toList());
+        waiting.stream().filter(run -> run.holdsSlotOffer(now, settings.slotWait())).forEach(holders::add);
+        return holders;
+    }
+
+    /** Whether {@code run} fits under the global and its workload's limit next to the other slot holders. */
+    private boolean fits(AiRun run, List<AiRun> holders) {
+        List<AiRun> others = holders.stream().filter(other -> !other.id().equals(run.id())).toList();
+        if (others.size() >= settings.maxConcurrentRuns()) {
             return false;
         }
         int workloadLimit = settings.profile(run.workload()).map(WorkloadProfile::maxConcurrent).orElse(1);
-        long sameWorkload = occupying.stream().filter(other -> other.workload() == run.workload()).count();
+        long sameWorkload = others.stream().filter(other -> other.workload() == run.workload()).count();
         return sameWorkload < workloadLimit;
     }
 
