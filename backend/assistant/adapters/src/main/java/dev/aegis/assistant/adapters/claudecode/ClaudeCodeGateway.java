@@ -36,8 +36,8 @@ import tools.jackson.databind.ObjectMapper;
  * <p>The request maps to the same system prompt, JSON schema, effort and output allowance that the API provider would
  * send. The model is the CLI's alias of its family ({@code opus}, {@code sonnet}, {@code haiku}), so the subscription
  * always uses the newest model of the family that Claude Code offers, even before the API catalog names it; the audit
- * step records the model that actually answered. The CLI takes one prompt without tools, so workloads that need tools
- * or multi-turn conversations are refused before anything runs; they need the API provider.
+ * step records the model that actually answered. The CLI runs without tools; tool calls and conversations are
+ * expressed in its structured answer ({@link ToolProtocol}) and executed by Aegis.
  */
 @Component
 @EnableConfigurationProperties(ClaudeCodeProperties.class)
@@ -81,16 +81,25 @@ public class ClaudeCodeGateway implements ModelGateway {
                 .map(summary -> members.contains(summary.username().toLowerCase(Locale.ROOT))).orElse(false);
     }
 
+    /**
+     * A single prompt without tools goes to the CLI as it is. Tool use and conversations go through the
+     * {@link ToolProtocol}: one stateless CLI run per model call, with the conversation as JSON.
+     */
     @Override
     public ModelTurn complete(ModelRequest request) {
-        if (!request.tools().isEmpty()) {
-            throw new ModelCallException(FailureCategory.INVALID_REQUEST, "provider.toolsUnsupported",
-                    "the Claude Code provider runs without tools; tool workloads need the API provider");
+        if (ToolProtocol.singlePrompt(request)) {
+            ClaudeCli.Call call = new ClaudeCli.Call(cliModel(request.model()), request.system(),
+                    singlePrompt(request.messages()), request.outputSchema(), request.effort(), maxTurns,
+                    request.maxOutputTokens(), request.timeout());
+            return interpret(cli.run(call), request);
         }
-        ClaudeCli.Call call = new ClaudeCli.Call(cliModel(request.model()), request.system(),
-                singlePrompt(request.messages()), request.outputSchema(), request.effort(), maxTurns,
+        Map<String, Object> schema = ToolProtocol.schema(request);
+        ClaudeCli.Call call = new ClaudeCli.Call(cliModel(request.model()), ToolProtocol.system(request),
+                ToolProtocol.prompt(request.messages()), schema, request.effort(), maxTurns,
                 request.maxOutputTokens(), request.timeout());
-        return interpret(cli.run(call), request);
+        ModelRequest envelope = new ModelRequest(request.model(), call.systemPrompt(), request.messages(), List.of(),
+                schema, request.maxOutputTokens(), request.timeout(), request.effort());
+        return ToolProtocol.turn(interpret(cli.run(call), envelope), request);
     }
 
     /** The CLI alias of the model's family; a model outside the Claude families is passed on unchanged. */
@@ -98,29 +107,17 @@ public class ClaudeCodeGateway implements ModelGateway {
         return ModelFamily.ofModel(model).map(ModelFamily::key).orElse(model);
     }
 
-    /** The CLI takes one prompt; earlier turns, tool calls or tool results cannot be expressed. */
     private static String singlePrompt(List<ModelMessage> messages) {
         StringBuilder prompt = new StringBuilder();
         for (ModelMessage message : messages) {
-            if (message.role() != ModelMessage.Role.USER) {
-                throw conversationUnsupported();
-            }
             for (ContentPart part : message.parts()) {
-                if (!(part instanceof ContentPart.Text text)) {
-                    throw conversationUnsupported();
-                }
                 if (!prompt.isEmpty()) {
                     prompt.append("\n\n");
                 }
-                prompt.append(text.text());
+                prompt.append(((ContentPart.Text) part).text());
             }
         }
         return prompt.toString();
-    }
-
-    private static ModelCallException conversationUnsupported() {
-        return new ModelCallException(FailureCategory.INVALID_REQUEST, "provider.conversationUnsupported",
-                "the Claude Code provider accepts a single user prompt without tool turns");
     }
 
     /** Reads the CLI's {@code --output-format json} result; CLI-reported errors become classified failures. */

@@ -20,6 +20,7 @@ import { SharePage } from "./pages/SharePage";
 import { TrashPage } from "./pages/TrashPage";
 import { BulkClassificationPage } from "./pages/BulkClassificationPage";
 import { PageEditorPage } from "./pages/PageEditorPage";
+import { ChatPage } from "./pages/ChatPage";
 
 export function App() {
   const { member, loading } = useSession();
@@ -58,6 +59,8 @@ export function App() {
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/tasks/:id" element={<TaskDetailPage />} />
         <Route path="/inbox" element={<InboxPage />} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/chat/:id" element={<ChatPage />} />
         {/* Links and bookmarks to /review and /notices lead into the combined inbox. */}
         <Route path="/review" element={<LegacyInboxRedirect />} />
         <Route path="/notices" element={<LegacyInboxRedirect />} />

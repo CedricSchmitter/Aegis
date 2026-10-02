@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, NavLink } from "react-router";
 import { useTranslation } from "react-i18next";
 import { PendingShares } from "./PendingShares";
 import { Wordmark } from "./ui";
@@ -30,6 +30,22 @@ function HeaderInbox() {
         </span>
       )}
     </Link>
+  );
+}
+
+/** Questions to the household assistant, in the header on every screen size. */
+function HeaderAsk() {
+  const { t } = useTranslation();
+  return (
+    <NavLink
+      to="/chat"
+      className="flex h-11 min-w-11 flex-none items-center justify-center gap-2 px-1 text-text-2 hover:text-text-1 aria-[current=page]:text-action lg:px-2"
+      aria-label={t("chat.nav")}
+      data-testid="header-chat"
+    >
+      <Icon name="chat" className="h-[22px] w-[22px]" />
+      <span className="hidden text-sm lg:inline">{t("chat.nav")}</span>
+    </NavLink>
   );
 }
 
@@ -64,6 +80,7 @@ function Shell({ children }: { children: ReactNode }) {
             <HeaderSearch />
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <HeaderAsk />
             <div className="hidden lg:block">
               <StatusIndicator />
             </div>

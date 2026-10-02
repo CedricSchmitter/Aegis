@@ -65,6 +65,7 @@ import dev.aegis.documents.application.api.DocumentCommands;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentQueries;
 import dev.aegis.documents.application.api.DocumentReferenceQuery;
+import dev.aegis.documents.application.api.DocumentTextQuery;
 import dev.aegis.documents.application.api.DocumentStatusQuery;
 import dev.aegis.documents.application.api.ImportCatalog;
 import dev.aegis.documents.application.api.ImportDocument;
@@ -364,6 +365,11 @@ public class UseCaseConfiguration {
     @Bean
     DocumentQueries documentQueries(DocumentServices services) {
         return TransactionalProxy.expose(DocumentQueries.class, services.queries());
+    }
+
+    @Bean
+    DocumentTextQuery documentTextQuery(DocumentServices services) {
+        return TransactionalProxy.expose(DocumentTextQuery.class, services.queries());
     }
 
     @Bean

@@ -67,6 +67,8 @@ const EXACT: Record<string, FailureReason> = {
   "provider.invalidResponse": "aiOutputUnusable",
   "model.refused": "aiOutputUnusable",
   "run.cancelled": "interrupted",
+  // A chat run that ended without storing its answer (ChatService).
+  "chat.answerMissing": "aiOutputUnusable",
   "attempt.interrupted": "interrupted",
 };
 

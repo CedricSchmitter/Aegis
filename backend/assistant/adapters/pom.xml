@@ -24,6 +24,14 @@
       <artifactId>aegis-identity-application</artifactId>
     </dependency>
     <dependency>
+      <groupId>dev.aegis</groupId>
+      <artifactId>aegis-contracts-application</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.aegis</groupId>
+      <artifactId>aegis-planning-application</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.anthropic</groupId>
       <artifactId>anthropic-java</artifactId>
     </dependency>
