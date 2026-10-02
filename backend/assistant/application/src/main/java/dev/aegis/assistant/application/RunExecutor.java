@@ -67,12 +67,46 @@ public class RunExecutor {
         this.settings = settings;
     }
 
+    /**
+     * Executes the run once. An execution that ended an attempt or the run may have freed a slot; it is offered to the
+     * oldest waiting run right away instead of leaving that run to its slot wait.
+     */
     public Outcome execute(RunId id) {
         return switch (execution.begin(id)) {
-            case RunExecution.Finished finished -> new Done();
+            case RunExecution.Finished finished -> {
+                offerFreeSlots(id);
+                yield new Done();
+            }
             case RunExecution.Later later -> new RunAgainAt(later.at());
-            case RunExecution.Proceed proceed -> attempt(proceed.context());
+            case RunExecution.Proceed proceed -> {
+                Outcome outcome = attempt(proceed.context());
+                offerFreeSlots(id);
+                yield outcome;
+            }
         };
+    }
+
+    /**
+     * Completes a slot hand-over that raced with this run's execution: called after the job stored the time of
+     * {@link RunAgainAt}, it moves the job to now if a slot was offered to the run meanwhile.
+     */
+    public void rescheduled(RunId id) {
+        try {
+            execution.wakeIfOffered(id);
+        } catch (RuntimeException failure) {
+            LOG.log(Level.WARNING, "AI run " + id + " could not take up an offered slot and starts after the slot "
+                    + "wait: " + failure.getClass().getSimpleName());
+        }
+    }
+
+    /** A failed hand-over only delays waiting runs to their slot wait; the outcome of this execution stands. */
+    private void offerFreeSlots(RunId after) {
+        try {
+            execution.offerFreeSlots();
+        } catch (RuntimeException failure) {
+            LOG.log(Level.WARNING, "the AI slot freed by run " + after + " was not handed over; waiting runs start "
+                    + "after the slot wait: " + failure.getClass().getSimpleName());
+        }
     }
 
     private Outcome attempt(RunContext run) {

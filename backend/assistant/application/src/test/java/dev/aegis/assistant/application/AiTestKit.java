@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -71,7 +72,29 @@ class AiTestKit {
         }
     };
     final List<RunId> scheduled = new CopyOnWriteArrayList<>();
-    final RunScheduler scheduler = (id, at) -> scheduled.add(id);
+    /** Next execution time of every run's job, like db-scheduler's table; finished jobs are removed. */
+    final Map<RunId, Instant> jobs = new ConcurrentHashMap<>();
+    /** Jobs executing right now; like db-scheduler, a wake-up cannot move them. */
+    final Set<RunId> picked = ConcurrentHashMap.newKeySet();
+    /** Jobs a slot hand-over moved forward, in order. */
+    final List<RunId> woken = new CopyOnWriteArrayList<>();
+    final RunScheduler scheduler = new RunScheduler() {
+        @Override
+        public void schedule(RunId id, Instant at) {
+            scheduled.add(id);
+            jobs.putIfAbsent(id, at);
+        }
+
+        @Override
+        public boolean wake(RunId id, Instant at) {
+            Instant next = jobs.get(id);
+            if (next != null && !picked.contains(id) && next.isAfter(at)) {
+                jobs.put(id, at);
+                woken.add(id);
+            }
+            return next != null;
+        }
+    };
     final Set<String> ledger = new HashSet<>();
     final ClassifierWorkload workload = new ClassifierWorkload();
     final LookupTool lookup = new LookupTool();
@@ -126,7 +149,7 @@ class AiTestKit {
     RunExecutionService execution() {
         if (execution == null) {
             execution = new RunExecutionService(runs, () -> {
-            }, (key, run, at) -> ledger.add(key), handlers(), access, settings(), clock);
+            }, (key, run, at) -> ledger.add(key), scheduler, handlers(), access, settings(), clock);
         }
         return execution;
     }
@@ -137,6 +160,34 @@ class AiTestKit {
                     Map.of(lookup.spec().name(), lookup, forbidden.spec().name(), forbidden), settings());
         }
         return executor;
+    }
+
+    /**
+     * Executes the run's job like {@code AiRunTask}: picked while the executor works, then stopped or rescheduled,
+     * and after a reschedule the run checks for a slot offered meanwhile. {@code whilePicked} runs after the
+     * execution, before the job stores its next time, when an offer cannot move it.
+     */
+    RunExecutor.Outcome runJob(RunId id, Runnable whilePicked) {
+        picked.add(id);
+        RunExecutor.Outcome outcome;
+        try {
+            outcome = executor().execute(id);
+            whilePicked.run();
+        } finally {
+            picked.remove(id);
+        }
+        if (outcome instanceof RunExecutor.RunAgainAt again) {
+            jobs.put(id, again.at());
+            executor().rescheduled(id);
+        } else {
+            jobs.remove(id);
+        }
+        return outcome;
+    }
+
+    RunExecutor.Outcome runJob(RunId id) {
+        return runJob(id, () -> {
+        });
     }
 
     Map<String, ModelGateway> gateways() {

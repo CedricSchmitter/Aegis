@@ -82,9 +82,8 @@ public abstract class PostgresIT {
         registry.add("aegis.ai.providers.anthropic.api-key-file", () -> DATA.resolve("no-anthropic-key").toString());
         registry.add("aegis.ai.providers.claude-code.runner-socket", () -> DATA.resolve("no-runner.sock").toString());
         registry.add("aegis.ai.daily-cost-limit", () -> "100.00");
-        // One run at a time, as in production: a run that finds the slot taken waits 200ms instead of 15s, so queued
-        // runs of a burst (DocumentClassificationIT) start right after each other instead of 15s apart per lost race.
-        registry.add("aegis.ai.slot-wait", () -> "200ms");
+        // One run at a time and production's slot wait (15s): a freed slot is handed to the oldest waiting run, so
+        // queued runs of a burst start right after each other (AiSlotHandOverIT, DocumentClassificationIT).
         registry.add("aegis.ai.prices[" + ControlledModelGateway.MODEL + "].input", () -> "1.00");
         registry.add("aegis.ai.prices[" + ControlledModelGateway.MODEL + "].output", () -> "5.00");
         registry.add("aegis.ai.models.sonnet.model", () -> ControlledModelGateway.MODEL);

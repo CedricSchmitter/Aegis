@@ -27,6 +27,12 @@ public interface AiRunRepository {
     /** Runs in state {@code RUNNING}, for concurrency accounting. */
     List<AiRun> findRunning();
 
+    /**
+     * Runs that are due at {@code now} and could start an attempt if a slot were free, as decided by
+     * {@link AiRun#awaitsSlot}: queued runs and waiting runs whose next attempt is due. Oldest request first.
+     */
+    List<AiRun> findAwaitingSlot(Instant now);
+
     /** Most recently requested runs first. */
     List<AiRun> findRecent(int limit);
 

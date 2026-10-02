@@ -28,7 +28,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * A profile's {@code family} is its default until the household chooses another one. {@code providers} lists the
  * providers of a profile in order of preference; each run uses the first one that is usable for its requester. A
  * single {@code provider} is accepted as shorthand for a one-element list; setting both is rejected.
- * {@code slot-wait} is how long a run that found no free slot waits before it checks again (default 15s).
+ * {@code slot-wait} is how long a run that found no free slot waits before it checks again unless a freed slot is
+ * handed to it earlier (default 15s).
  */
 @ConfigurationProperties(prefix = "aegis.ai")
 public record AiProperties(BigDecimal dailyCostLimit, String currency, Integer maxConcurrentRuns,

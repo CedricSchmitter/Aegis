@@ -47,7 +47,7 @@ public class JdbcAiRunRepository implements AiRunRepository {
             budget_max_attempts, state, attempt, attempt_started_at, next_attempt_at, finished_at, cancel_requested,
             cancel_requested_by, model_calls, tool_calls, denied_tool_calls, attempt_model_calls, attempt_tool_calls,
             input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost, output, failure_category,
-            failure_code, failure_message, failure_at, step_count, budget_waits, version""";
+            failure_code, failure_message, failure_at, step_count, budget_waits, slot_offered_at, version""";
     private static final String SELECT_RUNS = "SELECT " + COLUMNS + " FROM ai_runs ";
     private static final TypeReference<Map<String, String>> PARAMETERS = new TypeReference<>() {
     };
@@ -100,6 +100,14 @@ public class JdbcAiRunRepository implements AiRunRepository {
     @Override
     public List<AiRun> findRunning() {
         return jdbc.sql(SELECT_RUNS + "WHERE state = 'RUNNING'").query(this::map).list();
+    }
+
+    @Override
+    public List<AiRun> findAwaitingSlot(Instant now) {
+        return jdbc.sql(SELECT_RUNS + """
+                WHERE NOT cancel_requested AND (state = 'QUEUED'
+                       OR state = 'WAITING_RETRY' AND (next_attempt_at IS NULL OR next_attempt_at <= ?))
+                ORDER BY requested_at, id""").param(Timestamp.from(now)).query(this::map).list();
     }
 
     @Override
@@ -174,14 +182,15 @@ public class JdbcAiRunRepository implements AiRunRepository {
                         cancel_requested_by, model_calls, tool_calls, denied_tool_calls, attempt_model_calls,
                         attempt_tool_calls, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost,
                         output, failure_category, failure_code, failure_message, failure_at, step_count,
-                        budget_waits, version)
+                        budget_waits, slot_offered_at, version)
                     VALUES (:id, :workload, :key, :retryOf, :requestedBy, :requestedAt, :provider, :model,
                         CAST(:parameters AS jsonb), CAST(:sources AS jsonb), :maxDurationMs, :maxCost, :currency,
                         :maxModelCalls, :maxToolCalls, :maxOutputTokens, :maxAttempts, :state, :attempt,
                         :attemptStartedAt, :nextAttemptAt, :finishedAt, :cancelRequested, :cancelRequestedBy,
                         :modelCalls, :toolCalls, :deniedToolCalls, :attemptModelCalls, :attemptToolCalls,
                         :inputTokens, :outputTokens, :cacheReadTokens, :cacheWriteTokens, :cost, :output,
-                        :failureCategory, :failureCode, :failureMessage, :failureAt, :stepCount, :budgetWaits, 0)""")
+                        :failureCategory, :failureCode, :failureMessage, :failureAt, :stepCount, :budgetWaits,
+                        :slotOfferedAt, 0)""")
                     .params(values).update();
         } else {
             values.put("version", run.version());
@@ -195,7 +204,8 @@ public class JdbcAiRunRepository implements AiRunRepository {
                            cache_read_tokens = :cacheReadTokens, cache_write_tokens = :cacheWriteTokens,
                            cost = :cost, output = :output, failure_category = :failureCategory,
                            failure_code = :failureCode, failure_message = :failureMessage, failure_at = :failureAt,
-                           step_count = :stepCount, budget_waits = :budgetWaits, version = version + 1
+                           step_count = :stepCount, budget_waits = :budgetWaits,
+                           slot_offered_at = :slotOfferedAt, version = version + 1
                      WHERE id = :id AND version = :version""").params(values).update();
             if (updated == 0) {
                 long stored = jdbc.sql("SELECT version FROM ai_runs WHERE id = ?").param(run.id().value())
@@ -289,6 +299,7 @@ public class JdbcAiRunRepository implements AiRunRepository {
         values.put("failureAt", failure == null ? null : Timestamp.from(failure.at()));
         values.put("stepCount", run.stepCount());
         values.put("budgetWaits", run.budgetWaits());
+        values.put("slotOfferedAt", run.slotOfferedAt().map(Timestamp::from).orElse(null));
         return values;
     }
 
@@ -312,7 +323,7 @@ public class JdbcAiRunRepository implements AiRunRepository {
                 new TokenUsage(rs.getLong("input_tokens"), rs.getLong("output_tokens"),
                         rs.getLong("cache_read_tokens"), rs.getLong("cache_write_tokens")),
                 new Money(rs.getBigDecimal("cost"), currency), rs.getString("output"), failure, rs.getLong("version"),
-                rs.getInt("step_count"), rs.getInt("budget_waits"));
+                rs.getInt("step_count"), rs.getInt("budget_waits"), instant(rs, "slot_offered_at"));
         List<SourceRef> sources = new ArrayList<>();
         for (Map<String, Object> source : json.readValue(rs.getString("sources_json"), SOURCES)) {
             sources.add(new SourceRef(String.valueOf(source.get("kind")), String.valueOf(source.get("id")),

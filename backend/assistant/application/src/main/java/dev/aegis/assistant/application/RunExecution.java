@@ -33,6 +33,20 @@ public interface RunExecution {
 
     Begin begin(RunId id);
 
+    /**
+     * Offers free slots to the runs waiting for one, oldest request first, and moves their jobs to now. A slot offered
+     * to a run is reserved for it: other runs count it as occupied until the run starts, ends or the offer lapses after
+     * the slot wait. Runs without a job get no offer. Called after an execution may have freed a slot.
+     */
+    void offerFreeSlots();
+
+    /**
+     * Moves the run's job to now if the run holds a slot offer. Called after its job stored the next execution time:
+     * an offer made while that job was executing could not move it, and the job then stored the slot wait as its next
+     * time, so the hand-over is completed here.
+     */
+    void wakeIfOffered(RunId id);
+
     AiRun.Checkpoint beforeModelCall(RunId id, int attempt, AiRun.CallQuote quote);
 
     AiRun.Checkpoint afterModelCall(RunId id, int attempt, String modelId, String outcome, TokenUsage usage,

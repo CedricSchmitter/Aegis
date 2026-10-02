@@ -65,6 +65,13 @@ class InMemoryAiRunRepository implements AiRunRepository {
     }
 
     @Override
+    public synchronized List<AiRun> findAwaitingSlot(Instant now) {
+        return runs.values().stream().filter(run -> run.awaitsSlot(now))
+                .sorted(Comparator.comparing(AiRun::requestedAt).thenComparing(run -> run.id().value()))
+                .map(InMemoryAiRunRepository::copy).toList();
+    }
+
+    @Override
     public synchronized List<AiRun> findRecent(int limit) {
         return runs.values().stream().sorted(Comparator.comparing(AiRun::requestedAt).reversed()).limit(limit)
                 .map(InMemoryAiRunRepository::copy).toList();
@@ -159,7 +166,8 @@ class InMemoryAiRunRepository implements AiRunRepository {
                 run.nextAttemptAt().orElse(null), run.finishedAt().orElse(null), run.cancelRequested(),
                 run.cancelRequestedBy().orElse(null), run.modelCalls(), run.toolCalls(), run.deniedToolCalls(),
                 run.attemptModelCalls(), run.attemptToolCalls(), run.tokens(), run.cost(), run.output().orElse(null),
-                run.failure().orElse(null), run.version(), run.stepCount(), run.budgetWaits());
+                run.failure().orElse(null), run.version(), run.stepCount(), run.budgetWaits(),
+                run.slotOfferedAt().orElse(null));
         return AiRun.rehydrate(run.id(), run.workload(), run.idempotencyKey(), run.retryOf().orElse(null),
                 run.requestedBy(), run.requestedAt(), run.model(), run.budget(), run.sources(), run.parameters(),
                 snapshot);

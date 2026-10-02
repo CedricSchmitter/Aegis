@@ -38,9 +38,15 @@ public class AiRunTask {
     }
 
     CompletionHandler<AiRunPayload> run(TaskInstance<AiRunPayload> instance, ExecutionContext context) {
-        RunExecutor.Outcome outcome = executor.execute(RunId.of(instance.getData().runId()));
+        RunId id = RunId.of(instance.getData().runId());
+        RunExecutor.Outcome outcome = executor.execute(id);
         return switch (outcome) {
-            case RunExecutor.RunAgainAt again -> (complete, operations) -> operations.reschedule(complete, again.at());
+            // A slot offered while this execution was picked could not move it; once the time is stored (and the
+            // execution no longer picked), the run checks for such an offer under the AI lock.
+            case RunExecutor.RunAgainAt again -> (complete, operations) -> {
+                operations.reschedule(complete, again.at());
+                executor.rescheduled(id);
+            };
             case RunExecutor.Done done -> (complete, operations) -> operations.stop();
         };
     }

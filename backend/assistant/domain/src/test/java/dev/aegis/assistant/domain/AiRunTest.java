@@ -357,6 +357,39 @@ class AiRunTest {
     }
 
     @Test
+    void onlyDueWaitingRunsAwaitASlotAndAnOfferIsReservedUntilTheAttemptStartsOrItLapses() {
+        AiRun queued = run(3);
+        AiRun retrying = started(3);
+        retrying.fail(1, FailureCategory.TIMEOUT, "provider.timeout", "slow", null, T0);
+        Duration validity = Duration.ofSeconds(15);
+
+        assertThat(queued.awaitsSlot(T0)).isTrue();
+        assertThat(retrying.awaitsSlot(T0.plusSeconds(10))).isFalse();
+        assertThat(retrying.awaitsSlot(T0.plusSeconds(30))).isTrue();
+        assertThat(started(3).awaitsSlot(T0)).isFalse();
+        assertThatThrownBy(() -> retrying.offerSlot(T0.plusSeconds(10))).isInstanceOf(IllegalStateException.class);
+
+        queued.offerSlot(T0);
+
+        assertThat(queued.holdsSlotOffer(T0.plusSeconds(14), validity)).isTrue();
+        assertThat(queued.holdsSlotOffer(T0.plusSeconds(15), validity)).isFalse();
+        queued.start(T0.plusSeconds(1));
+        assertThat(queued.slotOfferedAt()).isEmpty();
+        assertThat(queued.holdsSlotOffer(T0.plusSeconds(1), validity)).isFalse();
+    }
+
+    @Test
+    void cancellingAWaitingRunEndsItsOffer() {
+        AiRun run = run(3);
+        run.offerSlot(T0);
+
+        run.requestCancel(LISA, T0);
+
+        assertThat(run.slotOfferedAt()).isEmpty();
+        assertThat(run.awaitsSlot(T0)).isFalse();
+    }
+
+    @Test
     void persistedClearsPendingStepsAndAdvancesVersionOfStoredRuns() {
         AiRun run = run(3);
         run.start(T0);

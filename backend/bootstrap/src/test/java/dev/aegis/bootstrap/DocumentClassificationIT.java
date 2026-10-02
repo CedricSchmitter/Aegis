@@ -447,7 +447,7 @@ class DocumentClassificationIT extends PostgresIT {
             }
 
             // Every document ends classified or visibly waiting; none failed, none was skipped. The runs share the
-            // household's single slot; PostgresIT's short slot wait starts each queued run right after the previous one.
+            // household's single slot; the freed slot is handed to the oldest waiting run, which starts right away.
             await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> assertThat(ids).allSatisfy(id ->
                     assertAnalysis(lisa, id, "CLASSIFIED", "WAITING_FOR_BUDGET")));
             List<JsonNode> waiting = ids.stream().map(id -> document(lisa, id))

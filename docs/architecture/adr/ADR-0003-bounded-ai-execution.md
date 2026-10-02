@@ -88,7 +88,8 @@ tool calls, denials, failures, cancellation and completion without prompts, docu
 
 Budgets per run: wall-clock time, model calls and tool calls per attempt; cost across all attempts; maximum output
 tokens per call; maximum attempts. Household limits: a daily cost limit (sum of all model calls of the household day
-in Europe/Berlin), a global concurrency limit and a per-workload concurrency limit. Before each model call the output
+in Europe/Berlin), a global concurrency limit and a per-workload concurrency limit; a freed slot is handed to the
+oldest waiting run ([ADR-0023](ADR-0023-ai-slot-hand-over.md)). Before each model call the output
 allowance shrinks so that the worst-case cost (conservative input estimate plus the allowance at the output price)
 fits the remaining run and daily budgets; after the call the reported usage is recorded and checked again. Retryable
 failures (rate limit, provider outage, timeout, invalid output, interruption, source outage, internal error) wait with
