@@ -256,8 +256,9 @@ it does not test document extraction quality. The check has a 0.05 USD run budge
 
 Implemented: connection checks, persistent run status, token/cost accounting, bounded retries, cancellation,
 shared household access and automatic document classification (#23, [ADR-0004](../architecture/adr/ADR-0004-automatic-document-classification.md)).
-Scheduled review/task creation (#24) and document chat (#25) are **not connected** and remain marked as missing
-workflows even after a successful connection check.
+Scheduled review/task creation (#24) is **not connected** and remains marked as a missing workflow even after a
+successful connection check. The household assistant's chat (#25) is described in
+[ADR-0025](../architecture/adr/ADR-0025-household-assistant-chat.md).
 
 Classification runs automatically only for **new uploads**, after Paperless has archived them with OCR. Existing
 and restored documents are only analyzed when a member starts it: per document (document page, "Classify now"), for
@@ -288,6 +289,35 @@ use the subscription), `AEGIS_AI_DAILY_COST_LIMIT=0.25`, `AEGIS_ASSISTANT_MEMBER
 this installation sets `aegis-dev`, see [Assistant account](#assistant-account)). Existing `.env` overrides
 must match these settings; changing environment settings requires recreating the application container.
 Deleting the key file disables new calls; calls already in flight may finish.
+
+### Household assistant reference questions
+
+`ops/eval/chat_reference_check.py` asks the assistant's reference questions (`fixtures/assistant-eval`, issue #25,
+[ADR-0025](../architecture/adr/ADR-0025-household-assistant-chat.md)) on the deployed instance as `aegis-dev`. It
+uploads twelve synthetic documents of a fictional household and files them in a temporary top-level folder
+"Assistant evaluation" with temporary organization labels, one of them deliberately mislabeled and one unsorted
+without labels. Lisa and Cedric can see them until the cleanup moves the documents to the trash and deletes the
+temporary labels and folders. Every question runs in a new conversation that is deleted after its answer is recorded.
+Raw results contain answer texts and stay on the VM; post only the report.
+
+Copy the script, the reference set and the household CA to the VM (`/tmp/aegis-ca.crt`, see
+[Access](ACCESS.md)), then as `aegis-agent`:
+
+```bash
+python3 chat_reference_check.py prepare --reference-set reference-set.json   # before aegis-dev may use AI
+python3 chat_reference_check.py probe --reference-set reference-set.json     # the search with labels and words, no AI
+python3 chat_reference_check.py ask --reference-set reference-set.json --mode LABELS_AND_TEXT --repetitions 2 --out labels.json
+python3 chat_reference_check.py cleanup --reference-set reference-set.json
+python3 chat_reference_check.py report --reference-set reference-set.json labels.json text.json
+```
+
+Prepare uploads before `aegis-dev` may use AI, so the automatic classification of the uploads stays unavailable and
+cannot change the deliberate labels. Asking needs a provider for `aegis-dev`: with only the owner's subscription,
+the owner adds `aegis-dev` to `AEGIS_AI_SUBSCRIPTION_MEMBERS` for the duration of the check (copy `.env` first and
+restore it afterwards). To compare with full text alone, set `AEGIS_AI_CHAT_RETRIEVAL=TEXT_ONLY` in `.env`, recreate
+the application container (`sudo -n sh -c 'cd /srv/aegis/deploy && docker compose up -d aegis'`), ask with
+`--mode TEXT_ONLY`, and restore `LABELS_AND_TEXT` (the default) the same way. The script stops when the runs show the
+other retrieval's tools. Each question costs about 0.03 to 0.10 USD API-equivalent.
 
 ## Installable app and Android share target
 
