@@ -72,6 +72,32 @@ public class ApiClient {
                 .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray())));
     }
 
+    /** One part of a multipart request; {@code filename} is null for a plain field. */
+    public record Part(String name, String filename, String contentType, byte[] content) {
+    }
+
+    /** Multipart POST with arbitrary parts, for example a JSON plan next to a file. */
+    public Response multipart(String path, List<Part> parts) {
+        String boundary = "----aegis" + System.nanoTime();
+        var body = new java.io.ByteArrayOutputStream();
+        try {
+            for (Part part : parts) {
+                String header = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"" + part.name() + "\""
+                        + (part.filename() == null ? "" : "; filename=\"" + part.filename() + "\"")
+                        + "\r\nContent-Type: " + part.contentType() + "\r\n\r\n";
+                body.write(header.getBytes(StandardCharsets.UTF_8));
+                body.write(part.content());
+                body.write("\r\n".getBytes(StandardCharsets.UTF_8));
+            }
+            body.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+        return send(HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray())));
+    }
+
     /** Any method with any body type, for requests the API is not supposed to serve. */
     public Response request(String method, String path, String contentType, String body) {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(baseUrl + path))

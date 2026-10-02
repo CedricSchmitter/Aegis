@@ -37,6 +37,21 @@ import dev.aegis.documents.application.LabelService;
 import dev.aegis.documents.application.DocumentRegistrar;
 import dev.aegis.documents.application.HouseholdSubjectMigrationService;
 import dev.aegis.documents.application.PurgeUseCases;
+import dev.aegis.documents.application.PageEditRunner;
+import dev.aegis.documents.application.PageEditService;
+import dev.aegis.documents.application.PageEditSettings;
+import dev.aegis.documents.application.PageEditStepService;
+import dev.aegis.documents.application.PageEditSteps;
+import dev.aegis.documents.application.PageQueryService;
+import dev.aegis.documents.application.PageSources;
+import dev.aegis.documents.application.api.PageEditCommands;
+import dev.aegis.documents.application.api.PageQueries;
+import dev.aegis.documents.application.ports.PageCache;
+import dev.aegis.documents.application.ports.PdfPages;
+import dev.aegis.documents.application.ports.ScanStore;
+import dev.aegis.documents.domain.pages.DerivationRepository;
+import dev.aegis.documents.domain.pages.PageEditPlan;
+import dev.aegis.documents.domain.pages.PageEditRepository;
 import dev.aegis.documents.application.DocumentPurgeService;
 import dev.aegis.documents.application.ReconciliationService;
 import dev.aegis.documents.application.RegisterReceivedDocument;
@@ -389,6 +404,56 @@ public class UseCaseConfiguration {
             Clock clock, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(PurgeUseCases.class, new DocumentPurgeService(documents, events, settings,
                 clock), tm);
+    }
+
+    /** Bounds of the page editor (ADR-0024); every new document has to meet the upload limit. */
+    @Bean
+    PageEditSettings pageEditSettings(@Value("${aegis.documents.page-edit.max-outputs:10}") int maxOutputs,
+            @Value("${aegis.documents.page-edit.max-pages-per-output:200}") int maxPagesPerOutput,
+            @Value("${aegis.documents.page-edit.max-sources:20}") int maxSources,
+            @Value("${aegis.documents.page-edit.max-new-pages:30}") int maxNewPages,
+            @Value("${aegis.documents.page-edit.max-attempts:5}") int maxAttempts,
+            @Value("${aegis.documents.page-edit.preview-long-side:480}") int previewLongSide,
+            ArchivalSettings archival) {
+        return new PageEditSettings(new PageEditPlan.Limits(maxOutputs, maxPagesPerOutput, maxSources, maxNewPages),
+                archival.maxUploadBytes(), maxAttempts, previewLongSide);
+    }
+
+    @Bean
+    PageSources pageSources(OriginalStore store, PaperlessArchive archive, PageCache cache, PdfPages pdf) {
+        return new PageSources(store, archive, cache, pdf);
+    }
+
+    /** Transactional steps of the page editor; registering an output joins the capture registration's transaction. */
+    @Bean
+    PageEditSteps pageEditSteps(PageEditRepository edits, DerivationRepository derivations,
+            RegisterReceivedDocument registrar, ProcessingScheduler scheduler, PageEditSettings settings, Clock clock,
+            PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(PageEditSteps.class, new PageEditStepService(edits, derivations, registrar,
+                scheduler, settings, clock), tm);
+    }
+
+    /** Requests are not one transaction: the scan is stored and sources are read before the operation commits. */
+    @Bean
+    PageEditCommands pageEditCommands(PageEditSteps steps, PageEditRepository edits, DocumentRepository documents,
+            PageSources sources, ScanStore scans, PdfPages pdf, CategoryRepository categories,
+            HouseholdPersons persons, HouseholdAccess access, PageEditSettings settings, Clock clock) {
+        return TransactionalProxy.expose(PageEditCommands.class, new PageEditService(steps, edits, documents, sources,
+                scans, pdf, categories, persons, access, settings, clock));
+    }
+
+    @Bean
+    PageQueries pageQueries(DocumentRepository documents, DerivationRepository derivations, PageSources sources,
+            PageCache cache, PdfPages pdf, HouseholdAccess access, PageEditSettings settings) {
+        return TransactionalProxy.expose(PageQueries.class, new PageQueryService(documents, derivations, sources,
+                cache, pdf, access, settings));
+    }
+
+    @Bean
+    PageEditRunner pageEditRunner(PageEditSteps steps, DocumentRepository documents, PageSources sources,
+            ScanStore scans, PdfPages pdf, OriginalStore store, PageCache cache, PageEditSettings settings,
+            AnalysisSettings analysis, Clock clock) {
+        return new PageEditRunner(steps, documents, sources, scans, pdf, store, cache, settings, analysis, clock);
     }
 
     @Bean

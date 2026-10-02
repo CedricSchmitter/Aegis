@@ -1184,6 +1184,50 @@
         "required" : [ "deletedId", "documentsMoved", "foldersMoved", "labelsKept", "subjectsKept" ],
         "type" : "object"
       },
+      "DerivationsDto" : {
+        "properties" : {
+          "derived" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DerivedDto"
+            },
+            "type" : "array"
+          },
+          "origin" : {
+            "$ref" : "#/components/schemas/OriginDto",
+            "type" : "null"
+          }
+        },
+        "required" : [ "derived" ],
+        "type" : "object"
+      },
+      "DerivedDto" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "documentId" : {
+            "type" : "string"
+          },
+          "sourcePages" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PageSpanDto"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "trashed" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "createdAt", "createdBy", "documentId", "sourcePages", "title", "trashed" ],
+        "type" : "object"
+      },
       "DiskSpaceDto" : {
         "description" : "Free space of a disk Aegis depends on; byte values are null when it could not be measured",
         "properties" : {
@@ -1966,6 +2010,187 @@
         "required" : [ "createdAt", "id", "kind", "params" ],
         "type" : "object"
       },
+      "OriginDto" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "pageEditId" : {
+            "type" : "string"
+          },
+          "ranges" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SourceRangeDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "createdAt", "createdBy", "pageEditId", "ranges" ],
+        "type" : "object"
+      },
+      "OutputDto" : {
+        "properties" : {
+          "categoryId" : {
+            "type" : [ "string", "null" ]
+          },
+          "pages" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PageRefDto"
+            },
+            "type" : "array"
+          },
+          "subjects" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SubjectDto"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "titleChosen" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "pages", "subjects", "title", "titleChosen" ],
+        "type" : "object"
+      },
+      "PageDto" : {
+        "properties" : {
+          "height" : {
+            "format" : "float",
+            "type" : "number"
+          },
+          "index" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "width" : {
+            "format" : "float",
+            "type" : "number"
+          }
+        },
+        "required" : [ "height", "index", "width" ],
+        "type" : "object"
+      },
+      "PageEditDto" : {
+        "properties" : {
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "finishedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "requestedBy" : {
+            "type" : "string"
+          },
+          "results" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ResultDto"
+            },
+            "type" : "array"
+          },
+          "state" : {
+            "enum" : [ "REQUESTED", "COMPLETED", "FAILED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "requestedAt", "requestedBy", "results", "state" ],
+        "type" : "object"
+      },
+      "PageEditRequestDto" : {
+        "properties" : {
+          "id" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "outputs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OutputDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "id", "outputs" ],
+        "type" : "object"
+      },
+      "PageRefDto" : {
+        "properties" : {
+          "documentId" : {
+            "type" : [ "string", "null" ]
+          },
+          "pageIndex" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "rotation" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "source" : {
+            "enum" : [ "DOCUMENT", "SCAN" ],
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "pageIndex", "rotation", "source" ],
+        "type" : "object"
+      },
+      "PageSpanDto" : {
+        "properties" : {
+          "firstPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "lastPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "firstPage", "lastPage" ],
+        "type" : "object"
+      },
+      "PagesDto" : {
+        "properties" : {
+          "documentId" : {
+            "type" : "string"
+          },
+          "pages" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PageDto"
+            },
+            "type" : "array"
+          },
+          "refusal" : {
+            "type" : [ "string", "null" ]
+          },
+          "sourceKind" : {
+            "enum" : [ "PDF", "PHOTO" ],
+            "type" : "string"
+          },
+          "warnings" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "documentId", "pages", "sourceKind", "warnings" ],
+        "type" : "object"
+      },
       "PasswordChangeRequest" : {
         "properties" : {
           "currentPassword" : {
@@ -2254,6 +2479,28 @@
         "required" : [ "expectedVersion", "title" ],
         "type" : "object"
       },
+      "ResultDto" : {
+        "properties" : {
+          "documentId" : {
+            "type" : "string"
+          },
+          "existing" : {
+            "type" : "boolean"
+          },
+          "output" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "trashed" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "documentId", "existing", "output", "title", "trashed" ],
+        "type" : "object"
+      },
       "ReviewItemDto" : {
         "properties" : {
           "actions" : {
@@ -2493,6 +2740,46 @@
           }
         },
         "required" : [ "documentDeleted", "documentId", "documentTrashed" ],
+        "type" : "object"
+      },
+      "SourceRangeDto" : {
+        "properties" : {
+          "firstPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "firstSourcePage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "lastPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "lastSourcePage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "rotation" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sourceDocumentId" : {
+            "type" : [ "string", "null" ]
+          },
+          "sourceKind" : {
+            "enum" : [ "DOCUMENT", "SCAN" ],
+            "type" : "string"
+          },
+          "sourceState" : {
+            "enum" : [ "AVAILABLE", "TRASHED", "DELETED" ],
+            "type" : [ "string", "null" ]
+          },
+          "sourceTitle" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "firstPage", "firstSourcePage", "lastPage", "lastSourcePage", "rotation", "sourceKind" ],
         "type" : "object"
       },
       "StatusRequest" : {
@@ -4669,6 +4956,33 @@
         "tags" : [ "documents" ]
       }
     },
+    "/api/documents/{id}/derivations" : {
+      "get" : {
+        "operationId" : "getDocumentDerivations",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DerivationsDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Where a document's pages came from and which documents were created from its pages",
+        "tags" : [ "page-editor" ]
+      }
+    },
     "/api/documents/{id}/filename" : {
       "put" : {
         "operationId" : "setDocumentFilename",
@@ -4865,6 +5179,69 @@
         },
         "summary" : "Original bytes, unchanged, named with the friendly filename",
         "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/pages" : {
+      "get" : {
+        "operationId" : "getDocumentPages",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagesDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Pages of a document for the page editor; may fetch the original from the archive once",
+        "tags" : [ "page-editor" ]
+      }
+    },
+    "/api/documents/{id}/pages/{index}/preview" : {
+      "get" : {
+        "operationId" : "getPagePreview",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "index",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "A small JPEG of one page of a document",
+        "tags" : [ "page-editor" ]
       }
     },
     "/api/documents/{id}/purge" : {
@@ -5707,6 +6084,71 @@
         },
         "summary" : "Mark one notice as read",
         "tags" : [ "notices" ]
+      }
+    },
+    "/api/page-edits" : {
+      "post" : {
+        "operationId" : "requestPageEdit",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "plan" : {
+                    "$ref" : "#/components/schemas/PageEditRequestDto"
+                  },
+                  "scan" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "plan" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageEditDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Create new documents from pages of stored documents and newly scanned pages; answered once the plan and the scan are stored durably",
+        "tags" : [ "page-editor" ]
+      }
+    },
+    "/api/page-edits/{id}" : {
+      "get" : {
+        "operationId" : "getPageEdit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageEditDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "State and results of a page editor operation",
+        "tags" : [ "page-editor" ]
       }
     },
     "/api/reviews" : {

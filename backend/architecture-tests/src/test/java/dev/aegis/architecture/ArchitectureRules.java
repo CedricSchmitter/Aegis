@@ -57,6 +57,13 @@ final class ArchitectureRules {
                 .as("only the Anthropic adapter may use the Anthropic SDK");
     }
 
+    /** The PDF library stays inside the documents adapters behind the page editor's port (ADR-0024). */
+    static ArchRule pdfLibraryStaysInItsAdapter(String base) {
+        return noClasses().that().resideOutsideOfPackage(base + ".documents.adapters.pdf..")
+                .should().dependOnClassesThat().resideInAnyPackage("org.apache.pdfbox..", "org.apache.fontbox..")
+                .as("only the documents PDF adapter may use Apache PDFBox");
+    }
+
     /**
      * Aegis starts no operating-system processes (ADR-0003): no shell and no
      * command the model could influence. AI work goes through model gateways and application tools only.

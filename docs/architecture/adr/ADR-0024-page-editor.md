@@ -1,6 +1,8 @@
-# ADR-0023: Pages are split, merged, reordered, rotated and removed in one page editor that creates new documents
+# ADR-0024: Pages are split, merged, reordered, rotated and removed in one page editor that creates new documents
 
-Status: accepted for issue #82, not yet implemented. Date: 2026-10-02.
+Status: accepted for issue #82; the backend is implemented, the app's editor screen and the portable export of
+derivations are not yet. Date: 2026-10-02. Numbered 0024 because ADR-0023 records the AI slot hand-over that was
+accepted at the same time.
 
 ## Context
 
@@ -122,7 +124,7 @@ chosen by the client when the plan is started. The request is acknowledged only 
 
 Repeating the request with the same operation id and the same plan returns the existing operation; a different plan
 under the same id is refused (`pageEdit.conflict`). The response and `GET /api/page-edits/{id}` show the state
-(`REQUESTED`, `RUNNING`, `COMPLETED`, `FAILED` with a code) and, once finished, the result documents.
+(`REQUESTED`, `COMPLETED`, `FAILED` with a code) and the result documents, while it runs those created so far.
 
 The job loads the sources, writes each output with the PDF library and registers it through the existing capture path
 (`RegisterReceivedDocument`): staged in ingress, checksummed, registered with its classification and archival job in

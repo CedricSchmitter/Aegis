@@ -41,6 +41,7 @@ public class FakePaperlessArchive implements PaperlessArchive {
     private final Map<String, Integer> pollsRemaining = new ConcurrentHashMap<>();
     private final Map<String, String> textsByChecksum = new ConcurrentHashMap<>();
     private final java.util.Set<String> scannedChecksums = ConcurrentHashMap.newKeySet();
+    private final Map<String, byte[]> renditions = new ConcurrentHashMap<>();
     private final Map<Integer, String> texts = new ConcurrentHashMap<>();
     public final AtomicInteger contentReads = new AtomicInteger();
     /** Archive documents deleted through {@link #purge}, including repeated deletions of the same id. */
@@ -63,6 +64,11 @@ public class FakePaperlessArchive implements PaperlessArchive {
         scannedChecksums.add(sha256(bytes));
     }
 
+    /** The searchable PDF the fake keeps for an image original with these bytes, instead of a placeholder. */
+    public void rendition(byte[] original, byte[] pdf) {
+        renditions.put(sha256(original), pdf);
+    }
+
     @Override
     public SubmissionOutcome submit(Path file, String title, String originalFilename, String contentType) {
         requireAvailable();
@@ -81,7 +87,8 @@ public class FakePaperlessArchive implements PaperlessArchive {
             tasks.put(taskId, new Duplicate(existing));
         } else {
             int id = nextId.getAndIncrement();
-            byte[] archivePdf = contentType.startsWith("image/") || scannedChecksums.contains(checksum)
+            byte[] archivePdf = renditions.containsKey(checksum) ? renditions.get(checksum)
+                    : contentType.startsWith("image/") || scannedChecksums.contains(checksum)
                     ? ("%PDF-1.7 archive of " + checksum).getBytes(java.nio.charset.StandardCharsets.US_ASCII)
                     : null;
             documents.put(id, new Stored(id, title, bytes, checksum, contentType, archivePdf));
