@@ -60,7 +60,8 @@ run a member already started.
 
 Each job step is one transaction that locks the run, follows its runs in flight, requests the next documents and
 reschedules itself (`poll-interval`, default 10 s). At most `batch-size` runs (default 3, at most 10) are in flight;
-household concurrency of AI runs (default one) still applies on top.
+household concurrency of AI runs (default one) still applies on top; a freed slot goes to the oldest waiting run, so
+the runs of a batch start right after each other ([ADR-0023](ADR-0023-ai-slot-hand-over.md)).
 
 A document is requested through `BulkAnalysisRequests`, implemented by the same service and with the same checks as a
 member's selection: it must still exist, be archived, outside the trash, without a result and without an active run,
