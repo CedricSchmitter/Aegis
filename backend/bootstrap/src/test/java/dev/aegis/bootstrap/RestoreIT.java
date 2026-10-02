@@ -15,9 +15,15 @@ import dev.aegis.documents.application.api.DocumentQueries;
 import dev.aegis.documents.application.api.LabelChip;
 import dev.aegis.documents.application.api.LabelCommands;
 import dev.aegis.documents.application.api.LabelView;
+import dev.aegis.documents.application.api.PageQueries;
+import dev.aegis.documents.application.api.PageQueries.SourceRangeView;
 import dev.aegis.documents.application.api.SubjectView;
 import dev.aegis.documents.application.api.UploadDocument;
 import dev.aegis.documents.application.api.UploadDocument.UploadCommand;
+import dev.aegis.documents.domain.pages.Derivation;
+import dev.aegis.documents.domain.pages.Derivation.Range;
+import dev.aegis.documents.domain.pages.Derivation.SourceKind;
+import dev.aegis.documents.domain.pages.DerivationRepository;
 import dev.aegis.identity.application.api.MemberAppearance;
 import dev.aegis.identity.application.api.MemberAppearance.Palette;
 import dev.aegis.identity.application.api.MemberCredentialsQuery;
@@ -39,8 +45,11 @@ import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -84,6 +93,10 @@ class RestoreIT extends PostgresIT {
     MemberPreferences preferences;
     @Autowired
     MemberDirectory directory;
+    @Autowired
+    DerivationRepository derivations;
+    @Autowired
+    PageQueries pages;
 
     @Test
     void restoreIntoWipedInstancePreservesIdsAndSourceLinksDespiteNewExternalIds() throws Exception {
@@ -239,7 +252,7 @@ class RestoreIT extends PostgresIT {
             ExportSummary export = createExport.export(anna);
             String exported = Files.readString(Path.of(export.location()).resolve("data/members.json"));
             // Pretty-printed JSON: allow spaces around the colons.
-            assertThat(exported).containsPattern("\"schemaVersion\"\\s*:\\s*10")
+            assertThat(exported).containsPattern("\"schemaVersion\"\\s*:\\s*11")
                     .containsPattern("\"palette\"\\s*:\\s*\"CORPO\"")
                     .containsPattern("\"palette\"\\s*:\\s*\"NOMAD\"")
                     .containsPattern("\"effects\"\\s*:\\s*false");
@@ -257,5 +270,97 @@ class RestoreIT extends PostgresIT {
             jdbc.update("DELETE FROM members WHERE username = 'carla'");
             preferences.changeAppearance(anna, MemberAppearance.DEFAULT);
         }
+    }
+
+    /**
+     * Schema 11 carries where the pages of a page-editor document came from, by Aegis document id (ADR-0024). The
+     * restore reinstates them after all documents; a range whose source did not come back names a deleted source,
+     * and a repeated restore changes nothing.
+     */
+    @Test
+    void pageRangesOfAPageEditorDocumentSurviveExportAndRestore() throws Exception {
+        Actor anna = new Actor(members.findCredentials(ANNA).orElseThrow().id());
+        DocumentId source = uploadUnique(anna, "Derivation Quelle");
+        DocumentId lost = uploadUnique(anna, "Derivation verlorene Quelle");
+        DocumentId result = uploadUnique(anna, "Derivation Ergebnis");
+        for (DocumentId id : List.of(source, lost, result)) {
+            await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(
+                    documentQueries.get(anna, id).processing().state()).isEqualTo("ARCHIVED"));
+        }
+        UUID pageEdit = UUID.randomUUID();
+        Instant createdAt = Instant.parse("2026-10-02T08:00:00Z");
+        derivations.insertIfAbsent(new Derivation(result, pageEdit, anna.memberId(), createdAt, List.of(
+                new Range(1, 2, SourceKind.DOCUMENT, source, 2, 3, 90),
+                new Range(3, 3, SourceKind.DOCUMENT, lost, 1, 1, 0),
+                new Range(4, 4, SourceKind.SCAN, null, 1, 1, 0))));
+
+        ExportSummary export = createExport.export(anna);
+        Path generation = Path.of(export.location());
+        // Pretty-printed JSON: allow spaces around the colons.
+        assertThat(Files.readString(generation.resolve("data/documents.json")))
+                .containsPattern("\"schemaVersion\"\\s*:\\s*11")
+                .containsPattern("\"pageEditId\"\\s*:\\s*\"" + pageEdit + "\"")
+                .containsPattern("\"sourceDocumentId\"\\s*:\\s*\"" + source + "\"");
+        assertThat(Files.readString(generation.resolve("readable/documents.csv")))
+                .contains("pages 1-2: pages 2-3 of Derivation Quelle (turned 90 degrees); page 3: page 1 of "
+                        + "Derivation verlorene Quelle; page 4: scanned page 1");
+        // The lost source's original is missing from this generation, so the restore cannot bring it back.
+        dropOriginal(generation, lost);
+
+        HouseholdDataWipe.truncate(jdbc);
+        archive.clear();
+        RestoreExport.RestoreReport report = restore.restore(anna, export.location());
+
+        // Other test classes share this database, so the generation may hold their page-editor documents too.
+        assertThat(report.derivationsImported()).isGreaterThanOrEqualTo(1);
+        assertThat(report.warnings()).contains("document " + result
+                + ": 1 page range(s) restored as from a deleted source, because the source is not stored here");
+        assertThat(derivations.findByDocument(result)).hasValueSatisfying(restored -> {
+            assertThat(restored.pageEdit()).isEqualTo(pageEdit);
+            assertThat(restored.createdBy()).isEqualTo(anna.memberId());
+            assertThat(restored.createdAt()).isEqualTo(createdAt);
+        });
+        var origin = pages.derivations(anna, result).origin();
+        assertThat(origin.ranges()).extracting(SourceRangeView::firstPage, SourceRangeView::lastPage,
+                SourceRangeView::sourceKind, SourceRangeView::source, SourceRangeView::sourceState,
+                SourceRangeView::firstSourcePage, SourceRangeView::rotation).containsExactly(
+                        Tuple.tuple(1, 2, "DOCUMENT", source, SourceRangeView.AVAILABLE, 2, 90),
+                        Tuple.tuple(3, 3, "DOCUMENT", null, SourceRangeView.DELETED, 1, 0),
+                        Tuple.tuple(4, 4, "SCAN", null, null, 1, 0));
+        assertThat(pages.derivations(anna, source).derived()).singleElement()
+                .satisfies(derived -> assertThat(derived.document()).isEqualTo(result));
+
+        RestoreExport.RestoreReport again = restore.restore(anna, export.location());
+        assertThat(again.derivationsImported()).isZero();
+        assertThat(again.derivationsAlreadyPresent()).isEqualTo(report.derivationsImported());
+        assertThat(pages.derivations(anna, result).origin()).isEqualTo(origin);
+    }
+
+    private DocumentId uploadUnique(Actor actor, String title) throws Exception {
+        byte[] fixture = fixtureBytes();
+        byte[] marker = (" %% " + title + " " + System.nanoTime() + " %% ")
+                .getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        byte[] pdf = new byte[fixture.length + marker.length];
+        System.arraycopy(fixture, 0, pdf, 0, fixture.length);
+        System.arraycopy(marker, 0, pdf, fixture.length, marker.length);
+        return upload.upload(actor, new UploadCommand(title + ".pdf", "application/pdf", pdf.length,
+                new ByteArrayInputStream(pdf), List.of(new SubjectView("HOUSE", null)))).document().id();
+    }
+
+    /** Removes a document's original and its checksum from a generation, like a generation that lacked it. */
+    private static void dropOriginal(Path generation, DocumentId id) throws Exception {
+        String stableId = id.toString().substring(0, 8);
+        Path original;
+        try (var files = Files.list(generation.resolve("documents/originals"))) {
+            original = files.filter(file -> file.getFileName().toString().contains(stableId)).findFirst()
+                    .orElseThrow();
+        }
+        Files.delete(original);
+        var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        Path manifest = generation.resolve("manifest.json");
+        var tree = (tools.jackson.databind.node.ObjectNode) mapper.readTree(Files.readAllBytes(manifest));
+        ((tools.jackson.databind.node.ObjectNode) tree.get("fileChecksumsSha256"))
+                .remove("documents/originals/" + original.getFileName());
+        Files.write(manifest, mapper.writeValueAsBytes(tree));
     }
 }

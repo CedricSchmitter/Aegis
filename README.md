@@ -148,7 +148,8 @@ and pages photographed in the editor with the same scan pipeline: markers betwee
 merge, and pages can be dragged or moved with buttons, rotated and left out. Titles, folder and subjects are prefilled
 from the first page's source, the plan survives a closed tab, and the result is followed until the new documents
 exist. Sources stay unchanged, every result is captured like an upload and its page shows where its pages came from
-("Erstellt aus Seiten 1–3 von …", "Daraus erstellt" on the source); page previews are rendered on the server
+("Erstellt aus Seiten 1–3 von …", "Daraus erstellt" on the source), which the portable export schema 11 carries and
+a restore reinstates; page previews are rendered on the server
 ([ADR-0024](docs/architecture/adr/ADR-0024-page-editor.md)). Photos chosen as a file or shared from
 Android (JPEG, PNG, WebP, HEIC) are accepted by their content, stay the original and are archived by Paperless into
 a searchable PDF that is offered next to the photo ([ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md)).

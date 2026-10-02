@@ -37,6 +37,7 @@ import dev.aegis.documents.application.LabelService;
 import dev.aegis.documents.application.DocumentRegistrar;
 import dev.aegis.documents.application.HouseholdSubjectMigrationService;
 import dev.aegis.documents.application.PurgeUseCases;
+import dev.aegis.documents.application.DerivationPortabilityService;
 import dev.aegis.documents.application.PageEditRunner;
 import dev.aegis.documents.application.PageEditService;
 import dev.aegis.documents.application.PageEditSettings;
@@ -44,6 +45,7 @@ import dev.aegis.documents.application.PageEditStepService;
 import dev.aegis.documents.application.PageEditSteps;
 import dev.aegis.documents.application.PageQueryService;
 import dev.aegis.documents.application.PageSources;
+import dev.aegis.documents.application.api.DerivationPortability;
 import dev.aegis.documents.application.api.PageEditCommands;
 import dev.aegis.documents.application.api.PageQueries;
 import dev.aegis.documents.application.ports.PageCache;
@@ -449,6 +451,14 @@ public class UseCaseConfiguration {
                 cache, pdf, access, settings));
     }
 
+    /** Derivations in the portable export; each restored derivation is one transaction (ADR-0024). */
+    @Bean
+    DerivationPortability derivationPortability(DocumentRepository documents, DerivationRepository derivations,
+            HouseholdAccess access, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(DerivationPortability.class,
+                new DerivationPortabilityService(documents, derivations, access), tm);
+    }
+
     @Bean
     PageEditRunner pageEditRunner(PageEditSteps steps, DocumentRepository documents, PageSources sources,
             ScanStore scans, PdfPages pdf, OriginalStore store, PageCache cache, PageEditSettings settings,
@@ -701,11 +711,12 @@ public class UseCaseConfiguration {
     }
 
     @Bean
-    PortabilityServices portabilityServices(DocumentExportQuery documents, TaskExportQuery tasks,
-            ContractExportQuery contracts, ReviewPortability reviews, MemberDirectory members, ExportStore store, ExportSerializer serializer,
-            HouseholdAccess access, Clock clock, @Value("${aegis.build.commit:dev}") String commit) {
-        return new PortabilityServices(new ExportService(documents, tasks, contracts, reviews, members, store, serializer,
-                access, clock, "aegis@" + commit));
+    PortabilityServices portabilityServices(DocumentExportQuery documents, DerivationPortability derivations,
+            TaskExportQuery tasks, ContractExportQuery contracts, ReviewPortability reviews, MemberDirectory members,
+            ExportStore store, ExportSerializer serializer, HouseholdAccess access, Clock clock,
+            @Value("${aegis.build.commit:dev}") String commit) {
+        return new PortabilityServices(new ExportService(documents, derivations, tasks, contracts, reviews, members,
+                store, serializer, access, clock, "aegis@" + commit));
     }
 
     @Bean
@@ -722,8 +733,8 @@ public class UseCaseConfiguration {
     RestoreExport restoreExport(ExportSourceOpener opener, ExportSerializer serializer, MemberDirectory members,
             ProvisionMembers provisioning, ImportDocument importDocument, ImportCatalog importCatalog,
             ImportDocumentAnalysis importAnalysis, ImportTask importTask, ImportContract importContract,
-            ReviewPortability reviews, HouseholdAccess access) {
+            ReviewPortability reviews, DerivationPortability derivations, HouseholdAccess access) {
         return new RestoreService(opener, serializer, members, provisioning, importDocument, importCatalog,
-                importAnalysis, importTask, importContract, reviews, access);
+                importAnalysis, importTask, importContract, reviews, derivations, access);
     }
 }
