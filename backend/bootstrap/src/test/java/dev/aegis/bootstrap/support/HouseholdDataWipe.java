@@ -13,6 +13,7 @@ public final class HouseholdDataWipe {
     private static final String TRUNCATE = "TRUNCATE TABLE scheduled_tasks, notices, tasks, document_labels, "
             + "document_placement_suggestions, document_placement_rejections, document_classifications, "
             + "document_analyses, document_text_checks, document_subjects, document_bulk_analysis_items, "
+            + "document_derivations, document_page_edits, "
             + "document_bulk_analyses, documents";
     private static final int ATTEMPTS = 5;
 

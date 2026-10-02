@@ -138,6 +138,19 @@ aegis:
         batch-size: 3
         poll-interval: 10s
         max-wait: 15m
+    # The page editor (issue #82, ADR-0024): limits of one request and the cache of fetched sources and page previews.
+    # The cache is derived data outside the backed-up data; in the container it lives in the writable layer and is
+    # emptied by every deployment.
+    page-edit:
+      max-outputs: 10
+      max-pages-per-output: 200
+      max-sources: 20
+      max-new-pages: 30
+      max-attempts: 5
+      preview-long-side: 480
+      cache-dir: ${AEGIS_PAGE_CACHE_DIR:${java.io.tmpdir}/aegis-page-cache}
+      cache-max-bytes: 1073741824
+      cache-max-age: 7d
   backup:
     state-file: ${AEGIS_BACKUP_STATE_FILE:}
   import:

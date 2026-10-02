@@ -63,6 +63,13 @@ final class TestDoubles {
         public void scheduleBulkAnalysis(UUID bulkId, Instant at) {
             bulkSteps.put(bulkId, at);
         }
+
+        final Map<UUID, Instant> pageEdits = new HashMap<>();
+
+        @Override
+        public void schedulePageEdit(UUID pageEditId, Instant at) {
+            pageEdits.putIfAbsent(pageEditId, at);
+        }
     }
 
     static final class RecordingEvents implements DocumentEvents {

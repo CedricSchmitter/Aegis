@@ -23,4 +23,7 @@ public interface ProcessingScheduler {
 
     /** Schedules the next step of a bulk analysis at {@code at}, in the caller's transaction (issue #115). */
     void scheduleBulkAnalysis(java.util.UUID bulkId, Instant at);
+
+    /** Schedules the page editor job of an operation (ADR-0024) at {@code at}, in the caller's transaction. */
+    void schedulePageEdit(java.util.UUID pageEditId, Instant at);
 }

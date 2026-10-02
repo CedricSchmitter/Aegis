@@ -23,6 +23,10 @@
     <archunit.version>1.5.0</archunit.version>
     <!-- Official Anthropic Java SDK, used only inside the assistant adapters (ADR-0003). -->
     <anthropic-java.version>2.63.0</anthropic-java.version>
+    <!-- Apache PDFBox for the page editor (ADR-0024), used only inside the documents adapters; JBIG2 decoding renders
+         previews of scanner PDFs. -->
+    <pdfbox.version>3.0.8</pdfbox.version>
+    <jbig2-imageio.version>3.0.5</jbig2-imageio.version>
 
     <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
     <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
@@ -95,6 +99,16 @@
         <groupId>com.anthropic</groupId>
         <artifactId>anthropic-java</artifactId>
         <version>${anthropic-java.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.pdfbox</groupId>
+        <artifactId>pdfbox</artifactId>
+        <version>${pdfbox.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.pdfbox</groupId>
+        <artifactId>jbig2-imageio</artifactId>
+        <version>${jbig2-imageio.version}</version>
       </dependency>
       <dependency>
         <groupId>com.tngtech.archunit</groupId>

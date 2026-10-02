@@ -1,4 +1,4 @@
-# ADR-0023: Pages are split, merged, reordered, rotated and removed in one page editor that creates new documents
+# ADR-0024: Pages are split, merged, reordered, rotated and removed in one page editor that creates new documents
 
 Status: accepted for issue #82, not yet implemented. Date: 2026-10-02.
 

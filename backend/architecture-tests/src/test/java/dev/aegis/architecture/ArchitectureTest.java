@@ -58,6 +58,11 @@ class ArchitectureTest {
     }
 
     @Test
+    void pdfLibraryStaysInItsAdapter() {
+        ArchitectureRules.pdfLibraryStaysInItsAdapter(BASE).check(classes);
+    }
+
+    @Test
     void noProcessIsStarted() {
         ArchitectureRules.noProcessExecution(BASE).check(classes);
     }
