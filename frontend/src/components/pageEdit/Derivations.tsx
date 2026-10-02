@@ -11,14 +11,14 @@ type DerivationsDto = components["schemas"]["DerivationsDto"];
 type SourceRangeDto = components["schemas"]["SourceRangeDto"];
 type PageSpanDto = components["schemas"]["PageSpanDto"];
 
-/** "Seite 3" or "Seiten 1–3, 5" for one-based inclusive spans. */
-export function pageList(spans: readonly PageSpanDto[], t: TFunction): string {
+/** "Seite 3" or "Seiten 1–3, 5" for one-based inclusive spans; `leading` for the start of a line. */
+export function pageList(spans: readonly PageSpanDto[], t: TFunction, leading = false): string {
   const single = spans.length === 1 && spans[0].firstPage === spans[0].lastPage;
-  if (single) return t("pageEdit.pages.single", { page: spans[0].firstPage });
+  if (single) return t(leading ? "pageEdit.pages.singleLeading" : "pageEdit.pages.single", { page: spans[0].firstPage });
   const list = spans
     .map((span) => (span.firstPage === span.lastPage ? `${span.firstPage}` : `${span.firstPage}–${span.lastPage}`))
     .join(", ");
-  return t("pageEdit.pages.many", { list });
+  return t(leading ? "pageEdit.pages.manyLeading" : "pageEdit.pages.many", { list });
 }
 
 const sourceSpan = (range: SourceRangeDto): PageSpanDto => ({
@@ -64,7 +64,7 @@ export function Derivations({ documentId }: { documentId: string }) {
               <li key={`${range.firstPage}`} className="text-sm" data-testid="derivation-range" data-source-state={range.sourceState ?? "SCAN"}>
                 {resultPagesShown && (
                   <span className="font-mono text-xs text-text-3">
-                    {pageList([{ firstPage: range.firstPage, lastPage: range.lastPage }], t)} ·{" "}
+                    {pageList([{ firstPage: range.firstPage, lastPage: range.lastPage }], t, true)} ·{" "}
                   </span>
                 )}
                 <OriginRange range={range} />
