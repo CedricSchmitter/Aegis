@@ -139,7 +139,7 @@ class AiRunIT extends PostgresIT {
         assertThat(overview.path("spentToday").decimalValue()).isPositive();
         assertThat(overview.path("workloads")).anySatisfy(workload -> {
             assertThat(workload.path("workload").asText()).isEqualTo("CHAT");
-            assertThat(workload.path("available").asBoolean()).isFalse();
+            assertThat(workload.path("available").asBoolean()).isTrue();
         });
         JsonNode status = anna.json(anna.get("/api/status"));
         assertThat(status.path("checks")).anySatisfy(check -> {

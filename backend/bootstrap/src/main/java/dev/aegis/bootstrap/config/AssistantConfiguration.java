@@ -8,11 +8,15 @@ import dev.aegis.assistant.application.RunExecution;
 import dev.aegis.assistant.application.RunExecutionService;
 import dev.aegis.assistant.application.RunExecutor;
 import dev.aegis.assistant.application.WorkloadHandler;
+import dev.aegis.assistant.application.chat.ChatHandler;
+import dev.aegis.assistant.application.chat.ChatService;
 import dev.aegis.assistant.application.api.AiHealthQuery;
 import dev.aegis.assistant.application.api.AiModelCommands;
 import dev.aegis.assistant.application.api.AiRunCommands;
 import dev.aegis.assistant.application.api.AiRunQueries;
 import dev.aegis.assistant.application.api.AiRunStatusQuery;
+import dev.aegis.assistant.application.api.ChatCommands;
+import dev.aegis.assistant.application.api.ChatQueries;
 import dev.aegis.assistant.application.api.RequestAiRun;
 import dev.aegis.assistant.application.ports.AiLock;
 import dev.aegis.assistant.application.ports.AiTool;
@@ -22,6 +26,10 @@ import dev.aegis.assistant.application.ports.RunScheduler;
 import dev.aegis.assistant.domain.AiRunRepository;
 import dev.aegis.assistant.domain.Workload;
 import dev.aegis.assistant.domain.WorkloadModelChoiceRepository;
+import dev.aegis.assistant.domain.chat.ConversationRepository;
+import dev.aegis.contracts.application.api.ContractQueries;
+import dev.aegis.documents.application.api.DocumentTextQuery;
+import dev.aegis.planning.application.api.TaskQueries;
 import dev.aegis.shared.HouseholdAccess;
 import java.time.Clock;
 import java.time.ZoneId;
@@ -53,6 +61,12 @@ public class AssistantConfiguration {
     @Bean
     WorkloadHandler connectionCheckHandler() {
         return new ConnectionCheckHandler();
+    }
+
+    @Bean
+    WorkloadHandler chatHandler(ConversationRepository conversations, DocumentTextQuery documentTexts,
+            ContractQueries contracts, TaskQueries tasks, AiSettings settings, Clock clock) {
+        return new ChatHandler(conversations, documentTexts, contracts, tasks, settings.zone(), clock);
     }
 
     /** Handlers by workload, gateways by provider and tools by name; duplicates are configuration errors. */
@@ -91,15 +105,27 @@ public class AssistantConfiguration {
         return new RunExecutor(execution, parts.handlers(), parts.gateways(), parts.tools(), settings);
     }
 
-    record AssistantServices(AiRunService runs) {
+    record AssistantServices(AiRunService runs, ChatService chat) {
     }
 
     @Bean
     AssistantServices assistantServices(AiRunRepository runs, WorkloadModelChoiceRepository choices,
-            RunScheduler scheduler, AiLock lock, AssistantParts parts, AiSettings settings, HouseholdAccess access,
-            Clock clock) {
-        return new AssistantServices(new AiRunService(runs, choices, scheduler, lock, parts.handlers(),
-                parts.gateways(), settings, access, clock));
+            ConversationRepository conversations, RunScheduler scheduler, AiLock lock, AssistantParts parts,
+            AiSettings settings, HouseholdAccess access, Clock clock) {
+        AiRunService service = new AiRunService(runs, choices, scheduler, lock, parts.handlers(), parts.gateways(),
+                settings, access, clock);
+        return new AssistantServices(service, new ChatService(conversations, runs, service, service, service, access,
+                clock));
+    }
+
+    @Bean
+    ChatCommands chatCommands(AssistantServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ChatCommands.class, services.chat(), tm);
+    }
+
+    @Bean
+    ChatQueries chatQueries(AssistantServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(ChatQueries.class, services.chat(), tm);
     }
 
     @Bean
