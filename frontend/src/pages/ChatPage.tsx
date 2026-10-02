@@ -16,6 +16,7 @@ import {
   progressSteps,
   turnOpen,
   turnRetryable,
+  waitingMessage,
 } from "../lib/chat";
 import { failureReasonText } from "../lib/failureReasons";
 import { formatDateTime } from "../lib/format";
@@ -311,7 +312,7 @@ function ConversationThread({ id, overview, onChanged }: { id: string; overview:
 }
 
 function TurnItem({ turn, latest, busy, onCancel, onRetry }: { turn: ChatTurnDto; latest: boolean; busy: boolean; onCancel: () => void; onRetry: () => void }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   return (
     <li className="flex flex-col gap-2" data-testid="chat-turn" data-state={turn.state}>
       <div className="max-w-[85%] self-end bg-raised px-3.5 py-2.5 text-sm whitespace-pre-wrap break-words text-text-1" data-testid="chat-question">
@@ -323,11 +324,7 @@ function TurnItem({ turn, latest, busy, onCancel, onRetry }: { turn: ChatTurnDto
         <div className="card flex flex-col gap-2" role="status" aria-live="polite" data-testid="chat-progress">
           <p className="flex items-center gap-2 text-sm text-text-2">
             <span className="h-2 w-2 animate-pulse bg-data motion-reduce:animate-none" aria-hidden="true" />
-            {turn.state === "WAITING"
-              ? turn.nextAttemptAt
-                ? t("chat.waitingUntil", { time: formatDateTime(turn.nextAttemptAt, i18n.language) })
-                : t("chat.waiting")
-              : t("chat.working")}
+            {turn.state === "WAITING" ? <WaitingText turn={turn} /> : t("chat.working")}
           </p>
           <ul className="flex flex-col gap-0.5 font-mono text-xs text-text-3">
             {progressSteps(turn.progress).map((step, index) => (
@@ -357,6 +354,12 @@ function TurnItem({ turn, latest, busy, onCancel, onRetry }: { turn: ChatTurnDto
       )}
     </li>
   );
+}
+
+function WaitingText({ turn }: { turn: ChatTurnDto }) {
+  const { t, i18n } = useTranslation();
+  const message = waitingMessage(turn);
+  return <>{t(message.key, message.at ? { time: formatDateTime(message.at, i18n.language) } : undefined)}</>;
 }
 
 const EVIDENCE_TONES: Record<string, Tone> = { COMPLETE: "data", PARTIAL: "attention", NOT_FOUND: "neutral" };
@@ -470,8 +473,7 @@ function Composer({ disabled, waiting = false, onSend, autoFocus = false }: { di
         autoFocus={autoFocus}
         data-testid="chat-input"
       />
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[11px] text-text-4">{t("chat.hint")}</span>
+      <div className="flex justify-end">
         <Button variant="primary" type="submit" disabled={!question || disabled || sending} data-testid="chat-send">
           {t("chat.send")}
         </Button>

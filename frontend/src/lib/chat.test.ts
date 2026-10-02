@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChatCitationDto } from "../api/types";
-import { answerSegments, citationTarget, progressSteps, turnOpen, turnRetryable } from "./chat";
+import { answerSegments, citationTarget, progressSteps, turnOpen, turnRetryable, waitingMessage } from "./chat";
 
 const citation = (number: number, kind: ChatCitationDto["kind"] = "DOCUMENT"): ChatCitationDto => ({
   number,
@@ -48,6 +48,14 @@ describe("turn state", () => {
     expect(turnRetryable({ state: "FAILED", answer: undefined })).toBe(true);
     expect(turnRetryable({ state: "CANCELLED", answer: undefined })).toBe(true);
     expect(turnRetryable({ state: "WORKING", answer: undefined })).toBe(false);
+  });
+
+  it("names a resume time only for the exact renewal of the daily budget", () => {
+    const at = "2026-10-02T22:00:00Z";
+    expect(waitingMessage({ failureCode: "budget.daily", nextAttemptAt: at })).toEqual({ key: "chat.waitingUntil", at });
+    expect(waitingMessage({ failureCode: "provider.rateLimited", nextAttemptAt: at })).toEqual({ key: "chat.waitingRateLimited" });
+    expect(waitingMessage({ failureCode: "provider.unavailable", nextAttemptAt: at })).toEqual({ key: "chat.waitingRetry" });
+    expect(waitingMessage({ failureCode: null, nextAttemptAt: null })).toEqual({ key: "chat.waiting" });
   });
 });
 
