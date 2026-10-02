@@ -345,6 +345,14 @@ export function DocumentsPage() {
                 >
                   {t("analysis.analyzeSelected")}
                 </button>
+                {/* Pages of the selected documents, in the order they were ticked, open in the page editor. */}
+                <Link
+                  to={`/documents/pages?add=${selection.map(encodeURIComponent).join(",")}`}
+                  className="btn-secondary"
+                  data-testid="edit-pages-selected"
+                >
+                  {t("pageEdit.editSelected")}
+                </Link>
                 <button type="button" className="btn-ghost" onClick={() => setSelection([])}>
                   {t("documents.clearSelection")}
                 </button>

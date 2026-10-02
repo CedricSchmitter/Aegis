@@ -6,7 +6,16 @@ import { subjectChoices } from "../lib/labels";
  * Who or what a new upload is about: the house and each person, none ticked at first. Associations are metadata and
  * never restrict visibility; a document about both persons names each of them.
  */
-export function UploadSubjects({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
+export function UploadSubjects({
+  value,
+  onChange,
+  testIdPrefix = "upload",
+}: {
+  value: string[];
+  onChange: (value: string[]) => void;
+  /** Distinguishes several of these on one screen, such as one per new document in the page editor. */
+  testIdPrefix?: string;
+}) {
   const { t } = useTranslation();
   const { persons, memberName } = useSession();
   const toggle = (subject: string) =>
@@ -17,7 +26,7 @@ export function UploadSubjects({ value, onChange }: { value: string[]; onChange:
   }));
 
   return (
-    <fieldset data-testid="upload-subjects">
+    <fieldset data-testid={`${testIdPrefix}-subjects`}>
       <legend className="label">{t("documents.subjects")}</legend>
       <div className="flex flex-wrap gap-x-5">
         {options.map((option) => (
@@ -25,7 +34,7 @@ export function UploadSubjects({ value, onChange }: { value: string[]; onChange:
             <input
               type="checkbox"
               className="ui-checkbox"
-              data-testid={`upload-subject-${option.subject}`}
+              data-testid={`${testIdPrefix}-subject-${option.subject}`}
               checked={value.includes(option.subject)}
               onChange={() => toggle(option.subject)}
             />

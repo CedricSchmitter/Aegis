@@ -1,7 +1,7 @@
 # ADR-0024: Pages are split, merged, reordered, rotated and removed in one page editor that creates new documents
 
-Status: accepted for issue #82; the backend is implemented, the app's editor screen and the portable export of
-derivations are not yet. Date: 2026-10-02. Numbered 0024 because ADR-0023 records the AI slot hand-over that was
+Status: accepted for issue #82; the backend and the app's editor screen are implemented, the portable export of
+derivations is not yet. Date: 2026-10-02. Numbered 0024 because ADR-0023 records the AI slot hand-over that was
 accepted at the same time.
 
 ## Context
@@ -75,7 +75,22 @@ At most 30 new pages per request.
 
 Android may close the browser while the camera app is open. The plan in progress, including new pages, is kept in the
 browser's IndexedDB per member, like a scan in progress (ADR-0016), and offered again after a reload. A successful
-request or discarding the plan removes it. This storage is best effort.
+request or discarding the plan removes it. This storage is best effort. The new pages use a scan store of their own
+(`aegis-page-edit-scan`), so the upload's scan in progress and the editor's new pages never mix; the plan itself is
+stored in `aegis-page-edit`.
+
+### The editor screen
+
+The editor (`/documents/pages`) is opened from a document's page or for the documents ticked in the list, in the
+order they were ticked; documents and photos can be added inside it. It shows the new documents one below the other,
+each with its prefilled title, folder and subjects and its pages as rows. A marker between two pages ("Hier trennen")
+splits a document, the header of a following document joins it again, and pages move by drag and drop on a handle or
+with buttons, which also cross into the neighbouring document. A new page opens in the scan pipeline's corner editor.
+The sources with their warnings are listed with the note that they stay unchanged. Before sending, the limits are
+checked in the browser as well. The operation id stays while the same plan is sent again (a retry after a lost
+answer) and changes when the plan or the new pages' content changed since the last attempt, or after the operation
+failed; the accepted operation is followed until it completed, also after a reload, and the results link to the new
+documents.
 
 ### Sources that are refused or need a warning
 
