@@ -3,6 +3,8 @@ package dev.aegis.portability.application;
 import dev.aegis.contracts.application.api.ContractExportQuery;
 import dev.aegis.contracts.application.api.ContractExportRecord;
 import dev.aegis.documents.application.api.CatalogExport;
+import dev.aegis.documents.application.api.DerivationPortability;
+import dev.aegis.documents.application.api.DerivationPortability.DerivationRecord;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentExportRecord;
 import dev.aegis.documents.application.api.OriginalContent;
@@ -17,6 +19,8 @@ import dev.aegis.portability.application.ExportFormat.ClassificationEntry;
 import dev.aegis.portability.application.ExportFormat.ContractEntry;
 import dev.aegis.portability.application.ExportFormat.ContractFactEntry;
 import dev.aegis.portability.application.ExportFormat.ContractsFile;
+import dev.aegis.portability.application.ExportFormat.DerivationEntry;
+import dev.aegis.portability.application.ExportFormat.DerivationRangeEntry;
 import dev.aegis.portability.application.ExportFormat.DocumentEntry;
 import dev.aegis.portability.application.ExportFormat.DocumentsFile;
 import dev.aegis.portability.application.ExportFormat.FolderEntry;
@@ -56,15 +60,28 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Builds a complete export generation: originals, versioned JSON (documents, tasks, contracts, members and the
- * shared catalog), readable CSV/Markdown and a checksum manifest with relative links. Published atomically
+ * Builds a complete export generation: originals, versioned JSON (documents with the page ranges they were created
+ * from, tasks, contracts, members and the shared catalog), readable CSV/Markdown and a checksum manifest with relative links. Published atomically
  * through the store.
  */
 public class ExportService implements CreateExport, ExportQueries {
     private static final DateTimeFormatter GENERATION_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
     private static final String UNSORTED = "(unsorted)";
 
+    private static final DerivationPortability NO_DERIVATIONS = new DerivationPortability() {
+        @Override
+        public List<DerivationRecord> exportAll(Actor actor) {
+            return List.of();
+        }
+
+        @Override
+        public ImportResult importDerivation(Actor actor, DerivationRecord record) {
+            throw new UnsupportedOperationException();
+        }
+    };
+
     private final DocumentExportQuery documents;
+    private final DerivationPortability derivations;
     private final TaskExportQuery tasks;
     private final ContractExportQuery contracts;
     private final ReviewPortability reviews;
@@ -84,7 +101,15 @@ public class ExportService implements CreateExport, ExportQueries {
     public ExportService(DocumentExportQuery documents, TaskExportQuery tasks, ContractExportQuery contracts,
             ReviewPortability reviews, MemberDirectory members, ExportStore store, ExportSerializer serializer,
             HouseholdAccess access, Clock clock, String producerVersion) {
+        this(documents, NO_DERIVATIONS, tasks, contracts, reviews, members, store, serializer, access, clock,
+                producerVersion);
+    }
+
+    public ExportService(DocumentExportQuery documents, DerivationPortability derivations, TaskExportQuery tasks,
+            ContractExportQuery contracts, ReviewPortability reviews, MemberDirectory members, ExportStore store,
+            ExportSerializer serializer, HouseholdAccess access, Clock clock, String producerVersion) {
         this.documents = documents;
+        this.derivations = derivations;
         this.tasks = tasks;
         this.contracts = contracts;
         this.reviews = reviews;
@@ -130,6 +155,8 @@ public class ExportService implements CreateExport, ExportQueries {
         List<DocumentEntry> documentEntries = new ArrayList<>();
         List<DocumentExportRecord> records = documents.exportAll(actor);
         Map<String, String> filenames = exportFilenames(records);
+        Map<String, DerivationEntry> derivedFrom = new LinkedHashMap<>();
+        derivations.exportAll(actor).forEach(d -> derivedFrom.put(d.document().toString(), derivationEntry(d)));
         for (DocumentExportRecord record : records) {
             String originalPath = null;
             try {
@@ -149,7 +176,7 @@ public class ExportService implements CreateExport, ExportQueries {
                             .map(s -> new SubjectEntry(s.kind(), s.memberId() == null ? null : s.memberId().toString()))
                             .toList(), record.processingState(), record.paperlessDocumentId(), record.archivedAt(),
                     originalPath, classification(record), ExportAnalysis.toEntry(record.analysis()),
-                    trashEntry(record.trash())));
+                    trashEntry(record.trash()), derivedFrom.get(record.id().toString())));
         }
 
         List<TaskEntry> taskEntries = new ArrayList<>();
@@ -285,6 +312,38 @@ public class ExportService implements CreateExport, ExportQueries {
                         suggestion.runRef(), suggestion.model(), suggestion.generation(), suggestion.createdAt()));
     }
 
+    private static DerivationEntry derivationEntry(DerivationRecord record) {
+        return new DerivationEntry(record.pageEdit().toString(), record.createdBy().toString(), record.createdAt(),
+                record.ranges().stream().map(range -> new DerivationRangeEntry(range.firstPage(), range.lastPage(),
+                        range.sourceKind(), text(range.source()), range.firstSourcePage(), range.lastSourcePage(),
+                        range.rotation())).toList());
+    }
+
+    /**
+     * Where the pages of a document came from in words, for example {@code pages 1-2: pages 3-4 of Stromrechnung
+     * (turned 90 degrees); page 3: scanned page 1}, so a reader without Aegis sees what was split or merged.
+     */
+    static String derivationSummary(DerivationEntry derivation, Map<String, String> titles) {
+        if (derivation == null) {
+            return "";
+        }
+        List<String> parts = new ArrayList<>();
+        for (DerivationRangeEntry range : derivation.ranges()) {
+            String source = "SCAN".equals(range.sourceKind()) ? "scanned "
+                    + pages(range.firstSourcePage(), range.lastSourcePage())
+                    : pages(range.firstSourcePage(), range.lastSourcePage()) + " of " + (range.sourceDocumentId()
+                            == null ? "a deleted document"
+                                    : titles.getOrDefault(range.sourceDocumentId(), range.sourceDocumentId()));
+            parts.add(pages(range.firstPage(), range.lastPage()) + ": " + source
+                    + (range.rotation() == 0 ? "" : " (turned " + range.rotation() + " degrees)"));
+        }
+        return String.join("; ", parts);
+    }
+
+    private static String pages(int first, int last) {
+        return first == last ? "page " + first : "pages " + first + "-" + last;
+    }
+
     private static ContractEntry contractEntry(ContractExportRecord record) {
         List<ContractFactEntry> facts = record.facts().stream().map(fact -> new ContractFactEntry(
                 fact.id().toString(), fact.type(), fact.valueKind(), fact.value(), text(fact.validFrom()),
@@ -339,6 +398,8 @@ public class ExportService implements CreateExport, ExportQueries {
     }
 
     private static String documentsCsv(List<DocumentEntry> entries, Map<String, String> memberNames) {
+        Map<String, String> titles = new LinkedHashMap<>();
+        entries.forEach(document -> titles.put(document.id(), document.title()));
         List<List<String>> rows = new ArrayList<>();
         for (DocumentEntry d : entries) {
             rows.add(List.of(d.id(), d.title(), d.originalFilename(), nz(d.filename()), String.valueOf(d.sizeBytes()),
@@ -351,12 +412,13 @@ public class ExportService implements CreateExport, ExportQueries {
                     labels(d, "DOCUMENT_TYPE"), labels(d, "ORGANIZATION"), labels(d, "TOPIC"), labels(d, "TAG"),
                     d.analysis() == null || !"FOUND".equals(d.analysis().documentDateStatus()) ? ""
                             : nz(d.analysis().documentDate()),
-                    d.analysis() == null ? "NOT_REQUESTED" : d.analysis().status(), trashedAt(d.trash())));
+                    d.analysis() == null ? "NOT_REQUESTED" : d.analysis().status(), trashedAt(d.trash()),
+                    derivationSummary(d.derivedFrom(), titles)));
         }
         return Csv.render(List.of("id", "title", "originalFilename", "filename", "sizeBytes", "checksumSha256",
                 "uploadedBy", "uploadedAt", "subjects", "processingState", "paperlessDocumentId", "originalPath",
                 "folder", "documentType", "organizations", "topics", "tags", "documentDate", "analysisStatus",
-                "trashedAt"), rows);
+                "trashedAt", "derivedFrom"), rows);
     }
 
     private static String labelsCsv(List<LabelEntry> labels, List<FolderEntry> folders) {
@@ -405,6 +467,8 @@ public class ExportService implements CreateExport, ExportQueries {
         md.append("## Documents by folder (").append(documents.size()).append(")\n\n");
         Map<String, List<DocumentEntry>> byFolder = new LinkedHashMap<>();
         documents.forEach(d -> byFolder.computeIfAbsent(folderOrUnsorted(d), key -> new ArrayList<>()).add(d));
+        Map<String, String> titles = new LinkedHashMap<>();
+        documents.forEach(d -> titles.put(d.id(), d.title()));
         byFolder.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(group -> {
             md.append("### ").append(group.getKey()).append("\n\n");
             for (DocumentEntry d : group.getValue()) {
@@ -418,6 +482,9 @@ public class ExportService implements CreateExport, ExportQueries {
                         .append(memberNames.getOrDefault(d.uploadedBy(), d.uploadedBy())).append(", state ")
                         .append(d.processingState());
                 md.append(inTrash(d.trash()));
+                if (d.derivedFrom() != null) {
+                    md.append(", created from ").append(derivationSummary(d.derivedFrom(), titles));
+                }
                 String chips = labelSummary(d);
                 if (!chips.isEmpty()) {
                     md.append(", labels ").append(chips);

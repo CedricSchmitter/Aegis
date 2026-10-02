@@ -14,4 +14,7 @@ public interface DerivationRepository {
 
     /** Derivations of documents that took pages from {@code source}, oldest first. */
     List<Derivation> findBySource(DocumentId source);
+
+    /** Every derivation, ordered by the created document, for the portable export. */
+    List<Derivation> findAll();
 }

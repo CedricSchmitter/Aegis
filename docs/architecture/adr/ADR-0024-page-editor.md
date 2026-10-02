@@ -1,7 +1,7 @@
 # ADR-0024: Pages are split, merged, reordered, rotated and removed in one page editor that creates new documents
 
-Status: accepted for issue #82; the backend is implemented, the app's editor screen and the portable export of
-derivations are not yet. Date: 2026-10-02. Numbered 0024 because ADR-0023 records the AI slot hand-over that was
+Status: accepted for issue #82; the backend and the portable export of derivations (schema 11) are
+implemented, the app's editor screen is not yet. Date: 2026-10-02. Numbered 0024 because ADR-0023 records the AI slot hand-over that was
 accepted at the same time.
 
 ## Context
@@ -162,7 +162,11 @@ These derived-from relationships belong to the documents context. Dossiers (#49)
 display them, but do not own them.
 
 Derivations are household knowledge: the portable export (schema version 11) carries them by
-Aegis document id, independent of archive ids, and the restore reinstates them. Page-edit operations are operational
+Aegis document id, independent of archive ids, as `derivedFrom` of each created document in `data/documents.json`
+and as a readable `derivedFrom` column and index note. The restore reinstates them through a public contract of the
+documents context after every document is back; a range whose source did not come back (for example because the
+generation lacks its original) names a deleted source, a document that already has a derivation keeps it, and files
+before schema 11 restore without derivations. Page-edit operations are operational
 records like AI runs and bulk runs: in the PostgreSQL recovery backup, not in the portable export.
 
 ### Library

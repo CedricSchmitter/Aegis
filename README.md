@@ -144,9 +144,10 @@ which is the original; pages can be corrected, rotated, reordered and survive a 
 text layer, so its page also offers the searchable PDF the archive generated from it
 ([ADR-0016](docs/architecture/adr/ADR-0016-scanned-photo-pages.md)). The page editor's API creates new documents
 from pages of stored documents, photos and newly scanned pages: split, merge, reorder, rotate and remove pages.
-Sources stay unchanged, every result is captured like an upload and records where its pages came from, and page
-previews are rendered on the server ([ADR-0024](docs/architecture/adr/ADR-0024-page-editor.md)); the editor
-screen of the app is not built yet (issue #82). Photos chosen as a file or shared from
+Sources stay unchanged, every result is captured like an upload and records where its pages came from, which
+portable export schema 11 carries and a restore reinstates, and page previews are rendered on the server
+([ADR-0024](docs/architecture/adr/ADR-0024-page-editor.md)); the editor screen of the app is not built yet
+(issue #82). Photos chosen as a file or shared from
 Android (JPEG, PNG, WebP, HEIC) are accepted by their content, stay the original and are archived by Paperless into
 a searchable PDF that is offered next to the photo ([ADR-0011](docs/architecture/adr/ADR-0011-photo-originals.md)).
 After archival Aegis records, without AI, whether the archive recognized text in a document; a photo held at an

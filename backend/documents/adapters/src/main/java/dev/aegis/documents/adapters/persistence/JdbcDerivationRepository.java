@@ -82,6 +82,11 @@ public class JdbcDerivationRepository implements DerivationRepository {
                 + " ORDER BY created_at, document_id, position").param(source.value()).query(this::row).list());
     }
 
+    @Override
+    public List<Derivation> findAll() {
+        return group(jdbc.sql(SELECT + " ORDER BY document_id, position").query(this::row).list());
+    }
+
     private Row row(ResultSet rs, int rowNumber) throws SQLException {
         UUID source = rs.getObject("source_document_id", UUID.class);
         Range range = new Range(rs.getInt("first_page"), rs.getInt("last_page"),

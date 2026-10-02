@@ -15,7 +15,7 @@ discarded and never replaces a good one.
 <generation>/
   README.md                       Markdown index with relative links to originals and source-linked tasks
   manifest.json                   schema version, counts, missing originals, SHA-256 of every file
-  data/documents.json             versioned records (stable Aegis ids, checksums, subjects, Paperless ids)
+  data/documents.json             versioned records (stable Aegis ids, checksums, subjects, Paperless ids, page origins)
   data/tasks.json                 tasks with owner, due date, planned date and source document id
   data/members.json               members (ids, usernames, display names, locale, person or assistant); no credentials
   data/reviews.json               review references, source versions, lifecycle and decision audit
@@ -50,6 +50,14 @@ member's `palette` (`STREETKID`, `CORPO` or `NOMAD`) and `effects` (`true` or `f
 to create that look; a member who already exists keeps their own, like their language. Older generations restore
 with Streetkid and effects on.
 
+Since export schema 11 ([ADR-0024](../architecture/adr/ADR-0024-page-editor.md)) a document created by the page
+editor carries `derivedFrom`: the operation id, who created it and when, and its pages as ordered ranges (result
+pages, `DOCUMENT` or `SCAN`, the source's Aegis document id, source pages, rotation). A source deleted permanently
+has no id. `readable/documents.csv` has a `derivedFrom` column and the index says "created from pages ... of ...".
+A restore reinstates the ranges once all documents are back; a range whose source did not come back names a deleted
+source and the report warns about it. The page-edit operations themselves stay in the database backup only. Older
+generations restore without page origins.
+
 ## Isolated restore drill (implemented, synthetic data only)
 
 ```bash
@@ -62,9 +70,10 @@ The script starts a disposable Compose project `aegis-drill` with its own data d
 (`/srv/aegis/restore-drill`), its own PostgreSQL, Valkey and Paperless, bound to `127.0.0.1:18080` only, and
 starts Aegis with `AEGIS_IMPORT_PATH` pointing at a copy of the generation. The application imports members
 (matched by username), documents (stable ids, originals re-archived into the isolated Paperless, which assigns
-new external ids) and tasks (stable ids, source links intact). `verify-drill.sh` then checks every document is
-archived, every original matches its exported checksum and media type (a photo comes back as the photo it was) and
-every task kept its source link and state. The stack
+new external ids, and page origins of page-editor documents) and tasks (stable ids, source links intact).
+`verify-drill.sh` then checks every document is archived, every original matches its exported checksum and media
+type (a photo comes back as the photo it was), every page-editor document kept its page ranges and every task kept
+its source link and state. The stack
 is removed afterwards unless `AEGIS_DRILL_KEEP=yes`.
 
 The running household instance is never touched by the drill. The same import path is exercised in CI by

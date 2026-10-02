@@ -2,8 +2,9 @@
 # Verifies a restored Aegis instance against the export it was restored from:
 # every exported document exists with the same id, becomes ARCHIVED (new Paperless id assigned by the isolated
 # archive), its original matches the exported checksum and media type (a photo stays a photo), every task keeps
-# its source document link, and every exported folder placement and label comes back on the document. Export
-# schema 1 files carry no classification.
+# its source document link, every exported folder placement and label comes back on the document, and a document
+# created by the page editor keeps where its pages came from (a source that did not come back is shown as deleted).
+# Export schema 1 files carry no classification; files before schema 11 carry no page ranges.
 # Usage: verify-drill.sh <base-url> <members-file> <export-generation-dir>
 set -eu
 BASE="$1"
@@ -22,6 +23,7 @@ curl -fs -c "$JAR" -b "$JAR" -H "X-XSRF-TOKEN: $XSRF" -H 'Content-Type: applicat
 
 python3 - "$BASE" "$JAR" "$SOURCE" <<'EOF'
 import hashlib, json, subprocess, sys, time
+from datetime import datetime
 base, jar, source = sys.argv[1:4]
 
 def get(path, raw=False):
@@ -66,13 +68,44 @@ for d in documents:
     for a in exported.get("labels", []):
         if a["reviewState"] in ("CONFIRMED", "APPLIED") and a["labelId"] not in own:
             problems.append(f"document {d['id']} lost label {a['labelId']}")
+def instant(value):
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+restored_ids = {d["id"] for d in documents if d.get("originalPath") is not None}
+derived = 0
+for d in documents:
+    exported = d.get("derivedFrom")
+    if not exported or d["id"] not in restored_ids:
+        continue
+    derived += 1
+    origin = get(f"/api/documents/{d['id']}/derivations").get("origin")
+    if origin is None:
+        problems.append(f"document {d['id']} lost where its pages came from")
+        continue
+    if origin["pageEditId"] != exported["pageEditId"] or instant(origin["createdAt"]) != instant(
+            exported["createdAt"]):
+        problems.append(f"document {d['id']} page edit or creation time differs")
+    expected = []
+    for r in exported["ranges"]:
+        source = r.get("sourceDocumentId")
+        kept = source if source in restored_ids else None
+        expected.append((r["firstPage"], r["lastPage"], r["sourceKind"], kept, r["firstSourcePage"],
+                         r["lastSourcePage"], r["rotation"],
+                         None if r["sourceKind"] == "SCAN" else ("DELETED" if kept is None else "present")))
+    actual = [(r["firstPage"], r["lastPage"], r["sourceKind"], r.get("sourceDocumentId"), r["firstSourcePage"],
+               r["lastSourcePage"], r["rotation"],
+               r.get("sourceState") if r.get("sourceState") in (None, "DELETED") else "present")
+              for r in origin["ranges"]]
+    if actual != expected:
+        problems.append(f"document {d['id']} page ranges differ: {actual} != {expected}")
 for t in tasks:
     current = get(f"/api/tasks/{t['id']}")
     if t.get("sourceDocumentId") and (current.get("source") or {}).get("documentId") != t["sourceDocumentId"]:
         problems.append(f"task {t['id']} lost its source link")
     if current["status"] != t["status"] or current.get("dueDate") != t.get("dueDate"):
         problems.append(f"task {t['id']} state differs")
-print(f"verified {len(documents)} documents ({classified} with a folder or labels) and {len(tasks)} tasks "
+print(f"verified {len(documents)} documents ({classified} with a folder or labels, {derived} created by the "
+      f"page editor) and {len(tasks)} tasks "
       f"from generation {manifest['generation']} (schema {manifest['schemaVersion']}); media types {types}")
 if problems:
     print("\n".join(problems))
