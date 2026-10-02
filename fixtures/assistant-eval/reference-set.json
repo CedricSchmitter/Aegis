@@ -1,0 +1,388 @@
+{
+  "description": "Reference questions for the household assistant (issue #25, ADR-0025). Synthetic documents of the fictional household Familie Muster; every organization, number and plate is invented. Questions name fictional entities so that a real collection cannot answer them.",
+  "version": 1,
+  "referenceDate": "2026-10-02",
+  "folderRoot": "Assistant evaluation",
+  "documents": [
+    {
+      "key": "nordlicht-contract",
+      "title": "Stromliefervertrag Nordlicht Energie",
+      "documentDate": "2025-01-15",
+      "folder": ["Energie"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "contract"},
+        {"facet": "ORGANIZATION", "name": "Nordlicht Energie"},
+        {"facet": "TOPIC", "builtin": "electricity"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Nordlicht Energie GmbH, Postfach 4711, 24999 Nordhafen",
+          "Stromliefervertrag Nr. NE-2025-0815",
+          "Kunde: Familie Muster, Musterweg 1, 12345 Musterstadt",
+          "Tarif: Nordlicht Basis Strom",
+          "Lieferbeginn: 01.02.2025",
+          "Arbeitspreis: 32,50 Cent/kWh brutto",
+          "Grundpreis: 11,90 EUR pro Monat brutto",
+          "Abschlag: 78,00 EUR monatlich"
+        ],
+        [
+          "§ 4 Laufzeit und Kündigung",
+          "Der Vertrag hat eine Erstlaufzeit von 24 Monaten ab Lieferbeginn.",
+          "Danach verlängert er sich auf unbestimmte Zeit und ist mit einer Frist von einem Monat kündbar.",
+          "Eine Kündigung zum Ende der Erstlaufzeit muss Nordlicht Energie spätestens drei Monate vorher in Textform zugehen."
+        ]
+      ]
+    },
+    {
+      "key": "nordlicht-price-change",
+      "title": "Preisanpassung Nordlicht Energie",
+      "documentDate": "2025-11-20",
+      "folder": ["Energie"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "letter"},
+        {"facet": "ORGANIZATION", "name": "Nordlicht Energie"},
+        {"facet": "TOPIC", "builtin": "electricity"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Nordlicht Energie GmbH, Postfach 4711, 24999 Nordhafen",
+          "Ihr Stromliefervertrag NE-2025-0815: Preisanpassung zum 01.01.2026",
+          "Sehr geehrte Familie Muster,",
+          "aufgrund gesunkener Beschaffungskosten senken wir Ihren Arbeitspreis zum 01.01.2026 von 32,50 Cent/kWh auf 29,80 Cent/kWh brutto.",
+          "Der Grundpreis von 11,90 EUR pro Monat bleibt unverändert.",
+          "Alle übrigen Vertragsbedingungen, insbesondere Laufzeit und Kündigungsfristen, bleiben unverändert."
+        ]
+      ]
+    },
+    {
+      "key": "nordlicht-magazine",
+      "title": "Kundenmagazin Nordlicht aktuell Herbst 2025",
+      "documentDate": "2025-09-30",
+      "folder": ["Energie"],
+      "labels": [
+        {"facet": "ORGANIZATION", "name": "Nordlicht Energie"},
+        {"facet": "TOPIC", "builtin": "electricity"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Nordlicht aktuell, das Kundenmagazin von Nordlicht Energie, Herbst 2025",
+          "Neu: der Tarif Nordlicht Öko Plus mit 100 Prozent Ökostrom für 35,90 Cent/kWh Arbeitspreis.",
+          "Ratgeber: So kündigen Sie Ihren alten Gasvertrag in fünf Minuten.",
+          "Gewinnspiel: Beantworten Sie drei Fragen und gewinnen Sie ein E-Bike."
+        ]
+      ]
+    },
+    {
+      "key": "falkenried-car-policy",
+      "title": "Scan 07.01.2026",
+      "documentDate": "2025-12-18",
+      "folder": ["Wohnen"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "invoice"},
+        {"facet": "ORGANIZATION", "name": "Wohnbau Lindenhof"},
+        {"facet": "TOPIC", "builtin": "housing"}
+      ],
+      "labeling": "MISLABELED",
+      "pages": [
+        [
+          "Falkenried Versicherung AG, Am Deich 3, 25999 Falkenried",
+          "Versicherungsschein Kfz-Haftpflicht und Teilkasko",
+          "Versicherungsnummer: FV-KFZ-339120",
+          "Versicherungsnehmer: Familie Muster, Musterweg 1, 12345 Musterstadt",
+          "Fahrzeug: VW Golf, amtliches Kennzeichen MU-ST 123",
+          "Versicherungsbeginn: 01.01.2026, Hauptfälligkeit jeweils am 01.01.",
+          "Jahresbeitrag: 486,20 EUR (Haftpflicht 312,40 EUR, Teilkasko 173,80 EUR)",
+          "Selbstbeteiligung Teilkasko: 150 EUR",
+          "Der Vertrag verlängert sich um ein Jahr, wenn er nicht spätestens einen Monat vor Ablauf gekündigt wird."
+        ]
+      ]
+    },
+    {
+      "key": "falkenried-contents-policy",
+      "title": "Hausratversicherung Falkenried",
+      "documentDate": "2025-03-20",
+      "folder": ["Versicherungen"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "insurancePolicy"},
+        {"facet": "ORGANIZATION", "name": "Falkenried Versicherung"},
+        {"facet": "TOPIC", "builtin": "insurance"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Falkenried Versicherung AG, Am Deich 3, 25999 Falkenried",
+          "Versicherungsschein Hausratversicherung Nr. FV-HR-772204",
+          "Versicherungsnehmer: Familie Muster",
+          "Versicherungsort: Musterweg 1, 12345 Musterstadt",
+          "Versicherungssumme: 65.000 EUR",
+          "Versicherungsbeginn: 01.04.2025, das Versicherungsjahr endet jeweils am 31.03.",
+          "Der Vertrag verlängert sich jeweils um ein Jahr.",
+          "Jahresbeitrag: 142,80 EUR",
+          "Kündigungsfrist: drei Monate zum Ende des Versicherungsjahres."
+        ]
+      ]
+    },
+    {
+      "key": "heating-maintenance",
+      "title": "IMG_20250912_0931",
+      "documentDate": "2025-09-12",
+      "folder": [],
+      "labels": [],
+      "labeling": "UNLABELED",
+      "pages": [
+        [
+          "Thermo Brandt Heizungsbau, Meisterbetrieb, Ringstraße 8, 12345 Musterstadt",
+          "Wartungsvertrag Gas-Brennwertheizung Nr. TB-5521",
+          "Anlage: Gas-Brennwerttherme im Musterweg 1, 12345 Musterstadt",
+          "Leistung: jährliche Wartung einschließlich Abgasmessung",
+          "Wartungspauschale: 189,00 EUR je Wartung inklusive Mehrwertsteuer",
+          "Letzte Wartung: 12.09.2025. Die nächste Wartung ist im September 2026 fällig; wir melden uns zur Terminvereinbarung."
+        ]
+      ]
+    },
+    {
+      "key": "dentist-invoice-march",
+      "title": "Rechnung Zahnarztpraxis Dr. Lindqvist",
+      "documentDate": "2026-03-18",
+      "folder": ["Gesundheit"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "invoice"},
+        {"facet": "ORGANIZATION", "name": "Zahnarztpraxis Dr. Lindqvist"},
+        {"facet": "TOPIC", "builtin": "health"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Zahnarztpraxis Dr. Lindqvist, Lindenallee 5, 12345 Musterstadt",
+          "Rechnung Nr. 2026-0311 vom 18.03.2026",
+          "Patientin: Erika Muster",
+          "Behandlung am 10.03.2026: professionelle Zahnreinigung",
+          "Rechnungsbetrag: 96,40 EUR, zahlbar bis 17.04.2026"
+        ]
+      ]
+    },
+    {
+      "key": "dentist-invoice-june",
+      "title": "Rechnung Zahnarztpraxis Dr. Lindqvist",
+      "documentDate": "2026-06-22",
+      "folder": ["Gesundheit"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "invoice"},
+        {"facet": "ORGANIZATION", "name": "Zahnarztpraxis Dr. Lindqvist"},
+        {"facet": "TOPIC", "builtin": "health"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Zahnarztpraxis Dr. Lindqvist, Lindenallee 5, 12345 Musterstadt",
+          "Rechnung Nr. 2026-0694 vom 22.06.2026",
+          "Patientin: Erika Muster",
+          "Behandlung am 15.06.2026: Kunststofffüllung Zahn 36",
+          "Rechnungsbetrag: 214,70 EUR, zahlbar bis 22.07.2026"
+        ]
+      ]
+    },
+    {
+      "key": "dsl-contract",
+      "title": "Internetvertrag Wellenreiter",
+      "documentDate": "2024-10-01",
+      "folder": ["Internet"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "contract"},
+        {"facet": "ORGANIZATION", "name": "Wellenreiter DSL"},
+        {"facet": "TOPIC", "builtin": "internet"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Wellenreiter DSL GmbH, Kaistraße 20, 12345 Musterstadt",
+          "Auftragsbestätigung Internetanschluss, Kundennummer WR-104455",
+          "Tarif: Wellenreiter 250 mit 250 MBit/s für 39,99 EUR monatlich",
+          "Vertragsbeginn: 01.11.2024, Mindestlaufzeit 24 Monate",
+          "Nach Ablauf der Mindestlaufzeit ist der Vertrag monatlich kündbar.",
+          "Der WLAN-Router wird für die Vertragsdauer leihweise überlassen."
+        ]
+      ]
+    },
+    {
+      "key": "dsl-termination",
+      "title": "Kündigungsbestätigung Wellenreiter",
+      "documentDate": "2026-08-05",
+      "folder": ["Internet"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "cancellation"},
+        {"facet": "ORGANIZATION", "name": "Wellenreiter DSL"},
+        {"facet": "TOPIC", "builtin": "internet"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Wellenreiter DSL GmbH, Kaistraße 20, 12345 Musterstadt",
+          "Bestätigung Ihrer Kündigung, Kundennummer WR-104455",
+          "Sehr geehrte Familie Muster, wir bestätigen den Eingang Ihrer Kündigung vom 01.08.2026.",
+          "Ihr Vertrag endet zum 31.10.2026.",
+          "Bitte senden Sie den geliehenen Router bis zum 14.11.2026 mit dem beiliegenden Retourenschein zurück."
+        ]
+      ]
+    },
+    {
+      "key": "rent-contract",
+      "title": "Mietvertrag Wohnbau Lindenhof",
+      "documentDate": "2023-05-02",
+      "folder": ["Wohnen"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "contract"},
+        {"facet": "ORGANIZATION", "name": "Wohnbau Lindenhof"},
+        {"facet": "TOPIC", "builtin": "housing"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Wohnbau Lindenhof eG, Gartenweg 2, 12345 Musterstadt",
+          "Mietvertrag über Wohnraum, Wohnung Nr. 14, Musterweg 1, 12345 Musterstadt",
+          "Mieter: Familie Muster",
+          "Mietbeginn: 01.06.2023",
+          "Nettokaltmiete: 820,00 EUR monatlich",
+          "Vorauszahlung auf die Betriebskosten: 210,00 EUR monatlich",
+          "Kaution: 2.460,00 EUR"
+        ]
+      ]
+    },
+    {
+      "key": "rent-increase",
+      "title": "Mieterhöhung Wohnbau Lindenhof",
+      "documentDate": "2026-02-10",
+      "folder": ["Wohnen"],
+      "labels": [
+        {"facet": "DOCUMENT_TYPE", "builtin": "letter"},
+        {"facet": "ORGANIZATION", "name": "Wohnbau Lindenhof"},
+        {"facet": "TOPIC", "builtin": "housing"}
+      ],
+      "labeling": "CORRECT",
+      "pages": [
+        [
+          "Wohnbau Lindenhof eG, Gartenweg 2, 12345 Musterstadt",
+          "Mieterhöhungsverlangen nach § 558 BGB für die Wohnung Nr. 14",
+          "Sehr geehrte Familie Muster,",
+          "wir bitten um Ihre Zustimmung zur Erhöhung der Nettokaltmiete von 820,00 EUR auf 875,00 EUR monatlich ab dem 01.05.2026.",
+          "Die Vorauszahlung auf die Betriebskosten von 210,00 EUR bleibt unverändert."
+        ]
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01-electricity-cancellation",
+      "locale": "DE",
+      "question": "Bis wann muss ich den Stromvertrag bei Nordlicht Energie spätestens kündigen, damit er zum Ende der Erstlaufzeit endet?",
+      "purpose": ["label-narrowing", "calculation"],
+      "expectedSources": ["nordlicht-contract"],
+      "acceptableSources": ["nordlicht-price-change"],
+      "distractors": ["nordlicht-magazine"],
+      "expectedFacts": [["31.10.2026", "31. Oktober 2026"]],
+      "expectedEvidence": ["COMPLETE"]
+    },
+    {
+      "id": "q02-current-energy-price",
+      "locale": "DE",
+      "question": "Welchen Arbeitspreis zahlen wir derzeit bei Nordlicht Energie?",
+      "purpose": ["amendment", "distractor"],
+      "expectedSources": ["nordlicht-price-change"],
+      "acceptableSources": ["nordlicht-contract"],
+      "distractors": ["nordlicht-magazine"],
+      "expectedFacts": [["29,80", "29,8"]],
+      "expectedEvidence": ["COMPLETE"]
+    },
+    {
+      "id": "q03-mislabeled-car-insurance",
+      "locale": "DE",
+      "question": "Wie hoch ist der Jahresbeitrag der Kfz-Versicherung für das Auto mit dem Kennzeichen MU-ST 123?",
+      "purpose": ["mislabeled"],
+      "expectedSources": ["falkenried-car-policy"],
+      "acceptableSources": [],
+      "distractors": [],
+      "expectedFacts": [["486,20", "486.20"]],
+      "expectedEvidence": ["COMPLETE"]
+    },
+    {
+      "id": "q04-insurer-overview",
+      "locale": "DE",
+      "question": "Welche Versicherungen haben wir bei der Falkenried Versicherung abgeschlossen?",
+      "purpose": ["mislabeled", "label-narrowing", "multi-source"],
+      "expectedSources": ["falkenried-car-policy", "falkenried-contents-policy"],
+      "acceptableSources": [],
+      "distractors": [],
+      "expectedFacts": [["Kfz", "Auto", "Fahrzeug"], ["Hausrat"]],
+      "expectedEvidence": ["COMPLETE", "PARTIAL"]
+    },
+    {
+      "id": "q05-unlabeled-heating-maintenance",
+      "locale": "DE",
+      "question": "Wann ist die nächste Wartung durch Thermo Brandt fällig und was kostet sie?",
+      "purpose": ["unlabeled"],
+      "expectedSources": ["heating-maintenance"],
+      "acceptableSources": [],
+      "distractors": [],
+      "expectedFacts": [["September 2026", "09/2026", "09.2026"], ["189"]],
+      "expectedEvidence": ["COMPLETE", "PARTIAL"]
+    },
+    {
+      "id": "q06-dentist-invoice-march",
+      "locale": "DE",
+      "question": "Wie viel hat die Zahnreinigung bei Dr. Lindqvist im März 2026 gekostet?",
+      "purpose": ["label-narrowing", "disambiguation"],
+      "expectedSources": ["dentist-invoice-march"],
+      "acceptableSources": ["dentist-invoice-june"],
+      "distractors": [],
+      "expectedFacts": [["96,40", "96.40"]],
+      "expectedEvidence": ["COMPLETE"]
+    },
+    {
+      "id": "q07-internet-termination",
+      "locale": "EN",
+      "question": "Is our internet contract with Wellenreiter still running, and what do we still have to do?",
+      "purpose": ["amendment", "english"],
+      "expectedSources": ["dsl-termination"],
+      "acceptableSources": ["dsl-contract"],
+      "distractors": [],
+      "expectedFacts": [["31.10.2026", "October 31, 2026", "31 October 2026", "2026-10-31"], ["router"]],
+      "expectedEvidence": ["COMPLETE"]
+    },
+    {
+      "id": "q08-contents-insurance-notice",
+      "locale": "EN",
+      "question": "When does our household contents insurance with Falkenried renew, and how much notice do we have to give?",
+      "purpose": ["label-narrowing", "english"],
+      "expectedSources": ["falkenried-contents-policy"],
+      "acceptableSources": [],
+      "distractors": [],
+      "expectedFacts": [["three months", "3 months"]],
+      "expectedEvidence": ["COMPLETE"]
+    },
+    {
+      "id": "q09-current-rent",
+      "locale": "DE",
+      "question": "Wie hoch ist unsere Kaltmiete bei der Wohnbau Lindenhof aktuell und seit wann gilt sie?",
+      "purpose": ["amendment"],
+      "expectedSources": ["rent-increase"],
+      "acceptableSources": ["rent-contract"],
+      "distractors": [],
+      "expectedFacts": [["875"], ["01.05.2026", "1. Mai 2026", "1.5.2026", "Mai 2026"]],
+      "expectedEvidence": ["COMPLETE", "PARTIAL"]
+    },
+    {
+      "id": "q10-not-in-records",
+      "locale": "DE",
+      "question": "Wann läuft unser Handyvertrag bei Funkwelle Mobil aus?",
+      "purpose": ["not-found"],
+      "expectedSources": [],
+      "acceptableSources": [],
+      "distractors": [],
+      "expectedFacts": [],
+      "expectedEvidence": ["NOT_FOUND"]
+    }
+  ]
+}

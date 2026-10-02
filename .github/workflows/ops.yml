@@ -6,6 +6,8 @@ on:
       - ops/**
       # test_seed_folder_tree.py checks the folder tree against the label migrations.
       - backend/documents/adapters/src/main/resources/db/migration/**
+      # test_chat_reference_check.py checks the assistant's reference set.
+      - fixtures/assistant-eval/**
       - .github/workflows/ops.yml
   workflow_dispatch:
 
@@ -29,3 +31,5 @@ jobs:
         run: python3 -m unittest discover -s ops/deploy -p 'test_*.py'
       - name: Claude Code host runner tests
         run: python3 -m unittest discover -s ops/claude-runner -p 'test_*.py'
+      - name: Assistant reference check tests (scoring, reference set, synthetic PDFs)
+        run: python3 -m unittest discover -s ops/eval -p 'test_*.py'

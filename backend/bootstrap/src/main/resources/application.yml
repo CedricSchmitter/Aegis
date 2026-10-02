@@ -169,6 +169,9 @@ aegis:
     # (ADR-0023); this wait is the fallback after which a waiting run checks again on its own.
     slot-wait: 15s
     call-timeout: 120s
+    # How the household assistant finds documents (ADR-0025): LABELS_AND_TEXT lets it narrow searches with folders and
+    # labels; TEXT_ONLY searches by words alone and exists to compare both with the reference questions (issue #25).
+    chat-retrieval: ${AEGIS_AI_CHAT_RETRIEVAL:LABELS_AND_TEXT}
     providers:
       # Claude API with a Console key, billed per token to the key owner.
       anthropic:

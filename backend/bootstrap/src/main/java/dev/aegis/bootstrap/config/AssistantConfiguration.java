@@ -9,6 +9,7 @@ import dev.aegis.assistant.application.RunExecutionService;
 import dev.aegis.assistant.application.RunExecutor;
 import dev.aegis.assistant.application.WorkloadHandler;
 import dev.aegis.assistant.application.chat.ChatHandler;
+import dev.aegis.assistant.application.chat.ChatRetrieval;
 import dev.aegis.assistant.application.chat.ChatService;
 import dev.aegis.assistant.application.api.AiHealthQuery;
 import dev.aegis.assistant.application.api.AiModelCommands;
@@ -65,8 +66,9 @@ public class AssistantConfiguration {
 
     @Bean
     WorkloadHandler chatHandler(ConversationRepository conversations, DocumentTextQuery documentTexts,
-            ContractQueries contracts, TaskQueries tasks, AiSettings settings, Clock clock) {
-        return new ChatHandler(conversations, documentTexts, contracts, tasks, settings.zone(), clock);
+            ContractQueries contracts, TaskQueries tasks, AiSettings settings, Clock clock,
+            @Value("${aegis.ai.chat-retrieval:LABELS_AND_TEXT}") ChatRetrieval retrieval) {
+        return new ChatHandler(conversations, documentTexts, contracts, tasks, settings.zone(), clock, retrieval);
     }
 
     /** Handlers by workload, gateways by provider and tools by name; duplicates are configuration errors. */

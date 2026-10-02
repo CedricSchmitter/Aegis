@@ -2818,6 +2818,16 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "cacheReadTokens" : {
+            "description" : "Input tokens the provider read from its prompt cache, not part of inputTokens",
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "cacheWriteTokens" : {
+            "description" : "Input tokens the provider wrote to its prompt cache, not part of inputTokens",
+            "format" : "int64",
+            "type" : "integer"
+          },
           "cancelRequested" : {
             "type" : "boolean"
           },
@@ -2922,7 +2932,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "attempt", "cancelRequested", "cost", "currency", "deniedToolCalls", "id", "inputTokens", "maxAttempts", "maxCost", "model", "modelCalls", "outputTokens", "provider", "requestedAt", "requestedBy", "sources", "state", "steps", "toolCalls", "version", "workload" ],
+        "required" : [ "attempt", "cacheReadTokens", "cacheWriteTokens", "cancelRequested", "cost", "currency", "deniedToolCalls", "id", "inputTokens", "maxAttempts", "maxCost", "model", "modelCalls", "outputTokens", "provider", "requestedAt", "requestedBy", "sources", "state", "steps", "toolCalls", "version", "workload" ],
         "type" : "object"
       },
       "SessionResponse" : {
