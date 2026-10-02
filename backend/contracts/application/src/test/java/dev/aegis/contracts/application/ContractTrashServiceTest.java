@@ -28,7 +28,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Trash and restore of contracts (issue #48, ADR-0010): facts stay, the published deadline disappears. */
+/** Trash and restore of contracts (ADR-0010): facts stay, the published deadline disappears. */
 class ContractTrashServiceTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 9, 20);
     private final InMemoryContractRepository repository = new InMemoryContractRepository();

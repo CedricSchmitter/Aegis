@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Builds the folder tree as classifier context (issue #67, ADR-0005): full paths with the labels and subjects each
+ * Builds the folder tree as classifier context (ADR-0005): full paths with the labels and subjects each
  * folder passes on and how many documents are filed directly in it.
  *
  * <p>The order is deterministic - paths compared segment by segment through their normalized match keys, ties

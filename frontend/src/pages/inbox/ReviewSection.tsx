@@ -24,7 +24,7 @@ interface Props {
 }
 
 /**
- * The "To review" section of the inbox: the shared review cards (ADR-0009, issue #27). Each card names its category,
+ * The "To review" section of the inbox: the shared review cards (ADR-0009). Each card names its category,
  * says what happened and why it matters, and offers one highlighted action with "Hide" quietly next to it. A failed
  * step is broken and therefore red.
  */

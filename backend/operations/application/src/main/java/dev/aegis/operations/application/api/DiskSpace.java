@@ -3,7 +3,7 @@ package dev.aegis.operations.application.api;
 import java.time.Instant;
 
 /**
- * Free space on one disk Aegis depends on (issue #100, ADR-0015): {@code data} holds the originals, the archive and
+ * Free space on one disk Aegis depends on (ADR-0015): {@code data} holds the originals, the archive and
  * the databases, {@code backup} is the external backup disk. {@code state} is OK, LOW (less than
  * {@code lowBelowBytes} free) or UNKNOWN (the disk could not be measured; the byte values are then null).
  */

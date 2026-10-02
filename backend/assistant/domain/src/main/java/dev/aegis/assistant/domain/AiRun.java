@@ -69,7 +69,6 @@ public final class AiRun {
     public record Superseded() implements Checkpoint {
     }
 
-    /** Result of starting a job execution. */
     public sealed interface StartResult permits Started, NotDue, Ended {
     }
 
@@ -211,8 +210,6 @@ public final class AiRun {
         return run;
     }
 
-    // Execution ----------------------------------------------------------------------------------------------------
-
     /**
      * Starts the next attempt when due. A run found {@code RUNNING} belongs to an attempt that was interrupted by a
      * restart; it is recorded as such and retried within the attempt and cost budgets.
@@ -257,7 +254,7 @@ public final class AiRun {
      * the per-call cap and what the remaining run and daily budgets can pay after the estimated input cost.
      *
      * <p>When only the daily limit stands in the way and the full limit of a fresh day could pay the call, the run
-     * waits for {@link DailyBudget#renewsAt()} without using up an attempt (issue #109). Otherwise waiting would not
+     * waits for {@link DailyBudget#renewsAt()} without using up an attempt. Otherwise waiting would not
      * help, and the run fails: with {@code budget.cost} when its own budget is used up, with {@code budget.daily} when
      * the daily limit is too small for a single call.
      */
@@ -422,8 +419,6 @@ public final class AiRun {
         return failAttempt(category, code, message, retryAfter, now);
     }
 
-    // Member commands -----------------------------------------------------------------------------------------------
-
     /**
      * Requests cancellation. Waiting runs stop immediately; a running attempt stops at its next checkpoint and never
      * applies its result. Returns false when the run had already ended.
@@ -471,8 +466,6 @@ public final class AiRun {
     public boolean retryable() {
         return state == RunState.FAILED || state == RunState.CANCELLED;
     }
-
-    // Internals -----------------------------------------------------------------------------------------------------
 
     private Optional<Checkpoint> interruptions(int forAttempt, Instant now) {
         if (!isCurrent(forAttempt)) {
@@ -565,8 +558,6 @@ public final class AiRun {
         return key;
     }
 
-    // Persistence support ---------------------------------------------------------------------------------------------
-
     /** Steps appended since the run was loaded or last saved. */
     public List<RunStep> pendingSteps() {
         return List.copyOf(pendingSteps);
@@ -585,8 +576,6 @@ public final class AiRun {
     public boolean isNew() {
         return fresh;
     }
-
-    // Accessors -------------------------------------------------------------------------------------------------------
 
     public RunId id() {
         return id;

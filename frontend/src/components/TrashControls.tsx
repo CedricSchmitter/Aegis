@@ -37,7 +37,7 @@ export function TrashBanner({ trash, busy, onRestore }: { trash: TrashInfo; busy
 }
 
 /**
- * "Move to trash" acts at once (issue #27): the trash is reversible, so the message that follows offers undo
+ * "Move to trash" acts at once: the trash is reversible, so the message that follows offers undo
  * instead of asking first. Typed confirmation stays reserved for irreversible actions.
  */
 export function MoveToTrashButton({ busy, onTrash, testId }: { busy: boolean; onTrash(): void; testId: string }) {

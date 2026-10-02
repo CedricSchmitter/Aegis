@@ -1,6 +1,5 @@
 import type * as OpenCvModule from "@techstark/opencv-js";
 
-/** The OpenCV.js API object. */
 export type OpenCv = typeof OpenCvModule;
 export type Mat = OpenCvModule.Mat;
 

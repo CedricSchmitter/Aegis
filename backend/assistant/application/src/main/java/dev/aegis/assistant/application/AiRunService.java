@@ -98,8 +98,6 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         this.serviceStartedAt = clock.instant();
     }
 
-    // Requests ------------------------------------------------------------------------------------------------------
-
     @Override
     public RunView request(Actor actor, RunRequest request) {
         access.requireMember(actor);
@@ -287,8 +285,6 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         return candidates.stream().filter(accepted).findFirst();
     }
 
-    // Model choice --------------------------------------------------------------------------------------------------
-
     @Override
     public AiOverview chooseModel(Actor actor, String workload, String family, long version) {
         access.requireMember(actor);
@@ -341,8 +337,6 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
                     price.map(known -> known.outputPerMillion().amount()).orElse(null));
         }).toList();
     }
-
-    // Queries -------------------------------------------------------------------------------------------------------
 
     @Override
     public AiOverview overview(Actor actor) {

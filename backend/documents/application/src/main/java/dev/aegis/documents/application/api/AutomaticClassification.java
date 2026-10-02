@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Contract for the automatic classifier (issue #23, ADR-0004). The classifier reads the input, lets the model
+ * Contract for the automatic classifier (ADR-0004). The classifier reads the input, lets the model
  * propose, has the proposal assessed against the text and the vocabulary, and applies the assessment once. The
  * documents context decides what becomes effective; the classifier never writes labels, titles or names itself.
  *

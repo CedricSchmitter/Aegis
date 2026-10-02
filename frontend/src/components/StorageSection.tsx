@@ -5,7 +5,7 @@ import { backupHintText, backupReasonText, diskName, diskUsageText, usedPercent 
 import type { BackupHealth, DiskSpace } from "../lib/storage";
 import { StateWord } from "./common";
 
-/** The external backup and the free space of the disks on the status page (issue #100, ADR-0015). */
+/** The external backup and the free space of the disks on the status page (ADR-0015). */
 export function StorageSection({ storage }: { storage: SystemStatus["storage"] }) {
   const { t } = useTranslation();
   return (

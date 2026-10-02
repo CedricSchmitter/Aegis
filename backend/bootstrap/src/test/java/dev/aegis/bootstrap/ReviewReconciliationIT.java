@@ -50,7 +50,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Background reconciliation of the review inbox (issue #89, ADR-0009) against PostgreSQL: the recurring db-scheduler
+ * Background reconciliation of the review inbox (ADR-0009) against PostgreSQL: the recurring db-scheduler
  * job creates a card and one notice per active member without anyone opening the inbox, runs as the review
  * reconciler that can neither decide cards nor change records, creates each card and its notices exactly once when
  * it races with members opening the inbox, and commits a card together with its notices.
@@ -105,7 +105,7 @@ class ReviewReconciliationIT extends PostgresIT {
 
         UUID card = cardFor(documentId).orElseThrow();
         String title = anna.json(anna.get("/api/documents/" + documentId)).path("title").asText();
-        // The inbox shows the card itself, so its notices are not listed as messages (issue #83); they stay unread
+        // The inbox shows the card itself, so its notices are not listed as messages; they stay unread
         // until the member opens the inbox and remain the trigger for other delivery channels.
         List<Map<String, Object>> stored = jdbc.sql("SELECT kind, link_type, link_id, params_json, read_at FROM notices"
                 + " WHERE dedup_key = ?").param("review:" + card).query().listOfRows();
@@ -113,7 +113,7 @@ class ReviewReconciliationIT extends PostgresIT {
             assertThat(notice.get("kind")).isEqualTo("REVIEW_ITEM");
             assertThat(notice.get("link_type")).isEqualTo("REVIEW");
             assertThat(notice.get("link_id")).isEqualTo(card.toString());
-            // The notice names the card (issue #91): its key and the document title, never translated text.
+            // The notice names the card: its key and the document title, never translated text.
             assertThat((String) notice.get("params_json")).contains("\"titleKey\":\"review.noText\"")
                     .contains("\"title\":\"" + title + "\"");
             assertThat(notice.get("read_at")).isNull();

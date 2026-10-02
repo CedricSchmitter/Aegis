@@ -105,7 +105,7 @@ class DocumentClassificationHandlerTest {
                 .contains(INVOICE + " | DOCUMENT_TYPE | builtin:invoice | Rechnung, Invoice")
                 .contains("Household persons (memberId | display name):\n- " + LISA + " | Lisa\n")
                 .doesNotContain("Former").doesNotContain("| Aegis").contains("DOCUMENT_TYPE builtin:invoice");
-        // "Both" is no subject kind any more; several persons are named one by one (ADR-0017).
+        // There is no "both" subject kind; several persons are named one by one (ADR-0017).
         assertThat(prepared.system()).doesNotContain("HOUSEHOLD").contains("name each of them");
         // Only the two frames of Aegis close; the closing tag inside the document text was neutralized.
         assertThat(message.split("</untrusted_content>", -1)).hasSize(3);
@@ -276,7 +276,6 @@ class DocumentClassificationHandlerTest {
         return ((ContentPart.Text) handler.prepare(context).messages().getFirst().parts().getFirst()).text();
     }
 
-    /** Controlled documents contract. */
     static final class FakeDocuments implements AutomaticClassification {
         final List<Proposal> assessed = new ArrayList<>();
         final List<String> appliedRefs = new ArrayList<>();

@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * One line of the status overview that answers "is everything OK?" (issue #83, F4) for one area such as
+ * One line of the status overview that answers "is everything OK?" for one area such as
  * {@code database}, {@code archive}, {@code backup}, {@code storage}, {@code ai} or {@code jobs}. {@code state} is OK,
  * UNCHECKED (set up, but not verified since the application started; neutral, not a problem) or PROBLEM.
  * {@code reason} is a stable English code such as {@code backup.failed} and {@code params} its stable values; the web

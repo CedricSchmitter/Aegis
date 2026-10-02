@@ -328,8 +328,7 @@ class DocumentCatalogIT extends PostgresIT {
         long classificationVersion = document(lisa, unsortedDocumentId).path("classification").path("version")
                 .asLong();
 
-        // Automatic classification (#23) is not connected yet; the review flow is exercised through the
-        // application use case that a classifier will call.
+        // Exercises the review flow through the application use case the classifier calls, without a model.
         var outcome = propose(unsortedDocumentId, classificationVersion, reminder);
         assertThat(outcome.suggested()).isEqualTo(1);
 
@@ -419,7 +418,7 @@ class DocumentCatalogIT extends PostgresIT {
         return ids;
     }
 
-    /** Stands in for the classifier of issue #23, which calls the same application use case. */
+    /** Stands in for the classifier, which calls the same application use case. */
     private ProposeClassification.ProposalOutcome propose(String documentId, long version, String labelId) {
         Actor actor = new Actor(credentials.findCredentials(ANNA).orElseThrow().id());
         return proposals.propose(actor, new ProposeClassification.ProposalCommand(DocumentId.of(documentId),

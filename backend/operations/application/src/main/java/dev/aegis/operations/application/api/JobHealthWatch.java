@@ -4,7 +4,7 @@ import dev.aegis.shared.Actor;
 import java.util.List;
 
 /**
- * Tells the members when a recurring background job stops running (issue #94, ADR-0014): one in-app notice per member
+ * Tells the members when a recurring background job stops running (ADR-0014): one in-app notice per member
  * and incident while a job is stale or not scheduled. It runs as its own recurring job, never inside a watched one.
  */
 public interface JobHealthWatch {

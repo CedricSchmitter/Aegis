@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Turns the backup, the disks and the recurring jobs into lines of the status overview (issue #83, F4). The backup
+ * Turns the backup, the disks and the recurring jobs into lines of the status overview. The backup
  * is always listed, because a household without a working backup has a problem; recurring jobs are listed only while
  * one of them does not run as planned (ADR-0013). The watches and their notices (ADR-0014, ADR-0015) do not depend on
  * this mapping.

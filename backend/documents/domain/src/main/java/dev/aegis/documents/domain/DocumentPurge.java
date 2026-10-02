@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A member's request to delete a trashed document permanently (issue #85, ADR-0021). The archive original, its
+ * A member's request to delete a trashed document permanently (ADR-0021). The archive original, its
  * Paperless trash entry, the staging copy and the Aegis record are removed by a background job; until that job
  * finishes the document stays in the trash and can no longer be restored. {@code failureCode} and {@code failedAt}
  * are set once the job gave up; a member can then request the deletion again.

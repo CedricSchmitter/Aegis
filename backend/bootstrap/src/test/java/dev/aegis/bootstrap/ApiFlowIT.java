@@ -132,7 +132,7 @@ class ApiFlowIT extends PostgresIT {
         assertThat(original.header("X-Aegis-Original-Source")).isEqualTo("ARCHIVE");
         assertThat(original.header("Content-Disposition")).contains("Stromvertrag");
 
-        // The upload already confirmed saving: a successful archival adds no notice (issue #83).
+        // The upload already confirmed saving: a successful archival adds no notice.
         JsonNode notices = anna.json(anna.get("/api/notices"));
         assertThat(notices).noneSatisfy(n -> assertThat(n.path("linkId").asText()).isEqualTo(documentId));
     }
@@ -232,7 +232,7 @@ class ApiFlowIT extends PostgresIT {
         ApiClient anna = loggedIn(ANNA);
         JsonNode status = anna.json(anna.get("/api/status"));
         // The overview answers "is everything OK?" with stable codes; integrations that are not set up (calendar,
-        // mail, push) are not listed, while a missing backup is a problem (issue #83, F4). The test gateway sets up AI.
+        // mail, push) are not listed, while a missing backup is a problem. The test gateway sets up AI.
         JsonNode checks = status.path("checks");
         assertThat(checks).extracting(c -> c.path("area").asText())
                 .startsWith("database", "archive", "backup", "storage", "ai")

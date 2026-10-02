@@ -24,10 +24,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * The combined inbox of issue #83 against PostgreSQL: notices that announce a review card are still published but not
- * listed as messages, opening the inbox marks them read for that member only, the badge counts open cards plus unread
- * messages, a successful archival publishes no notice any more, and the migration retires stored "archived" notices
- * without deleting them.
+ * The combined inbox against PostgreSQL: notices that announce a review card are published but not listed as
+ * messages, opening the inbox marks them read for that member only, the badge counts open cards plus unread messages,
+ * a successful archival publishes no notice, and the migration retires stored "archived" notices without deleting
+ * them.
  */
 class CombinedInboxIT extends PostgresIT {
     private static final String RETIRE_MIGRATION =

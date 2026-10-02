@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
- * Shared steps on the document screens (issue #27). The phone and the desktop layout differ: the phone has its own
+ * Shared steps on the document screens. The phone and the desktop layout differ: the phone has its own
  * search field and an upload button, the desktop uses the header search and the drop target at the end of the list.
  */
 

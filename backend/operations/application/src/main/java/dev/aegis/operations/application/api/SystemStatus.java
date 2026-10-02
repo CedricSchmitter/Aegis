@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Status page model: the overview that answers "is everything OK?" (issue #83), and the technical details behind it:
+ * Status page model: the overview that answers "is everything OK?", and the technical details behind it:
  * document processing counts by state, recurring background jobs, and the external backup with the free space of the
  * disks.
  */

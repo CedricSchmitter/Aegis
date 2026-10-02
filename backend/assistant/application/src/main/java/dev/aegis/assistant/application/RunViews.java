@@ -9,7 +9,6 @@ import dev.aegis.assistant.domain.RunId;
 import dev.aegis.assistant.domain.RunStep;
 import java.util.List;
 
-/** Maps runs to their public view. */
 final class RunViews {
     private RunViews() {
     }

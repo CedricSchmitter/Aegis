@@ -178,7 +178,7 @@ public class ReviewService implements ReviewInbox, ReviewReconciliation, ReviewP
 
     /**
      * A notice names its card the way the inbox does: the card's presentation key and its parameters, such as the
-     * document title in its original language (issue #91). Only stable keys and source values are stored; the UI
+     * document title in its original language. Only stable keys and source values are stored; the UI
      * localizes them. {@code titleKey} is set last so a card parameter can never replace it.
      */
     private static Map<String, String> noticeParams(ReviewItem item) {

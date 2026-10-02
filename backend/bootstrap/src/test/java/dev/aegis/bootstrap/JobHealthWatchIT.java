@@ -40,7 +40,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Notices about stale recurring jobs (issue #94, ADR-0014) against PostgreSQL: the incident store keeps one open
+ * Notices about stale recurring jobs (ADR-0014) against PostgreSQL: the incident store keeps one open
  * incident per job under concurrent opening, and the watch over stored scheduler rows notifies both members once per
  * incident through the real notice inbox. The jobs, incidents and notices this test evaluates are its own.
  */

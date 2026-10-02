@@ -1,7 +1,7 @@
 import type { ContractDeadlineItemDto, TaskDto, TodayResponse } from "../api/types";
 
 /**
- * Presentation rules of Today, the task list and the contract countdowns (issue #27). Dates are ISO local dates;
+ * Presentation rules of Today, the task list and the contract countdowns. Dates are ISO local dates;
  * the contractual due date and the planned work day stay separate values, and nothing here moves either of them.
  */
 

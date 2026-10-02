@@ -98,7 +98,7 @@ public interface DocumentCatalog {
 
     /**
      * Archived documents matching {@code criteria} for which no classification run ever produced a result, oldest
-     * upload first, at most {@code limit} ids (issue #115). Documents whose analysis is requested right now are
+     * upload first, at most {@code limit} ids. Documents whose analysis is requested right now are
      * included; callers check their runs.
      */
     Page neverClassified(Criteria criteria, int limit);

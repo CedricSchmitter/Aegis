@@ -12,8 +12,8 @@ interface Slot {
 const ContextPanelContext = createContext<Slot | null>(null);
 
 /**
- * The right column of the desktop shell (issue #27) for the selection of the current page: a document preview and
- * suggestions, the selected task or contract, or messages. The pages fill it from PR 3 on; without content the
+ * The right column of the desktop shell for the selection of the current page: a document preview and
+ * suggestions, the selected task or contract, or messages. The pages fill it; without content the
  * column takes no room. It is shown from 1280 px; below that a page shows the same content in its own flow.
  */
 export function useContextPanelSlot() {

@@ -4,7 +4,7 @@ import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 
 /**
- * The per-document side of a bulk analysis (issue #115). A bulk run requests each document the same way a member's
+ * The per-document side of a bulk analysis. A bulk run requests each document the same way a member's
  * selection does, so the same checks, generations, keys and policies apply.
  */
 public interface BulkAnalysisRequests {

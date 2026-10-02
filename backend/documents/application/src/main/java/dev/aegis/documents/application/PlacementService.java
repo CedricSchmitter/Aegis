@@ -27,7 +27,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Member decisions about proposed folder placements (issue #67, ADR-0005). Accepting a proposed path creates the
+ * Member decisions about proposed folder placements (ADR-0005). Accepting a proposed path creates the
  * missing folders and moves the document in one transaction under the exclusive catalog lock, with optimistic
  * concurrency on the anchor folder and on the document's classification. Aegis never creates folders on its own;
  * every folder here is the result of a member accepting a proposal they could edit first.

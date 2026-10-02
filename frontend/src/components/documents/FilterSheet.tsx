@@ -17,7 +17,7 @@ interface Props {
 }
 
 /**
- * The label filters in a sheet (issue #27, #108): values apply at once, the button shows the hits, and "Manage
+ * The label filters in a sheet: values apply at once, the button shows the hits, and "Manage
  * labels" lives here, next to the labels it manages.
  */
 export function FilterSheet({ open, onClose, filters, facets, matching, labels, members, onChange }: Props) {

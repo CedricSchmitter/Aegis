@@ -3,7 +3,6 @@ package dev.aegis.documents.domain.pages;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Persistence of page editor operations. */
 public interface PageEditRepository {
 
     Optional<PageEdit> findById(UUID id);

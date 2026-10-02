@@ -66,7 +66,7 @@ class PlacementTargetTest {
                 .containsExactly("Haus", "Versicherungen", "Hausrat");
         assertThat(PlacementTarget.existing(versicherungen.id()).readablePath(tree))
                 .containsExactly("Haus", "Versicherungen");
-        // A target whose folder disappeared has no readable path and is therefore not shown any more.
+        // A target whose folder disappeared has no readable path and is therefore not shown.
         assertThat(PlacementTarget.existing(CategoryId.random()).readablePath(tree)).isEmpty();
         assertThat(PlacementTarget.path(CategoryId.random(), List.of("Hausrat")).readablePath(tree)).isEmpty();
     }

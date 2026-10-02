@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runs on the Aegis VM after a successful deployment: bounds the disk space that repeated image builds leave
 # behind. The VM disk is thin-provisioned on a Proxmox pool smaller than its virtual size, so unbounded build
-# cache and old images can fill the pool and freeze the VM (2026-09-26).
+# cache and old images can fill the pool and freeze the VM.
 #
 # Keeps: the build cache up to AEGIS_BUILD_CACHE_KEEP (least recently used records go first, so the Maven and npm
 # cache mounts of the last build stay), the current and the previous aegis-app image (rollback.sh), and every

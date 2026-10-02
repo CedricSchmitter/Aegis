@@ -8,7 +8,7 @@ function isSearchShortcut(event: KeyboardEvent): boolean {
   return (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "k";
 }
 
-/** The document search of the desktop header; it opens the document list with the query (issue #27). */
+/** The document search of the desktop header; it opens the document list with the query. */
 export function HeaderSearch() {
   const { t } = useTranslation();
   const navigate = useNavigate();

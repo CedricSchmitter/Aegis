@@ -72,7 +72,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
- * Automatic document analysis (issue #23, ADR-0004): requesting runs when an upload is archived or a member asks,
+ * Automatic document analysis (ADR-0004): requesting runs when an upload is archived or a member asks,
  * assessing the classifier's proposal under {@link ClassificationPolicy}, applying it once, and the member decisions
  * on generated titles, new names, subject suggestions and filenames.
  *
@@ -130,8 +130,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         this.clock = clock;
     }
 
-    // Trigger -------------------------------------------------------------------------------------------------------
-
     /**
      * Called in the archival transaction: an upload marked for automatic analysis gets its run now that the archive
      * holds the OCR text. The run is requested on behalf of the uploader. Duplicate archival events find the
@@ -154,7 +152,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
 
     /**
      * Requests the run of a new generation. An upload by a member who may not use AI stays not classified until a
-     * member who may starts it (issue #107). Such a member's own request is refused instead, without touching the
+     * member who may starts it. Such a member's own request is refused instead, without touching the
      * analysis: the refusal concerns the member, not the document, so it never replaces an earlier result.
      */
     private AnalysisRuns.Outcome requestRun(DocumentId id, DocumentAnalysis analysis, Actor actor, Trigger trigger) {
@@ -171,8 +169,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         analyses.save(analysis);
         return outcome;
     }
-
-    // Member requests -----------------------------------------------------------------------------------------------
 
     @Override
     public DocumentSummary requestAnalysis(Actor actor, DocumentId id, long expectedVersion) {
@@ -218,10 +214,8 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         return new BulkResult(requested, skipped);
     }
 
-    // Bulk runs ------------------------------------------------------------------------------------------------------
-
     /**
-     * Requests one document of a bulk run (issue #115) with the same checks as a member's selection. A document that
+     * Requests one document of a bulk run with the same checks as a member's selection. A document that
      * got a result since the run started is skipped, so a repeated step never classifies it twice. A refusal by the
      * AI boundary leaves the analysis untouched and stops the bulk run instead of marking every document.
      */
@@ -276,8 +270,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         }
         return Optional.empty();
     }
-
-    // Member decisions ----------------------------------------------------------------------------------------------
 
     @Override
     public DocumentSummary decideTitle(Actor actor, DocumentId id, boolean accept, long expectedVersion) {
@@ -374,8 +366,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         analyses.save(analysis);
         return presenter.summarize(load(id));
     }
-
-    // Classifier contract -------------------------------------------------------------------------------------------
 
     @Override
     public Input input(Actor actor, DocumentId id, int generation) {
@@ -617,8 +607,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
                 ClassificationPolicy.doubtful(flags), assessment.generation(), model);
     }
 
-    // Restore -------------------------------------------------------------------------------------------------------
-
     @Override
     public ImportDocumentAnalysis.Outcome importAnalysis(Actor actor, DocumentId id, AnalysisRecord record) {
         access.requireMember(actor);
@@ -639,8 +627,6 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         analyses.save(analysis);
         return ImportDocumentAnalysis.Outcome.APPLIED;
     }
-
-    // Helpers -------------------------------------------------------------------------------------------------------
 
     private String ocrText(Document document) {
         if (document.state() != ProcessingState.ARCHIVED || document.paperlessDocumentId().isEmpty()) {

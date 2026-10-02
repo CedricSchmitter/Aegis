@@ -59,7 +59,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
- * Wiring of the automatic document analysis (issue #23, ADR-0004): the documents-side use cases, the bridge from the
+ * Wiring of the automatic document analysis (ADR-0004): the documents-side use cases, the bridge from the
  * documents port {@link AnalysisRuns} to the AI execution boundary, and the classification workload handler.
  *
  * <p>The bridge resolves the assistant lazily: the classification handler depends on the documents contract, and the

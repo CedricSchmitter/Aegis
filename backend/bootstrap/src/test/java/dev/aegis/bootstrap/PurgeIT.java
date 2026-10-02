@@ -24,7 +24,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Permanent deletion from the trash (issue #85, ADR-0021) against PostgreSQL, the scheduler, the HTTP API and the
+ * Permanent deletion from the trash (ADR-0021) against PostgreSQL, the scheduler, the HTTP API and the
  * in-process Paperless stand-in: only the trash is purged, the archive original goes with the record, links that cited
  * it say so, notices and cards about it disappear, and an uncertain archive outcome keeps the purge pending.
  */

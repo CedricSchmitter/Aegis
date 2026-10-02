@@ -3,7 +3,7 @@ package dev.aegis.review.application.api;
 import dev.aegis.shared.Actor;
 
 /**
- * Reconciles the review inbox with the producers without a member opening it (issue #89, ADR-0009): the recurring
+ * Reconciles the review inbox with the producers without a member opening it (ADR-0009): the recurring
  * background job calls it so a new card and its notices reach both members shortly after their source changed.
  */
 public interface ReviewReconciliation {

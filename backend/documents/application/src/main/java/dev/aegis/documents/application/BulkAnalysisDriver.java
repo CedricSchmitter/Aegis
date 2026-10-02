@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * One step of a running bulk analysis, executed by its persisted job (issue #115): follow the runs in flight, request
+ * One step of a running bulk analysis, executed by its persisted job: follow the runs in flight, request
  * the next bounded batch and end the run when nothing is left. A step is one transaction and safe to repeat.
  */
 public interface BulkAnalysisDriver {

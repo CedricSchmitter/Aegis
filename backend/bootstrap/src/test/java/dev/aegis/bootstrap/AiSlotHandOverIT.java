@@ -32,7 +32,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Hand-over of the household's single AI slot (issue #135, ADR-0023) against PostgreSQL and the real job scheduler,
+ * Hand-over of the household's single AI slot (ADR-0023) against PostgreSQL and the real job scheduler,
  * with production's slot wait: runs queued behind a running one start right after it ends, oldest request first,
  * instead of one run per slot wait.
  */

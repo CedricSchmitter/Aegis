@@ -1,5 +1,5 @@
 #!/bin/sh
-# Explicit live check of automatic document classification (issue #23, ADR-0004) with synthetic documents only.
+# Explicit live check of automatic document classification (ADR-0004) with synthetic documents only.
 # Starts a disposable second stack (own Compose project, own data directory, application bound to localhost only),
 # provisions two synthetic members with random passwords, mounts the household's Claude API key read-only, uploads a
 # few generated PDFs and verifies archival, classification, review states, friendly downloads and exports with

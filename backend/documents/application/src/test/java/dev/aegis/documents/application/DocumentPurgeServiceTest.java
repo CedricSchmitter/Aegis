@@ -22,7 +22,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Permanent deletion of trashed documents (issue #85, ADR-0021): the member command and the job's steps. */
+/** Permanent deletion of trashed documents (ADR-0021): the member command and the job's steps. */
 class DocumentPurgeServiceTest {
     private CatalogFixture f;
     private DocumentCommandService commands;

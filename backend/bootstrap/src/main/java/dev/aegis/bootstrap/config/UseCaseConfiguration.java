@@ -171,8 +171,6 @@ import org.springframework.util.unit.DataSize;
 @Configuration
 public class UseCaseConfiguration {
 
-    // Identity ------------------------------------------------------------------------------------------------
-
     @Bean
     HouseholdAccess householdAccess(MemberRepository members) {
         return new HouseholdAccessPolicy(members);
@@ -218,8 +216,6 @@ public class UseCaseConfiguration {
     Trash.RecoveryWindow trashRecoveryWindow(@Value("${aegis.trash.recovery-window:30d}") Duration window) {
         return new Trash.RecoveryWindow(window);
     }
-
-    // Documents -----------------------------------------------------------------------------------------------
 
     /**
      * The persons a document can be about, read through the identity contract (ADR-0017). The documents context
@@ -324,7 +320,7 @@ public class UseCaseConfiguration {
                 placements, lock, presenter, access, clock));
     }
 
-    /** Member decisions about proposed folder placements (issue #67); accepting creates folders and moves. */
+    /** Member decisions about proposed folder placements; accepting creates folders and moves. */
     @Bean
     PlacementCommands placementCommands(ClassificationRepository classifications,
             PlacementSuggestionRepository placements, CategoryRepository categories, LabelRepository labels,
@@ -340,7 +336,7 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ClassificationCommands.class, services.classification(), tm);
     }
 
-    /** Label proposals of automatic classification (issue #23), used through the document analysis service. */
+    /** Label proposals of automatic classification, used through the document analysis service. */
     @Bean
     ProposeClassification proposeClassification(ClassificationServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ProposeClassification.class, services.classification(), tm);
@@ -480,8 +476,6 @@ public class UseCaseConfiguration {
         return new ArchiveTextService(documents, checks, archive, batchSize, clock);
     }
 
-    // Contracts -----------------------------------------------------------------------------------------------
-
     @Bean
     ContractPresenter contractPresenter(DocumentReferenceQuery documents) {
         return new ContractPresenter(documents);
@@ -505,7 +499,7 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ContractCommands.class, services.commands(), tm);
     }
 
-    /** Proposed facts from an extraction run (issues #23 and #24); they are stored for review, never applied. */
+    /** Proposed facts from an extraction run; they are stored for review, never applied. */
     @Bean
     RecordContractObservation recordContractObservation(ContractServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(RecordContractObservation.class, services.commands(), tm);
@@ -521,7 +515,7 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ContractQueries.class, services.queries(), tm);
     }
 
-    /** Public contract for confirmed cancellation deadlines, consumed by planning (issue #63). */
+    /** Public contract for confirmed cancellation deadlines, consumed by planning. */
     @Bean
     ContractDeadlineQuery contractDeadlineQuery(ContractServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ContractDeadlineQuery.class, services.queries(), tm);
@@ -531,8 +525,6 @@ public class UseCaseConfiguration {
     ContractExportQuery contractExportQuery(ContractServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ContractExportQuery.class, services.queries(), tm);
     }
-
-    // Planning ------------------------------------------------------------------------------------------------
 
     @Bean
     TaskPresenter taskPresenter(DocumentReferenceQuery documents) {
@@ -595,8 +587,6 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(CancellationReminderPublication.class, services.service(), tm);
     }
 
-    // Notifications -------------------------------------------------------------------------------------------
-
     record NotificationServices(NoticeService notices) {
     }
 
@@ -620,8 +610,6 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ForgetNotices.class, services.notices(), tm);
     }
 
-    // Review inbox -------------------------------------------------------------------------------------------
-
     record ReviewServices(ReviewService service) {
     }
 
@@ -637,7 +625,7 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ReviewInbox.class, services.service(), tm);
     }
 
-    /** Background reconciliation (issue #89): one transaction per run, so a card and its notices commit together. */
+    /** Background reconciliation: one transaction per run, so a card and its notices commit together. */
     @Bean
     ReviewReconciliation reviewReconciliation(ReviewServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(ReviewReconciliation.class, services.service(), tm);
@@ -653,10 +641,8 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ForgetReviewCards.class, services.service(), tm);
     }
 
-    // Operations ----------------------------------------------------------------------------------------------
-
     /**
-     * Each recurring job the status page reports (issue #92, ADR-0013) is declared with the interval it runs at: the
+     * Each recurring job the status page reports (ADR-0013) is declared with the interval it runs at: the
      * household jobs and the watch over them.
      */
     @Bean
@@ -668,7 +654,7 @@ public class UseCaseConfiguration {
         return new IntegrationStatusService(sources, processing, recurringJobs, jobStates, storage, access, clock);
     }
 
-    /** The external backup and free disk space (issue #100, ADR-0015); the owner chose 10 % and 5 GB. */
+    /** The external backup and free disk space (ADR-0015); the owner chose 10 % and 5 GB. */
     @Bean
     StorageHealthService storageHealthService(BackupStateSource backupStates, DataStorageSource dataStorage,
             @Value("${aegis.storage.low-free-fraction:0.10}") double lowFreeFraction,
@@ -688,7 +674,7 @@ public class UseCaseConfiguration {
     }
 
     /**
-     * Members are told when a household job stops running (issue #94, ADR-0014); the watch does not watch itself. It
+     * Members are told when a household job stops running (ADR-0014); the watch does not watch itself. It
      * runs without a surrounding transaction: each step is idempotent, and one job's failure must not roll back the
      * others.
      */
@@ -704,8 +690,6 @@ public class UseCaseConfiguration {
                 new RecurringJob(ArchiveTextCheckTask.NAME, ArchiveTextCheckTask.INTERVAL),
                 new RecurringJob(ReconciliationTask.NAME, ReconciliationTask.INTERVAL));
     }
-
-    // Portability ---------------------------------------------------------------------------------------------
 
     record PortabilityServices(ExportService exports) {
     }

@@ -6,11 +6,11 @@ import dev.aegis.documents.application.api.*; import dev.aegis.review.applicatio
 public class DocumentReviewProducer implements ReviewProducer {
  private final DocumentQueries documents; private final BulkAnalysisQueries bulks; public DocumentReviewProducer(DocumentQueries documents,BulkAnalysisQueries bulks){this.documents=documents;this.bulks=bulks;} @Override public String id(){return "documents";}
  @Override public List<Candidate> findCurrent(Actor actor){List<Candidate> out=new ArrayList<>();int page=0;DocumentSearchResult result;do{result=documents.search(actor,new DocumentSearchRequest("",null,true,false,null,null,null,null,null,false,false,null,"NEWEST",page++,100));for(DocumentSummary d:result.items())collect(d,out);}while((long)page*100<result.matchingDocuments());
-  // A bulk classification (issue #115) gets one card once it ended, instead of one card per document it touched.
+  // A bulk classification gets one card once it ended, instead of one card per document it touched.
   for(BulkAnalysisQueries.Attention b:bulks.attention(actor)){String id=b.id().toString();out.add(new Candidate("bulk-analysis:"+id,id(),"BULK_ANALYSIS",id,1,"CLASSIFICATION","BULK_CLASSIFICATION","NORMAL","review.bulkAnalysis",Map.of("total",String.valueOf(b.total()),"classified",String.valueOf(b.classified()),"needsReview",String.valueOf(b.needsReview()),"failed",String.valueOf(b.failed())),"BULK_ANALYSIS",id,List.of()));}
   return out;}
  private void collect(DocumentSummary d,List<Candidate> out){String id=d.id().toString();if("FAILED".equals(d.processing().state()))out.add(candidate("archive:"+id+":"+d.version()+":"+d.processing().lastErrorCode(),id,d.version(),"PROCESSING_FAILURE","ARCHIVAL_FAILED","HIGH","review.archiveFailed",Map.of("title",d.title(),"errorCode",safe(d.processing().lastErrorCode())),List.of("RETRY_ARCHIVAL")));
-  // NOT_CLASSIFIED (the requester may not use AI, issue #107) is no failure and gets no card; reconciliation
+  // NOT_CLASSIFIED (the requester may not use AI) is no failure and gets no card; reconciliation
   // supersedes cards created for it before.
   // Results of a bulk classification are grouped into the run's card above.
   AnalysisView a=d.analysis(); boolean bulk="BULK".equals(a.trigger()); if(!bulk&&(AnalysisView.FAILED.equals(a.state())||AnalysisView.UNAVAILABLE.equals(a.state())))out.add(candidate("analysis-failed:"+id+":"+a.version()+":"+a.failureCode(),id,a.version(),"PROCESSING_FAILURE","ANALYSIS_FAILED","NORMAL","review.analysisFailed",Map.of("title",d.title(),"errorCode",safe(a.failureCode())),List.of("RETRY_ANALYSIS")));

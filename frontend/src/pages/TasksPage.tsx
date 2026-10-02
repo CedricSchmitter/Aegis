@@ -20,7 +20,7 @@ import { EVERYONE, NOBODY, filterByOwner, sortTasks } from "../lib/tasks";
 type View = "open" | "all";
 
 /**
- * The task list (issue #27): open or all, filtered by responsibility as a rail. The checkbox completes a task at
+ * The task list: open or all, filtered by responsibility as a rail. The checkbox completes a task at
  * once. From 1280 px a click selects a task and shows it in the context panel without leaving the list.
  */
 export function TasksPage() {

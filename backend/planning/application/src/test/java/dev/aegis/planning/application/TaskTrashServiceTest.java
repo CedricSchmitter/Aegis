@@ -28,7 +28,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Trash and restore of tasks (issue #48, ADR-0010) through the planning application services. */
+/** Trash and restore of tasks (ADR-0010) through the planning application services. */
 class TaskTrashServiceTest {
     private static final Instant NOW = Instant.parse("2026-09-22T10:00:00Z");
     private static final LocalDate TODAY = LocalDate.of(2026, 9, 22);

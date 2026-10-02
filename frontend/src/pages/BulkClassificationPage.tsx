@@ -24,7 +24,7 @@ import { problemMessage } from "../lib/problem";
 import { buildTree, flatten } from "../lib/tree";
 
 /**
- * Classification of existing documents in bulk (issue #115, ADR-0022). A member picks the documents (the whole
+ * Classification of existing documents in bulk (ADR-0022). A member picks the documents (the whole
  * collection, Unsorted or a folder), sees how many were never classified and what that is expected to cost against the
  * daily AI budget, and starts the run explicitly. While it runs the page shows its progress and lets any member cancel
  * it; afterwards it groups the results: documents to review, identical folder proposals, failures and skips by reason.

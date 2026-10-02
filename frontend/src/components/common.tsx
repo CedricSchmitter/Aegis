@@ -13,7 +13,7 @@ export function PageTitle({ children, actions }: { children: ReactNode; actions?
   );
 }
 
-/** The big uppercase page title of the redesigned areas (issue #27), with an optional eyebrow and count. */
+/** The big uppercase page title, with an optional eyebrow and count. */
 export function BigTitle({ children, count, eyebrow }: { children: ReactNode; count?: ReactNode; eyebrow?: ReactNode }) {
   return (
     <div className="mb-4 flex flex-col gap-1.5">
@@ -84,9 +84,9 @@ const STATE_TONES: Record<string, Tone> = {
   SUCCEEDED: "data",
   CANCELLED: "neutral",
   NOT_REQUESTED: "neutral",
-  // Requested for a member who may not use AI: an expected state, not a failure (issue #107).
+  // Requested for a member who may not use AI: an expected state, not a failure.
   NOT_CLASSIFIED: "neutral",
-  // Today's AI cost limit is used up and the run continues on the next budget day: expected, not a failure (issue #109).
+  // Today's AI cost limit is used up and the run continues on the next budget day: expected, not a failure.
   WAITING_FOR_BUDGET: "neutral",
   WAITING_FOR_ARCHIVE: "neutral",
   PENDING: "data",
@@ -136,7 +136,7 @@ export function Badge({ state, label }: { state: string; label: string }) {
   );
 }
 
-/** The state of a status or job row as a mono word without a frame; the row itself is the frame (issue #27). */
+/** The state of a status or job row as a mono word without a frame; the row itself is the frame. */
 export function StateWord({ state, label }: { state: string; label: string }) {
   return (
     <span className="ui-state" data-state={state} data-tone={stateTone(state)}>

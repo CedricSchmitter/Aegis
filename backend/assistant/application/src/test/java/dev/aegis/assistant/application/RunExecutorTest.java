@@ -45,8 +45,6 @@ class RunExecutorTest {
         return stored(id).failure().map(RunFailure::category).orElse(null);
     }
 
-    // Success, tools and least privilege -----------------------------------------------------------------------------
-
     @Test
     void successfulRunAppliesItsResultOnceAndRecordsUsageAndCost() {
         kit.gateway.answer(json(Map.of("label", "invoice")));
@@ -136,8 +134,6 @@ class RunExecutorTest {
         assertThat(failure(id)).isEqualTo(FailureCategory.INVALID_OUTPUT);
         assertThat(kit.workload.applied).isEmpty();
     }
-
-    // Malformed outputs and provider failures ------------------------------------------------------------------------
 
     @Test
     void malformedOutputIsRetriedWithinTheAttemptBudgetThenFails() {
@@ -231,8 +227,6 @@ class RunExecutorTest {
         assertThat(failure(id)).isEqualTo(FailureCategory.NOT_CONFIGURED);
         assertThat(kit.gateway.requests).isEmpty();
     }
-
-    // Budgets --------------------------------------------------------------------------------------------------------
 
     @Test
     void outputAllowanceShrinksWithTheRemainingBudgetAndOverspendingStopsTheRun() {
@@ -375,8 +369,6 @@ class RunExecutorTest {
         assertThat(kit.gateway.requests.getFirst().timeout()).isEqualTo(Duration.ofSeconds(60));
     }
 
-    // Restart, retry and duplicate writes ----------------------------------------------------------------------------
-
     @Test
     void restartDuringAnAttemptRetriesWithoutDuplicatingTheEffect() {
         RunId id = kit.classify("Rechnung");
@@ -441,8 +433,6 @@ class RunExecutorTest {
         assertThat(kit.ledger).isEmpty();
     }
 
-    // Cancellation ---------------------------------------------------------------------------------------------------
-
     @Test
     void cancelledQueuedRunNeverCallsTheModel() {
         RunId id = kit.classify("Rechnung");
@@ -486,8 +476,6 @@ class RunExecutorTest {
         assertThat(stored(id).state()).isEqualTo(RunState.CANCELLED);
         assertThat(kit.lookup.callers).isEmpty();
     }
-
-    // Authorization and concurrency ----------------------------------------------------------------------------------
 
     @Test
     void runOfADeactivatedMemberDoesNotStart() {
@@ -558,8 +546,6 @@ class RunExecutorTest {
 
         assertThat(stored(next).state()).isEqualTo(RunState.SUCCEEDED);
     }
-
-    // Slot hand-over ---------------------------------------------------------------------------------------------------
 
     /** Requests a classification of its own document one second after the previous request. */
     private RunId queued(String documentId) {

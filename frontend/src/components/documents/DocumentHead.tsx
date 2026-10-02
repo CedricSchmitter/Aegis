@@ -6,7 +6,7 @@ import { fileKind, thumbnailUrl, viewerSource } from "../../lib/documentView";
 import { formatDate } from "../../lib/format";
 import { FileTypeTag } from "../ui";
 
-/** Folder path, title and who uploaded the document when (issue #27). */
+/** Folder path, title and who uploaded the document when. */
 export function DocumentHead({ document, heading }: { document: DocumentDto; heading: (title: string) => ReactNode }) {
   const { t, i18n } = useTranslation();
   const { memberName } = useSession();

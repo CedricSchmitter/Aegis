@@ -143,7 +143,7 @@ class NoticeServiceTest {
         service.publish(archivalFailed(anna, "d1"));
         service.publish(new NoticeDraft(anna, "JOB_STALE", "job-health:i1", Map.of("job", "watch-job-health"),
                 "STATUS", "watch-job-health"));
-        // A notice stored before issue #83 retired its kind stays in the database but is no message.
+        // A stored notice of the retired kind stays in the database but is no message.
         repository.save(Notice.create(anna, NoticeKind.DOCUMENT_ARCHIVED, "document-archived:d0", Map.of(), null,
                 Instant.parse("2026-09-01T10:00:00Z")));
 

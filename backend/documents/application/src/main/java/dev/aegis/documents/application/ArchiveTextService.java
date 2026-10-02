@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Records whether the archive recognized text in archived documents (issue #87, ADR-0012) and whether it keeps a
+ * Records whether the archive recognized text in archived documents (ADR-0012) and whether it keeps a
  * searchable archive version of them (ADR-0016). The archival job asks right after it recorded a document as archived;
  * a recurring sweep catches up on documents archived before this existed, on checks stored before the archive version
  * was recorded, and on checks that failed. The archive is read outside any transaction and each result is one write of

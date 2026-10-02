@@ -56,7 +56,7 @@ class FileBackupStateSourceTest {
         assertThat(failed.runningSince()).isNull();
         assertThat(failed.backupDisk()).isNull();
 
-        // The state the VM had before this change: a success and no error.
+        // A state file without schema version, as older backup scripts wrote it: a success and no error.
         write("""
                 {"destinationVerified":true,"lastSuccessAt":"2026-09-24T01:30:03Z",
                  "lastAttemptAt":"2026-09-24T01:30:03Z","repository":"/r","error":null}

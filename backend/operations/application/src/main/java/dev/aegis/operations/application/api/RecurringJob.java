@@ -5,7 +5,7 @@ import java.util.Objects;
 
 /**
  * A recurring background job of the installation and the time between two of its runs, as the job is scheduled.
- * The composition root declares the jobs; the status page reports whether each still runs (issue #92, ADR-0013).
+ * The composition root declares the jobs; the status page reports whether each still runs (ADR-0013).
  */
 public record RecurringJob(String name, Duration interval) {
     public RecurringJob {

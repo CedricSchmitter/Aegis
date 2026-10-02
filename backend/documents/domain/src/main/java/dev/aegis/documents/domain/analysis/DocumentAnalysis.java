@@ -130,8 +130,6 @@ public final class DocumentAnalysis {
                 DocumentDate.UNKNOWN, null, null, Set.of(), List.of(), List.of(), null, null, null, List.of());
     }
 
-    // Requests ------------------------------------------------------------------------------------------------------
-
     /**
      * Starts a new generation. Every request gets a new generation, so an older run's late answer no longer matches.
      *
@@ -158,7 +156,7 @@ public final class DocumentAnalysis {
 
     /**
      * Takes back a request whose run was cancelled before its result was applied, for example by cancelling a bulk
-     * run (issue #115). The document returns to its earlier result or to not requested; the generation stays
+     * run. The document returns to its earlier result or to not requested; the generation stays
      * counted, so a late answer of the cancelled run is refused.
      *
      * @return whether the request of {@code requestedGeneration} was still open
@@ -184,8 +182,6 @@ public final class DocumentAnalysis {
     public boolean accepts(int resultGeneration) {
         return status == Status.REQUESTED && generation == resultGeneration;
     }
-
-    // Results -------------------------------------------------------------------------------------------------------
 
     /**
      * Records a finished run. Earlier generated values move to the history; decisions a member made about titles,
@@ -255,8 +251,6 @@ public final class DocumentAnalysis {
         proposed.forEach(s -> merged.putIfAbsent(s.subject(), s));
         return new ArrayList<>(merged.values());
     }
-
-    // Member decisions ----------------------------------------------------------------------------------------------
 
     /** The generated title the member accepts or reverts; returns it for the document rename. */
     public String decideTitle(boolean accept, MemberId by) {

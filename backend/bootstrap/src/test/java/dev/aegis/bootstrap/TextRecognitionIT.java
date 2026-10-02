@@ -27,7 +27,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Whether the archive recognized text (issue #87, ADR-0012) against PostgreSQL and the HTTP API: measured right after
+ * Whether the archive recognized text (ADR-0012) against PostgreSQL and the HTTP API: measured right after
  * archival without AI, shown on the document and in the list, a review card for documents without text, archival
  * unaffected when the text cannot be read, and a bounded sweep that catches up on documents archived before.
  */
@@ -126,7 +126,7 @@ class TextRecognitionIT extends PostgresIT {
         String id = upload(anna, photo);
         awaitTextState(anna, id, "RECOGNIZED");
 
-        // A document archived before this feature has no check yet.
+        // A document archived before text checks existed has no check yet.
         jdbc.sql("DELETE FROM document_text_checks WHERE document_id = ?").param(UUID.fromString(id)).update();
         assertThat(anna.json(anna.get("/api/documents/" + id)).path("textRecognition").path("state").asText())
                 .isEqualTo("PENDING");

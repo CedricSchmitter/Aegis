@@ -17,7 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Palette and effects are stored per member in PostgreSQL (issue #27, ADR-0019): the session carries them, a change
+ * Palette and effects are stored per member in PostgreSQL (ADR-0019): the session carries them, a change
  * affects only the acting member, survives a new session, rides on the member's optimistic-concurrency version and is
  * validated at the API boundary. Members stored before the migration read as Streetkid with effects on.
  */

@@ -30,7 +30,7 @@ interface Props {
 }
 
 /**
- * Reviewing one contract (issue #27): the cancellation deadline with its derivation, the conflicts Aegis reports
+ * Reviewing one contract: the cancellation deadline with its derivation, the conflicts Aegis reports
  * instead of resolving, and every statement with its source document and page, "Confirmed" in the data colour and
  * "Suggestion" in the action colour. Each write carries the version the member saw, so a concurrent decision is
  * reported and reloaded instead of being overwritten.
@@ -100,7 +100,7 @@ export function ContractView({ id, heading, compact = false, onChanged }: Props)
   const hidden = contract.facts.filter(isHistory).length;
   const trashed = !!contract.trash;
   const path = { params: { path: { id: contract.id } } };
-  /** Moving to the trash asks nothing and offers undo in a message (issue #27). */
+  /** Moving to the trash asks nothing and offers undo in a message. */
   const changeTrash = (action: "trash" | "restore", version: number) => {
     const options = { params: { path: { id } }, body: { expectedVersion: version } };
     if (action === "trash") {

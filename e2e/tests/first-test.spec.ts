@@ -27,7 +27,7 @@ async function login(page: Page, user: { username: string; password: string }) {
   await expect(page).toHaveURL(/\/today$/);
 }
 
-/** Settings, Status, Trash and logging out sit behind the avatar (issue #27, #83 F5). */
+/** Settings, Status, Trash and logging out sit behind the avatar. */
 async function openAvatarMenu(page: Page) {
   const toggle = page.getByTestId("avatar-menu-toggle");
   if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
@@ -45,7 +45,7 @@ function isPhoneWidth(page: Page): boolean {
   return (page.viewportSize()?.width ?? 0) < 1024;
 }
 
-/** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
+/** The language switch lives in Settings only; switch there if needed and return to the page. */
 async function ensureGerman(page: Page) {
   const back = page.url();
   await page.goto("/settings");
@@ -82,7 +82,7 @@ test.describe("first runnable test", () => {
   test("language switch persists per member and does not change stored data", async ({ page }) => {
     await login(page, userA);
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/Heute|Today/);
-    // The header has no language switch any more; it sits in Settings only (issue #83, F7).
+    // The language switch sits in Settings only, not in the header.
     await expect(page.getByTestId("language-switch")).toHaveCount(0);
     await page.goto("/settings");
     const toggle = page.getByTestId("language-switch");
@@ -146,10 +146,9 @@ test.describe("first runnable test", () => {
     await login(page, userA);
     await ensureGerman(page);
 
-    // Upload a synthetic PDF and wait for real archival.
     await page.getByRole("link", { name: "Dokumente" }).first().click();
     await openUpload(page);
-    // Nothing is ticked at first and "both" is no choice: a document about both persons names each (issue #83).
+    // Nothing is ticked at first and "both" is no choice: a document about both persons names each.
     const subjects = page.getByTestId("upload-subjects");
     await expect(subjects.getByRole("checkbox")).not.toHaveCount(0);
     await expect(subjects.getByRole("checkbox", { checked: true })).toHaveCount(0);
@@ -168,7 +167,7 @@ test.describe("first runnable test", () => {
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 300_000 });
     const documentUrl = page.url();
     const documentId = documentUrl.split("/").pop()!;
-    // Technical data sits in a collapsed section (issue #83, F15).
+    // Technical data sits in a collapsed section.
     await expect(page.getByTestId("checksum")).toBeHidden();
     await page.getByTestId("technical-details").locator("summary").click();
     await expect(page.getByTestId("checksum")).toContainText(RUN_SHA256);
@@ -188,7 +187,6 @@ test.describe("first runnable test", () => {
     await searchDocuments(page, "Kuendigungsfrist");
     await expect(page.locator("[data-testid=document-card]", { hasText: `Stromvertrag e2e ${runId}` })).toBeVisible();
 
-    // Create a linked task assigned to the other member with a deadline and a planned date.
     await page.goto(documentUrl);
     await page.getByTestId("new-task-toggle").click();
     await page.getByTestId("task-title").fill(`Kündigen ${runId}`);
@@ -198,7 +196,7 @@ test.describe("first runnable test", () => {
     await page.getByTestId("task-create").click();
     const taskItem = page.locator("[data-testid=task-item]", { hasText: `Kündigen ${runId}` });
     await expect(taskItem).toBeVisible();
-    // The card keeps the deadline ("Frist") and the planned work day ("Geplant") apart (issue #27).
+    // The card keeps the deadline ("Frist") and the planned work day ("Geplant") apart.
     await expect(taskItem).toContainText("Frist");
     await expect(taskItem).toContainText("Geplant");
 
@@ -218,7 +216,7 @@ test.describe("first runnable test", () => {
     const pageB = await contextB.newPage();
     await login(pageB, userB);
     await ensureGerman(pageB);
-    // "Prüfen" and "Hinweise" are one inbox (issue #83); the old address still leads to its messages.
+    // Review cards and messages share one inbox; the /notices address leads to its messages.
     await pageB.goto("/notices");
     await expect(pageB).toHaveURL(/\/inbox#messages$/);
     await pageB.getByRole("link", { name: /^Eingang/ }).first().click();
@@ -226,12 +224,12 @@ test.describe("first runnable test", () => {
     await expect(pageB.getByRole("heading", { level: 2, name: "Zu prüfen" })).toBeVisible();
     const messages = pageB.getByTestId("inbox-messages");
     await expect(messages.getByRole("heading", { level: 2, name: "Mitteilungen" })).toBeVisible();
-    // A successful archival no longer adds a message; the upload already confirmed saving.
+    // A successful archival adds no message; the upload already confirmed saving.
     await expect(messages.locator("[data-testid=notice]", { hasText: "archiviert" })).toHaveCount(0);
     const notice = messages.locator("[data-testid=notice]", { hasText: `Kündigen ${runId}` });
     await expect(notice).toBeVisible();
     await expect(notice).toHaveAttribute("data-unread", "true");
-    // The whole message opens its target and reads it (issue #27).
+    // The whole message opens its target and reads it.
     await notice.getByRole("link").click();
     await expect(pageB.getByRole("heading", { level: 1 })).toContainText(`Kündigen ${runId}`);
     await pageB.getByTestId("task-complete").click();
@@ -241,16 +239,16 @@ test.describe("first runnable test", () => {
     await expect(pageB.getByTestId("processing-state")).toContainText("Archiviert");
     await pageB.getByRole("link", { name: "Heute", exact: true }).first().click();
     await expect(pageB.getByRole("heading", { level: 1 })).toContainText("Heute");
-    // Notes that only describe the setup are gone (issue #83, F6): no calendar note and no pilot banner.
+    // No notes that only describe the setup: no calendar note and no pilot banner.
     await expect(pageB.getByText("Kein Kalender verbunden")).toHaveCount(0);
     await expect(pageB.getByText("Haushaltstest über HTTPS")).toHaveCount(0);
     await contextB.close();
 
-    // The first member sees the completion and the status page answers "is everything OK?" in words (issue #83).
+    // The first member sees the completion and the status page answers "is everything OK?" in words.
     await login(page, userA);
     await page.goto(documentUrl);
     await expect(page.locator("[data-testid=task-item]", { hasText: `Kündigen ${runId}` })).toContainText("Erledigt");
-    // Status left the tab bar (issue #83 F5); it opens from the avatar, the header and Today's status line.
+    // Status is no tab; it opens from the avatar, the header and Today's status line.
     await openAvatarMenu(page);
     await page.getByTestId("avatar-menu-status").click();
     const overview = page.getByTestId("status-overview");
@@ -301,7 +299,7 @@ test.describe("first runnable test", () => {
   test("mobile layout shows the bottom navigation and the upload controls @mobile", async ({ page }) => {
     await login(page, userA);
     if (isPhoneWidth(page)) {
-      // Five areas (issue #83 F5); Status moved behind the avatar and into the status line on Today.
+      // Five areas; Status is reached through the avatar and the status line on Today.
       const tabs = page.getByTestId("bottom-nav");
       await expect(tabs).toBeVisible();
       await expect(tabs.getByRole("link")).toHaveText([
@@ -323,11 +321,11 @@ test.describe("first runnable test", () => {
       for (const control of ["upload-take-photo", "upload-choose-image", "upload-choose-file"]) {
         await expect(page.getByTestId(control)).toBeVisible();
       }
-      // The options say which one scans and which one keeps the file unchanged (issue #83, F8).
+      // The options say which one scans and which one keeps the file unchanged.
       await expect(page.getByTestId("upload-choose-image")).toContainText(/^(Fotos aus Galerie scannen|Scan photos from gallery)/);
       await expect(page.getByTestId("upload-choose-file")).toContainText(/^(Datei unverändert hochladen|Upload file unchanged)/);
     } else {
-      // A desktop browser opens no camera; a file is dropped or chosen, and photos become a scan (issue #27).
+      // A desktop browser opens no camera; a file is dropped or chosen, and photos become a scan.
       await expect(page.getByTestId("upload-take-photo")).toHaveCount(0);
       await expect(page.getByTestId("upload-drop")).toBeVisible();
       await expect(page.getByTestId("upload-choose-file")).toBeVisible();
@@ -338,7 +336,7 @@ test.describe("first runnable test", () => {
     // The sheet is modal: the page behind it, including the avatar, is inert until it closes.
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("upload-panel")).not.toHaveAttribute("open", "");
-    // The inbox shows "To review" and "Messages" as two segments on a phone and side by side on a desktop (issue #27).
+    // The inbox shows "To review" and "Messages" as two segments on a phone and side by side on a desktop.
     await page.goto("/inbox");
     if (isPhoneWidth(page)) {
       const sections = page.getByRole("radiogroup", { name: /^(Bereich|Section)$/ });
@@ -382,7 +380,7 @@ test.describe("first runnable test", () => {
     await page.getByTestId("avatar-menu-trash").click();
     await expect(page).toHaveURL(/\/trash$/);
     await expect(page.getByTestId("avatar-menu")).toBeHidden();
-    // From 1280 px the trash and Settings show the status overview in the context panel (issue #27).
+    // From 1280 px the trash and Settings show the status overview in the context panel.
     await expect(page.getByTestId("context-panel").getByTestId("status-panel")).toBeVisible();
     await logout(page);
   });

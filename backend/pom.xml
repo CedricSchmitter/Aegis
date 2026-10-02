@@ -116,7 +116,6 @@
         <version>${archunit.version}</version>
       </dependency>
 
-      <!-- Internal modules -->
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-shared-kernel</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-identity-domain</artifactId><version>${project.version}</version></dependency>
       <dependency><groupId>dev.aegis</groupId><artifactId>aegis-identity-application</artifactId><version>${project.version}</version></dependency>

@@ -16,7 +16,7 @@ interface ShellData {
   status: StatusSummary;
   /** The checks of the status overview behind the summary; null until known. */
   checks: HealthCheck[] | null;
-  /** Open review cards plus unread messages (issue #83). */
+  /** Open review cards plus unread messages. */
   pending: number;
   openCards: number;
   unreadMessages: number;

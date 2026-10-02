@@ -112,7 +112,7 @@ class RestoreIT extends PostgresIT {
         var uploaded = upload.upload(anna, new UploadCommand("Restore Vertrag.pdf", "application/pdf", pdf.length,
                 new ByteArrayInputStream(pdf), List.of(new SubjectView("MEMBER", ben.memberId())))).document();
         DocumentId documentId = uploaded.id();
-        // A photographed letter travels through export and restore as the image it is (issue #80).
+        // A photographed letter travels through export and restore as the image it is.
         byte[] photo = new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 4, 1, 2, (byte) 0xFF,
                 (byte) 0xFE, 0, 10, 'r', 'e', 's', 't', 'o', 'r', 'e', (byte) (System.nanoTime() & 0x7F),
                 (byte) 0xFF, (byte) 0xD9};

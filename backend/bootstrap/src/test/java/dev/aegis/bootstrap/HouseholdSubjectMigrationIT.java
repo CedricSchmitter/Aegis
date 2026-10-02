@@ -47,7 +47,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The retired subject "both" ({@code HOUSEHOLD}) becomes one subject per person, both in the stored data at startup
- * and in a restore of an export written before schema 9 (issue #83, ADR-0017). The assistant account {@code helper}
+ * and in a restore of an export written before schema 9 (ADR-0017). The assistant account {@code helper}
  * is a member but never one of the persons.
  */
 class HouseholdSubjectMigrationIT extends PostgresIT {
@@ -94,7 +94,7 @@ class HouseholdSubjectMigrationIT extends PostgresIT {
         // Archival changes record versions; wait for it so that only the migration could change them below.
         awaitArchived(anna, house, withBen, filed, withAnna);
 
-        // State as the previous release stored it: "both" on documents, on a folder and in analysis suggestions.
+        // Legacy state: "both" on documents, on a folder and in analysis suggestions.
         jdbc.update("INSERT INTO document_subjects (document_id, kind) VALUES (?, 'HOUSEHOLD'), (?, 'HOUSEHOLD')",
                 house.value(), withBen.value());
         jdbc.update("INSERT INTO category_implied_subjects (category_id, kind) VALUES (?, 'HOUSEHOLD')", folder.id());

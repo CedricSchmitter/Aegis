@@ -12,7 +12,7 @@ import { problemMessage } from "../lib/problem";
 import { jobName } from "../lib/status";
 
 /**
- * The status page answers "is everything OK?" first (issues #83 and #27): broken areas are red with their reason and
+ * The status page answers "is everything OK?" first: broken areas are red with their reason and
  * what to do now. What only helps when looking for a fault is collapsed under technical details.
  */
 export function StatusPage() {

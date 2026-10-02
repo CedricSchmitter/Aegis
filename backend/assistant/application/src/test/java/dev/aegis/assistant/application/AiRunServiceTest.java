@@ -58,7 +58,7 @@ class AiRunServiceTest {
         assertThat(kit.scheduled).hasSize(2);
     }
 
-    /** Regression for issue #59: a key names one unit of work and cannot be reused for different work. */
+    /** A key names one unit of work and cannot be reused for different work. */
     @Test
     void aReusedKeyForDifferentWorkIsRejectedWhileActiveAndAfterSuccess() {
         RunView active = kit.classify("doc-1", 3, "Rechnung", false);
@@ -318,7 +318,6 @@ class AiRunServiceTest {
         assertThat(Workload.fromConfigKey(" Connection-Check ")).isEqualTo(Workload.CONNECTION_CHECK);
         assertThatThrownBy(() -> Workload.fromConfigKey("shell")).isInstanceOf(IllegalArgumentException.class);
     }
-    // Provider preference ---------------------------------------------------------------------------------------------
 
     private RunView classifyAs(Actor actor, String documentId) {
         return kit.service().request(actor, new RunRequest("DOCUMENT_CLASSIFICATION", "classification:" + documentId,

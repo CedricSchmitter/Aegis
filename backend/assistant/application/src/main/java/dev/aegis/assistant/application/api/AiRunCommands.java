@@ -4,7 +4,6 @@ import dev.aegis.shared.Actor;
 import java.util.List;
 import java.util.UUID;
 
-/** Member commands on runs. */
 public interface AiRunCommands {
     /** Cancels a run; a running attempt stops at its next checkpoint and never applies its result. */
     RunView cancel(Actor actor, UUID runId);

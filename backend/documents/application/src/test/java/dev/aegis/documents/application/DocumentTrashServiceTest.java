@@ -19,7 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Trash and restore of documents (issue #48, ADR-0010) through the application services. */
+/** Trash and restore of documents (ADR-0010) through the application services. */
 class DocumentTrashServiceTest {
     private CatalogFixture f;
     private final List<Document> analysisTriggers = new ArrayList<>();

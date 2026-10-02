@@ -16,7 +16,7 @@ interface Props {
 type Row = { id: string; label: string; depth: number; count: number; node?: FolderNode };
 
 /**
- * The folders of the desktop sidebar as an expandable ARIA tree with a roving tab stop (issue #27): arrow keys,
+ * The folders of the desktop sidebar as an expandable ARIA tree with a roving tab stop: arrow keys,
  * Home/End and Enter work as well as the mouse. Counts include subfolders; Unsorted closes the list.
  */
 export function FolderTree({ categories, unsortedCount, selected, onSelect }: Props) {

@@ -20,7 +20,7 @@ async function login(page: Page, user: { username: string; password: string }) {
   await expect(page).not.toHaveURL(/\/login$/);
 }
 
-/** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
+/** The language switch lives in Settings only; switch there if needed and return to the page. */
 async function ensureGerman(page: Page) {
   const back = page.url();
   await page.goto("/settings");
@@ -59,7 +59,7 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     await expect(page.getByTestId("photo-hint")).toBeVisible();
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });
     const documentId = page.url().split("/").pop()!;
-    // Technical data sits in a collapsed section (issue #83, F15).
+    // Technical data sits in a collapsed section.
     await expect(page.getByTestId("checksum")).toBeHidden();
     await page.getByTestId("technical-details").locator("summary").click();
     await expect(page.getByTestId("checksum")).toContainText(sha256);

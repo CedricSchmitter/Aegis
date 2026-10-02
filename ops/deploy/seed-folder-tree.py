@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create or update a household's starting folder tree from tracked data (issue #72, ADR-0006).
+"""Create or update a household's starting folder tree from tracked data (ADR-0006).
 
 The tree lives in `folder-tree.json`, not in this file. Seeding goes through the ordinary REST API, so it obeys
 the same authorization, validation and versioning as a member working in the UI. It is idempotent: folders are
@@ -36,7 +36,7 @@ import urllib.request
 SCHEMA_VERSION = 1
 MAX_DEPTH = 8
 MAX_NAME_LENGTH = 80
-# "Both" (HOUSEHOLD) is no subject kind any more (ADR-0017); a folder about people would be a person folder.
+# There is no "both" (HOUSEHOLD) subject kind (ADR-0017); a folder about people would be a person folder.
 SUBJECT_KINDS = ("HOUSE",)
 
 

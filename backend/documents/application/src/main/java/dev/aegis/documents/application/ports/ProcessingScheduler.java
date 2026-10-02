@@ -21,7 +21,7 @@ public interface ProcessingScheduler {
     /** Next planned execution of the purge job, if one is scheduled. */
     Optional<Instant> nextPurgeAttempt(DocumentId id);
 
-    /** Schedules the next step of a bulk analysis at {@code at}, in the caller's transaction (issue #115). */
+    /** Schedules the next step of a bulk analysis at {@code at}, in the caller's transaction. */
     void scheduleBulkAnalysis(java.util.UUID bulkId, Instant at);
 
     /** Schedules the page editor job of an operation (ADR-0024) at {@code at}, in the caller's transaction. */

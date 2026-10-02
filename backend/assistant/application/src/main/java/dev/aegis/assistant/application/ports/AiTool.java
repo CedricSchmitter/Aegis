@@ -16,7 +16,6 @@ import java.util.Objects;
  */
 public interface AiTool {
 
-    /** Context of one invocation. */
     record Invocation(RunId runId, Actor actor) {
         public Invocation {
             Objects.requireNonNull(runId, "run id");

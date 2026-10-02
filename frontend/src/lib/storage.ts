@@ -7,7 +7,7 @@ export type DiskSpace = SystemStatus["storage"]["disks"][number];
 
 /**
  * Localized reasons for the failure codes the backup script (ops/backup/backup.py) and the state reader write
- * (issue #100, ADR-0015). Each reason has a short hint on what to check. The stable code stays in the API and the
+ * (ADR-0015). Each reason has a short hint on what to check. The stable code stays in the API and the
  * notice parameters; only the presentation turns it into words.
  */
 export const BACKUP_REASONS = [

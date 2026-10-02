@@ -16,9 +16,9 @@ import { countTrash, filterTrash, hasPendingPurge, mergeTrash, TRASH_KINDS, type
 const PURGE_POLL_MS = 3000;
 
 /**
- * Everything the household moved to the trash (issue #27): documents, tasks and contracts with who trashed them, when,
+ * Everything the household moved to the trash: documents, tasks and contracts with who trashed them, when,
  * and until when they are guaranteed to stay restorable. Each one can also be deleted permanently from here, and only
- * here, after a danger dialog (issue #85, ADR-0021). A document's deletion runs in the background, so the view checks
+ * here, after a danger dialog (ADR-0021). A document's deletion runs in the background, so the view checks
  * back until it is gone.
  */
 export function TrashPage() {

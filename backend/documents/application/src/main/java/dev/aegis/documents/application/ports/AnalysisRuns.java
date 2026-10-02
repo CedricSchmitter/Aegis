@@ -50,8 +50,8 @@ public interface AnalysisRuns {
     }
 
     /**
-     * Expected cost of one classification run requested by {@code requester} and the household's budget today
-     * (issue #115). {@code refusal} is the code such a request would be refused with now, otherwise {@code null};
+     * Expected cost of one classification run requested by {@code requester} and the household's budget today.
+     * {@code refusal} is the code such a request would be refused with now, otherwise {@code null};
      * {@code averageCost} is the mean of the last {@code samples} succeeded classification runs on the same model,
      * {@code null} without any; {@code runBudget} is the most one run may cost. Estimates, not charges.
      */

@@ -354,8 +354,6 @@
     --frame-fill: color-mix(in oklab, var(--color-action) 8%, var(--color-surface));
   }
 
-  /* ---- Base components (src/components/ui) ---- */
-
   .ui-eyebrow {
     @apply font-mono text-xs tracking-[0.18em] uppercase;
     color: var(--color-text-4);
@@ -545,7 +543,7 @@
     }
   }
   /* Full screen above everything, an open sheet included (the scan's corner editor). It scrolls itself if it has to,
-     and its overscroll stays contained: a swipe on it neither chains into the sheet nor into the page (#125). */
+     and its overscroll stays contained: a swipe on it neither chains into the sheet nor into the page. */
   .ui-overlay {
     position: fixed;
     inset: 0;
@@ -634,8 +632,6 @@
       color: var(--color-text-2);
     }
   }
-
-  /* ---- Document screens (issue #27, PR 3) ---- */
 
   /* Mono section heading with an optional count or control at the right. */
   .ui-sec {
@@ -775,7 +771,6 @@
     }
   }
 
-  /* Drop zone for files on a desktop. */
   .ui-drop {
     @apply flex flex-col items-center gap-2 border border-dashed px-4 py-5 text-center;
     border-color: var(--color-data);
@@ -853,8 +848,6 @@
       --s: 10px;
     }
   }
-
-  /* ---- Today, tasks and contracts (issue #27, PR 4) ---- */
 
   /* The value in an eyebrow line, such as the date on Today or the state of a task. */
   .ui-eyebrow b {
@@ -937,8 +930,6 @@
     }
   }
 
-  /* ---- Inbox, status, trash, management, login and share (issue #27, PR 5) ---- */
-
   /* A settings or status row: a name with one line of explanation, and a state or control at the right. */
   .ui-row {
     @apply flex min-h-13 w-full items-center gap-3 border-b py-2 text-left;
@@ -1005,7 +996,6 @@
     }
   }
 
-  /* A colour sample of a palette. */
   .ui-swatch {
     @apply inline-block h-3.5 w-3.5 flex-none border;
     border-color: var(--color-line-strong);

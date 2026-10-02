@@ -58,7 +58,7 @@ export function App() {
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/tasks/:id" element={<TaskDetailPage />} />
         <Route path="/inbox" element={<InboxPage />} />
-        {/* "Prüfen" and "Hinweise" became one inbox (issue #83); old links and bookmarks keep working. */}
+        {/* Links and bookmarks to /review and /notices lead into the combined inbox. */}
         <Route path="/review" element={<LegacyInboxRedirect />} />
         <Route path="/notices" element={<LegacyInboxRedirect />} />
         <Route path="/status" element={<StatusPage />} />

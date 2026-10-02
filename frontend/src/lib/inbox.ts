@@ -3,11 +3,11 @@ import type { NoticeSummary } from "../api/types";
 /** Dispatched after something changed the inbox badge: a card was decided or notices were read. */
 export const INBOX_CHANGED = "aegis:inbox-changed";
 
-/** Anchor of the messages section, used by old `/notices` links. */
+/** Anchor of the messages section, used by `/notices` links. */
 export const MESSAGES_ANCHOR = "messages";
 
 /**
- * Where an old inbox link leads since "Prüfen" and "Hinweise" became one inbox (issue #83). `/review?item=<id>` keeps
+ * Where a `/review` or `/notices` link leads in the combined inbox. `/review?item=<id>` keeps
  * its card focus, `/notices` opens the messages section; links from notices, bookmarks and the share flow keep working.
  */
 export function legacyInboxTarget(pathname: string, search: string): string {
@@ -49,7 +49,7 @@ export function noticeTone(notice: Pick<NoticeSummary, "kind" | "readAt">): Inbo
 export function reviewTarget(linkType: string, linkId: string): { to: string; labelKey: string } | null {
   if (linkType === "DOCUMENT") return { to: `/documents/${linkId}`, labelKey: "review.openDocument" };
   if (linkType === "CONTRACT") return { to: `/contracts/${linkId}`, labelKey: "review.openContract" };
-  // One card for a whole bulk classification (issue #115) leads to its grouped results.
+  // One card for a whole bulk classification leads to its grouped results.
   if (linkType === "BULK_ANALYSIS") return { to: `/documents/classify?run=${encodeURIComponent(linkId)}`, labelKey: "review.openBulkAnalysis" };
   return null;
 }

@@ -8,7 +8,7 @@ import { useShellData } from "./ShellData";
 import { TONE_TEXT } from "./StatusIndicator";
 
 /**
- * The avatar opens Settings, Status and Trash and signs out (issue #27, #83 F5). A disclosure with links rather than
+ * The avatar opens Settings, Status and Trash and signs out. A disclosure with links rather than
  * an ARIA menu: it closes on Escape, on a click outside and on navigation, and returns focus to the avatar on Escape.
  * A red mark on the avatar says that the status overview reports a problem. The panel exists only while open, so a
  * closed menu adds nothing to the page's text or accessibility tree.

@@ -18,7 +18,7 @@ async function login(page: Page, user: { username: string; password: string }) {
   await expect(page).not.toHaveURL(/\/login$/);
 }
 
-/** The language switch lives in Settings only (issue #83); switch there if needed and return to the page. */
+/** The language switch lives in Settings only; switch there if needed and return to the page. */
 async function ensureGerman(page: Page) {
   const back = page.url();
   await page.goto("/settings");

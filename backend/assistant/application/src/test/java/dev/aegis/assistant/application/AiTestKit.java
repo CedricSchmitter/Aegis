@@ -331,7 +331,6 @@ class AiTestKit {
         }
     }
 
-    /** Clock that tests move explicitly. */
     static final class MutableClock extends Clock {
         private Instant now;
 

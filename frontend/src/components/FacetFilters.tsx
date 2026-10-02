@@ -124,7 +124,7 @@ export function FacetFilters({ filters, facets, labels, members, onChange }: Pro
   );
 }
 
-/** The chosen filter values next to the filter button, each with a remove button (issue #27). */
+/** The chosen filter values next to the filter button, each with a remove button. */
 export function ActiveFilters({ filters, labels, members, onChange }: Omit<Props, "facets">) {
   const { t } = useTranslation();
   const valueName = useValueName(labels, members);

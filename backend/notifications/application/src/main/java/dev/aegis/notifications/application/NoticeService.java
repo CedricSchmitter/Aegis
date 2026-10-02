@@ -23,7 +23,7 @@ import java.util.Set;
 
 /**
  * Inbox use cases: publishing with deduplication and per-member read state. Only messages are listed and counted;
- * notices announcing a review card are published but shown as the card (issue #83).
+ * notices announcing a review card are published but shown as the card.
  */
 public class NoticeService implements PublishNotice, NoticeInbox, ForgetNotices {
     private static final Set<NoticeKind> MESSAGES = NoticeKind.placedAs(Placement.MESSAGE);

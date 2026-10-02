@@ -24,7 +24,7 @@ interface Props {
 type Editing = "assign" | "plan" | "due" | "edit" | null;
 
 /**
- * One task (issue #27): deadline, planned work day and responsibility, the source, then "Done" as the one primary
+ * One task: deadline, planned work day and responsibility, the source, then "Done" as the one primary
  * action with assigning and rescheduling below it. Rescheduling changes the work day only; the contractual deadline
  * of a cancellation review cannot be changed here at all.
  */
@@ -109,7 +109,7 @@ export function TaskDetail({ task, onChange, heading, onCompleted, onTrashed }: 
       {task.note && <p className="text-sm whitespace-pre-wrap text-text-2">{task.note}</p>}
 
       {task.source && task.source.documentDeleted && (
-        // A source deleted permanently (ADR-0021) has no page to open any more.
+        // A source deleted permanently (ADR-0021) has no page to open.
         <div className="card flex flex-col gap-1" data-testid="task-source-deleted">
           <span className="ui-eyebrow">{t("tasks.sourceLabel")}</span>
           <span className="text-[15px] leading-snug font-semibold break-words text-text-3">{t("trash.sourceDeleted")}</span>

@@ -50,7 +50,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Bulk classification of existing documents (issue #115, ADR-0022): the preview with its cost estimate, the explicit
+ * Bulk classification of existing documents (ADR-0022): the preview with its cost estimate, the explicit
  * start, the cancellation, the views, and the steps of the run's persisted job.
  *
  * <p>A run fixes its document list at the start and requests the documents one by one through
@@ -102,8 +102,6 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
         this.settings = settings;
         this.clock = clock;
     }
-
-    // Preview and start ---------------------------------------------------------------------------------------------
 
     @Override
     public BulkAnalysisPreview preview(Actor actor, ScopeRequest request) {
@@ -200,8 +198,6 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
         }
     }
 
-    // Cancellation --------------------------------------------------------------------------------------------------
-
     @Override
     public BulkAnalysisView cancel(Actor actor, UUID id) {
         access.requireMember(actor);
@@ -226,8 +222,6 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
         bulks.save(bulk);
         return view(load(id), categories.load());
     }
-
-    // Job step ------------------------------------------------------------------------------------------------------
 
     @Override
     public Step advance(UUID bulkId) {
@@ -288,7 +282,7 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
             } else if ("SUCCEEDED".equals(run.state())) {
                 bulk.finished(item.documentId(), Outcome.CLASSIFIED, null, now);
             } else if (AnalysisRuns.MEMBER_NOT_ALLOWED.equals(run.failureCode())) {
-                // The requester lost AI access (issue #107): no failure, but nothing more can run on their behalf.
+                // The requester lost AI access: no failure, but nothing more can run on their behalf.
                 bulk.finished(item.documentId(), Outcome.NOT_CLASSIFIED, run.failureCode(), now);
                 bulk.stop(run.failureCode());
             } else {
@@ -338,8 +332,6 @@ public class BulkAnalysisService implements BulkAnalysisCommands, BulkAnalysisQu
         }
         return true;
     }
-
-    // Queries -------------------------------------------------------------------------------------------------------
 
     @Override
     public List<BulkAnalysisView> recent(Actor actor) {

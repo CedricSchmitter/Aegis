@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Folder placement by the classifier (issue #67, ADR-0005) against in-memory repositories and a controlled AI
+ * Folder placement by the classifier (ADR-0005) against in-memory repositories and a controlled AI
  * boundary: the automatic move into an existing folder, proposals for paths that do not exist yet, the deterministic
  * reuse of folders, and the member decisions that every later run has to respect.
  */
@@ -76,8 +76,6 @@ class PlacementFlowTest {
                 List.of(insurance.id()), List.of(new SubjectView("HOUSE", null)), versicherungen.version());
     }
 
-    // Helpers ---------------------------------------------------------------------------------------------------
-
     private Document archived(String title, String text) {
         Document document = f.document(title);
         int paperlessId = PAPERLESS_IDS.incrementAndGet();
@@ -123,8 +121,6 @@ class PlacementFlowTest {
     private static PlacementClaim path(UUID anchor, List<String> segments, double confidence, String evidence) {
         return new PlacementClaim(null, anchor, segments, confidence, evidence);
     }
-
-    // Automatic move --------------------------------------------------------------------------------------------
 
     @Test
     void anExistingFolderWhoseLabelsMatchTakesTheDocumentAutomatically() {
@@ -197,8 +193,6 @@ class PlacementFlowTest {
                 view.version());
         assertThat(placed.classification().categoryId()).isEqualTo(versicherungen.id());
     }
-
-    // Proposed paths --------------------------------------------------------------------------------------------
 
     @Test
     void acceptingAProposedPathCreatesTheMissingFoldersAndMovesTheDocument() {
@@ -312,8 +306,6 @@ class PlacementFlowTest {
         assertThat(classification(document.id()).categoryId()).isNull();
     }
 
-    // Member decisions ------------------------------------------------------------------------------------------
-
     @Test
     void aDocumentAMemberFiledIsNeitherMovedNorProposedAbout() {
         Document document = archived("Scan 0012", INSURANCE_TEXT);
@@ -373,8 +365,6 @@ class PlacementFlowTest {
                 .hasFieldOrPropertyWithValue("code", "placement.notAutomatic");
     }
 
-    // Grouping --------------------------------------------------------------------------------------------------
-
     @Test
     void oneAcceptanceCanServeEveryDocumentWithTheSameProposedPath() {
         Document first = archived("Scan 0016", INSURANCE_TEXT);
@@ -405,8 +395,6 @@ class PlacementFlowTest {
                 .isInstanceOf(InvalidInputException.class)
                 .hasFieldOrPropertyWithValue("code", "placement.suggestion.missing");
     }
-
-    // Catalog context -------------------------------------------------------------------------------------------
 
     @Test
     void theClassifierInputCarriesTheFolderTreeInADeterministicOrder() {

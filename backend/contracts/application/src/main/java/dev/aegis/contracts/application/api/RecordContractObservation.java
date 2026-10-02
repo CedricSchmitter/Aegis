@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * How an extraction run (issues #23 and #24) hands a proposed fact to the contracts context. A proposal is always
+ * How an extraction run hands a proposed fact to the contracts context. A proposal is always
  * stored for review and never changes a confirmed fact; a page number is only stored when the run actually read
  * the value there, and a quote must come from the document text.
  */

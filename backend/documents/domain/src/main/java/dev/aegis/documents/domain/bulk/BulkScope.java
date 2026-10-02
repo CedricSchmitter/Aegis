@@ -4,7 +4,7 @@ import dev.aegis.shared.InvalidInputException;
 import java.util.UUID;
 
 /**
- * Which part of the collection a bulk analysis covers (issue #115): the whole collection, the documents without a
+ * Which part of the collection a bulk analysis covers: the whole collection, the documents without a
  * folder, or one folder with or without its subfolders. Within the scope only documents that were never classified
  * are included.
  */

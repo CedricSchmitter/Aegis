@@ -13,7 +13,7 @@ import { todayIso } from "../lib/format";
 import { problemMessage } from "../lib/problem";
 
 /**
- * Every contract with its cancellation date and countdown, highlighted from 30 days before it (issue #27). A contract
+ * Every contract with its cancellation date and countdown, highlighted from 30 days before it. A contract
  * whose rules are incomplete says so instead of disappearing. From 1280 px a click selects a contract and shows its
  * deadline and statements in the context panel.
  */

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 /*
  * Layering (ADR-0019, decision 12): dialogs, sheets and overlays are native modal <dialog> elements in the browser's
  * top layer. Whatever has to cover an open one is a modal dialog of its own, such as the Overlay, never a fixed element
- * inside it: a sheet is a scroll container, and a swipe on a fixed element inside it scrolled the page behind (#125).
+ * inside it: a sheet is a scroll container, and a swipe on a fixed element inside it would scroll the page behind.
  */
 
 /**
@@ -127,8 +127,8 @@ type OverlayProps = Omit<ComponentPropsWithoutRef<"dialog">, "open" | "onClose" 
 /**
  * A full-screen modal that is open for as long as it is mounted, such as the scan's corner editor. It is a modal
  * dialog of its own: opened from a sheet, it stacks above the sheet in the top layer instead of lying inside the
- * sheet's scroll container, and its contained overscroll keeps a swipe from scrolling the sheet or the page behind it
- * (#125). The focus moves into it; Escape or the phone's back gesture reports onClose for the overlay only, and
+ * sheet's scroll container, and its contained overscroll keeps a swipe from scrolling the sheet or the page behind it.
+ * The focus moves into it; Escape or the phone's back gesture reports onClose for the overlay only, and
  * closing returns the focus to where it was before, such as the sheet's button that opened it.
  */
 export function Overlay({ onClose, className = "", children, ...rest }: OverlayProps) {
@@ -194,7 +194,7 @@ type ConfirmDialogProps = {
 };
 
 /**
- * The danger dialog for irreversible actions such as purging the trash (#85): the destructive button stays
+ * The danger dialog for irreversible actions such as purging the trash: the destructive button stays
  * disabled until the member has typed the confirmation word.
  */
 export function ConfirmDialog({ open, onClose, onConfirm, title, children, confirmWord, confirmLabel, busy = false }: ConfirmDialogProps) {
