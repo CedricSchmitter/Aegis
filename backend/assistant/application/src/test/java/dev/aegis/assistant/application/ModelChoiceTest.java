@@ -122,6 +122,43 @@ class ModelChoiceTest {
                 .containsExactly("opus", "sonnet");
     }
 
+    private RunView classifyWith(String family, String documentId) {
+        return kit.service().request(AS_LISA, new RunRequest(CLASSIFICATION, "classification:" + documentId + ":1",
+                List.of(new SourceVersion("document", documentId, 1)), Map.of("content", "Rechnung"), false, family));
+    }
+
+    @Test
+    void aSingleRunCanUseAnotherOfferedFamilyWithoutChangingTheHouseholdChoice() {
+        RunView opus = classifyWith("opus", "doc-1");
+
+        assertThat(opus.model()).isEqualTo(AiTestKit.OPUS);
+        assertThat(classifyWith(" ", "doc-2").model()).isEqualTo(AiTestKit.MODEL);
+        assertThat(classifyAs(AS_LISA, "doc-3").model()).isEqualTo(AiTestKit.MODEL);
+        assertThat(workload(kit.service().overview(AS_LISA), Workload.DOCUMENT_CLASSIFICATION).family())
+                .isEqualTo("sonnet");
+        assertThat(kit.choices.findAll()).isEmpty();
+    }
+
+    @Test
+    void aRetryKeepsTheFamilyChosenForTheSingleRun() {
+        kit.gateway.fail(FailureCategory.AUTHENTICATION, "provider.authentication", null);
+        RunView failed = classifyWith("haiku", "doc-1");
+        kit.executor().execute(new RunId(failed.id()));
+
+        assertThat(kit.service().retry(AS_LISA, failed.id()).model()).isEqualTo(AiTestKit.HAIKU);
+    }
+
+    @Test
+    void aSingleRunOnlyUsesOfferedFamilies() {
+        kit.catalog.remove(ModelFamily.HAIKU);
+
+        assertThatThrownBy(() -> classifyWith("haiku", "doc-1"))
+                .extracting(e -> ((InvalidInputException) e).code()).isEqualTo("ai.model.notOffered");
+        assertThatThrownBy(() -> classifyWith("claude-opus-5-5", "doc-1"))
+                .extracting(e -> ((InvalidInputException) e).code()).isEqualTo("ai.model.unknownFamily");
+        assertThat(kit.runs.findLatestByKey("classification:doc-1:1")).isEmpty();
+    }
+
     @Test
     void theEffortIsOnlySentToModelsThatAcceptIt() {
         kit.classificationEffort = "low";

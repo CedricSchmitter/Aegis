@@ -12,10 +12,13 @@ public final class ChatViews {
     /**
      * Whether the member can ask now and their conversations, newest first. {@code unavailableReason} is the code a
      * question would be refused with ({@code ai.notConfigured}, {@code ai.provider.memberNotAllowed}, ...), otherwise
-     * null.
+     * null. {@code defaultFamily} is the household's model family for questions and {@code families} the families a
+     * single question can use instead, in a stable order.
      */
-    public record ChatOverview(boolean available, String unavailableReason, List<ConversationSummary> conversations) {
+    public record ChatOverview(boolean available, String unavailableReason, String defaultFamily,
+            List<String> families, List<ConversationSummary> conversations) {
         public ChatOverview {
+            families = List.copyOf(families);
             conversations = List.copyOf(conversations);
         }
     }
@@ -34,10 +37,11 @@ public final class ChatViews {
      * One question. {@code state}: {@code WAITING} (queued, waiting for a free slot, a retry or the next budget day
      * at {@code nextAttemptAt}), {@code WORKING}, {@code ANSWERED}, {@code FAILED} ({@code failureCategory} and
      * {@code failureCode} say why) or {@code CANCELLED}. {@code progress} lists what the latest question's run has
-     * done so far; it is empty for earlier questions.
+     * done so far; it is empty for earlier questions. {@code family} is the model family of the run that answers the
+     * question, null when it is unknown.
      */
     public record TurnView(UUID id, int seq, String question, String locale, Instant askedAt, UUID runId,
-            String state, Instant nextAttemptAt, String failureCategory, String failureCode,
+            String family, String state, Instant nextAttemptAt, String failureCategory, String failureCode,
             List<ProgressView> progress, AnswerView answer, Instant answeredAt) {
         public TurnView {
             progress = List.copyOf(progress);

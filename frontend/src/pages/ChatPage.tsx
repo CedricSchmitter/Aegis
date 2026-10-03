@@ -24,6 +24,8 @@ import { failureReasonText } from "../lib/failureReasons";
 import { formatDateTime } from "../lib/format";
 import { problemMessage } from "../lib/problem";
 
+type ChatFamily = NonNullable<ChatTurnDto["family"]>;
+
 /**
  * Questions to the household assistant (issue #25). It reads the household's documents, contracts and tasks and
  * answers with numbered sources; every quote was checked against its source on the server. A question runs in the
@@ -220,11 +222,11 @@ function NewConversation({ overview, onStarted }: { overview: ChatOverviewDto; o
   const ids = useQuestionIds(null);
   const [error, setError] = useState<string | null>(null);
 
-  const send = async (question: string): Promise<boolean> => {
+  const send = async (question: string, family: ChatFamily | null): Promise<boolean> => {
     const { conversationId, turnId } = ids.idsFor(question);
     setError(null);
     try {
-      unwrap(await api.POST("/api/chat/conversations", { body: { conversationId, turnId, question, locale: member?.locale ?? "DE" } }));
+      unwrap(await api.POST("/api/chat/conversations", { body: { conversationId, turnId, question, locale: member?.locale ?? "DE", family } }));
       ids.sent();
       await onStarted();
       navigate(`/chat/${conversationId}`);
@@ -248,7 +250,7 @@ function NewConversation({ overview, onStarted }: { overview: ChatOverviewDto; o
       </div>
       <Unavailable overview={overview} />
       <ErrorBox message={error} />
-      <Composer disabled={!overview.available} onSend={send} autoFocus />
+      <Composer disabled={!overview.available} overview={overview} onSend={send} autoFocus />
     </div>
   );
 }
@@ -292,7 +294,7 @@ function ConversationThread({ id, overview, onChanged }: { id: string; overview:
     end.current?.scrollIntoView?.({ block: "end" });
   }, [turnCount, answered]);
 
-  const send = async (question: string): Promise<boolean> => {
+  const send = async (question: string, family: ChatFamily | null): Promise<boolean> => {
     const { turnId } = ids.idsFor(question);
     setError(null);
     try {
@@ -300,7 +302,7 @@ function ConversationThread({ id, overview, onChanged }: { id: string; overview:
         unwrap(
           await api.POST("/api/chat/conversations/{id}/turns", {
             params: { path: { id } },
-            body: { conversationId: id, turnId, question, locale: member?.locale ?? "DE" },
+            body: { conversationId: id, turnId, question, locale: member?.locale ?? "DE", family },
           }),
         ),
       );
@@ -375,7 +377,7 @@ function ConversationThread({ id, overview, onChanged }: { id: string; overview:
       <div ref={end} />
       {overview && <Unavailable overview={overview} />}
       <ErrorBox message={error} />
-      <Composer disabled={open || busy || overview?.available === false} waiting={open} onSend={send} />
+      <Composer disabled={open || busy || overview?.available === false} waiting={open} overview={overview} onSend={send} />
       <Dialog
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
@@ -404,7 +406,7 @@ function TurnItem({ turn, latest, busy, onCancel, onRetry }: { turn: ChatTurnDto
         {turn.question}
       </div>
       {turn.answer ? (
-        <Answer answer={turn.answer} />
+        <Answer answer={turn.answer} family={turn.family ?? null} />
       ) : turnOpen(turn) ? (
         <div className="card flex flex-col gap-2" role="status" aria-live="polite" data-testid="chat-progress">
           <p className="flex items-center gap-2 text-sm text-text-2">
@@ -450,14 +452,19 @@ function WaitingText({ turn }: { turn: ChatTurnDto }) {
 const EVIDENCE_TONES: Record<string, Tone> = { COMPLETE: "data", PARTIAL: "attention", NOT_FOUND: "neutral" };
 const CHECK_TONES: Record<string, Tone> = { VERIFIED: "data", NOT_IN_SOURCE: "danger", SOURCE_UNAVAILABLE: "danger" };
 
-function Answer({ answer }: { answer: ChatAnswerDto }) {
+function Answer({ answer, family }: { answer: ChatAnswerDto; family: ChatFamily | null }) {
   const { t } = useTranslation();
   return (
     <article className="card flex flex-col gap-3" data-testid="chat-answer">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
         <Badge tone={EVIDENCE_TONES[answer.evidence] ?? "neutral"} data-evidence={answer.evidence}>
           {t(`chat.evidence.${answer.evidence}`)}
         </Badge>
+        {family && (
+          <span className="font-mono text-[11px] text-text-4" data-testid="chat-answer-model">
+            {t(`chat.model.name.${family}`)}
+          </span>
+        )}
       </div>
       <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-text-1">
         {answerSegments(answer.text, answer.citations).map((segment, index) =>
@@ -520,17 +527,39 @@ function Source({ citation }: { citation: ChatCitationDto }) {
   );
 }
 
-function Composer({ disabled, waiting = false, onSend, autoFocus = false }: { disabled: boolean; waiting?: boolean; onSend: (question: string) => Promise<boolean>; autoFocus?: boolean }) {
+/**
+ * The question being written with the model for it. The household's model applies unless another family is picked;
+ * the pick holds for this one question and returns to the household's model once the question is sent.
+ */
+function Composer({
+  disabled,
+  waiting = false,
+  overview,
+  onSend,
+  autoFocus = false,
+}: {
+  disabled: boolean;
+  waiting?: boolean;
+  overview: ChatOverviewDto | null;
+  onSend: (question: string, family: ChatFamily | null) => Promise<boolean>;
+  autoFocus?: boolean;
+}) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState("");
+  const [family, setFamily] = useState<ChatFamily | null>(null);
   const [sending, setSending] = useState(false);
   const question = draft.trim();
+  const families = (overview?.families ?? []) as ChatFamily[];
+  const defaultFamily = overview?.defaultFamily ?? null;
 
   const submit = async (event?: FormEvent) => {
     event?.preventDefault();
     if (!question || disabled || sending) return;
     setSending(true);
-    if (await onSend(question)) setDraft("");
+    if (await onSend(question, family)) {
+      setDraft("");
+      setFamily(null);
+    }
     setSending(false);
   };
 
@@ -558,7 +587,31 @@ function Composer({ disabled, waiting = false, onSend, autoFocus = false }: { di
         autoFocus={autoFocus}
         data-testid="chat-input"
       />
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        {families.length > 1 && (
+          <>
+            <label className="sr-only" htmlFor="chat-model">
+              {t("chat.model.label")}
+            </label>
+            <select
+              id="chat-model"
+              className="field w-auto min-w-0 flex-initial"
+              value={family ?? ""}
+              disabled={disabled || sending}
+              onChange={(event) => setFamily((event.target.value || null) as ChatFamily | null)}
+              data-testid="chat-model"
+            >
+              <option value="">{defaultFamily ? t("chat.model.default", { model: t(`chat.model.name.${defaultFamily}`) }) : t("chat.model.defaultUnknown")}</option>
+              {families
+                .filter((option) => option !== defaultFamily)
+                .map((option) => (
+                  <option key={option} value={option}>
+                    {t(`ai.family.${option}`)}
+                  </option>
+                ))}
+            </select>
+          </>
+        )}
         <Button variant="primary" type="submit" disabled={!question || disabled || sending} data-testid="chat-send">
           {t("chat.send")}
         </Button>

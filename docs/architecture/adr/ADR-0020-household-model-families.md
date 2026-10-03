@@ -56,4 +56,9 @@ models that accept one. Models outside the catalog keep the behavior they were r
   changed it last. Both members see and can change it.
 - A new family (for example a future tier) needs a code change: the enum, the database check constraint and the
   translations.
-- Chat's per-conversation override (#64) and a second provider (#35) are not part of this decision.
+- A single chat question can use another offered family than the household's chat family (#64): the composer on the
+  "Fragen" page offers the household default and the other catalog families, and the pick holds for that one question.
+  The request carries the family, never a model identifier; it is resolved and recorded with the run like the
+  household choice, so a retry keeps it, and the household choice is not changed. Each answer shows the family of the
+  run that produced it. The chat run budget still applies, so a question on Opus reaches it sooner.
+- A second provider (#35) is not part of this decision.

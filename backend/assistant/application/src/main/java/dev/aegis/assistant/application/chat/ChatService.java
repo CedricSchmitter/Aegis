@@ -1,5 +1,6 @@
 package dev.aegis.assistant.application.chat;
 
+import dev.aegis.assistant.application.api.AiOverview;
 import dev.aegis.assistant.application.api.AiRunCommands;
 import dev.aegis.assistant.application.api.AiRunQueries;
 import dev.aegis.assistant.application.api.ChatCommands;
@@ -11,12 +12,15 @@ import dev.aegis.assistant.application.api.ChatViews.ConversationSummary;
 import dev.aegis.assistant.application.api.ChatViews.ConversationView;
 import dev.aegis.assistant.application.api.ChatViews.ProgressView;
 import dev.aegis.assistant.application.api.ChatViews.TurnView;
+import dev.aegis.assistant.application.api.ModelOptionView;
 import dev.aegis.assistant.application.api.RequestAiRun;
 import dev.aegis.assistant.application.api.RunRequest;
 import dev.aegis.assistant.application.api.RunView;
 import dev.aegis.assistant.application.api.WorkloadEstimate;
+import dev.aegis.assistant.application.api.WorkloadView;
 import dev.aegis.assistant.domain.AiRun;
 import dev.aegis.assistant.domain.AiRunRepository;
+import dev.aegis.assistant.domain.ModelFamily;
 import dev.aegis.assistant.domain.RunFailure;
 import dev.aegis.assistant.domain.RunId;
 import dev.aegis.assistant.domain.RunStep;
@@ -39,6 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -76,9 +81,13 @@ public class ChatService implements ChatCommands, ChatQueries {
     public ChatOverview overview(Actor actor) {
         access.requireMember(actor);
         WorkloadEstimate estimate = runQueries.estimate(actor, Workload.CHAT.name());
+        AiOverview ai = runQueries.overview(actor);
+        String defaultFamily = ai.workloads().stream().filter(view -> view.workload().equals(Workload.CHAT.name()))
+                .map(WorkloadView::family).filter(Objects::nonNull).findFirst().orElse(null);
+        List<String> families = ai.models().stream().map(ModelOptionView::family).toList();
         List<ConversationSummary> list = conversations.findByOwner(actor.memberId(), MAX_CONVERSATIONS).stream()
                 .map(ChatService::summary).toList();
-        return new ChatOverview(estimate.refusal() == null, estimate.refusal(), list);
+        return new ChatOverview(estimate.refusal() == null, estimate.refusal(), defaultFamily, families, list);
     }
 
     @Override
@@ -116,7 +125,8 @@ public class ChatService implements ChatCommands, ChatQueries {
     }
 
     @Override
-    public ConversationView start(Actor actor, UUID conversationId, UUID turnId, String question, String locale) {
+    public ConversationView start(Actor actor, UUID conversationId, UUID turnId, String question, String locale,
+            String family) {
         access.requireMember(actor);
         requireIds(conversationId, turnId);
         String asked = Conversation.checkedQuestion(question);
@@ -130,7 +140,7 @@ public class ChatService implements ChatCommands, ChatQueries {
             }
             return view(conversation);
         }
-        RunId run = requestRun(actor, conversationId, turnId);
+        RunId run = requestRun(actor, conversationId, turnId, family);
         Conversation conversation = Conversation.start(conversationId, actor.memberId(), turnId, asked,
                 locale(locale), run, clock.instant());
         conversations.save(conversation);
@@ -138,7 +148,8 @@ public class ChatService implements ChatCommands, ChatQueries {
     }
 
     @Override
-    public ConversationView ask(Actor actor, UUID conversationId, UUID turnId, String question, String locale) {
+    public ConversationView ask(Actor actor, UUID conversationId, UUID turnId, String question, String locale,
+            String family) {
         access.requireMember(actor);
         requireIds(conversationId, turnId);
         String asked = Conversation.checkedQuestion(question);
@@ -155,7 +166,7 @@ public class ChatService implements ChatCommands, ChatQueries {
         if (!settled && latest.answer().isEmpty()) {
             throw new InvalidInputException("chat.turnActive", "The previous question is still being answered");
         }
-        RunId run = requestRun(actor, conversationId, turnId);
+        RunId run = requestRun(actor, conversationId, turnId, family);
         conversation.ask(turnId, asked, locale(locale), run, clock.instant(), settled);
         conversations.save(conversation);
         return view(conversation);
@@ -199,10 +210,10 @@ public class ChatService implements ChatCommands, ChatQueries {
         conversations.delete(conversationId);
     }
 
-    private RunId requestRun(Actor actor, UUID conversationId, UUID turnId) {
+    private RunId requestRun(Actor actor, UUID conversationId, UUID turnId, String family) {
         RunView run = requests.request(actor, new RunRequest(Workload.CHAT.name(), "chat:" + turnId, List.of(),
                 Map.of(ChatHandler.CONVERSATION, conversationId.toString(), ChatHandler.TURN, turnId.toString()),
-                false));
+                false, family));
         return new RunId(run.id());
     }
 
@@ -253,12 +264,14 @@ public class ChatService implements ChatCommands, ChatQueries {
 
     private TurnView turnView(ChatTurn turn, boolean latest) {
         List<ProgressView> progress = latest ? progress(turn.run()) : List.of();
+        Optional<AiRun> run = runs.findById(turn.run());
+        String family = run.flatMap(found -> ModelFamily.ofModel(found.model().model())).map(ModelFamily::key)
+                .orElse(null);
         if (turn.answer().isPresent()) {
             return new TurnView(turn.id(), turn.seq(), turn.question(), turn.locale().name(), turn.askedAt(),
-                    turn.run().value(), "ANSWERED", null, null, null, progress, answerView(turn.answer().get()),
+                    turn.run().value(), family, "ANSWERED", null, null, null, progress, answerView(turn.answer().get()),
                     turn.answeredAt().orElse(null));
         }
-        Optional<AiRun> run = runs.findById(turn.run());
         String state = run.map(ChatService::stateOf).orElse("FAILED");
         boolean waiting = "WAITING".equals(state);
         Instant next = waiting ? run.flatMap(AiRun::nextAttemptAt).orElse(null) : null;
@@ -267,7 +280,7 @@ public class ChatService implements ChatCommands, ChatQueries {
         String category = failure.map(found -> found.category().name()).orElse(null);
         String code = failure.map(RunFailure::code).orElse("FAILED".equals(state) ? "chat.answerMissing" : null);
         return new TurnView(turn.id(), turn.seq(), turn.question(), turn.locale().name(), turn.askedAt(),
-                turn.run().value(), state, next, category, code, progress, null, null);
+                turn.run().value(), family, state, next, category, code, progress, null, null);
     }
 
     /** A run that succeeded without storing an answer counts as failed: the member sees no answer. */

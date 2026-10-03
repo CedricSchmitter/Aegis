@@ -235,7 +235,8 @@ A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model 
 visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a
 fallback to the owner's Claude subscription through headless `claude -p` on the VM.
 The household chooses the model family (Opus, Sonnet, Haiku) per workload on the status page; all default to Sonnet
-([ADR-0020](docs/architecture/adr/ADR-0020-household-model-families.md)). The API uses the catalog model of the family,
+([ADR-0020](docs/architecture/adr/ADR-0020-household-model-families.md)). A single question on the "Fragen" page can use another
+family; the pick applies to that question only, and each answer names the family that produced it. The API uses the catalog model of the family,
 the subscription always the newest one Claude Code offers. The API has a 0.25 USD household daily budget (50 USD per
 day and 0.50 USD per run on the subscription) and one concurrent run. Uploads are classified one after another;
 once a day's limit is used up, the remaining runs wait until midnight (household time) and then continue on their

@@ -20,15 +20,23 @@ public final class ChatDtos {
     @Schema(description = "A question; the client chooses the ids so that a repeated request does not ask twice")
     public record AskQuestionRequest(UUID conversationId, UUID turnId, String question,
             @Schema(allowableValues = {"DE", "EN"}, description = "Answer language when the question's is unclear")
-            String locale) {
+            String locale,
+            @Schema(nullable = true, allowableValues = {"opus", "sonnet", "haiku"},
+                    description = "Model family for this question only; omitted uses the household's family")
+            String family) {
     }
 
     public record ChatOverviewDto(boolean available,
             @Schema(nullable = true, description = "Why a question would be refused now, for example ai.notConfigured")
-            String unavailableReason, List<ConversationSummaryDto> conversations) {
+            String unavailableReason,
+            @Schema(nullable = true, allowableValues = {"opus", "sonnet", "haiku"},
+                    description = "The household's model family for questions")
+            String defaultFamily,
+            @Schema(description = "Model families a single question can use, in a stable order")
+            List<String> families, List<ConversationSummaryDto> conversations) {
         static ChatOverviewDto from(ChatOverview overview) {
-            return new ChatOverviewDto(overview.available(), overview.unavailableReason(),
-                    overview.conversations().stream().map(ConversationSummaryDto::from).toList());
+            return new ChatOverviewDto(overview.available(), overview.unavailableReason(), overview.defaultFamily(),
+                    overview.families(), overview.conversations().stream().map(ConversationSummaryDto::from).toList());
         }
     }
 
@@ -56,13 +64,15 @@ public final class ChatDtos {
 
     public record ChatTurnDto(UUID id, int seq, String question,
             @Schema(allowableValues = {"DE", "EN"}) String locale, Instant askedAt, UUID runId,
+            @Schema(nullable = true, allowableValues = {"opus", "sonnet", "haiku"},
+                    description = "Model family of the run answering the question") String family,
             @Schema(allowableValues = {"WAITING", "WORKING", "ANSWERED", "FAILED", "CANCELLED"}) String state,
             @Schema(nullable = true) Instant nextAttemptAt, @Schema(nullable = true) String failureCategory,
             @Schema(nullable = true) String failureCode, List<ChatProgressDto> progress,
             @Schema(nullable = true) ChatAnswerDto answer, @Schema(nullable = true) Instant answeredAt) {
         static ChatTurnDto from(TurnView turn) {
             return new ChatTurnDto(turn.id(), turn.seq(), turn.question(), turn.locale(), turn.askedAt(),
-                    turn.runId(), turn.state(), turn.nextAttemptAt(), turn.failureCategory(), turn.failureCode(),
+                    turn.runId(), turn.family(), turn.state(), turn.nextAttemptAt(), turn.failureCategory(), turn.failureCode(),
                     turn.progress().stream().map(ChatProgressDto::from).toList(),
                     turn.answer() == null ? null : ChatAnswerDto.from(turn.answer()), turn.answeredAt());
         }
