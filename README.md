@@ -117,7 +117,8 @@ fi
 ```
 
 Without it, `sh ops/cloud/session.sh start` starts Docker in the session. `sh ops/cloud/session.sh stop` removes all
-containers, images, volumes and build cache and stops Docker; the container itself is discarded after the session.
+containers, images, volumes and build cache and stops Docker; the `SessionEnd` hook in `.claude/settings.json` runs it
+when a session ends, and the container itself is discarded afterwards.
 Outside a cloud session both commands do nothing.
 
 When GitHub Actions is unavailable (for example with used-up minutes), the same three jobs run for a commit on VM 102
