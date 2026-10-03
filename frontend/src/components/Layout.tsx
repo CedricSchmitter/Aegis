@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Link, NavLink } from "react-router";
 import { useTranslation } from "react-i18next";
+import { syncPushOnStart } from "../push/push";
 import { PendingShares } from "./PendingShares";
 import { Wordmark } from "./ui";
 import { AvatarMenu } from "./shell/AvatarMenu";
@@ -55,6 +56,10 @@ function HeaderAsk() {
  * context panel from 1280 px while a page fills it, and a status bar.
  */
 export function Layout({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    // Keeps this browser's push subscription registered for the signed-in member; failures only show in Settings.
+    syncPushOnStart().catch(() => undefined);
+  }, []);
   return (
     <ShellDataProvider>
       <Shell>{children}</Shell>

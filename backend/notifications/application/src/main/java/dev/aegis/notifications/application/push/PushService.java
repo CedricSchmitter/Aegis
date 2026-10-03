@@ -288,10 +288,10 @@ public class PushService implements PushSettings, PushLedger {
 
     private PushSubscription own(Actor actor, String deviceId) {
         PushSubscription subscription = subscriptions.findById(PushSubscriptionId.of(deviceId))
-                .orElseThrow(() -> new NotFoundException("push device", deviceId));
+                .orElseThrow(() -> new NotFoundException("pushDevice", deviceId));
         if (!subscription.member().equals(actor.memberId())) {
             // Another member's device is reported as missing rather than revealing it exists.
-            throw new NotFoundException("push device", deviceId);
+            throw new NotFoundException("pushDevice", deviceId);
         }
         return subscription;
     }
