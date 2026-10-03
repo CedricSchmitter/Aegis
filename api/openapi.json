@@ -2682,6 +2682,73 @@
         "required" : [ "requestedAt", "requestedBy", "state" ],
         "type" : "object"
       },
+      "PushConfigDto" : {
+        "properties" : {
+          "available" : {
+            "type" : "boolean"
+          },
+          "publicKey" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "available" ],
+        "type" : "object"
+      },
+      "PushDeviceDto" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "deviceLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "lastSentAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "state" : {
+            "enum" : [ "ACTIVE", "FAILING", "EXPIRED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "createdAt", "id", "state" ],
+        "type" : "object"
+      },
+      "PushPreferencesDto" : {
+        "properties" : {
+          "categories" : {
+            "items" : {
+              "enum" : [ "TASKS", "DEADLINES", "REVIEW", "SYSTEM" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "quietEnd" : {
+            "example" : "07:00:00",
+            "format" : "time",
+            "type" : [ "string", "null" ]
+          },
+          "quietStart" : {
+            "example" : "22:00:00",
+            "format" : "time",
+            "type" : [ "string", "null" ]
+          },
+          "showDetails" : {
+            "type" : "boolean"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "categories", "showDetails", "version" ],
+        "type" : "object"
+      },
       "RenameCategoryRequest" : {
         "properties" : {
           "expectedVersion" : {
@@ -3182,6 +3249,27 @@
         "required" : [ "expectedVersion", "subjects" ],
         "type" : "object"
       },
+      "SubscribeRequest" : {
+        "properties" : {
+          "auth" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "deviceLabel" : {
+            "type" : [ "string", "null" ]
+          },
+          "endpoint" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "p256dh" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "auth", "endpoint", "p256dh" ],
+        "type" : "object"
+      },
       "SummaryDto" : {
         "properties" : {
           "conflicts" : {
@@ -3347,6 +3435,16 @@
           }
         },
         "required" : [ "expectedVersion" ],
+        "type" : "object"
+      },
+      "TestPushResponse" : {
+        "properties" : {
+          "outcome" : {
+            "enum" : [ "SENT", "FAILED", "EXPIRED", "UNAVAILABLE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "outcome" ],
         "type" : "object"
       },
       "TextRecognitionDto" : {
@@ -6653,6 +6751,167 @@
         },
         "summary" : "State and results of a page editor operation",
         "tags" : [ "page-editor" ]
+      }
+    },
+    "/api/push/config" : {
+      "get" : {
+        "operationId" : "pushConfig",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PushConfigDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Whether pushes can be sent, and the key browsers subscribe with",
+        "tags" : [ "push" ]
+      }
+    },
+    "/api/push/devices" : {
+      "get" : {
+        "operationId" : "listPushDevices",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/PushDeviceDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The current member's devices that receive pushes",
+        "tags" : [ "push" ]
+      },
+      "post" : {
+        "operationId" : "subscribePushDevice",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SubscribeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PushDeviceDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Subscribe this browser for the current member, or renew its subscription",
+        "tags" : [ "push" ]
+      }
+    },
+    "/api/push/devices/{id}" : {
+      "delete" : {
+        "operationId" : "removePushDevice",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Stop pushes to one of the current member's devices",
+        "tags" : [ "push" ]
+      }
+    },
+    "/api/push/devices/{id}/test" : {
+      "post" : {
+        "operationId" : "sendTestPush",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TestPushResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Send a test push to one of the current member's devices",
+        "tags" : [ "push" ]
+      }
+    },
+    "/api/push/preferences" : {
+      "get" : {
+        "operationId" : "pushPreferences",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PushPreferencesDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "What is pushed to the current member's devices",
+        "tags" : [ "push" ]
+      },
+      "put" : {
+        "operationId" : "changePushPreferences",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PushPreferencesDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PushPreferencesDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Change the push preferences; a stale version is rejected with 409",
+        "tags" : [ "push" ]
       }
     },
     "/api/reviews" : {

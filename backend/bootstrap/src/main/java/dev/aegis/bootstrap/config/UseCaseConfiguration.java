@@ -100,6 +100,20 @@ import dev.aegis.identity.application.api.ProvisionMembers;
 import dev.aegis.identity.domain.MemberRepository;
 import dev.aegis.identity.domain.PasswordHasher;
 import dev.aegis.notifications.application.NoticeService;
+import dev.aegis.notifications.adapters.push.PushDispatchTask;
+import dev.aegis.notifications.application.api.PushDispatch;
+import dev.aegis.notifications.application.api.PushSettings;
+import dev.aegis.notifications.application.push.PushDispatcher;
+import dev.aegis.notifications.application.push.PushLedger;
+import dev.aegis.notifications.application.push.PushSender;
+import dev.aegis.notifications.application.push.PushServerKey;
+import dev.aegis.notifications.application.push.PushService;
+import dev.aegis.notifications.application.push.PushServiceHosts;
+import dev.aegis.notifications.application.push.PushTexts;
+import dev.aegis.notifications.application.push.RecipientLocales;
+import dev.aegis.notifications.domain.push.PushDeliveryLog;
+import dev.aegis.notifications.domain.push.PushPreferencesRepository;
+import dev.aegis.notifications.domain.push.PushSubscriptionRepository;
 import dev.aegis.notifications.application.api.ForgetNotices;
 import dev.aegis.notifications.application.api.NoticeInbox;
 import dev.aegis.notifications.application.api.PublishNotice;
@@ -153,11 +167,13 @@ import dev.aegis.portability.application.api.RestoreExport;
 import dev.aegis.portability.application.ports.ExportSerializer;
 import dev.aegis.portability.application.ports.ExportSourceOpener;
 import dev.aegis.portability.application.ports.ExportStore;
+import dev.aegis.shared.ProductLocale;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.Trash;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -620,6 +636,34 @@ public class UseCaseConfiguration {
         return TransactionalProxy.wrap(ForgetNotices.class, services.notices(), tm);
     }
 
+    record PushServices(PushService service) {
+    }
+
+    /** Web Push to the members' devices (issue #28); sending runs outside transactions between ledger steps. */
+    @Bean
+    PushServices pushServices(PushSubscriptionRepository subscriptions, PushPreferencesRepository preferences,
+            PushDeliveryLog deliveries, NoticeRepository notices, PushServerKey serverKey, PushTexts texts,
+            MemberDirectory members, HouseholdAccess access, Clock clock,
+            @Value("${aegis.push.catch-up-window:24h}") Duration catchUpWindow,
+            @Value("${aegis.push.allowed-hosts:}") List<String> allowedHosts,
+            @Value("${aegis.household.zone:Europe/Berlin}") String zone) {
+        RecipientLocales locales = member -> members.findMember(member).map(MemberSummary::locale)
+                .orElse(ProductLocale.defaultLocale());
+        PushServiceHosts hosts = allowedHosts.isEmpty() ? PushServiceHosts.DEFAULT : new PushServiceHosts(allowedHosts);
+        return new PushServices(new PushService(subscriptions, preferences, deliveries, notices, serverKey, texts,
+                locales, hosts, access, catchUpWindow, ZoneId.of(zone), clock));
+    }
+
+    @Bean
+    PushSettings pushSettings(PushServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(PushSettings.class, services.service(), tm);
+    }
+
+    @Bean
+    PushDispatch pushDispatch(PushServices services, PushSender sender, PlatformTransactionManager tm) {
+        return new PushDispatcher(TransactionalProxy.wrap(PushLedger.class, services.service(), tm), sender);
+    }
+
     record ReviewServices(ReviewService service) {
     }
 
@@ -657,9 +701,9 @@ public class UseCaseConfiguration {
      */
     @Bean
     SystemStatusQuery systemStatusQuery(List<HealthCheckSource> sources, ProcessingOverviewSource processing,
-            ReviewReconciliationTask reviewReconciliation, JobHealthWatchTask watchTask,
+            ReviewReconciliationTask reviewReconciliation, PushDispatchTask pushDispatch, JobHealthWatchTask watchTask,
             RecurringJobStateSource jobStates, StorageHealthService storage, HouseholdAccess access, Clock clock) {
-        List<RecurringJob> recurringJobs = new ArrayList<>(householdJobs(reviewReconciliation));
+        List<RecurringJob> recurringJobs = new ArrayList<>(householdJobs(reviewReconciliation, pushDispatch));
         recurringJobs.add(new RecurringJob(JobHealthWatchTask.NAME, watchTask.interval()));
         return new IntegrationStatusService(sources, processing, recurringJobs, jobStates, storage, access, clock);
     }
@@ -689,16 +733,19 @@ public class UseCaseConfiguration {
      * others.
      */
     @Bean
-    JobHealthWatch jobHealthWatch(ReviewReconciliationTask reviewReconciliation, RecurringJobStateSource jobStates,
-            JobIncidentStore incidents, MemberDirectory members, PublishNotice notices, Clock clock) {
-        return new JobHealthWatchService(householdJobs(reviewReconciliation), jobStates, incidents, members, notices,
-                clock);
+    JobHealthWatch jobHealthWatch(ReviewReconciliationTask reviewReconciliation, PushDispatchTask pushDispatch,
+            RecurringJobStateSource jobStates, JobIncidentStore incidents, MemberDirectory members,
+            PublishNotice notices, Clock clock) {
+        return new JobHealthWatchService(householdJobs(reviewReconciliation, pushDispatch), jobStates, incidents,
+                members, notices, clock);
     }
 
-    private static List<RecurringJob> householdJobs(ReviewReconciliationTask reviewReconciliation) {
+    private static List<RecurringJob> householdJobs(ReviewReconciliationTask reviewReconciliation,
+            PushDispatchTask pushDispatch) {
         return List.of(new RecurringJob(ReviewReconciliationTask.NAME, reviewReconciliation.interval()),
                 new RecurringJob(ArchiveTextCheckTask.NAME, ArchiveTextCheckTask.INTERVAL),
-                new RecurringJob(ReconciliationTask.NAME, ReconciliationTask.INTERVAL));
+                new RecurringJob(ReconciliationTask.NAME, ReconciliationTask.INTERVAL),
+                new RecurringJob(PushDispatchTask.NAME, pushDispatch.interval()));
     }
 
     record PortabilityServices(ExportService exports) {

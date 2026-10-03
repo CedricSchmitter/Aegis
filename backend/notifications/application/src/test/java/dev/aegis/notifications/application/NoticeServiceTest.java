@@ -50,6 +50,12 @@ class NoticeServiceTest {
         }
 
         @Override
+        public List<Notice> findUnreadCreatedSince(MemberId recipient, Instant since) {
+            return store.values().stream().filter(n -> n.recipient().equals(recipient) && n.isUnread()
+                    && !n.createdAt().isBefore(since)).sorted(Comparator.comparing(Notice::createdAt)).toList();
+        }
+
+        @Override
         public Optional<Notice> findByDedupKey(MemberId recipient, String dedupKey) {
             return store.values().stream().filter(n -> n.recipient().equals(recipient)
                     && n.dedupKey().equals(dedupKey)).findFirst();

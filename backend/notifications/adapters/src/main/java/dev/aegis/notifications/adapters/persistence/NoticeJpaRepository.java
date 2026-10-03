@@ -16,6 +16,9 @@ interface NoticeJpaRepository extends JpaRepository<NoticeEntity, UUID> {
     List<NoticeEntity> findByRecipientIdAndKindInAndReadAtIsNullOrderByCreatedAtDesc(UUID recipientId,
             Collection<String> kinds);
 
+    List<NoticeEntity> findByRecipientIdAndReadAtIsNullAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(UUID recipientId,
+            Instant since);
+
     Optional<NoticeEntity> findFirstByRecipientIdAndDedupKey(UUID recipientId, String dedupKey);
 
     long countByRecipientIdAndKindInAndReadAtIsNull(UUID recipientId, Collection<String> kinds);
