@@ -1,6 +1,6 @@
 # Aegis promo video
 
-Tooling for the Aegis promo videos: a 56-second cut (`Promo`) and a calm 2-minute cut (`Calm`). It is not part of the app: nothing here is built, tested or deployed
+Tooling for the Aegis promo videos: a 56-second cut (`Promo`), a 76-second cut in the v1 style that shows every feature (`V11`) and a calm 2-minute cut (`Calm`). It is not part of the app: nothing here is built, tested or deployed
 with Aegis, and the app code is unchanged.
 
 The video shows the real frontend (`frontend/dist`) running against a mocked API with a fictional household
@@ -18,6 +18,8 @@ node record/record.mjs           # scenes -> recordings/<scene>.mp4 (takes a few
 cp recordings/*.mp4 public/
 python3 music/synth.py           # soundtrack -> public/soundtrack.wav (needs numpy and scipy)
 npm run render                   # -> out/aegis-promo.mp4
+python3 music/synth_v11.py       # v1.1 soundtrack -> public/soundtrack-v11.wav
+npm run render:v11               # -> out/aegis-promo-v11.mp4
 python3 music/synth_calm.py      # calm soundtrack -> public/soundtrack-calm.wav
 npm run render:calm              # -> out/aegis-promo-calm.mp4
 ```
