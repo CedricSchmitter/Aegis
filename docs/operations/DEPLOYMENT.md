@@ -194,8 +194,8 @@ request and never prints the key. Run it again to rotate the key; revoke the old
 ### Subscription fallback through `claude -p`
 
 Without an API key file, runs requested by the members in `AEGIS_AI_SUBSCRIPTION_MEMBERS` (in
-`/srv/aegis/deploy/.env`, currently `cedric`) use the owner's Claude subscription. The subscription is personal, so
-runs of other members, including automatic classification of their uploads, are refused as
+`/srv/aegis/deploy/.env`, currently `cedric` and `lisa`) use the owner's Claude subscription. The subscription is
+personal, so runs of other members, including automatic classification of their uploads, are refused as
 `ai.provider.memberNotAllowed`. Their uploads are shown as "not classified" without a failure card or notice; a
 listed member can start the classification with "Classify". Installing an API key switches all new runs back to the
 API without a restart.
