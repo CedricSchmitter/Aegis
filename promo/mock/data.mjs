@@ -87,15 +87,16 @@ export const pathOf = (categoryId) => {
 
 /** Each entry also names the page template the image renderer uses. */
 export const documentSeeds = [
-  { id: "d-strom-vertrag", title: "Stromvertrag Ökostrom Plus", folder: "c-strom", labels: ["l-vertrag", "l-stadtwerke", "l-strom", "l-wichtig"], days: -410, by: MARA, pages: 2 },
+  { id: "d-strom-vertrag", text: "Kündigungsfrist Kündigung Laufzeit", title: "Stromvertrag Ökostrom Plus", folder: "c-strom", labels: ["l-vertrag", "l-stadtwerke", "l-strom", "l-wichtig"], days: -410, by: MARA, pages: 2 },
   { id: "d-strom-abrechnung", title: "Jahresabrechnung Strom 2025", folder: "c-strom", labels: ["l-rechnung", "l-stadtwerke", "l-strom"], days: -38, by: JONAS, pages: 1 },
-  { id: "d-novanet", title: "Glasfaser-Vertrag NovaNet 1000", folder: "c-internet", labels: ["l-vertrag", "l-novanet", "l-internet"], days: -220, by: JONAS, pages: 1 },
-  { id: "d-irongrid", title: "Mitgliedschaft Iron Grid Fitness", folder: "c-freizeit", labels: ["l-vertrag", "l-irongrid", "l-sport"], days: -350, by: MARA, pages: 1 },
-  { id: "d-kfz-police", title: "Kfz-Police Vulkan 2026", folder: "c-kfz", labels: ["l-police", "l-vulkan", "l-kfz"], days: -280, by: JONAS, pages: 1 },
+  { id: "d-novanet", text: "Kündigungsfrist Kündigung Laufzeit", title: "Glasfaser-Vertrag NovaNet 1000", folder: "c-internet", labels: ["l-vertrag", "l-novanet", "l-internet"], days: -220, by: JONAS, pages: 1 },
+  { id: "d-irongrid", text: "Kündigungsfrist Kündigung Laufzeit", title: "Mitgliedschaft Iron Grid Fitness", folder: "c-freizeit", labels: ["l-vertrag", "l-irongrid", "l-sport"], days: -350, by: MARA, pages: 1 },
+  { id: "d-kfz-police", text: "Kündigungsfrist Kündigung Laufzeit", title: "Kfz-Police Vulkan 2026", folder: "c-kfz", labels: ["l-police", "l-vulkan", "l-kfz"], days: -280, by: JONAS, pages: 1 },
   { id: "d-steuer", title: "Steuerbescheid 2024", folder: "c-steuer", labels: ["l-bescheid", "l-finanzamt", "l-steuer"], days: -95, by: MARA, pages: 1 },
   { id: "d-heizung", title: "Wartungsangebot Wärmepumpe", folder: "c-handwerker", labels: ["l-brief", "l-klima", "l-heizung"], days: -12, by: MARA, pages: 1 },
   { id: "d-nebenkosten", title: "Grundsteuerbescheid 2026", folder: "c-nebenkosten", labels: ["l-bescheid", "l-finanzamt"], days: -150, by: JONAS, pages: 1 },
   { id: "d-novanet-rechnung", title: "Rechnung NovaNet September", folder: "c-internet", labels: ["l-rechnung", "l-novanet", "l-internet"], days: -4, by: JONAS, pages: 1 },
+  { id: "d-post", text: "Preisanpassung Sonderkündigung", title: "Scan Briefkasten 02.10.", folder: null, labels: [], days: -0.2, by: JONAS, pages: 3, pageSizes: [[595, 842], [842, 595], [595, 842]] },
   { id: "d-zahnarzt", title: "Heil- und Kostenplan Zahnarzt", folder: "c-gesundheit", labels: ["l-brief"], days: -21, by: MARA, pages: 1 },
 ];
 

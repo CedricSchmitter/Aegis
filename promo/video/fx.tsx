@@ -52,9 +52,11 @@ const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 export const fade = (frame: number, from: number, to: number, a = 0, b = 1) => interpolate(frame, [from, to], [a, b], clamp);
 
 /** Neon perspective grid floor with a horizon glow; it scrolls towards the viewer. */
-export function Background({ hue = C.cyan, intensity = 1 }: { hue?: string; intensity?: number }) {
+export function Background({ hue = C.cyan, intensity: base = 1 }: { hue?: string; intensity?: number }) {
   const frame = useCurrentFrame();
-  const offset = (frame * 4) % 80;
+  const beat = useBeat();
+  const intensity = base * (0.8 + 0.45 * beat);
+  const offset = (frame * 6) % 80;
   return (
     <AbsoluteFill style={{ background: C.void, overflow: "hidden" }}>
       <AbsoluteFill
@@ -401,5 +403,223 @@ export function Tap({ at, x, y }: { at: number; x: number; y: number }) {
         opacity: 1 - t / 18,
       }}
     />
+  );
+}
+
+// ------------------------------------------------------------------ v2: beat, camera, kinetic type, transitions
+
+/** Kick drum envelope (1 on the beat, decaying) in the sections with drums; 120 BPM, so a beat every 15 frames. */
+export function useBeat(offset = 0) {
+  const frame = useCurrentFrame() + offset;
+  const seconds = frame / 30;
+  const groove = (seconds >= 8 && seconds < 24) || (seconds >= 28 && seconds < 48);
+  const half = seconds >= 24 && seconds < 28;
+  if (!groove && !half) return 0;
+  const period = half ? 30 : 15;
+  return Math.exp(-(frame % period) / 3.5);
+}
+
+/** Keyframed camera move: each key names a frame and the transform reached there, eased in between. */
+export interface CameraKey {
+  f: number;
+  scale?: number;
+  x?: number;
+  y?: number;
+  rotate?: number;
+  rotateY?: number;
+}
+export function Camera({ keys, children, origin = "50% 50%" }: { keys: CameraKey[]; children: ReactNode; origin?: string }) {
+  const frame = useCurrentFrame();
+  const value = (prop: keyof Omit<CameraKey, "f">, fallback: number) => {
+    const frames = keys.map((k) => k.f);
+    const values = keys.map((k) => k[prop] ?? fallback);
+    if (keys.length === 1) return values[0];
+    return interpolate(frame, frames, values, { ...clamp, easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) });
+  };
+  return (
+    <AbsoluteFill
+      style={{
+        transformOrigin: origin,
+        transform: `perspective(1800px) translate(${value("x", 0)}px, ${value("y", 0)}px) scale(${value("scale", 1)}) rotate(${value("rotate", 0)}deg) rotateY(${value("rotateY", 0)}deg)`,
+      }}
+    >
+      {children}
+    </AbsoluteFill>
+  );
+}
+
+export type EnterKind = "stripes" | "whip" | "zoom" | "slice";
+
+/** How a shot comes in on its cut: stripes, a whip pan, a zoom through or vertical slices. */
+export function Enter({ kind, children, length = 9 }: { kind: EnterKind; children: ReactNode; length?: number }) {
+  const frame = useCurrentFrame();
+  const p = interpolate(frame, [0, length], [0, 1], { ...clamp, easing: (t) => 1 - Math.pow(1 - t, 3) });
+  if (p >= 1) return <AbsoluteFill>{children}</AbsoluteFill>;
+  let style: CSSProperties = {};
+  if (kind === "stripes") {
+    const band = 36;
+    const open = p * band;
+    const mask = `repeating-linear-gradient(0deg, black 0px, black ${open}px, transparent ${open}px, transparent ${band}px)`;
+    style = { maskImage: mask, WebkitMaskImage: mask, transform: `translateX(${(1 - p) * 60}px)` };
+  } else if (kind === "slice") {
+    const band = 60;
+    const open = p * band;
+    const mask = `repeating-linear-gradient(90deg, black 0px, black ${open}px, transparent ${open}px, transparent ${band}px)`;
+    style = { maskImage: mask, WebkitMaskImage: mask, transform: `translateY(${(1 - p) * -40}px)` };
+  } else if (kind === "whip") {
+    style = { transform: `translateX(${(1 - p) * 1400}px) skewX(${(1 - p) * -18}deg)`, filter: `blur(${(1 - p) * 18}px)` };
+  } else {
+    style = { transform: `scale(${1 + (1 - p) * 0.5})`, filter: `blur(${(1 - p) * 14}px) brightness(${1 + (1 - p) * 1.5})`, opacity: p };
+  }
+  return <AbsoluteFill style={style}>{children}</AbsoluteFill>;
+}
+
+/** Letters slam in one after another, overshooting from large and blurred. */
+export function SlamText({ text, start = 0, stagger = 1.6, style }: { text: string; start?: number; stagger?: number; style?: CSSProperties }) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  return (
+    <span style={{ display: "inline-flex", whiteSpace: "pre", ...style }}>
+      {[...text].map((ch, i) => {
+        const t = frame - start - i * stagger;
+        const s = spring({ frame: t, fps, config: { damping: 11, stiffness: 220 } });
+        return (
+          <span
+            key={i}
+            style={{
+              display: "inline-block",
+              opacity: t < 0 ? 0 : Math.min(1, s * 1.5),
+              transform: `scale(${interpolate(s, [0, 1], [2.6, 1])}) translateY(${interpolate(s, [0, 1], [-30, 0])}px)`,
+              filter: `blur(${interpolate(s, [0, 1], [10, 0], clamp)}px)`,
+            }}
+          >
+            {ch}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+/** A label that points at something on screen: a dot, a line drawing out, then a decoding chip. */
+export function Callout({
+  at,
+  x,
+  y,
+  dx = 160,
+  dy = -70,
+  text,
+  color = C.yellow,
+}: {
+  at: number;
+  x: number;
+  y: number;
+  dx?: number;
+  dy?: number;
+  text: string;
+  color?: string;
+}) {
+  const frame = useCurrentFrame();
+  const t = frame - at;
+  if (t < 0) return null;
+  const line = interpolate(t, [0, 7], [0, 1], clamp);
+  const len = Math.hypot(dx, dy);
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  return (
+    <div style={{ position: "absolute", left: x, top: y, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", left: -9, top: -9, width: 18, height: 18, borderRadius: 9, border: `3px solid ${color}`, boxShadow: `0 0 14px ${color}`, transform: `scale(${interpolate(t, [0, 5], [2.5, 1], clamp)})` }} />
+      <div style={{ position: "absolute", left: 0, top: -1.5, width: len * line, height: 3, background: color, boxShadow: `0 0 10px ${color}`, transformOrigin: "0 50%", transform: `rotate(${angle}deg)` }} />
+      {t > 6 && (
+        <div
+          style={{
+            position: "absolute",
+            left: dx + (dx >= 0 ? 0 : -10),
+            top: dy - 22,
+            transform: dx >= 0 ? undefined : "translateX(-100%)",
+            background: `${C.void}ee`,
+            border: `2px solid ${color}`,
+            boxShadow: `0 0 20px ${color}66`,
+            padding: "8px 16px",
+            fontFamily: MONO,
+            fontSize: 24,
+            letterSpacing: 3,
+            color,
+            whiteSpace: "nowrap",
+            clipPath: "polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))",
+          }}
+        >
+          <DecodeText text={text} start={at + 6} speed={0.5} split={false} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Rotating dashed rings, a targeting reticle behind a device or logo. */
+export function Rings({ x, y, size = 900, color = C.cyan, opacity = 0.5 }: { x: number; y: number; size?: number; color?: string; opacity?: number }) {
+  const frame = useCurrentFrame();
+  const beat = useBeat();
+  const ring = (r: number, dash: string, speed: number, width: number) => (
+    <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={width} strokeDasharray={dash} transform={`rotate(${frame * speed} ${size / 2} ${size / 2})`} />
+  );
+  return (
+    <svg width={size} height={size} style={{ position: "absolute", left: x - size / 2, top: y - size / 2, opacity: opacity * (0.75 + 0.25 * beat), transform: `scale(${1 + beat * 0.03})` }}>
+      {ring(size * 0.48, "4 14", 0.4, 2)}
+      {ring(size * 0.42, "120 40 10 40", -0.7, 3)}
+      {ring(size * 0.35, "2 8", 1.2, 6)}
+      {ring(size * 0.3, "300 600", -1.8, 2)}
+    </svg>
+  );
+}
+
+/** A bright diagonal sweep over a device screen. */
+export function Sweep({ at, length = 18 }: { at: number; length?: number }) {
+  const frame = useCurrentFrame();
+  const t = frame - at;
+  if (t < 0 || t > length) return null;
+  const pos = interpolate(t, [0, length], [-60, 160]);
+  return (
+    <AbsoluteFill
+      style={{
+        pointerEvents: "none",
+        background: `linear-gradient(115deg, transparent ${pos - 20}%, rgba(255,255,255,.22) ${pos}%, transparent ${pos + 12}%)`,
+        mixBlendMode: "screen",
+      }}
+    />
+  );
+}
+
+/** Hex codes drifting upwards in the background. */
+export function DataRain({ count = 26, color = C.cyan }: { count?: number; color?: string }) {
+  const frame = useCurrentFrame();
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {Array.from({ length: count }, (_, i) => {
+        const x = random(`dx${i}`) * 1920;
+        const speed = 1 + random(`ds${i}`) * 3;
+        const y = 1100 - ((frame * speed + random(`dy${i}`) * 1200) % 1300);
+        const code = Math.floor(random(`dc${i}${Math.floor(frame / 6)}`) * 0xffffff).toString(16).toUpperCase().padStart(6, "0");
+        return (
+          <div key={i} style={{ position: "absolute", left: x, top: y, fontFamily: MONO, fontSize: 16, color, opacity: 0.18 + random(`do${i}`) * 0.2, letterSpacing: 2 }}>
+            0x{code}
+          </div>
+        );
+      })}
+    </AbsoluteFill>
+  );
+}
+
+/** A small feature label that sits in a corner of a montage shot. */
+export function Tag({ text, start = 0, color = C.yellow }: { text: string; start?: number; color?: string }) {
+  const frame = useCurrentFrame();
+  const t = frame - start;
+  const w = interpolate(t, [0, 6], [0, 1], { ...clamp, easing: (v) => 1 - Math.pow(1 - v, 3) });
+  return (
+    <div style={{ position: "absolute", left: 120, bottom: 120, display: "flex", alignItems: "center", gap: 18 }}>
+      <div style={{ width: 14, height: 70, background: color, boxShadow: `0 0 20px ${color}`, transform: `scaleY(${w})` }} />
+      <div style={{ overflow: "hidden", width: `${w * 100}%` }}>
+        <SlamText text={text} start={start + 2} stagger={0.8} style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 76, color: C.text, letterSpacing: 4, textShadow: `0 0 30px ${C.void}` }} />
+      </div>
+    </div>
   );
 }

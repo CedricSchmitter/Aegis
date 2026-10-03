@@ -250,6 +250,84 @@ const SCENES = {
       await pause(page, 3500);
     }),
 
+  // The page editor on the phone: a mailbox scan with two letters is split, a sideways page turned, both renamed.
+  "phone-pages": (b) =>
+    scene(b, "phone-pages", PHONE, async (page, start) => {
+      await page.goto(`${BASE}/documents/d-post`);
+      await page.getByTestId("edit-pages").waitFor();
+      await pause(page, 500);
+      await start();
+      await pause(page, 600);
+      await page.getByTestId("edit-pages").tap();
+      await page.getByTestId("page-edit-split").first().waitFor();
+      await pause(page, 900);
+      await scroll(page, 380, 600);
+      await pause(page, 500);
+      await page.getByTestId("page-edit-split").first().tap();
+      await pause(page, 900);
+      const second = page.getByTestId("page-edit-output").nth(1);
+      await second.getByTestId("page-edit-rotate").first().scrollIntoViewIfNeeded();
+      await pause(page, 500);
+      await second.getByTestId("page-edit-rotate").first().tap();
+      await pause(page, 900);
+      const titles = page.getByTestId("page-edit-title");
+      await titles.nth(1).scrollIntoViewIfNeeded();
+      await titles.nth(1).fill("");
+      await typeSlowly(titles.nth(1), "Rechnung Zahnarzt", 35);
+      await pause(page, 500);
+      await page.getByTestId("page-edit-submit").scrollIntoViewIfNeeded();
+      await pause(page, 400);
+      await page.getByTestId("page-edit-submit").tap();
+      await page.getByText("Fertig: 2 neue Dokumente").waitFor({ timeout: 180000 });
+      await pause(page, 2500);
+    }),
+
+  // Full-text search from the header on the desktop.
+  "desk-search": (b) =>
+    scene(b, "desk-search", DESKTOP, async (page, start) => {
+      await page.goto(`${BASE}/today`);
+      await page.getByText("Iron Grid Fitness").first().waitFor();
+      await page.mouse.move(800, 500);
+      await pause(page, 400);
+      await start();
+      await pause(page, 300);
+      const search = page.getByTestId("header-search").locator("input");
+      await glideClick(page, search, { steps: 18, delay: 150 });
+      await typeSlowly(search, "Kündigung", 55);
+      await pause(page, 300);
+      await search.press("Enter");
+      await page.getByText("Glasfaser-Vertrag NovaNet 1000").first().waitFor();
+      await pause(page, 2500);
+    }),
+
+  // Switching the colour palette in the settings.
+  "desk-theme": (b) =>
+    scene(b, "desk-theme", DESKTOP, async (page, start) => {
+      await page.goto(`${BASE}/settings`);
+      await page.getByTestId("appearance-settings").waitFor();
+      await page.getByTestId("appearance-settings").scrollIntoViewIfNeeded();
+      await page.mouse.move(900, 500);
+      await pause(page, 400);
+      await start();
+      await pause(page, 400);
+      for (const name of ["Corpo", "Nomad", "Streetkid"]) {
+        await glideClick(page, page.getByTestId("appearance-settings").getByText(name, { exact: true }), { steps: 14, delay: 150 });
+        await pause(page, 1300);
+      }
+    }),
+
+  // Status: archive, AI, backup and disks at a glance.
+  "desk-status": (b) =>
+    scene(b, "desk-status", DESKTOP, async (page, start) => {
+      await page.goto(`${BASE}/status`);
+      await page.mouse.move(900, 500);
+      await pause(page, 1200);
+      await start();
+      await pause(page, 1200);
+      await scroll(page, 500, 900);
+      await pause(page, 1500);
+    }),
+
   // Documents on the desktop with the context panel.
   "desk-documents": (b) =>
     scene(b, "desk-documents", DESKTOP, async (page, start) => {

@@ -50,6 +50,10 @@ const pages = {
   "d-heizung-0": letter({ sender: "Kälte & Klima Brandt", color: "#0277bd", logo: "Meisterbetrieb seit 1998", subject: "Angebot Jahreswartung Wärmepumpe", date: "21. September 2026", ref: "Angebot A-2026-311", body: ["Sehr geehrte Familie Berger,", "gern führen wir die jährliche Wartung Ihrer Luft-Wasser-Wärmepumpe durch. Terminvorschlag: 05.10.2026, 9 Uhr."], table: [["Wartungspauschale", "189,00 €"], ["Anfahrt", "29,00 €"], ["Gesamt", "218,00 €"]] }),
   "d-nebenkosten-0": letter({ sender: "Stadt Lindenau", color: "#455a64", logo: "Steueramt", subject: "Grundsteuerbescheid 2026", date: "6. Mai 2026", ref: "Aktenzeichen GS-12-0441", body: ["Für das Grundstück Lindenweg 12 wird die Grundsteuer festgesetzt."], table: [["Jahresbetrag", "486,00 €"], ["Fällig je Quartal", "121,50 €"]] }),
   "d-zahnarzt-0": letter({ sender: "Zahnarztpraxis Dr. Okafor", color: "#00897b", logo: "Lindenau Mitte", subject: "Heil- und Kostenplan", date: "12. September 2026", ref: "Patientin: Mara Berger", body: ["Bitte reichen Sie diesen Plan vor Behandlungsbeginn bei Ihrer Krankenkasse ein."], table: [["Kassenanteil (geschätzt)", "412,00 €"], ["Eigenanteil (geschätzt)", "688,00 €"]] }),
+  // A scan of the mailbox with two letters in one PDF, the second one fed in sideways: the page editor scene.
+  "d-post-0": letter({ sender: "Stadtwerke Lindenau", color: "#0a7d5a", logo: "Energie für die Region", subject: "Preisanpassung zum 01.01.2027", date: "29. September 2026", ref: "Vertrag 7781-204", body: ["Sehr geehrte Familie Berger,", "zum 01.01.2027 ändert sich der Arbeitspreis Ihres Tarifs „Ökostrom Plus“ von 31,80 ct/kWh auf 33,40 ct/kWh.", "Sie haben ein Sonderkündigungsrecht zum Zeitpunkt der Preisänderung."], table: [["Arbeitspreis bisher", "31,80 ct/kWh"], ["Arbeitspreis neu", "33,40 ct/kWh"]] }),
+  "d-post-1": letter({ sender: "Zahnarztpraxis Dr. Okafor", color: "#00897b", logo: "Lindenau Mitte", subject: "Rechnung Nr. 2026-1187", date: "30. September 2026", ref: "Patientin: Mara Berger", body: ["Für die Behandlung vom 24.09.2026 berechnen wir:"], table: [["Professionelle Zahnreinigung", "96,00 €"], ["Füllung (Komposit)", "142,50 €"], ["Gesamt", "238,50 €"]] }),
+  "d-post-2": letter({ sender: "Zahnarztpraxis Dr. Okafor", color: "#00897b", logo: "Lindenau Mitte", subject: "Zahlungshinweise", date: "30. September 2026", ref: "Rechnung Nr. 2026-1187 · Seite 2", body: ["Bitte überweisen Sie den Betrag innerhalb von 14 Tagen.", "IBAN DE00 0000 0000 0000 0000 00 · Verwendungszweck 2026-1187"] }),
 };
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
@@ -58,6 +62,12 @@ for (const [name, html] of Object.entries(pages)) {
   await page.setContent(html);
   await page.screenshot({ path: `${out}${name}.png` });
 }
+// The second letter went through the scanner sideways.
+await page.setViewportSize({ width: 1754, height: 1240 });
+await page.setContent(`<html><body style="margin:0;width:1754px;height:1240px;overflow:hidden;background:#fff">
+  <img src="data:image/png;base64,${(await readFile(`${out}d-post-1.png`)).toString("base64")}"
+    style="position:absolute;left:257px;top:-257px;transform:rotate(-90deg)"></body></html>`);
+await page.screenshot({ path: `${out}d-post-1.png` });
 
 // A phone photo of the new letter: on a dark desk, slightly rotated, under a cyan desk lamp.
 const photo = await browser.newPage({ viewport: { width: 1500, height: 2000 } });

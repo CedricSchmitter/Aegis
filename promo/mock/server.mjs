@@ -378,10 +378,15 @@ const routes = [
     /^\/api\/documents$/,
     (_m, url) => {
       let items = allDocuments();
-      const folder = url.searchParams.get("categoryId");
+      const folder = url.searchParams.get("category");
       if (folder) items = items.filter((doc) => doc.classification.path.some((step) => step.id === folder));
-      const q = url.searchParams.get("q");
-      if (q) items = items.filter((doc) => doc.title.toLowerCase().includes(q.toLowerCase()));
+      const q = url.searchParams.get("query");
+      if (q) {
+        // Titles, labels and a few words "from the text", like the archive's full-text search.
+        const words = Object.fromEntries(D.documentSeeds.map((seed) => [seed.id, seed.text ?? ""]));
+        const haystack = (doc) => [doc.title, words[doc.id] ?? "", ...doc.classification.labels.map((l) => l.name)].join(" ").toLowerCase();
+        items = items.filter((doc) => haystack(doc).includes(q.toLowerCase()));
+      }
       return ok({
         items,
         page: 0,
@@ -400,7 +405,10 @@ const routes = [
     /^\/api\/documents\/([^/]+)\/pages$/,
     (m) => {
       const seed = D.documentSeeds.find((d) => d.id === m[1]);
-      const pages = Array.from({ length: seed?.pages ?? 1 }, (_, index) => ({ index, width: 595, height: 842 }));
+      const pages = Array.from({ length: seed?.pages ?? 1 }, (_, index) => {
+        const [width, height] = seed?.pageSizes?.[index] ?? [595, 842];
+        return { index, width, height };
+      });
       return ok({ documentId: m[1], pages, sourceKind: "PDF", warnings: [], refusal: null });
     },
   ],
@@ -461,8 +469,44 @@ const routes = [
       return ok({ document: uploadedDocument(upload), duplicate: false });
     },
   ],
+  [
+    "POST",
+    /^\/api\/page-edits$/,
+    () => {
+      state.pageEdit = { id: "pe-1", at: Date.now() };
+      return ok(pageEditDto());
+    },
+  ],
+  ["GET", /^\/api\/page-edits\/([^/]+)$/, () => ok(pageEditDto())],
+  ["PUT", /^\/api\/members\/me\/appearance$/, (_m, _url, body) => ok(body)],
+  [
+    "PUT",
+    /^\/api\/members\/me\/locale$/,
+    (_m, _url, body) => {
+      state.me = { ...state.me, locale: body.locale };
+      return ok(state.me);
+    },
+  ],
   ["POST", /^\/__promo\/reset$/, (_m, url) => ((slow = Number(url.searchParams.get("slow") ?? 1)), reset(), ok({}))],
 ];
+
+function pageEditDto() {
+  const done = elapsed(state.pageEdit.at) > 2500;
+  return {
+    id: state.pageEdit.id,
+    state: done ? "COMPLETED" : "REQUESTED",
+    requestedAt: new Date(state.pageEdit.at).toISOString(),
+    requestedBy: state.me.id,
+    finishedAt: done ? D.iso(D.now()) : null,
+    failureCode: null,
+    results: done
+      ? [
+          { output: 0, documentId: "d-strom-preis", title: "Preisanpassung Stadtwerke 2027", existing: false, trashed: false },
+          { output: 1, documentId: "d-zahnarzt-rechnung", title: "Rechnung Zahnarzt 2026-1187", existing: false, trashed: false },
+        ]
+      : [],
+  };
+}
 
 function statusDto() {
   const at = D.iso(D.daysFromNow(-0.01));

@@ -20,7 +20,20 @@ python3 music/synth.py           # soundtrack -> public/soundtrack.wav (needs nu
 npm run render                   # -> out/aegis-promo.mp4
 ```
 
-`npm run studio` opens the Remotion editor for timing work. Cut points live in `video/timeline.ts`.
+`npm run studio` opens the Remotion editor for timing work. Cut points live in `video/timeline.ts`; `npm run still --
+out/x.png --frame=N` renders a single frame for checking.
+
+## Scenes
+
+`record/record.mjs` records these scenes; `video/Promo.tsx` cuts them to the beat of the soundtrack:
+
+- `phone-upload`: photo upload, storage, OCR and automatic classification on the phone
+- `phone-pages`: the page editor splitting, rotating and reordering a scanned letter
+- `desk-today`, `phone-today`: the Today view with contract deadlines and tasks
+- `desk-chat`, `phone-chat`: a question to the assistant answered with cited sources
+- `desk-search`, `desk-theme`, `desk-documents`: full-text search, color themes, folders and labels
+
+`desk-status` is recorded but not used in the cut.
 
 ## How the recordings stay smooth
 

@@ -302,8 +302,64 @@ place(fx, riser(4.0) * 0.5, 4.0)
 place(fx, riser(4.0) * 0.6, 24.0)
 for when in (8.0, 28.0, 48.0):
     place(fx, impact() * (1.0 if when != 48.0 else 1.2), when)
-for when in (16.0, 20.0, 36.0, 40.0, 44.0):
-    place(fx, glitch(), when - 0.25)
+# v2 edit: the cuts land every one to two seconds, so the effects follow them.
+for when in (16.0, 18.0, 22.0, 36.0, 38.0, 39.0, 40.0, 41.0, 42.0, 45.0):
+    place(fx, glitch(0.18), when - 0.18)
+
+
+def whoosh(seconds=0.45):
+    """A noise sweep that rises into a cut."""
+    t = t_axis(seconds)
+    noise = rng.standard_normal(len(t))
+    out = np.zeros(len(t))
+    block = 512
+    for i in range(0, len(t), block):
+        lo = 400 + 7000 * (t[i] / seconds) ** 2
+        out[i : i + block] = bandpass(noise[i : i + block], lo, min(lo * 2.5, 20000))
+    return out * (t / seconds) ** 1.5 * 0.7
+
+
+def hit():
+    """Short accent for the intro words: a sub thump and a bright click."""
+    t = t_axis(0.3)
+    thump = np.sin(2 * np.pi * np.cumsum(55 + 90 * np.exp(-t * 30)) / SR) * np.exp(-t * 12)
+    click = highpass(rng.standard_normal(len(t)), 3000) * np.exp(-t * 90) * 0.5
+    return np.tanh(1.4 * thump) + click
+
+
+def crash():
+    t = t_axis(1.6)
+    return highpass(rng.standard_normal(len(t)), 5000, order=3) * np.exp(-t * 2.8) * 0.4
+
+
+for when in (10.0, 16.0, 18.0, 22.0, 24.0, 36.0, 38.0, 42.0):
+    place(fx, whoosh(), when - 0.45)
+for when in (16.0, 18.0, 22.0, 36.0, 42.0):
+    place(fx, crash(), when)
+# Intro: an accent on every word (one per beat for the first four seconds).
+for beat in range(8):
+    place(drums, hit() * (0.55 if beat < 7 else 0.8), beat * BEAT)
+
+
+def roll(start, seconds, gain=0.6):
+    """Snare roll that speeds up from eighths to 32nds and swells into the drop."""
+    hits = []
+    when = start
+    while when < start + seconds:
+        progress = (when - start) / seconds
+        hits.append((when, 0.25 + 0.75 * progress))
+        step = BEAT / 2 if progress < 0.5 else (BEAT / 4 if progress < 0.85 else BEAT / 8)
+        when += step
+    for when, level in hits:
+        place(drums, S * gain * level, when)
+
+
+roll(6.0, 2.0)
+roll(26.0, 2.0, 0.7)
+roll(47.0, 1.0, 0.5)
+# Half-time kicks through the breakdown.
+for when in (25.0, 26.0, 27.0):
+    place(drums, K * 0.8, when)
 
 # ------------------------------------------------------------------ mix
 
