@@ -372,6 +372,11 @@ class ChatReferenceLiveTest {
         }
 
         @Override
+        public List<ConversationHeader> searchByOwner(MemberId owner, List<String> words, int limit) {
+            return List.of();
+        }
+
+        @Override
         public void save(Conversation conversation) {
             conversation.stored(conversation.version() + 1);
             stored.put(conversation.id(), conversation);

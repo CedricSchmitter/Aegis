@@ -36,6 +36,15 @@ public class JdbcConversationRepository implements ConversationRepository {
     private static final TypeReference<Map<String, Object>> OBJECT = new TypeReference<>() {
     };
 
+    /** One search word in the title, a question or an answer text of the conversation. */
+    private static final String WORD_MATCH = """
+
+               AND (strpos(lower(c.title), lower(:word)) > 0
+                    OR EXISTS (SELECT 1 FROM chat_turns t
+                                WHERE t.conversation_id = c.id
+                                  AND (strpos(lower(t.question), lower(:word)) > 0
+                                       OR strpos(lower(t.answer ->> 'text'), lower(:word)) > 0)))""";
+
     private final JdbcClient jdbc;
     private final ObjectMapper json;
 
@@ -71,9 +80,34 @@ public class JdbcConversationRepository implements ConversationRepository {
                  ORDER BY c.updated_at DESC, c.id
                  LIMIT ?""")
                 .params(owner.value(), limit)
-                .query((rs, index) -> new ConversationHeader(rs.getObject("id", UUID.class), rs.getString("title"),
-                        instant(rs, "created_at"), instant(rs, "updated_at"), rs.getInt("turns")))
+                .query(JdbcConversationRepository::header)
                 .list();
+    }
+
+    /**
+     * Each word is matched with strpos rather than LIKE, so % and _ in a search are ordinary characters. Lowering both
+     * sides in the database keeps one notion of case for text and search.
+     */
+    @Override
+    public List<ConversationHeader> searchByOwner(MemberId owner, List<String> words, int limit) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT c.id, c.title, c.created_at, c.updated_at,
+                       (SELECT count(*) FROM chat_turns t WHERE t.conversation_id = c.id) AS turns
+                  FROM chat_conversations c
+                 WHERE c.owner = :owner""");
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("owner", owner.value());
+        for (int index = 0; index < words.size(); index++) {
+            String word = "word" + index;
+            sql.append(WORD_MATCH.replace(":word", ":" + word));
+            params.put(word, words.get(index));
+        }
+        sql.append("""
+
+                 ORDER BY c.updated_at DESC, c.id
+                 LIMIT :limit""");
+        params.put("limit", limit);
+        return jdbc.sql(sql.toString()).params(params).query(JdbcConversationRepository::header).list();
     }
 
     @Override
@@ -127,6 +161,11 @@ public class JdbcConversationRepository implements ConversationRepository {
     private static ConversationRow row(ResultSet rs, int index) throws SQLException {
         return new ConversationRow(rs.getObject("id", UUID.class), rs.getObject("owner", UUID.class),
                 rs.getString("title"), instant(rs, "created_at"), instant(rs, "updated_at"), rs.getLong("version"));
+    }
+
+    private static ConversationHeader header(ResultSet rs, int index) throws SQLException {
+        return new ConversationHeader(rs.getObject("id", UUID.class), rs.getString("title"),
+                instant(rs, "created_at"), instant(rs, "updated_at"), rs.getInt("turns"));
     }
 
     private ChatTurn turn(ResultSet rs, int index) throws SQLException {

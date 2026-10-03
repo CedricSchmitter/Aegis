@@ -4,6 +4,10 @@ import type { ChatCitationDto, ChatProgressDto, ChatTurnDto } from "../api/types
 export const CHAT_POLL_MS = 1500;
 /** Longest question the server accepts. */
 export const MAX_QUESTION = 2000;
+/** Longest search the server accepts. */
+export const MAX_SEARCH = 200;
+/** How long typing pauses before earlier questions are searched. */
+export const CHAT_SEARCH_DELAY_MS = 250;
 
 export type AnswerSegment = { kind: "text"; text: string } | { kind: "citation"; number: number };
 

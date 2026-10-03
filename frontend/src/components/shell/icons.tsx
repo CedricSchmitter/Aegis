@@ -72,6 +72,12 @@ const PATHS = {
     </>
   ),
   filter: <path d="M3 5h18l-7 8v6l-4 2v-8z" />,
+  history: (
+    <>
+      <path d="M4.5 13A7.5 7.5 0 1 0 7 6.4L4 9" />
+      <path d="M4 4.5V9h4.5M12 8v4.5l3 2" />
+    </>
+  ),
   chat: (
     <>
       <path d="M3 4h18v12H11l-5 4v-4H3z" />

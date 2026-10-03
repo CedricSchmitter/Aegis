@@ -251,7 +251,8 @@ with read-only tools over the documents (catalog, faceted and full-text search, 
 markers), the contracts with their facts and the tasks, and answers with numbered sources. Every document quote is
 checked against the archived text before the answer is stored, and a quote that is not there is marked. A question
 runs as a `CHAT` run with visible progress, cancellation and retry; the conversation belongs to the member who asked
-and the run keeps no content. The subscription provider runs the tool loop through its structured answer
+and the run keeps no content. Earlier conversations sit in a side panel ("Verlauf") that searches all of the member's
+conversations by words in titles, questions and answers. The subscription provider runs the tool loop through its structured answer
 ([ADR-0025](docs/architecture/adr/ADR-0025-household-assistant-chat.md)). The chat only reads; writing actions,
 streaming and the reference-question evaluation of #25 are open. Scheduled review (#24) is not connected.
 The status page first answers "is everything OK?" for the database, the archive, the backup, the disk space and AI,

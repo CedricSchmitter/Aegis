@@ -40,6 +40,7 @@ export type ContractDeadlineDto = Schemas["DeadlineDto"];
 export type ContractDeadlineItemDto = Schemas["DeadlineItemDto"];
 export type ProductLocale = MemberDto["locale"];
 export type ChatOverviewDto = Schemas["ChatOverviewDto"];
+export type ConversationSummaryDto = Schemas["ConversationSummaryDto"];
 export type ConversationDto = Schemas["ConversationDto"];
 export type ChatTurnDto = Schemas["ChatTurnDto"];
 export type ChatProgressDto = Schemas["ChatProgressDto"];

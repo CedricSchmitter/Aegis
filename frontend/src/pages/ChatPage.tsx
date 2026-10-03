@@ -2,14 +2,16 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type Keyboard
 import { Link, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { api, toApiError, unwrap } from "../api/client";
-import type { ChatAnswerDto, ChatCitationDto, ChatOverviewDto, ChatTurnDto, ConversationDto } from "../api/types";
+import type { ChatAnswerDto, ChatCitationDto, ChatOverviewDto, ChatTurnDto, ConversationDto, ConversationSummaryDto } from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { BackLink, BigTitle, ErrorBox, InfoBox, Loading } from "../components/common";
 import { Icon } from "../components/shell/icons";
-import { Badge, Button, Dialog, type Tone } from "../components/ui";
+import { Badge, Button, Dialog, SearchField, Sheet, type Tone } from "../components/ui";
 import {
   CHAT_POLL_MS,
+  CHAT_SEARCH_DELAY_MS,
   MAX_QUESTION,
+  MAX_SEARCH,
   answerSegments,
   citationTarget,
   newId,
@@ -33,6 +35,7 @@ export function ChatPage() {
   const { id } = useParams();
   const [overview, setOverview] = useState<ChatOverviewDto | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const loadOverview = useCallback(async () => {
     try {
@@ -47,53 +50,138 @@ export function ChatPage() {
     void loadOverview();
   }, [loadOverview]);
 
+  const closeHistory = useCallback(() => setHistoryOpen(false), []);
+  const historyButton = (
+    <Button onClick={() => setHistoryOpen(true)} aria-haspopup="dialog" aria-expanded={historyOpen} data-testid="chat-history-open">
+      <Icon name="history" className="h-4 w-4" />
+      {t("chat.history")}
+      {overview && overview.conversations.length > 0 && <span className="font-mono text-xs text-text-3">{overview.conversations.length}</span>}
+    </Button>
+  );
+
   return (
-    <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6" data-testid="chat-page">
-      <aside className={id ? "hidden lg:block" : "block"}>
-        <BigTitle eyebrow={t("chat.eyebrow")}>{t("chat.title")}</BigTitle>
-        <ErrorBox message={loadError} />
-        {overview ? <ConversationList overview={overview} selected={id ?? null} /> : !loadError && <Loading />}
-      </aside>
-      <section className={id ? "block" : "mt-6 lg:mt-0"} aria-label={t("chat.conversation")}>
+    <div className="flex flex-col" data-testid="chat-page">
+      {id ? (
+        <div className="mb-3 flex items-center justify-between gap-2">
+          {historyButton}
+          <Link to="/chat" className="btn-ghost" data-testid="chat-new">
+            <Icon name="plus" className="h-4 w-4" />
+            {t("chat.newConversation")}
+          </Link>
+        </div>
+      ) : (
+        <div className="flex items-start justify-between gap-3">
+          <BigTitle eyebrow={t("chat.eyebrow")}>{t("chat.title")}</BigTitle>
+          {historyButton}
+        </div>
+      )}
+      <ErrorBox message={loadError} />
+      <section aria-label={t("chat.conversation")}>
         {id ? (
           <ConversationThread key={id} id={id} overview={overview} onChanged={loadOverview} />
         ) : (
           overview && <NewConversation overview={overview} onStarted={loadOverview} />
         )}
       </section>
+      <Sheet open={historyOpen} onClose={closeHistory} title={t("chat.history")} testId="chat-history" side>
+        {overview ? <History overview={overview} selected={id ?? null} onPicked={closeHistory} /> : !loadError && <Loading />}
+      </Sheet>
     </div>
   );
 }
 
-function ConversationList({ overview, selected }: { overview: ChatOverviewDto; selected: string | null }) {
-  const { t, i18n } = useTranslation();
+/**
+ * Earlier questions in the side panel. Without search words it lists the most recent conversations; with words the
+ * server searches all of the member's conversations, titles, questions and answers alike, so older ones are found too.
+ */
+function History({ overview, selected, onPicked }: { overview: ChatOverviewDto; selected: string | null; onPicked: () => void }) {
+  const { t } = useTranslation();
+  const [query, setQuery] = useState("");
+  const search = useConversationSearch(query, overview);
+  const searching = query.trim() !== "";
+  const conversations = searching ? search.found : overview.conversations;
+
   return (
-    <nav aria-label={t("chat.conversations")}>
-      <Link to="/chat" className="btn-secondary mb-3 w-full" aria-current={selected === null ? "page" : undefined} data-testid="chat-new">
+    <nav className="flex flex-col gap-3" aria-label={t("chat.conversations")}>
+      <Link to="/chat" className="btn-secondary w-full" aria-current={selected === null ? "page" : undefined} onClick={onPicked} data-testid="chat-history-new">
         <Icon name="plus" className="h-4 w-4" />
         {t("chat.newConversation")}
       </Link>
-      {overview.conversations.length === 0 ? (
-        <p className="text-sm text-text-3">{t("chat.noConversations")}</p>
+      <SearchField
+        label={t("chat.searchLabel")}
+        placeholder={t("chat.searchPlaceholder")}
+        value={query}
+        maxLength={MAX_SEARCH}
+        onChange={(event) => setQuery(event.target.value)}
+        data-testid="chat-search"
+      />
+      <ErrorBox message={search.error} />
+      {searching && conversations === null ? (
+        !search.error && <Loading />
+      ) : conversations === null || conversations.length === 0 ? (
+        <p className="text-sm text-text-3" role={searching ? "status" : undefined} data-testid="chat-history-empty">
+          {searching ? t("chat.noMatches", { query: query.trim() }) : t("chat.noConversations")}
+        </p>
       ) : (
-        <ul className="flex flex-col gap-1" data-testid="chat-conversations">
-          {overview.conversations.map((conversation) => (
-            <li key={conversation.id}>
-              <Link
-                to={`/chat/${conversation.id}`}
-                className="flex min-h-11 flex-col justify-center border-l-2 border-transparent px-3 py-1.5 text-sm text-text-2 hover:bg-raised hover:text-text-1 aria-[current=page]:border-action aria-[current=page]:bg-action/6 aria-[current=page]:text-action"
-                aria-current={conversation.id === selected ? "page" : undefined}
-              >
-                <span className="line-clamp-2 break-words">{conversation.title}</span>
-                <span className="font-mono text-[11px] text-text-4">
-                  {formatDateTime(conversation.updatedAt, i18n.language)} · {t("chat.questionCount", { count: conversation.questions })}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <ConversationList conversations={conversations} selected={selected} onPicked={onPicked} />
       )}
     </nav>
+  );
+}
+
+/**
+ * The server's search for the words, a moment after typing stops. An answer to older words that arrives late is
+ * dropped, and the search runs again when the overview changes, for example after a conversation was deleted.
+ */
+function useConversationSearch(query: string, overview: ChatOverviewDto) {
+  const { t } = useTranslation();
+  const [result, setResult] = useState<{ query: string; found: ConversationSummaryDto[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const words = query.trim();
+
+  useEffect(() => {
+    if (!words) return;
+    let current = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const found = unwrap(await api.GET("/api/chat/conversations/search", { params: { query: { q: words } } }));
+        if (!current) return;
+        setResult({ query: words, found: found.conversations });
+        setError(null);
+      } catch (failure) {
+        if (current) setError(problemMessage(t, failure));
+      }
+    }, CHAT_SEARCH_DELAY_MS);
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [words, overview, t]);
+
+  // While new words are being searched, the previous hits stay instead of flickering away.
+  return { found: words ? (result?.found ?? null) : null, error: words ? error : null };
+}
+
+function ConversationList({ conversations, selected, onPicked }: { conversations: ConversationSummaryDto[]; selected: string | null; onPicked: () => void }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <ul className="flex flex-col gap-1" data-testid="chat-conversations">
+      {conversations.map((conversation) => (
+        <li key={conversation.id}>
+          <Link
+            to={`/chat/${conversation.id}`}
+            onClick={onPicked}
+            className="flex min-h-11 flex-col justify-center border-l-2 border-transparent px-3 py-1.5 text-sm text-text-2 hover:bg-raised hover:text-text-1 aria-[current=page]:border-action aria-[current=page]:bg-action/6 aria-[current=page]:text-action"
+            aria-current={conversation.id === selected ? "page" : undefined}
+          >
+            <span className="line-clamp-2 break-words">{conversation.title}</span>
+            <span className="font-mono text-[11px] text-text-4">
+              {formatDateTime(conversation.updatedAt, i18n.language)} · {t("chat.questionCount", { count: conversation.questions })}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -264,16 +352,13 @@ function ConversationThread({ id, overview, onChanged }: { id: string; overview:
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-2">
-          <div className="lg:hidden">
-            <BackLink to="/chat">{t("chat.title")}</BackLink>
-          </div>
-          <Button variant="ghost" className="ml-auto" onClick={() => setConfirmDelete(true)} disabled={busy} data-testid="chat-delete">
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-lg font-semibold break-words">{conversation.title}</h2>
+          <Button variant="ghost" className="flex-none" onClick={() => setConfirmDelete(true)} disabled={busy} data-testid="chat-delete">
             <Icon name="trash" className="h-4 w-4" />
             {t("chat.delete")}
           </Button>
         </div>
-        <h2 className="text-lg font-semibold break-words">{conversation.title}</h2>
       </div>
       <ol className="flex flex-col gap-5" data-testid="chat-turns">
         {conversation.turns.map((turn) => (
