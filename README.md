@@ -102,6 +102,25 @@ ops scripts) and `smoke.yml` (image build and browser smoke against the compose 
 and `e2e/` changes, otherwise started by hand with `gh workflow run smoke.yml --ref <branch>`). Every workflow can
 also be started by hand. CI needs no private VM access and no live credentials.
 
+In a Claude Code cloud session (claude.ai/code) the backend, frontend and ops checks above run as written; the browser
+smoke test and deployment need the LAN and therefore the PC. The cloud container has Docker installed but not
+running, so the integration tests need it started first. The cloud environment's setup script does that for every
+session:
+
+```bash
+#!/bin/bash
+# Aegis: start Docker so the backend integration tests (Testcontainers) can run.
+if ! docker info >/dev/null 2>&1; then
+  nohup dockerd >/tmp/dockerd.log 2>&1 &
+  for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
+fi
+```
+
+Without it, `sh ops/cloud/session.sh start` starts Docker in the session. `sh ops/cloud/session.sh stop` removes all
+containers, images, volumes and build cache and stops Docker; the `SessionEnd` hook in `.claude/settings.json` runs it
+when a session ends, and the container itself is discarded afterwards.
+Outside a cloud session both commands do nothing.
+
 When GitHub Actions is unavailable (for example with used-up minutes), the same three jobs run for a commit on VM 102
 from the PC:
 
