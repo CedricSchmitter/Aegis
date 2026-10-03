@@ -10,7 +10,10 @@
     "music": "python3 music/synth.py",
     "studio": "remotion studio video/index.ts",
     "render": "remotion render video/index.ts Promo out/aegis-promo.mp4 --browser-executable=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell --codec=h264 --crf=16",
-    "still": "remotion still video/index.ts Promo --browser-executable=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell"
+    "still": "remotion still video/index.ts Promo --browser-executable=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell",
+    "music:calm": "python3 music/synth_calm.py",
+    "render:calm": "remotion render video/index.ts Calm out/aegis-promo-calm.mp4 --browser-executable=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell --codec=h264 --crf=16",
+    "still:calm": "remotion still video/index.ts Calm --browser-executable=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell"
   },
   "dependencies": {
     "@remotion/cli": "4.0.532",

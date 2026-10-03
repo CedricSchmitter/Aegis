@@ -1,6 +1,6 @@
 # Aegis promo video
 
-Tooling for a 56-second promo video of Aegis. It is not part of the app: nothing here is built, tested or deployed
+Tooling for the Aegis promo videos: a 56-second cut (`Promo`) and a calm 2-minute cut (`Calm`). It is not part of the app: nothing here is built, tested or deployed
 with Aegis, and the app code is unchanged.
 
 The video shows the real frontend (`frontend/dist`) running against a mocked API with a fictional household
@@ -18,6 +18,8 @@ node record/record.mjs           # scenes -> recordings/<scene>.mp4 (takes a few
 cp recordings/*.mp4 public/
 python3 music/synth.py           # soundtrack -> public/soundtrack.wav (needs numpy and scipy)
 npm run render                   # -> out/aegis-promo.mp4
+python3 music/synth_calm.py      # calm soundtrack -> public/soundtrack-calm.wav
+npm run render:calm              # -> out/aegis-promo-calm.mp4
 ```
 
 `npm run studio` opens the Remotion editor for timing work. Cut points live in `video/timeline.ts`; `npm run still --
@@ -33,7 +35,8 @@ out/x.png --frame=N` renders a single frame for checking.
 - `desk-chat`, `phone-chat`: a question to the assistant answered with cited sources
 - `desk-search`, `desk-theme`, `desk-documents`: full-text search, color themes, folders and labels
 
-`desk-status` is recorded but not used in the cut.
+`desk-status` is recorded but not used in either cut. `video/Calm.tsx` uses the same recordings at close to real
+speed, crossfades between scenes on the bar lines of the calm soundtrack and keeps scene timings in the file itself.
 
 ## How the recordings stay smooth
 

@@ -6,6 +6,9 @@
 numpy/scipy. It uses no samples, loops or third-party recordings, so there is no third-party music license to
 honor. It was written for this video and can be used with it without restriction.
 
+"Aegis Drift" (soundtrack-calm.wav), the calm track for the 2-minute cut, is made the same way by
+`music/synth_calm.py`: original, no samples, no third-party license.
+
 ## Fonts
 
 - Chakra Petch by Cadson Demak, SIL Open Font License 1.1 (via @fontsource/chakra-petch)

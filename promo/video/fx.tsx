@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import {
   AbsoluteFill,
   continueRender,
@@ -201,7 +201,7 @@ export function Hud({ label }: { label: string }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const seconds = frame / fps;
-  const code = `T+00:${String(Math.floor(seconds)).padStart(2, "0")}:${String(Math.floor((seconds % 1) * 100)).padStart(2, "0")}`;
+  const code = `T+${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(Math.floor(seconds % 60)).padStart(2, "0")}:${String(Math.floor((seconds % 1) * 100)).padStart(2, "0")}`;
   const corner = (style: CSSProperties) => (
     <div style={{ position: "absolute", width: 46, height: 46, borderColor: C.yellow, borderStyle: "solid", borderWidth: 0, opacity: 0.85, ...style }} />
   );
@@ -408,9 +408,14 @@ export function Tap({ at, x, y }: { at: number; x: number; y: number }) {
 
 // ------------------------------------------------------------------ v2: beat, camera, kinetic type, transitions
 
+/** Lets a composition replace the beat envelope with one that matches its own soundtrack. */
+export const BeatContext = createContext<((frame: number) => number) | null>(null);
+
 /** Kick drum envelope (1 on the beat, decaying) in the sections with drums; 120 BPM, so a beat every 15 frames. */
 export function useBeat(offset = 0) {
   const frame = useCurrentFrame() + offset;
+  const custom = useContext(BeatContext);
+  if (custom) return custom(frame);
   const seconds = frame / 30;
   const groove = (seconds >= 8 && seconds < 24) || (seconds >= 28 && seconds < 48);
   const half = seconds >= 24 && seconds < 28;
