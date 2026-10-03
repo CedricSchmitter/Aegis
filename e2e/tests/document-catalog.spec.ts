@@ -114,7 +114,7 @@ test.describe("document tree, labels and faceted search", () => {
       buffer: RUN_PDF,
     });
     await page.getByTestId("upload-submit").click();
-    await expect(page.getByRole("status").first()).toContainText(/dauerhaft gespeichert/);
+    await expect(page.getByRole("status").first()).toContainText(/“ gespeichert\./);
     const card = page.locator("[data-testid=document-card]", { hasText: `Telekom Rechnung e2e ${runId}` }).first();
     await expect(card).toBeVisible();
     await expect(card.getByTestId("document-folder")).toContainText(`${ROOT} / ${INVOICES} / ${INTERNET}`);

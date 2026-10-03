@@ -160,7 +160,7 @@ test.describe("first runnable test", () => {
       buffer: RUN_PDF,
     });
     await page.getByTestId("upload-submit").click();
-    await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
+    await expect(page.getByRole("status").first()).toContainText("“ gespeichert.");
     const card = page.locator("[data-testid=document-card]", { hasText: `Stromvertrag e2e ${runId}` }).first();
     await expect(card).toBeVisible();
     await openDocument(card);

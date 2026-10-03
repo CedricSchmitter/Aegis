@@ -53,7 +53,7 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     await page.getByTestId("upload-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
     await expect(page.getByTestId("upload-preview")).toBeVisible();
     await page.getByTestId("upload-submit").click();
-    await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
+    await expect(page.getByRole("status").first()).toContainText("“ gespeichert.");
     const card = page.locator("[data-testid=document-card]", { hasText: title }).first();
     await openDocument(card);
     await expect(page.getByTestId("photo-hint")).toBeVisible();
@@ -108,7 +108,7 @@ test.describe("photos of paper documents uploaded unchanged", () => {
     await openUpload(page);
     await page.getByTestId("upload-input").setInputFiles({ name: `${title}.jpg`, mimeType: "image/jpeg", buffer: photo });
     await page.getByTestId("upload-submit").click();
-    await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
+    await expect(page.getByRole("status").first()).toContainText("“ gespeichert.");
     const card = page.locator("[data-testid=document-card]", { hasText: title }).first();
     await openDocument(card);
     await expect(page.getByTestId("processing-state")).toContainText("Archiviert", { timeout: 360_000 });

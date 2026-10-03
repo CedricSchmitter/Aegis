@@ -85,7 +85,7 @@ async function save(page: Page): Promise<string> {
   await page.getByTestId("upload-submit").click();
   const answer = (await (await uploaded).json()) as { document: { id: string }; duplicate: boolean };
   expect(answer.duplicate).toBe(false);
-  await expect(page.getByRole("status").first()).toContainText("dauerhaft gespeichert");
+  await expect(page.getByRole("status").first()).toContainText("“ gespeichert.");
   return answer.document.id;
 }
 
