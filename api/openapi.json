@@ -257,6 +257,11 @@
             "format" : "uuid",
             "type" : "string"
           },
+          "family" : {
+            "description" : "Model family for this question only; omitted uses the household's family",
+            "enum" : [ "opus", "sonnet", "haiku" ],
+            "type" : [ "string", "null" ]
+          },
           "locale" : {
             "description" : "Answer language when the question's is unclear",
             "enum" : [ "DE", "EN" ],
@@ -865,12 +870,24 @@
             },
             "type" : "array"
           },
+          "defaultFamily" : {
+            "description" : "The household's model family for questions",
+            "enum" : [ "opus", "sonnet", "haiku" ],
+            "type" : [ "string", "null" ]
+          },
+          "families" : {
+            "description" : "Model families a single question can use, in a stable order",
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "unavailableReason" : {
             "description" : "Why a question would be refused now, for example ai.notConfigured",
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "available", "conversations" ],
+        "required" : [ "available", "conversations", "families" ],
         "type" : "object"
       },
       "ChatProgressDto" : {
@@ -908,6 +925,11 @@
             "type" : [ "string", "null" ]
           },
           "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "family" : {
+            "description" : "Model family of the run answering the question",
+            "enum" : [ "opus", "sonnet", "haiku" ],
             "type" : [ "string", "null" ]
           },
           "id" : {

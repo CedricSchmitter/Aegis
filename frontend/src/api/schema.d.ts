@@ -1916,6 +1916,11 @@ export interface components {
             /** Format: uuid */
             conversationId: string;
             /**
+             * @description Model family for this question only; omitted uses the household's family
+             * @enum {string|null}
+             */
+            family?: "opus" | "sonnet" | "haiku" | null;
+            /**
              * @description Answer language when the question's is unclear
              * @enum {string}
              */
@@ -2134,6 +2139,13 @@ export interface components {
         ChatOverviewDto: {
             available: boolean;
             conversations: components["schemas"]["ConversationSummaryDto"][];
+            /**
+             * @description The household's model family for questions
+             * @enum {string|null}
+             */
+            defaultFamily?: "opus" | "sonnet" | "haiku" | null;
+            /** @description Model families a single question can use, in a stable order */
+            families: string[];
             /** @description Why a question would be refused now, for example ai.notConfigured */
             unavailableReason?: string | null;
         };
@@ -2152,6 +2164,11 @@ export interface components {
             askedAt: string;
             failureCategory?: string | null;
             failureCode?: string | null;
+            /**
+             * @description Model family of the run answering the question
+             * @enum {string|null}
+             */
+            family?: "opus" | "sonnet" | "haiku" | null;
             /** Format: uuid */
             id: string;
             /** @enum {string} */

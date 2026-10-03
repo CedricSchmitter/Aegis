@@ -1680,6 +1680,12 @@
     "evidence": { "COMPLETE": "Supported", "PARTIAL": "Partly supported", "NOT_FOUND": "Not in the records" },
     "check": { "VERIFIED": "Quote checked", "NOT_IN_SOURCE": "Quote not found in the document", "SOURCE_UNAVAILABLE": "Source unavailable" },
     "sourceKind": { "DOCUMENT": "Document", "CONTRACT": "Contract", "TASK": "Task" },
+    "model": {
+      "label": "Model for this question",
+      "default": "Default ({{model}})",
+      "defaultUnknown": "Default model",
+      "name": { "opus": "Opus", "sonnet": "Sonnet", "haiku": "Haiku" }
+    },
     "unavailable": {
       "generic": "Questions are not possible right now. Documents, search and tasks work as usual.",
       "ai.notConfigured": "No AI connection is set up for questions. Documents, search and tasks work as usual.",

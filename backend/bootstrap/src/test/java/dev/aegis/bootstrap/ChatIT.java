@@ -294,6 +294,36 @@ class ChatIT extends PostgresIT {
     }
 
     @Test
+    void aSingleQuestionCanUseAnotherModelFamilyWhileTheHouseholdDefaultStays() {
+        ApiClient anna = loggedIn(ANNA);
+        model.answer(json(answer("Mit Opus beantwortet.", List.of())))
+                .answer(json(answer("Mit dem Standardmodell beantwortet.", List.of())));
+        UUID conversation = UUID.randomUUID();
+        String withOpus = question(conversation, UUID.randomUUID(), "Welche Verträge laufen aus?")
+                .replace("}", ",\"family\":\"opus\"}");
+
+        JsonNode overview = anna.json(anna.get("/api/chat/conversations"));
+        assertThat(overview.path("defaultFamily").asText()).isEqualTo("sonnet");
+        assertThat(overview.path("families").toString()).isEqualTo("[\"opus\",\"sonnet\",\"haiku\"]");
+        assertThat(anna.postJson("/api/chat/conversations", withOpus).status()).isEqualTo(201);
+        JsonNode first = awaitTurn(anna, conversation, 0, "ANSWERED");
+        assertThat(anna.postJson("/api/chat/conversations/" + conversation + "/turns",
+                question(conversation, UUID.randomUUID(), "Und welche nicht?")).status()).isEqualTo(201);
+        JsonNode second = awaitTurn(anna, conversation, 1, "ANSWERED");
+
+        assertThat(model.requests).extracting(ModelRequest::model).containsExactly("claude-opus-5-5",
+                ControlledModelGateway.MODEL);
+        assertThat(first.path("family").asText()).isEqualTo("opus");
+        assertThat(second.path("family").asText()).isEqualTo("sonnet");
+        assertThat(anna.json(anna.get("/api/chat/conversations")).path("defaultFamily").asText())
+                .isEqualTo("sonnet");
+        ApiClient.Response unknown = anna.postJson("/api/chat/conversations", question(UUID.randomUUID(),
+                UUID.randomUUID(), "Welche Verträge?").replace("}", ",\"family\":\"claude-opus-5-5\"}"));
+        assertThat(unknown.status()).isEqualTo(400);
+        assertThat(unknown.body()).contains("ai.model.unknownFamily");
+    }
+
+    @Test
     void withoutAUsableModelNothingIsAskedAndTheReasonIsShown() {
         ApiClient anna = loggedIn(ANNA);
         model.configured = false;

@@ -101,3 +101,65 @@ describe("earlier questions", () => {
     expect(screen.getByTestId("chat-new")).toBeTruthy();
   });
 });
+
+describe("the model of a question", () => {
+  const conversation = (family: string | null) => ({
+    id: "c1",
+    title: "Welche Verträge laufen aus?",
+    createdAt: "2026-10-02T17:15:00Z",
+    updatedAt: "2026-10-02T17:15:00Z",
+    turns: [
+      {
+        id: "t1",
+        seq: 1,
+        question: "Welche Verträge laufen aus?",
+        locale: "DE",
+        askedAt: "2026-10-02T17:15:00Z",
+        runId: "r1",
+        family,
+        state: "ANSWERED",
+        progress: [],
+        answer: { text: "Keiner.", evidence: "NOT_FOUND", citations: [], caveats: [] },
+        answeredAt: "2026-10-02T17:16:00Z",
+      },
+    ],
+  });
+
+  function withModels(family: string | null = "opus") {
+    api.GET.mockImplementation((path: string) => {
+      if (path === "/api/chat/conversations")
+        return Promise.resolve(ok({ available: true, unavailableReason: null, defaultFamily: "sonnet", families: ["opus", "sonnet", "haiku"], conversations: recent }));
+      if (path === "/api/chat/conversations/{id}") return Promise.resolve(ok(conversation(family)));
+      return Promise.resolve(ok(null));
+    });
+    api.POST.mockResolvedValue(ok(conversation(family)));
+  }
+
+  it("is the household's default unless another family is picked for this one question", async () => {
+    withModels();
+    renderPage();
+    const picker = (await screen.findByTestId("chat-model")) as HTMLSelectElement;
+
+    expect(Array.from(picker.options).map((option) => option.text)).toEqual(["Standard (Sonnet)", "Opus – am gründlichsten", "Haiku – am schnellsten und günstigsten"]);
+    expect(picker.value).toBe("");
+    fireEvent.change(picker, { target: { value: "opus" } });
+    fireEvent.change(screen.getByTestId("chat-input"), { target: { value: "Welche Verträge laufen aus?" } });
+    fireEvent.click(screen.getByTestId("chat-send"));
+
+    await waitFor(() => expect(api.POST).toHaveBeenCalledTimes(1));
+    expect(api.POST.mock.calls[0][1].body).toMatchObject({ question: "Welche Verträge laufen aus?", family: "opus" });
+    expect(await screen.findByTestId("chat-answer-model")).toBeTruthy();
+    expect(screen.getByTestId("chat-answer-model").textContent).toBe("Opus");
+    expect((screen.getByTestId("chat-model") as HTMLSelectElement).value).toBe("");
+  });
+
+  it("is left to the household's default when nothing is picked", async () => {
+    withModels("sonnet");
+    renderPage();
+    fireEvent.change(await screen.findByTestId("chat-input"), { target: { value: "Was steht an?" } });
+    fireEvent.click(screen.getByTestId("chat-send"));
+
+    await waitFor(() => expect(api.POST).toHaveBeenCalledTimes(1));
+    expect(api.POST.mock.calls[0][1].body).toMatchObject({ family: null });
+  });
+});

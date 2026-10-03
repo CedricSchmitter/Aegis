@@ -1680,6 +1680,12 @@
     "evidence": { "COMPLETE": "Belegt", "PARTIAL": "Teilweise belegt", "NOT_FOUND": "Nicht in den Unterlagen" },
     "check": { "VERIFIED": "Zitat geprüft", "NOT_IN_SOURCE": "Zitat nicht im Dokument gefunden", "SOURCE_UNAVAILABLE": "Quelle nicht verfügbar" },
     "sourceKind": { "DOCUMENT": "Dokument", "CONTRACT": "Vertrag", "TASK": "Aufgabe" },
+    "model": {
+      "label": "Modell für diese Frage",
+      "default": "Standard ({{model}})",
+      "defaultUnknown": "Standardmodell",
+      "name": { "opus": "Opus", "sonnet": "Sonnet", "haiku": "Haiku" }
+    },
     "unavailable": {
       "generic": "Fragen sind gerade nicht möglich. Dokumente, Suche und Aufgaben funktionieren wie gewohnt.",
       "ai.notConfigured": "Für Fragen ist keine KI-Verbindung eingerichtet. Dokumente, Suche und Aufgaben funktionieren wie gewohnt.",

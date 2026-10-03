@@ -59,7 +59,7 @@ public class ChatController {
     @ResponseStatus(HttpStatus.CREATED)
     public ConversationDto start(Actor actor, @RequestBody AskQuestionRequest body) {
         return ConversationDto.from(commands.start(actor, body.conversationId(), body.turnId(), body.question(),
-                body.locale()));
+                body.locale(), body.family()));
     }
 
     @Operation(operationId = "getConversation", summary = "One of the member's conversations with every question")
@@ -74,7 +74,8 @@ public class ChatController {
     @PostMapping("/conversations/{id}/turns")
     @ResponseStatus(HttpStatus.CREATED)
     public ConversationDto ask(Actor actor, @PathVariable UUID id, @RequestBody AskQuestionRequest body) {
-        return ConversationDto.from(commands.ask(actor, id, body.turnId(), body.question(), body.locale()));
+        return ConversationDto.from(commands.ask(actor, id, body.turnId(), body.question(), body.locale(),
+                body.family()));
     }
 
     @Operation(operationId = "cancelQuestion", summary = "Stop answering a question")

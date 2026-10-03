@@ -108,7 +108,9 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         WorkloadProfile profile = settings.profile(workload).orElseThrow(() -> new InvalidInputException(
                 "ai.workload.unavailable", "Workload " + workload + " has no configured profile"));
-        ModelSelection model = requireRunnable(actor, workload, candidates(profile));
+        List<ModelSelection> candidates = request.family() == null ? candidates(profile)
+                : candidates(profile, offeredFamily(request.family()));
+        ModelSelection model = requireRunnable(actor, workload, candidates);
         List<SourceRef> sources = new ArrayList<>();
         for (SourceVersion source : request.sources()) {
             try {
@@ -292,6 +294,16 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         WorkloadProfile profile = settings.profile(target).filter(candidate -> !candidate.providers().isEmpty())
                 .orElseThrow(() -> new InvalidInputException("ai.model.notSelectable",
                         "Workload " + target + " has no model of its own", Map.of("workload", target.name())));
+        ModelFamily chosen = offeredFamily(family);
+        WorkloadModelChoice choice = choice(profile);
+        if (choice.choose(chosen, version, actor.memberId(), clock.instant())) {
+            choices.save(choice);
+        }
+        return overview(actor);
+    }
+
+    /** A family of the catalog by its key; members choose families, never model identifiers. */
+    private ModelFamily offeredFamily(String family) {
         ModelFamily chosen;
         try {
             chosen = ModelFamily.fromKey(family);
@@ -303,11 +315,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
             throw new InvalidInputException("ai.model.notOffered", "The model family is not offered",
                     Map.of("family", chosen.key()));
         }
-        WorkloadModelChoice choice = choice(profile);
-        if (choice.choose(chosen, version, actor.memberId(), clock.instant())) {
-            choices.save(choice);
-        }
-        return overview(actor);
+        return chosen;
     }
 
     /** The household's choice for a profile, or its configured default while nobody has changed it. */
@@ -326,6 +334,15 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         String model = settings.catalog().entry(choice(profile).family())
                 .or(() -> settings.catalog().entry(profile.family())).map(ModelCatalog.Entry::model).orElseThrow();
+        return candidates(profile, model);
+    }
+
+    /** The profile's providers in order of preference with the catalog model of an offered {@code family}. */
+    private List<ModelSelection> candidates(WorkloadProfile profile, ModelFamily family) {
+        return candidates(profile, settings.catalog().entry(family).orElseThrow().model());
+    }
+
+    private static List<ModelSelection> candidates(WorkloadProfile profile, String model) {
         return profile.providers().stream().map(provider -> new ModelSelection(provider, model)).toList();
     }
 
