@@ -377,7 +377,7 @@ neither part of the server backup nor of an export, because the document does no
 - Status page (in the app) and `GET /api/status`: an overview of the database, Paperless, the external backup, disk
   space and AI with stable reason codes (ADR-0018). AI is not listed without credentials and reads "Noch nicht
   geprüft" after every start or deployment until its next run or a manual connection check; integrations without an
-  adapter (calendar, mail, Web Push, Telegram) are not listed. The collapsed technical details hold the processing
+  adapter (calendar, mail, Telegram) are not listed. The collapsed technical details hold the processing
   counts, backup and disk details, recurring jobs, the AI section (workload budgets, today's spending, the connection
   check and recent runs with cancel and retry), the exports and the running commit.
 - Recurring jobs: the status page shows their health (ADR-0013). `watch-job-health` checks them every five minutes
@@ -388,6 +388,11 @@ neither part of the server backup nor of an export, because the document does no
   the data disk through `aegis.storage.data-path`. A failed, stale or interrupted backup and a disk below
   `aegis.storage.low-free-fraction` (10 %) or `aegis.storage.low-free-space` (5 GB) send one `BACKUP_FAILED` or
   `DISK_SPACE_LOW` notice per member and incident (ADR-0015).
+- Web Push (ADR-0026): `dispatch-push-notices` runs every minute and needs outbound HTTPS from the VM to the
+  browsers' push service (`fcm.googleapis.com` for Chrome and Samsung Internet). The VAPID key is created in the
+  database on first use and restored with it. Optional settings: `AEGIS_PUSH_SUBJECT` / `aegis.push.subject` (contact
+  URI sent to push services, default `mailto:aegis@aegis.invalid`), `aegis.push.allowed-hosts`,
+  `aegis.push.catch-up-window` (24h). Members switch pushes on per device under Settings and can send a test push there.
 - Logs: `sudo docker compose --env-file /srv/aegis/deploy/.env -f /srv/aegis/deploy/compose.yaml logs -f aegis`.
 - Restart application containers only: `... restart aegis caddy` (records persist in PostgreSQL, ingress and
   Paperless volumes; logins persist because sessions are stored in PostgreSQL).

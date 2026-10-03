@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError, api } from "../api/client";
 import { useSession } from "../auth/SessionContext";
 import { LanguageSwitch } from "../components/LanguageSwitch";
+import { NotificationSettings } from "../components/NotificationSettings";
 import { BigTitle, ErrorBox, InfoBox } from "../components/common";
 import { ContextPanel, usePanelShown } from "../components/shell/ContextPanel";
 import { Icon } from "../components/shell/icons";
@@ -167,8 +168,8 @@ function PasswordForm() {
 }
 
 /**
- * Settings: where Status, Trash and the management pages are, then the member's own look, language,
- * password and logout. From 1280 px the context panel shows the status overview.
+ * Settings: where Status, Trash and the management pages are, then the member's own look, notifications,
+ * language, password and logout. From 1280 px the context panel shows the status overview.
  */
 export function SettingsPage() {
   const { t } = useTranslation();
@@ -189,6 +190,7 @@ export function SettingsPage() {
       </BigTitle>
       <Places />
       <AppearanceSettings />
+      <NotificationSettings />
       <section aria-labelledby="account" className="flex flex-col">
         <h2 id="account" className="ui-sec mb-2">
           {t("settings.account")}

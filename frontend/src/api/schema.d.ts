@@ -1510,6 +1510,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/push/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether pushes can be sent, and the key browsers subscribe with */
+        get: operations["pushConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/push/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current member's devices that receive pushes */
+        get: operations["listPushDevices"];
+        put?: never;
+        /** Subscribe this browser for the current member, or renew its subscription */
+        post: operations["subscribePushDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/push/devices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Stop pushes to one of the current member's devices */
+        delete: operations["removePushDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/push/devices/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test push to one of the current member's devices */
+        post: operations["sendTestPush"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/push/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What is pushed to the current member's devices */
+        get: operations["pushPreferences"];
+        /** Change the push preferences; a stale version is rejected with 409 */
+        put: operations["changePushPreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reviews": {
         parameters: {
             query?: never;
@@ -2813,6 +2900,36 @@ export interface components {
             /** @enum {string} */
             state: "PENDING" | "FAILED";
         };
+        PushConfigDto: {
+            available: boolean;
+            publicKey?: string | null;
+        };
+        PushDeviceDto: {
+            /** Format: date-time */
+            createdAt: string;
+            deviceLabel?: string | null;
+            id: string;
+            /** Format: date-time */
+            lastSentAt?: string | null;
+            /** @enum {string} */
+            state: "ACTIVE" | "FAILING" | "EXPIRED";
+        };
+        PushPreferencesDto: {
+            categories: ("TASKS" | "DEADLINES" | "REVIEW" | "SYSTEM")[];
+            /**
+             * Format: time
+             * @example 07:00:00
+             */
+            quietEnd?: string | null;
+            /**
+             * Format: time
+             * @example 22:00:00
+             */
+            quietStart?: string | null;
+            showDetails: boolean;
+            /** Format: int64 */
+            version: number;
+        };
         RenameCategoryRequest: {
             /** Format: int64 */
             expectedVersion: number;
@@ -3014,6 +3131,12 @@ export interface components {
             expectedVersion: number;
             subjects: components["schemas"]["SubjectDto"][];
         };
+        SubscribeRequest: {
+            auth: string;
+            deviceLabel?: string | null;
+            endpoint: string;
+            p256dh: string;
+        };
         SummaryDto: {
             /** Format: int32 */
             conflicts: number;
@@ -3076,6 +3199,10 @@ export interface components {
         TaskVersionRequest: {
             /** Format: int64 */
             expectedVersion: number;
+        };
+        TestPushResponse: {
+            /** @enum {string} */
+            outcome: "SENT" | "FAILED" | "EXPIRED" | "UNAVAILABLE";
         };
         TextRecognitionDto: {
             /** Format: date-time */
@@ -5442,6 +5569,156 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PageEditDto"];
+                };
+            };
+        };
+    };
+    pushConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PushConfigDto"];
+                };
+            };
+        };
+    };
+    listPushDevices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PushDeviceDto"][];
+                };
+            };
+        };
+    };
+    subscribePushDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PushDeviceDto"];
+                };
+            };
+        };
+    };
+    removePushDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sendTestPush: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TestPushResponse"];
+                };
+            };
+        };
+    };
+    pushPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PushPreferencesDto"];
+                };
+            };
+        };
+    };
+    changePushPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushPreferencesDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PushPreferencesDto"];
                 };
             };
         };

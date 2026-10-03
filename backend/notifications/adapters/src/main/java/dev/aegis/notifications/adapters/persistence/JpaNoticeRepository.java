@@ -6,6 +6,7 @@ import dev.aegis.notifications.domain.NoticeKind;
 import dev.aegis.notifications.domain.NoticeLink;
 import dev.aegis.notifications.domain.NoticeRepository;
 import dev.aegis.shared.MemberId;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,12 @@ public class JpaNoticeRepository implements NoticeRepository {
                 ? jpa.findByRecipientIdAndKindInAndReadAtIsNullOrderByCreatedAtDesc(recipient.value(), names)
                 : jpa.findByRecipientIdAndKindInOrderByCreatedAtDesc(recipient.value(), names);
         return rows.stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public List<Notice> findUnreadCreatedSince(MemberId recipient, Instant since) {
+        return jpa.findByRecipientIdAndReadAtIsNullAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(recipient.value(),
+                since).stream().map(this::toDomain).toList();
     }
 
     @Override

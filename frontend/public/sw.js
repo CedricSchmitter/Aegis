@@ -1,7 +1,8 @@
-// Aegis service worker. It only receives Android shares (Web Share Target, see manifest.webmanifest): the shared
-// files are kept in a local inbox and the app then uploads them through the normal authenticated API. It caches no
-// app assets or data and handles no other request, so a deployment is never served stale code from here.
-// Keep the inbox format in sync with src/share/inbox.ts.
+// Aegis service worker. It receives Android shares (Web Share Target, see manifest.webmanifest): the shared files
+// are kept in a local inbox and the app then uploads them through the normal authenticated API. It also shows push
+// notifications (issue #28). It caches no app assets or data and handles no other request, so a deployment is never
+// served stale code from here.
+// Keep the inbox format in sync with src/share/inbox.ts and the push payload in sync with WebPushSender.java.
 
 const INBOX_CACHE = "aegis-share-inbox-v1";
 const INBOX_PREFIX = "/__share-inbox/";
@@ -20,6 +21,47 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method === "POST" && url.origin === self.location.origin && url.pathname === "/share-target") {
     event.respondWith(receiveShare(event.request));
   }
+});
+
+// A push carries {title, body, path, tag}, already in the member's language. The tag lets a repeated push replace
+// the notification it repeats instead of showing it twice.
+self.addEventListener("push", (event) => {
+  let message = {};
+  try {
+    message = event.data ? event.data.json() : {};
+  } catch {
+    message = {};
+  }
+  const path = typeof message.path === "string" && message.path.startsWith("/") && !message.path.startsWith("//")
+    ? message.path
+    : "/inbox";
+  event.waitUntil(
+    self.registration.showNotification(message.title || "Aegis", {
+      body: message.body || "",
+      tag: message.tag || undefined,
+      icon: "/icons/icon-192.png",
+      data: { path },
+    }),
+  );
+});
+
+// A tap opens the notice's target in an open Aegis window, or in a new one.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.path || "/inbox", self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of windows) {
+        if (new URL(client.url).origin === self.location.origin && "focus" in client) {
+          await client.focus();
+          if ("navigate" in client) await client.navigate(target);
+          return;
+        }
+      }
+      await self.clients.openWindow(target);
+    })(),
+  );
 });
 
 async function receiveShare(request) {

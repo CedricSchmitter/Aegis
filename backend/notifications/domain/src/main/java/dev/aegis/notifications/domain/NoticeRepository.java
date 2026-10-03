@@ -1,6 +1,7 @@
 package dev.aegis.notifications.domain;
 
 import dev.aegis.shared.MemberId;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -11,6 +12,9 @@ public interface NoticeRepository {
 
     /** The recipient's notices of the given kinds, newest first. */
     List<Notice> findByRecipient(MemberId recipient, Set<NoticeKind> kinds, boolean unreadOnly);
+
+    /** The recipient's unread notices created at or after {@code since}, oldest first. */
+    List<Notice> findUnreadCreatedSince(MemberId recipient, Instant since);
 
     Optional<Notice> findByDedupKey(MemberId recipient, String dedupKey);
 

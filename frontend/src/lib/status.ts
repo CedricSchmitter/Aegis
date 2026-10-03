@@ -35,7 +35,13 @@ export const CHECK_REASONS = [
 export const CHECK_STATES = ["OK", "UNCHECKED", "PROBLEM"] as const;
 
 /** Jobs, providers and failure categories with their own name in the catalogs; anything else gets a generic word. */
-export const KNOWN_JOBS = ["reconcile-review-inbox", "check-archive-text", "reconcile-documents", "watch-job-health"];
+export const KNOWN_JOBS = [
+  "reconcile-review-inbox",
+  "check-archive-text",
+  "reconcile-documents",
+  "dispatch-push-notices",
+  "watch-job-health",
+];
 const KNOWN_PROVIDERS = ["anthropic", "claude-code"];
 const KNOWN_AI_FAILURES = ["NOT_CONFIGURED", "AUTHENTICATION", "MODEL_UNAVAILABLE", "INVALID_REQUEST", "RATE_LIMITED",
   "PROVIDER_UNAVAILABLE", "TIMEOUT"];

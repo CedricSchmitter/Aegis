@@ -118,6 +118,12 @@ aegis:
     # Watch over the recurring jobs (ADR-0014): members get a notice when a job is stale or no longer
     # scheduled. Stale thresholds are two job intervals plus 10 minutes, so five minutes adds little delay.
     job-health-watch-interval: 5m
+  push:
+    # Web Push to the members' devices (ADR-0026). Unread notices are pushed once per device within the catch-up
+    # window; older ones stay in the inbox only. The subject is the contact URI push services may use.
+    dispatch-interval: 1m
+    catch-up-window: 24h
+    subject: ${AEGIS_PUSH_SUBJECT:mailto:aegis@aegis.invalid}
   storage:
     # Free space and backup health (ADR-0015). The data path is measured through the JDK; on the VM it is
     # the disk that also holds the archive and the databases. A disk is low below 10 % or 5 GB free, whichever is

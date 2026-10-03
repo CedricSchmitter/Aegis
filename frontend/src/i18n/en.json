@@ -765,12 +765,14 @@
         "reconcile-review-inbox": "Review inbox reconciliation",
         "check-archive-text": "Recognized text check",
         "reconcile-documents": "Document processing reconciliation",
+        "dispatch-push-notices": "Send notifications",
         "watch-job-health": "Watch jobs, backup and storage"
       },
       "purpose": {
         "reconcile-review-inbox": "Adds new items to the review inbox and notifies the members.",
         "check-archive-text": "Checks whether the archive recognized text in archived documents.",
         "reconcile-documents": "Resumes interrupted archival and cleans up staging files.",
+        "dispatch-push-notices": "Sends new messages to the devices that have notifications switched on.",
         "watch-job-health": "Notifies the members when another background job stops running, the backup fails or storage runs low."
       }
     }
@@ -925,7 +927,72 @@
       "saveFailed": "The appearance was not saved. The previous choice still applies."
     }
   },
+  "push": {
+    "title": "Notifications",
+    "device": {
+      "label": "On this device",
+      "onHint": "New messages appear here, even when Aegis is closed.",
+      "offHint": "Off. The inbox in Aegis still shows everything.",
+      "unsupported": "This browser cannot receive notifications.",
+      "insecure": "Notifications only work on the secure HTTPS address.",
+      "serverUnavailable": "The server cannot send notifications right now.",
+      "blocked": "Notifications are blocked in the browser. Allow them in the site settings, then switch them on here.",
+      "noWorker": "Reload the page and try again.",
+      "on": "Notifications are on for this device.",
+      "off": "Notifications are off for this device.",
+      "removed": "The device no longer receives notifications."
+    },
+    "test": {
+      "send": "Send test notification",
+      "SENT": "Sent. It should appear shortly.",
+      "FAILED": "The notification service did not accept it. Try again later.",
+      "EXPIRED": "This device is no longer registered. Switch notifications off and on again.",
+      "UNAVAILABLE": "The server cannot send notifications right now."
+    },
+    "categories": "What is notified",
+    "category": {
+      "TASKS": {
+        "label": "Tasks",
+        "hint": "Assigned or completed"
+      },
+      "DEADLINES": {
+        "label": "Deadlines",
+        "hint": "Contract cancellation deadlines"
+      },
+      "REVIEW": {
+        "label": "Reviews",
+        "hint": "New items in the review inbox"
+      },
+      "SYSTEM": {
+        "label": "System",
+        "hint": "Background jobs, backup and storage"
+      }
+    },
+    "details": "Details on the lock screen",
+    "detailsHint": "For example the task title. Off: only the kind of message.",
+    "quiet": {
+      "label": "Quiet hours",
+      "hint": "During this time everything waits in the inbox and arrives together afterwards.",
+      "from": "From",
+      "until": "Until"
+    },
+    "otherDevices": "Other devices",
+    "unknownDevice": "Unknown device",
+    "state": {
+      "ACTIVE": "Active",
+      "FAILING": "Delivery failing",
+      "EXPIRED": "Unregistered"
+    },
+    "lastSent": "last sent {{time}}",
+    "remove": "Remove"
+  },
   "errors": {
+    "push.subscription.invalid": "The notification registration is invalid. Switch notifications off and on again.",
+    "push.endpoint.notAllowed": "This notification service is not supported.",
+    "push.category.invalid": "Unknown kind of message.",
+    "push.quietHours.incomplete": "Quiet hours need a start and an end.",
+    "push.quietHours.empty": "Quiet hours must start and end at different times.",
+    "pushDevice.notFound": "Device not found.",
     "generic": "That did not work. Please try again.",
     "network": "No connection to the server.",
     "auth.required": "Please sign in.",

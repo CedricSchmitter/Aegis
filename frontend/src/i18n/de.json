@@ -765,12 +765,14 @@
         "reconcile-review-inbox": "Prüfkorb abgleichen",
         "check-archive-text": "Texterkennung prüfen",
         "reconcile-documents": "Dokumentverarbeitung abgleichen",
+        "dispatch-push-notices": "Benachrichtigungen senden",
         "watch-job-health": "Jobs, Backup und Speicher überwachen"
       },
       "purpose": {
         "reconcile-review-inbox": "Legt neue Einträge im Prüfkorb an und benachrichtigt die Mitglieder.",
         "check-archive-text": "Prüft bei archivierten Dokumenten, ob das Archiv Text erkannt hat.",
         "reconcile-documents": "Setzt unterbrochene Archivierungen fort und räumt Zwischendateien auf.",
+        "dispatch-push-notices": "Schickt neue Meldungen an die Geräte, auf denen Benachrichtigungen an sind.",
         "watch-job-health": "Benachrichtigt die Mitglieder, wenn ein anderer Hintergrundjob nicht mehr läuft, das Backup ausfällt oder der Speicherplatz knapp wird."
       }
     }
@@ -925,7 +927,72 @@
       "saveFailed": "Die Darstellung wurde nicht gespeichert. Es gilt weiter die bisherige Auswahl."
     }
   },
+  "push": {
+    "title": "Benachrichtigungen",
+    "device": {
+      "label": "Auf diesem Gerät",
+      "onHint": "Neue Meldungen erscheinen hier, auch wenn Aegis geschlossen ist.",
+      "offHint": "Aus. Der Eingang in Aegis zeigt weiterhin alles.",
+      "unsupported": "Dieser Browser kann keine Benachrichtigungen empfangen.",
+      "insecure": "Benachrichtigungen gehen nur über die sichere HTTPS-Adresse.",
+      "serverUnavailable": "Der Server kann gerade keine Benachrichtigungen senden.",
+      "blocked": "Benachrichtigungen sind im Browser blockiert. Erlaube sie in den Website-Einstellungen und schalte sie dann hier ein.",
+      "noWorker": "Lade die Seite neu und versuche es noch einmal.",
+      "on": "Benachrichtigungen sind auf diesem Gerät an.",
+      "off": "Benachrichtigungen sind auf diesem Gerät aus.",
+      "removed": "Das Gerät bekommt keine Benachrichtigungen mehr."
+    },
+    "test": {
+      "send": "Testbenachrichtigung senden",
+      "SENT": "Gesendet. Sie sollte gleich erscheinen.",
+      "FAILED": "Der Benachrichtigungsdienst hat nicht angenommen. Versuche es später noch einmal.",
+      "EXPIRED": "Dieses Gerät ist nicht mehr angemeldet. Schalte Benachrichtigungen aus und wieder ein.",
+      "UNAVAILABLE": "Der Server kann gerade keine Benachrichtigungen senden."
+    },
+    "categories": "Was gemeldet wird",
+    "category": {
+      "TASKS": {
+        "label": "Aufgaben",
+        "hint": "Zugewiesen oder erledigt"
+      },
+      "DEADLINES": {
+        "label": "Fristen",
+        "hint": "Kündigungsfristen von Verträgen"
+      },
+      "REVIEW": {
+        "label": "Prüfungen",
+        "hint": "Neue Einträge im Prüfkorb"
+      },
+      "SYSTEM": {
+        "label": "System",
+        "hint": "Hintergrundjobs, Backup und Speicherplatz"
+      }
+    },
+    "details": "Details auf dem Sperrbildschirm",
+    "detailsHint": "Zum Beispiel den Aufgabentitel. Aus: nur die Art der Meldung.",
+    "quiet": {
+      "label": "Ruhezeit",
+      "hint": "In dieser Zeit wartet alles im Eingang und kommt danach gesammelt.",
+      "from": "Von",
+      "until": "Bis"
+    },
+    "otherDevices": "Weitere Geräte",
+    "unknownDevice": "Unbekanntes Gerät",
+    "state": {
+      "ACTIVE": "Aktiv",
+      "FAILING": "Zustellung schlägt fehl",
+      "EXPIRED": "Abgemeldet"
+    },
+    "lastSent": "zuletzt gesendet {{time}}",
+    "remove": "Entfernen"
+  },
   "errors": {
+    "push.subscription.invalid": "Die Anmeldung für Benachrichtigungen ist ungültig. Schalte sie aus und wieder ein.",
+    "push.endpoint.notAllowed": "Dieser Benachrichtigungsdienst wird nicht unterstützt.",
+    "push.category.invalid": "Unbekannte Art von Meldung.",
+    "push.quietHours.incomplete": "Die Ruhezeit braucht Beginn und Ende.",
+    "push.quietHours.empty": "Beginn und Ende der Ruhezeit müssen verschieden sein.",
+    "pushDevice.notFound": "Gerät nicht gefunden.",
     "generic": "Das hat nicht geklappt. Bitte versuche es erneut.",
     "network": "Keine Verbindung zum Server.",
     "auth.required": "Bitte melde dich an.",
