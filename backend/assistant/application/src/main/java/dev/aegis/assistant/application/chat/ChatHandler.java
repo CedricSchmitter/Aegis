@@ -71,12 +71,10 @@ public class ChatHandler implements WorkloadHandler {
             Today is %s (%s) in the household's time zone %s.
 
             How to research:
-            - household_catalog lists the folders and labels. Use them to narrow a search, but labels and folders \
-            can be missing or wrong: when a filtered search finds nothing useful, search again with words only or a \
-            broader filter, and say in a caveat when documents may have been missed.
-            - search_documents finds documents by words in their title and archived text and by folder and labels. \
-            It returns metadata only. Read a document with read_document before you rely on it; long documents come \
-            in parts, so read further parts when the answer may be there.
+            %s
+            - A search result's title, folder and labels can be wrong too. When a result matches your search words \
+            but its title or labels do not seem to fit, read it before you leave it out, above all when the question \
+            asks for every document, contract or insurance of a kind.
             - list_contracts and read_contract show the contracts with their facts. Each fact names the document, \
             page and quote it comes from and whether a member confirmed it; the cancellation deadline is calculated \
             from confirmed facts only. Prefer confirmed facts, and check them in the documents when they matter.
@@ -106,6 +104,19 @@ public class ChatHandler implements WorkloadHandler {
             - When the member asks you to change, create, complete or delete something, explain that you can only \
             read, and name the page of the app where they can do it themselves.""";
 
+    private static final String RESEARCH_WITH_LABELS = """
+            - household_catalog lists the folders and labels. Use them to narrow a search, but labels and folders \
+            can be missing or wrong: when a filtered search finds nothing useful, search again with words only or a \
+            broader filter, and say in a caveat when documents may have been missed.
+            - search_documents finds documents by words in their title and archived text and by folder and labels. \
+            It returns metadata only. Read a document with read_document before you rely on it; long documents come \
+            in parts, so read further parts when the answer may be there.""";
+
+    private static final String RESEARCH_BY_TEXT = """
+            - search_document_text finds documents by words in their title and archived text. It returns metadata \
+            only. Read a document with read_document before you rely on it; long documents come in parts, so read \
+            further parts when the answer may be there.""";
+
     private static final Map<String, Object> OUTPUT_SCHEMA = Map.of(
             "type", "object",
             "properties", Map.of(
@@ -130,15 +141,17 @@ public class ChatHandler implements WorkloadHandler {
     private final TaskQueries tasks;
     private final ZoneId zone;
     private final Clock clock;
+    private final ChatRetrieval retrieval;
 
     public ChatHandler(ConversationRepository conversations, DocumentTextQuery documentTexts,
-            ContractQueries contracts, TaskQueries tasks, ZoneId zone, Clock clock) {
+            ContractQueries contracts, TaskQueries tasks, ZoneId zone, Clock clock, ChatRetrieval retrieval) {
         this.conversations = conversations;
         this.documentTexts = documentTexts;
         this.contracts = contracts;
         this.tasks = tasks;
         this.zone = zone;
         this.clock = clock;
+        this.retrieval = retrieval;
     }
 
     @Override
@@ -148,7 +161,7 @@ public class ChatHandler implements WorkloadHandler {
 
     @Override
     public Set<String> grantedTools() {
-        return ChatTools.GRANTED;
+        return retrieval.tools();
     }
 
     @Override
@@ -163,7 +176,7 @@ public class ChatHandler implements WorkloadHandler {
     String system(ProductLocale locale) {
         LocalDate today = LocalDate.now(clock.withZone(zone));
         return SYSTEM.formatted(today, today.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH), zone,
-                locale == ProductLocale.EN ? "English" : "German");
+                retrieval == ChatRetrieval.TEXT_ONLY ? RESEARCH_BY_TEXT : RESEARCH_WITH_LABELS, locale == ProductLocale.EN ? "English" : "German");
     }
 
     /**

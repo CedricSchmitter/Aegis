@@ -54,6 +54,8 @@ services:
       AEGIS_AI_DAILY_COST_LIMIT: ${AEGIS_AI_DAILY_COST_LIMIT:-0.25}
       AEGIS_AI_SUBSCRIPTION_DAILY_COST_LIMIT: ${AEGIS_AI_SUBSCRIPTION_DAILY_COST_LIMIT:-50.00}
       AEGIS_AI_SUBSCRIPTION_MAX_RUN_COST: ${AEGIS_AI_SUBSCRIPTION_MAX_RUN_COST:-0.50}
+      # LABELS_AND_TEXT, or TEXT_ONLY only while comparing retrieval with the assistant's reference questions.
+      AEGIS_AI_CHAT_RETRIEVAL: ${AEGIS_AI_CHAT_RETRIEVAL:-LABELS_AND_TEXT}
       TZ: Europe/Berlin
     volumes:
       - ${AEGIS_DATA_DIR}/ingress:/srv/aegis/ingress

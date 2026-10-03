@@ -44,7 +44,11 @@ public final class AiDtos {
             String model,
             @Schema(description = "Attempts counted against maxAttempts; waits for the next budget day do not count")
             int attempt, int maxAttempts, boolean cancelRequested, int modelCalls, int toolCalls,
-            int deniedToolCalls, long inputTokens, long outputTokens, BigDecimal cost, BigDecimal maxCost,
+            int deniedToolCalls, long inputTokens, long outputTokens,
+            @Schema(description = "Input tokens the provider read from its prompt cache, not part of inputTokens")
+            long cacheReadTokens,
+            @Schema(description = "Input tokens the provider wrote to its prompt cache, not part of inputTokens")
+            long cacheWriteTokens, BigDecimal cost, BigDecimal maxCost,
             String currency, @Schema(nullable = true, description = "Validated result as JSON") String output,
             @Schema(nullable = true) String failureCategory, @Schema(nullable = true) String failureCode,
             @Schema(nullable = true) String failureMessage, @Schema(nullable = true) Instant nextAttemptAt,
@@ -54,7 +58,8 @@ public final class AiDtos {
             return new RunDto(run.id(), run.workload(), run.state(), run.retryOf(), run.requestedBy(),
                     run.requestedAt(), run.provider(), run.model(), run.attempt(), run.maxAttempts(),
                     run.cancelRequested(), run.modelCalls(), run.toolCalls(), run.deniedToolCalls(),
-                    run.inputTokens(), run.outputTokens(), run.cost(), run.maxCost(), run.currency(), run.output(),
+                    run.inputTokens(), run.outputTokens(), run.cacheReadTokens(), run.cacheWriteTokens(), run.cost(),
+                    run.maxCost(), run.currency(), run.output(),
                     run.failureCategory(), run.failureCode(), run.failureMessage(), run.nextAttemptAt(),
                     run.finishedAt(), run.sources().stream().map(SourceDto::from).toList(),
                     run.steps().stream().map(StepDto::from).toList(), run.version());

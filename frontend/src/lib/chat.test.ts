@@ -66,7 +66,7 @@ describe("progress steps", () => {
         { kind: "ATTEMPT", tool: null, at: "t" },
         { kind: "MODEL", tool: null, at: "t" },
         { kind: "TOOL", tool: "search_documents", at: "t" },
-        { kind: "TOOL", tool: "search_documents", at: "t" },
+        { kind: "TOOL", tool: "search_document_text", at: "t" },
         { kind: "MODEL", tool: null, at: "t" },
         { kind: "TOOL", tool: "read_document", at: "t" },
         { kind: "TOOL", tool: "something_new", at: "t" },
