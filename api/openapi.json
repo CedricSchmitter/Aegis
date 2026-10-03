@@ -1162,6 +1162,18 @@
         "required" : [ "createdAt", "id", "title", "turns", "updatedAt" ],
         "type" : "object"
       },
+      "ConversationSearchDto" : {
+        "properties" : {
+          "conversations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ConversationSummaryDto"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "conversations" ],
+        "type" : "object"
+      },
       "ConversationSummaryDto" : {
         "properties" : {
           "createdAt" : {
@@ -3976,6 +3988,36 @@
           }
         },
         "summary" : "Start a conversation with its first question",
+        "tags" : [ "chat" ]
+      }
+    },
+    "/api/chat/conversations/search" : {
+      "get" : {
+        "description" : "Every word must occur, ignoring case, in the title, a question or an answer. At most 200 characters; blank text lists the most recent conversations.",
+        "operationId" : "searchConversations",
+        "parameters" : [ {
+          "description" : "Words to find",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "default" : "",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConversationSearchDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Find the member's conversations by words",
         "tags" : [ "chat" ]
       }
     },

@@ -32,6 +32,12 @@ public final class ChatDtos {
         }
     }
 
+    public record ConversationSearchDto(List<ConversationSummaryDto> conversations) {
+        static ConversationSearchDto from(List<ConversationSummary> found) {
+            return new ConversationSearchDto(found.stream().map(ConversationSummaryDto::from).toList());
+        }
+    }
+
     public record ConversationSummaryDto(UUID id, String title, Instant createdAt, Instant updatedAt,
             int questions) {
         static ConversationSummaryDto from(ConversationSummary summary) {

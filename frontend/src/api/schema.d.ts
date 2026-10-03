@@ -284,6 +284,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/conversations/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find the member's conversations by words
+         * @description Every word must occur, ignoring case, in the title, a question or an answer. At most 200 characters; blank text lists the most recent conversations.
+         */
+        get: operations["searchConversations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/conversations/{id}": {
         parameters: {
             query?: never;
@@ -2220,6 +2240,9 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        ConversationSearchDto: {
+            conversations: components["schemas"]["ConversationSummaryDto"][];
+        };
         ConversationSummaryDto: {
             /** Format: date-time */
             createdAt: string;
@@ -3509,6 +3532,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ConversationDto"];
+                };
+            };
+        };
+    };
+    searchConversations: {
+        parameters: {
+            query?: {
+                /** @description Words to find */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationSearchDto"];
                 };
             };
         };

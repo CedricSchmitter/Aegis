@@ -88,10 +88,12 @@ type SheetProps = {
   testId?: string;
   /** A wider panel on large screens, for forms with previews such as the upload. */
   wide?: boolean;
+  /** A full-height panel from the left edge on every screen, for lists to pick from such as earlier questions. */
+  side?: boolean;
 };
 
 /** A bottom sheet on phones and a centred panel on wider screens, for choices and short forms. */
-export function Sheet({ open, onClose, title, children, testId, wide = false }: SheetProps) {
+export function Sheet({ open, onClose, title, children, testId, wide = false, side = false }: SheetProps) {
   const { t } = useTranslation();
   const ref = useModal(open, onClose);
   const titleId = useId();
@@ -100,6 +102,7 @@ export function Sheet({ open, onClose, title, children, testId, wide = false }: 
       ref={ref}
       className="ui-sheet"
       data-wide={wide || undefined}
+      data-side={side || undefined}
       aria-labelledby={titleId}
       data-testid={testId}
       onClick={(event) => {

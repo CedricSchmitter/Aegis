@@ -7,6 +7,7 @@ import dev.aegis.shared.MemberId;
 import dev.aegis.shared.StaleVersionException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,20 @@ class InMemoryConversations implements ConversationRepository {
                 .map(conversation -> new ConversationHeader(conversation.id(), conversation.title(),
                         conversation.createdAt(), conversation.updatedAt(), conversation.turns().size()))
                 .toList();
+    }
+
+    @Override
+    public List<ConversationHeader> searchByOwner(MemberId owner, List<String> words, int limit) {
+        return findByOwner(owner, Integer.MAX_VALUE).stream()
+                .filter(header -> words.stream().allMatch(word -> contains(stored.get(header.id()), word)))
+                .limit(limit).toList();
+    }
+
+    private static boolean contains(Conversation conversation, String word) {
+        String wanted = word.toLowerCase(Locale.ROOT);
+        return conversation.title().toLowerCase(Locale.ROOT).contains(wanted) || conversation.turns().stream()
+                .anyMatch(turn -> turn.question().toLowerCase(Locale.ROOT).contains(wanted) || turn.answer()
+                        .map(answer -> answer.text().toLowerCase(Locale.ROOT).contains(wanted)).orElse(false));
     }
 
     @Override

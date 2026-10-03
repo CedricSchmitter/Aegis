@@ -106,6 +106,12 @@ The web app polls an open question every 1.5 seconds and shows the run's steps a
 "reading a document"); leaving and returning shows the same state. Answers are not streamed token by token: the
 subscription has no streaming, and the progress already shows what happens.
 
+Earlier conversations are hidden in a side panel ("Verlauf") opened from the chat page, so the page starts with the
+question field. The panel lists the 50 most recently updated conversations and has a search over all of the member's
+conversations (`GET /api/chat/conversations/search?q=`): every word, ignoring case, must occur in the title, a
+question or an answer text of the same conversation, possibly in different questions. Words are matched as plain text
+(no wildcards), at most eight words and 200 characters; other members' conversations are never found.
+
 ## Consequences
 
 - Questions work on the owner's subscription today and for both members once an API key is installed; the chat page

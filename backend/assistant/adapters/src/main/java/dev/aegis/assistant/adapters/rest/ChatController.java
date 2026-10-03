@@ -2,11 +2,13 @@ package dev.aegis.assistant.adapters.rest;
 
 import dev.aegis.assistant.adapters.rest.ChatDtos.AskQuestionRequest;
 import dev.aegis.assistant.adapters.rest.ChatDtos.ChatOverviewDto;
+import dev.aegis.assistant.adapters.rest.ChatDtos.ConversationSearchDto;
 import dev.aegis.assistant.adapters.rest.ChatDtos.ConversationDto;
 import dev.aegis.assistant.application.api.ChatCommands;
 import dev.aegis.assistant.application.api.ChatQueries;
 import dev.aegis.shared.Actor;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,6 +42,15 @@ public class ChatController {
     @GetMapping("/conversations")
     public ChatOverviewDto overview(Actor actor) {
         return ChatOverviewDto.from(queries.overview(actor));
+    }
+
+    @Operation(operationId = "searchConversations", summary = "Find the member's conversations by words",
+            description = "Every word must occur, ignoring case, in the title, a question or an answer. At most 200 "
+                    + "characters; blank text lists the most recent conversations.")
+    @GetMapping("/conversations/search")
+    public ConversationSearchDto search(Actor actor,
+            @Parameter(description = "Words to find") @RequestParam(name = "q", defaultValue = "") String q) {
+        return ConversationSearchDto.from(queries.search(actor, q));
     }
 
     @Operation(operationId = "startConversation", summary = "Start a conversation with its first question",

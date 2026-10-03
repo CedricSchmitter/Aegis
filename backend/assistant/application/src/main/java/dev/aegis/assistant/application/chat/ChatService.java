@@ -25,6 +25,7 @@ import dev.aegis.assistant.domain.chat.ChatAnswer;
 import dev.aegis.assistant.domain.chat.ChatTurn;
 import dev.aegis.assistant.domain.chat.Conversation;
 import dev.aegis.assistant.domain.chat.ConversationRepository;
+import dev.aegis.assistant.domain.chat.ConversationRepository.ConversationHeader;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
@@ -34,6 +35,7 @@ import dev.aegis.shared.ProductLocale;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,6 +50,8 @@ import java.util.UUID;
 public class ChatService implements ChatCommands, ChatQueries {
     static final int MAX_CONVERSATIONS = 50;
     static final int MAX_PROGRESS = 40;
+    static final int MAX_SEARCH_TEXT = 200;
+    static final int MAX_SEARCH_WORDS = 8;
 
     private final ConversationRepository conversations;
     private final AiRunRepository runs;
@@ -73,10 +77,36 @@ public class ChatService implements ChatCommands, ChatQueries {
         access.requireMember(actor);
         WorkloadEstimate estimate = runQueries.estimate(actor, Workload.CHAT.name());
         List<ConversationSummary> list = conversations.findByOwner(actor.memberId(), MAX_CONVERSATIONS).stream()
-                .map(header -> new ConversationSummary(header.id(), header.title(), header.createdAt(),
-                        header.updatedAt(), header.turns()))
-                .toList();
+                .map(ChatService::summary).toList();
         return new ChatOverview(estimate.refusal() == null, estimate.refusal(), list);
+    }
+
+    @Override
+    public List<ConversationSummary> search(Actor actor, String text) {
+        access.requireMember(actor);
+        List<String> words = searchWords(text);
+        List<ConversationHeader> found = words.isEmpty()
+                ? conversations.findByOwner(actor.memberId(), MAX_CONVERSATIONS)
+                : conversations.searchByOwner(actor.memberId(), words, MAX_CONVERSATIONS);
+        return found.stream().map(ChatService::summary).toList();
+    }
+
+    /** The distinct words of a search, at most eight; longer text is refused rather than silently cut. */
+    static List<String> searchWords(String text) {
+        String trimmed = text == null ? "" : text.strip();
+        if (trimmed.length() > MAX_SEARCH_TEXT) {
+            throw new InvalidInputException("validation.failed",
+                    "A search is at most " + MAX_SEARCH_TEXT + " characters");
+        }
+        if (trimmed.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(trimmed.split("\\s+")).distinct().limit(MAX_SEARCH_WORDS).toList();
+    }
+
+    private static ConversationSummary summary(ConversationHeader header) {
+        return new ConversationSummary(header.id(), header.title(), header.createdAt(), header.updatedAt(),
+                header.turns());
     }
 
     @Override

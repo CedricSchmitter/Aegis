@@ -18,6 +18,12 @@ public interface ConversationRepository {
     List<ConversationHeader> findByOwner(MemberId owner, int limit);
 
     /**
+     * The member's conversations in which every word occurs, ignoring case, in the title, a question or an answer
+     * text; the words may occur in different questions. Most recently updated first.
+     */
+    List<ConversationHeader> searchByOwner(MemberId owner, List<String> words, int limit);
+
+    /**
      * Inserts a new conversation (version 0) or updates an existing one if its stored version still matches, and
      * stores its turns; the conversation then carries the new version.
      *

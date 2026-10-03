@@ -16,6 +16,8 @@ import dev.aegis.bootstrap.support.FakePaperlessArchive;
 import dev.aegis.bootstrap.support.PostgresIT;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -249,6 +251,46 @@ class ChatIT extends PostgresIT {
         assertThat(anna.get("/api/chat/conversations/" + conversation).status()).isEqualTo(404);
         assertThat(jdbc.sql("SELECT count(*) FROM chat_turns WHERE conversation_id = ?").param(conversation)
                 .query(Long.class).single()).isZero();
+    }
+
+    private static List<String> found(ApiClient client, String text) {
+        ApiClient.Response response = client.get("/api/chat/conversations/search?q="
+                + URLEncoder.encode(text, StandardCharsets.UTF_8));
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return values(client.json(response).path("conversations"), "id");
+    }
+
+    @Test
+    void searchFindsTheMembersOwnConversationsByWordsFromAnyQuestionOrAnswer() {
+        ApiClient anna = loggedIn(ANNA);
+        ApiClient ben = loggedIn(BEN);
+        String marker = "hotel" + UUID.randomUUID().toString().substring(0, 8);
+        model.answer(json(answer("Das Hotel Mainufer lag in Frankfurt-Sachsenhausen.", List.of())))
+                .answer(json(answer("Zwei Nächte im Mai.", List.of())));
+        UUID conversation = UUID.randomUUID();
+        assertThat(anna.postJson("/api/chat/conversations",
+                question(conversation, UUID.randomUUID(), "Wo war das " + marker + "?")).status()).isEqualTo(201);
+        awaitTurn(anna, conversation, 0, "ANSWERED");
+        assertThat(anna.postJson("/api/chat/conversations/" + conversation + "/turns",
+                question(conversation, UUID.randomUUID(), "Wie lange blieben wir?")).status()).isEqualTo(201);
+        awaitTurn(anna, conversation, 1, "ANSWERED");
+        String id = conversation.toString();
+
+        assertThat(found(anna, marker.toUpperCase() + " sachsenhausen")).as("title and answer, any case")
+                .containsExactly(id);
+        assertThat(found(anna, "  " + marker + "   NÄCHTE  blieben")).as("words from different questions")
+                .containsExactly(id);
+        assertThat(found(anna, marker + " Berlin")).as("every word must occur").isEmpty();
+        assertThat(found(anna, "hote_" + marker.substring(5))).as("wildcards are plain characters").isEmpty();
+        assertThat(found(anna, "")).as("blank lists the most recent").contains(id);
+        JsonNode summary = anna.json(anna.get("/api/chat/conversations/search?q=" + marker)).path("conversations")
+                .path(0);
+        assertThat(summary.path("questions").asInt()).isEqualTo(2);
+        assertThat(summary.path("title").asText()).isEqualTo("Wo war das " + marker + "?");
+        assertThat(found(ben, marker)).as("private").isEmpty();
+        ApiClient.Response overlong = anna.get("/api/chat/conversations/search?q=" + "x".repeat(201));
+        assertThat(overlong.status()).isEqualTo(400);
+        assertThat(overlong.body()).contains("validation.failed");
     }
 
     @Test
