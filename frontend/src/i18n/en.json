@@ -817,7 +817,7 @@
       "details": "Claude API: {{model}} · {{input}} / {{output}} per million tokens (input / output)",
       "changedBy": "Changed by {{name}} on {{date}}",
       "changed": "{{workload}}: {{family}} from the next run on.",
-      "scope": "The model choice applies to the whole household and to scheduled work from the next run on; running runs keep their model. The Claude subscription always uses the newest model of the chosen family."
+      "scope": "Applies to the whole household from the next run on."
     },
     "workload": {
       "CONNECTION_CHECK": "Connection check",
@@ -1642,7 +1642,7 @@
     "questionCount": "{{count}} questions",
     "questionCount_one": "{{count}} question",
     "introTitle": "Ask Aegis",
-    "intro": "Aegis reads your documents, contracts and tasks and answers with numbered sources. Every quote is checked against its document. Aegis changes nothing while doing so.",
+    "intro": "Questions about your documents, contracts and tasks, with sources.",
     "example1": "When can I cancel the electricity contract at the earliest?",
     "example2": "What does the home contents insurance cost now?",
     "example3": "Which tasks are due this week?",
@@ -1687,9 +1687,9 @@
       "name": { "opus": "Opus", "sonnet": "Sonnet", "haiku": "Haiku" }
     },
     "unavailable": {
-      "generic": "Questions are not possible right now. Documents, search and tasks work as usual.",
-      "ai.notConfigured": "No AI connection is set up for questions. Documents, search and tasks work as usual.",
-      "ai.provider.memberNotAllowed": "AI currently runs through a personal Claude subscription that is not enabled for your account. Documents, search and tasks work as usual.",
+      "generic": "Questions are not possible right now.",
+      "ai.notConfigured": "No AI connection is set up for questions.",
+      "ai.provider.memberNotAllowed": "AI currently runs through a personal Claude subscription that is not enabled for your account.",
       "ai.workload.unavailable": "Questions are not set up in this installation.",
       "ai.price.unknown": "No price is set for the chosen AI model, so questions are blocked."
     }

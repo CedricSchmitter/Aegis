@@ -137,7 +137,7 @@ describe("AI model choice", () => {
     ]);
     expect(screen.queryByTestId("ai-model-CONNECTION_CHECK")).toBeNull();
     expect(screen.getByText(/Claude API: claude-sonnet-5-5/)).toBeTruthy();
-    expect(screen.getByText(/gilt für den ganzen Haushalt/)).toBeTruthy();
+    expect(screen.getByText(/für den ganzen Haushalt/)).toBeTruthy();
   });
 
   it("sends the chosen family with the version it was based on and shows who changed it", async () => {
