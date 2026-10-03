@@ -812,7 +812,7 @@
       "details": "Claude API: {{model}} · {{input}} / {{output}} je Million Tokens (Eingabe / Ausgabe)",
       "changedBy": "Geändert von {{name}} am {{date}}",
       "changed": "{{workload}}: ab dem nächsten Lauf {{family}}.",
-      "scope": "Die Modellwahl gilt für den ganzen Haushalt und für geplante Arbeit, jeweils ab dem nächsten Lauf; laufende Läufe behalten ihr Modell. Das Claude-Abo nutzt immer das neueste Modell der gewählten Familie."
+      "scope": "Gilt ab dem nächsten Lauf für den ganzen Haushalt."
     },
     "workload": {
       "CONNECTION_CHECK": "Verbindungsprüfung",
@@ -1636,7 +1636,7 @@
     "questionCount": "{{count}} Fragen",
     "questionCount_one": "{{count}} Frage",
     "introTitle": "Frag Aegis",
-    "intro": "Aegis liest eure Dokumente, Verträge und Aufgaben und antwortet mit nummerierten Quellen. Jedes Zitat wird gegen das Dokument geprüft. Aegis ändert dabei nichts.",
+    "intro": "Fragen zu euren Dokumenten, Verträgen und Aufgaben, mit Quellenangaben.",
     "example1": "Wann kann ich den Stromvertrag frühestens kündigen?",
     "example2": "Was kostet die Hausratversicherung inzwischen?",
     "example3": "Welche Aufgaben sind diese Woche fällig?",
@@ -1681,9 +1681,9 @@
       "name": { "opus": "Opus", "sonnet": "Sonnet", "haiku": "Haiku" }
     },
     "unavailable": {
-      "generic": "Fragen sind gerade nicht möglich. Dokumente, Suche und Aufgaben funktionieren wie gewohnt.",
-      "ai.notConfigured": "Für Fragen ist keine KI-Verbindung eingerichtet. Dokumente, Suche und Aufgaben funktionieren wie gewohnt.",
-      "ai.provider.memberNotAllowed": "Die KI läuft gerade über ein persönliches Claude-Abo, das für dein Konto nicht freigegeben ist. Dokumente, Suche und Aufgaben funktionieren wie gewohnt.",
+      "generic": "Fragen sind gerade nicht möglich.",
+      "ai.notConfigured": "Für Fragen ist keine KI-Verbindung eingerichtet.",
+      "ai.provider.memberNotAllowed": "Die KI läuft gerade über ein persönliches Claude-Abo, das für dein Konto nicht freigegeben ist.",
       "ai.workload.unavailable": "Fragen sind in dieser Installation nicht eingerichtet.",
       "ai.price.unknown": "Für das gewählte KI-Modell ist kein Preis hinterlegt, deshalb sind Fragen gesperrt."
     }
