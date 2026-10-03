@@ -145,7 +145,6 @@ export function FoldersPage() {
     <div className="flex max-w-3xl flex-col gap-4">
       <BackLink to="/documents">{t("documents.title")}</BackLink>
       <BigTitle count={t("folders.count", { count: categories.length })}>{t("folders.title")}</BigTitle>
-      <p className="-mt-2 text-sm leading-relaxed text-text-3">{t("folders.intro")}</p>
       <ErrorBox message={error} />
       {message && <InfoBox>{message}</InfoBox>}
 

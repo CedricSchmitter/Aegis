@@ -105,7 +105,7 @@
     "noPreview": "There is no preview for this format here.",
     "subjects": "About",
     "uploading": "Saving …",
-    "uploaded": "“{{title}}” has been stored durably. Archival is in progress.",
+    "uploaded": "“{{title}}” saved.",
     "duplicate": "This file already existed: “{{title}}”.",
     "duplicateTrashed": "This file is already in the trash: “{{title}}”. Open the trash to restore it.",
     "search": "Search",
@@ -169,7 +169,6 @@
     "filtersActive": "{{count}} filters active",
     "filtersActive_one": "{{count}} filter active",
     "clearFilters": "Clear filters",
-    "filterLogic": "Several values in one group count as OR, different groups as AND.",
     "matchMode": "Matching",
     "matchAny": "any of them",
     "matchAll": "all of them",
@@ -201,9 +200,8 @@
     "labelsSaved": "Labels saved.",
     "folderSaved": "Filing saved.",
     "suggestion": "Suggestion",
-    "suggestionHint": "Suggestions come from automatic classification and only take effect once you accept them.",
+    "suggestionHint": "Takes effect only once accepted.",
     "confidence": "Model score {{value}} %",
-    "confidenceHint": "The model score is the model's own estimate, not a verified guarantee.",
     "accept": "Accept",
     "reject": "Reject",
     "addLabel": "Add label",
@@ -395,7 +393,6 @@
       "contractualHint": "This is the contractual deadline. Planned work and reminders are separate and never move it.",
       "evaluatedOn": "Calculated for {{date}}",
       "insufficient": "No cancellation deadline can be calculated.",
-      "insufficientHint": "Aegis calculates only from confirmed rules and never estimates a deadline.",
       "insufficientUnspecified": "The confirmed statements do not establish a deadline.",
       "missing": "Missing: {{types}}",
       "contradicting": "Confirmed statements contradict each other and need a decision first: {{types}}",
@@ -407,7 +404,7 @@
     },
     "conflicts": {
       "title": "Conflicts",
-      "hint": "Aegis reports contradictions and does not choose between them. As long as a conflict stands, no value counts as effective for those days.",
+      "hint": "As long as a conflict stands, no value counts as effective for those days.",
       "established": "Confirmed so far:",
       "against": "Contradicted by:",
       "kind": {
@@ -425,7 +422,6 @@
       "new": "Enter a statement",
       "newLabel": "Enter a statement about the contract",
       "enter": "Save statement",
-      "enterHint": "What you enter counts as confirmed, because a member states it.",
       "type": "What does the document state?",
       "summary": "{{type}}: {{value}}",
       "valueText": "Value",
@@ -483,7 +479,7 @@
       "rename": "Rename",
       "renameLabel": "Rename the contract",
       "status": "Status",
-      "statusHint": "The status records what the household did with the contract. It does not change any statement or deadline."
+      "statusHint": "The status records what the household did with the contract."
     }
   },
   "inbox": {
@@ -669,7 +665,7 @@
     "exportLine": "{{generation}}: {{documents}} documents, {{tasks}} tasks",
     "missingOriginals": "{{count}} originals missing from the export",
     "storageTitle": "Backup and storage",
-    "storageIntro": "The external backup runs every night at 03:30 to the USB disk on the server. If it fails or space runs low, every member gets a message.",
+    "storageIntro": "The external backup runs every night at 03:30 to the USB disk on the server.",
     "backup": {
       "title": "External backup",
       "lastAttempt": "Last attempt: {{date}}",
@@ -786,8 +782,8 @@
     "cancelRequested": "Cancellation was requested.",
     "retryStarted": "A new run was started.",
     "configured": "An AI provider is set up on the server.",
-    "notConfigured": "No AI provider is set up. Upload, search and tasks work without AI.",
-    "memberNotAllowed": "Without an API key, AI uses a personal Claude subscription that is not enabled for your account. Upload, search and tasks work as usual.",
+    "notConfigured": "No AI provider is set up.",
+    "memberNotAllowed": "Without an API key, AI uses a personal Claude subscription that is not enabled for your account.",
     "provider": {
       "anthropic": "Claude API",
       "claude-code": "Claude subscription"
@@ -880,7 +876,7 @@
     "move": "Move to trash",
     "changedMeanwhile": "This was changed in the meantime. The view is up to date again – please check it once more.",
     "section": "Delete",
-    "documentHint": "The original is kept, and so are tasks and contracts that refer to the document.",
+    "documentHint": "Tasks and contracts stay linked.",
     "contractHint": "All statements are kept. While the contract is in the trash, it gets no cancellation reminder.",
     "sourceInTrash": "(in the trash)",
     "purge": "Delete permanently",
@@ -1202,7 +1198,6 @@
     "count_one": "{{count}} folder",
     "deleteTitle": "Delete folder?",
     "deleteHint": "Documents and subfolders move one level up; no document is ever deleted.",
-    "intro": "Folders are the shared filing structure. Every document sits in exactly one folder or in Unsorted.",
     "tree": "Folder tree",
     "empty": "No folders yet.",
     "create": "Create folder",
@@ -1297,7 +1292,7 @@
     "reprocess": "Classify again",
     "requested": "Classification has started.",
     "costHint": "Uses the shared daily AI budget.",
-    "policyHint": "Only what the text evidences and the vocabulary already knows is applied. Everything else stays a suggestion. Your decisions are not overwritten by later runs.",
+    "policyHint": "Only what the text evidences is applied. Your decisions stay.",
     "history": "Earlier results ({{count}})",
     "analyzeSelected": "Classify selection",
     "selectionLimit": "At most {{max}} documents can be classified at once.",
@@ -1411,7 +1406,7 @@
     "revert": "Move back to Unsorted",
     "reverted": "The document is back in Unsorted.",
     "manual": "Filed by a household member.",
-    "hint": "Aegis never creates folders on its own. You can change the names and the parent folder first."
+    "hint": "You can change the names and the parent folder first."
   },
   "share": {
     "title": "Save shared files",
@@ -1426,8 +1421,8 @@
     "discardAll": "Discard",
     "discardAllConfirm": "Discard {{count}} shared files without saving them? The originals stay in the app you shared from.",
     "discardAllConfirm_one": "Discard the shared file without saving it? The original stays in the app you shared from.",
-    "done": "{{count}} files are stored durably. Archival runs in the background.",
-    "done_one": "The file is stored durably. Archival runs in the background.",
+    "done": "{{count}} files saved.",
+    "done_one": "File saved.",
     "returnHint": "Use your phone's back button to return to the app you shared from.",
     "toDocuments": "Show documents",
     "openDocument": "Open document",
@@ -1599,7 +1594,7 @@
     },
     "result": {
       "running": "Creating the new documents …",
-      "runningHint": "This usually takes only a moment. You can leave this page; it continues anyway.",
+      "runningHint": "You can leave this page.",
       "done_one": "Done: {{count}} new document",
       "done": "Done: {{count}} new documents",
       "existing": "Already existed – the existing document is used.",

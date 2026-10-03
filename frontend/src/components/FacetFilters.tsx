@@ -56,7 +56,6 @@ export function FacetFilters({ filters, facets, labels, members, onChange }: Pro
 
   return (
     <div className="flex flex-col gap-4" data-testid="facet-filters">
-      <p className="text-sm text-text-3">{t("documents.filterLogic")}</p>
       {FACET_GROUPS.map((group) => {
         const counts = facets.values?.[group] ?? {};
         const selected = selectedValues(filters, group);

@@ -31,7 +31,7 @@ import { ProcessingSteps } from "../components/ui";
 import { EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
 import { documentProgress } from "../lib/documentView";
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
-import { subjectChoices, subjectKey, suggestions } from "../lib/labels";
+import { subjectChoices, subjectKey } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
 import { searchablePdf } from "../lib/searchablePdf";
 import { awaitingTextCheck } from "../lib/textRecognition";
@@ -277,7 +277,6 @@ export function DocumentDetailPage() {
   if (!document) return <ErrorBox message={loadError} />;
   const p = document.processing;
   const folderName = (folderId: string) => categories.find((category) => category.id === folderId)?.name ?? "";
-  const pending = suggestions(document.classification.labels);
   const trashed = !!document.trash;
   const searchable = searchablePdf(document);
   const progress = documentProgress(document);
@@ -458,7 +457,6 @@ export function DocumentDetailPage() {
             />
             {document.classification.labels.length === 0 && <p className={hint}>{t("documents.noLabels")}</p>}
             <p className="text-xs text-text-3">{t("documents.inheritedFromFolder")}</p>
-            {pending.length > 0 && <p className="text-xs text-text-3">{t("documents.confidenceHint")}</p>}
             {editingLabels && (
               <LabelEditor
                 key={document.classification.version}
