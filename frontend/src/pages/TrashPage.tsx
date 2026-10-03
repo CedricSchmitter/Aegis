@@ -10,7 +10,15 @@ import { Dialog, Toast } from "../components/ui";
 import { failureReasonText } from "../lib/failureReasons";
 import { formatDate, formatDateTime } from "../lib/format";
 import { problemMessage } from "../lib/problem";
-import { countTrash, filterTrash, hasPendingPurge, mergeTrash, TRASH_KINDS, type TrashEntry, type TrashKind } from "../lib/trash";
+import { countTrash, emptiableTrash, filterTrash, hasPendingPurge, mergeTrash, TRASH_KINDS, type TrashEntry, type TrashKind } from "../lib/trash";
+
+/** Asks the record's own context to delete it permanently, with the version the trash view showed. */
+async function requestPurge(entry: TrashEntry) {
+  const options = { params: { path: { id: entry.id } }, body: { expectedVersion: entry.version } };
+  if (entry.kind === "document") unwrap(await api.POST("/api/documents/{id}/purge", options));
+  else if (entry.kind === "task") unwrap(await api.POST("/api/tasks/{id}/purge", options));
+  else unwrap(await api.POST("/api/contracts/{id}/purge", options));
+}
 
 /** How often the view checks back while a document's permanent deletion runs in the background. */
 const PURGE_POLL_MS = 3000;
@@ -19,7 +27,8 @@ const PURGE_POLL_MS = 3000;
  * Everything the household moved to the trash: documents, tasks and contracts with who trashed them, when,
  * and until when they are guaranteed to stay restorable. Each one can also be deleted permanently from here, and only
  * here, after a danger dialog (ADR-0021). A document's deletion runs in the background, so the view checks
- * back until it is gone.
+ * back until it is gone. "Empty trash" sits below the last entry, so a member scrolls past everything it deletes, and
+ * requests the same per-record deletion for every entry after one danger dialog naming how many go.
  */
 export function TrashPage() {
   const { t, i18n } = useTranslation();
@@ -34,6 +43,9 @@ export function TrashPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<TrashEntry | null>(null);
   const [purged, setPurged] = useState<{ entry: TrashEntry; finished: boolean } | null>(null);
+  // The entries the "empty trash" dialog named, so it deletes exactly what it counted.
+  const [emptyTargets, setEmptyTargets] = useState<TrashEntry[] | null>(null);
+  const [emptied, setEmptied] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -84,10 +96,7 @@ export function TrashPage() {
     setPurged(null);
     setError(null);
     try {
-      const options = { params: { path: { id: entry.id } }, body: { expectedVersion: entry.version } };
-      if (entry.kind === "document") unwrap(await api.POST("/api/documents/{id}/purge", options));
-      else if (entry.kind === "task") unwrap(await api.POST("/api/tasks/{id}/purge", options));
-      else unwrap(await api.POST("/api/contracts/{id}/purge", options));
+      await requestPurge(entry);
       // A document leaves the archive in the background; tasks and contracts are gone at once.
       setPurged({ entry, finished: entry.kind !== "document" });
     } catch (failure) {
@@ -97,6 +106,27 @@ export function TrashPage() {
       setBusy(null);
       await load();
     }
+  };
+
+  const emptyTrash = async (targets: TrashEntry[]) => {
+    setBusy("empty");
+    setRestored(null);
+    setPurged(null);
+    setEmptied(null);
+    setError(null);
+    let failed = 0;
+    // One after another, so each record goes through its own checked deletion and one refusal does not stop the rest.
+    for (const entry of targets) {
+      try {
+        await requestPurge(entry);
+      } catch {
+        failed += 1;
+      }
+    }
+    if (failed > 0) setError(t("trash.emptyPartly", { count: failed }));
+    if (failed < targets.length) setEmptied(targets.length - failed);
+    setBusy(null);
+    await load();
   };
 
   const counts = entries ? countTrash(entries) : null;
@@ -196,6 +226,50 @@ export function TrashPage() {
         </ul>
       )}
 
+      {entries && emptiableTrash(entries).length > 0 && (
+        <div className="mt-4 flex flex-col gap-2 border-t border-line pt-4" data-testid="trash-empty-section">
+          <p className="text-sm leading-relaxed text-text-3">{t("trash.emptyTrashHint")}</p>
+          <button
+            type="button"
+            className="btn-danger self-start"
+            disabled={busy !== null}
+            onClick={() => setEmptyTargets(emptiableTrash(entries))}
+            data-testid="trash-empty"
+          >
+            {busy === "empty" ? t("trash.emptying") : t("trash.emptyTrash")}
+          </button>
+        </div>
+      )}
+
+      <Dialog
+        open={emptyTargets !== null}
+        onClose={() => setEmptyTargets(null)}
+        variant="danger"
+        eyebrow={t("ui.confirm.eyebrow")}
+        title={t("trash.emptyTrashTitle")}
+        actions={
+          <>
+            <button type="button" className="btn-ghost" onClick={() => setEmptyTargets(null)}>
+              {t("app.cancel")}
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              data-testid="trash-empty-confirm"
+              onClick={() => {
+                const targets = emptyTargets;
+                setEmptyTargets(null);
+                if (targets) void emptyTrash(targets);
+              }}
+            >
+              {t("trash.emptyTrashConfirm", { count: emptyTargets?.length ?? 0 })}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm leading-relaxed text-text-2">{t("trash.emptyTrashBody", { count: emptyTargets?.length ?? 0 })}</p>
+      </Dialog>
+
       <Dialog
         open={confirming !== null}
         onClose={() => setConfirming(null)}
@@ -228,6 +302,11 @@ export function TrashPage() {
       {purged && (
         <Toast key={`purged-${purged.entry.kind}-${purged.entry.id}`} title={t("trash.purgedTitle")} onDismiss={() => setPurged(null)} testId="trash-purge-toast">
           {t(purged.finished ? "trash.purgedNamed" : "trash.purgeStarted", { title: purged.entry.title })}
+        </Toast>
+      )}
+      {emptied !== null && (
+        <Toast key={`emptied-${emptied}`} title={t("trash.emptiedTitle")} onDismiss={() => setEmptied(null)} testId="trash-empty-toast">
+          {t("trash.emptied", { count: emptied })}
         </Toast>
       )}
       {restored && (

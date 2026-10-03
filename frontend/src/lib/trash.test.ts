@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ContractSummaryDto, DocumentDto, TaskDto } from "../api/types";
-import { countTrash, filterTrash, hasPendingPurge, mergeTrash } from "./trash";
+import { countTrash, emptiableTrash, filterTrash, hasPendingPurge, mergeTrash } from "./trash";
 
 const trash = (at: string) => ({ trashedBy: "m1", trashedAt: at, restorableUntil: "2026-10-22T10:00:00Z" });
 
@@ -80,5 +80,7 @@ describe("permanent deletion", () => {
     expect(entries[2].purge?.failureCode).toBe("paperless.rejected");
     expect(hasPendingPurge(entries)).toBe(true);
     expect(hasPendingPurge(entries.filter((entry) => entry.id !== "d1"))).toBe(false);
+    // Emptying the trash skips the deletion already running and retries the failed one.
+    expect(emptiableTrash(entries).map((entry) => entry.id)).toEqual(["t1", "d2"]);
   });
 });

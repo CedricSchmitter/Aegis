@@ -241,8 +241,8 @@ deadlines leave it out, while links to it still resolve and say that it is in th
 least 30 days (`aegis.trash.recovery-window`) and is never purged automatically. A trashed contract supersedes its
 open cancellation review, and restoring it reopens the same task. Paperless is not changed by trashing.
 
-From the trash page either member can delete a record permanently, one at a time after a danger dialog
-([ADR-0021](docs/architecture/adr/ADR-0021-permanent-deletion.md)). A document is removed by the background job
+From the trash page either member can delete a record permanently after a danger dialog, one at a time or all at
+once with "empty trash" below the last entry ([ADR-0021](docs/architecture/adr/ADR-0021-permanent-deletion.md)). A document is removed by the background job
 `purge-document`: its Paperless document including the Paperless trash entry, its staging copy, then the record with
 its classification, analysis and placement. Until that job is done it shows as being deleted and cannot be restored; a
 failed deletion is shown with a retry. Tasks and contracts are deleted at once. Tasks and contract facts that cited a

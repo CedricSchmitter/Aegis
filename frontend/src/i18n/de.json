@@ -860,7 +860,7 @@
       "task": "Aufgaben",
       "contract": "Verträge"
     },
-    "intro": "Gelöschte Dokumente, Aufgaben und Verträge bleiben mindestens bis zum angegebenen Datum wiederherstellbar. Endgültig löschen geht nur hier, einzeln und mit Bestätigung.",
+    "intro": "Gelöschte Dokumente, Aufgaben und Verträge bleiben mindestens bis zum angegebenen Datum wiederherstellbar. Endgültig löschen geht nur hier und immer mit Bestätigung.",
     "open": "Papierkorb",
     "filter": "Nach Art filtern",
     "empty": "Der Papierkorb ist leer.",
@@ -895,7 +895,20 @@
     "purgedNamed": "„{{title}}“ wurde endgültig gelöscht.",
     "purgeStarted": "„{{title}}“ wird jetzt endgültig gelöscht.",
     "sourceDeleted": "Quelle gelöscht",
-    "contractDeleted": "Vertrag gelöscht"
+    "contractDeleted": "Vertrag gelöscht",
+    "emptyTrash": "Papierkorb leeren",
+    "emptyTrashHint": "Löscht alles im Papierkorb endgültig, auch was oben gefiltert ausgeblendet ist.",
+    "emptyTrashTitle": "Papierkorb leeren?",
+    "emptyTrashBody_one": "{{count}} Eintrag wird endgültig gelöscht. Das lässt sich nicht rückgängig machen. Dokumente werden auch aus dem Archiv entfernt, samt Original. Aufgaben und Verträge, die darauf verweisen, zeigen „Quelle gelöscht“. Ältere Sicherungen enthalten alles weiterhin.",
+    "emptyTrashBody": "{{count}} Einträge werden endgültig gelöscht. Das lässt sich nicht rückgängig machen. Dokumente werden auch aus dem Archiv entfernt, samt Original. Aufgaben und Verträge, die darauf verweisen, zeigen „Quelle gelöscht“. Ältere Sicherungen enthalten alles weiterhin.",
+    "emptyTrashConfirm_one": "{{count}} Eintrag endgültig löschen",
+    "emptyTrashConfirm": "{{count}} Einträge endgültig löschen",
+    "emptying": "Papierkorb wird geleert …",
+    "emptiedTitle": "Papierkorb geleert",
+    "emptied_one": "{{count}} Eintrag wurde endgültig gelöscht. Dokumente verschwinden, sobald sie auch aus dem Archiv entfernt sind.",
+    "emptied": "{{count}} Einträge wurden endgültig gelöscht. Dokumente verschwinden, sobald sie auch aus dem Archiv entfernt sind.",
+    "emptyPartly_one": "{{count}} Eintrag ließ sich nicht löschen und liegt weiter im Papierkorb. Versuche es in einem Moment noch einmal.",
+    "emptyPartly": "{{count}} Einträge ließen sich nicht löschen und liegen weiter im Papierkorb. Versuche es in einem Moment noch einmal."
   },
   "settings": {
     "title": "Einstellungen",

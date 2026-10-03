@@ -860,7 +860,7 @@
       "task": "Tasks",
       "contract": "Contracts"
     },
-    "intro": "Deleted documents, tasks and contracts stay restorable at least until the date shown. Permanent deletion happens only here, one at a time and after confirmation.",
+    "intro": "Deleted documents, tasks and contracts stay restorable at least until the date shown. Permanent deletion happens only here and always after confirmation.",
     "open": "Trash",
     "filter": "Filter by kind",
     "empty": "The trash is empty.",
@@ -895,7 +895,20 @@
     "purgedNamed": "“{{title}}” was deleted permanently.",
     "purgeStarted": "“{{title}}” is now being deleted permanently.",
     "sourceDeleted": "Source deleted",
-    "contractDeleted": "Contract deleted"
+    "contractDeleted": "Contract deleted",
+    "emptyTrash": "Empty trash",
+    "emptyTrashHint": "Permanently deletes everything in the trash, including what the filter above hides.",
+    "emptyTrashTitle": "Empty the trash?",
+    "emptyTrashBody_one": "{{count}} item will be deleted permanently. This cannot be undone. Documents are also removed from the archive, including the original. Tasks and contracts that refer to them show “source deleted”. Older backups still contain everything.",
+    "emptyTrashBody": "{{count}} items will be deleted permanently. This cannot be undone. Documents are also removed from the archive, including the original. Tasks and contracts that refer to them show “source deleted”. Older backups still contain everything.",
+    "emptyTrashConfirm_one": "Delete {{count}} item permanently",
+    "emptyTrashConfirm": "Delete {{count}} items permanently",
+    "emptying": "Emptying the trash …",
+    "emptiedTitle": "Trash emptied",
+    "emptied_one": "{{count}} item was deleted permanently. Documents disappear once they are removed from the archive too.",
+    "emptied": "{{count}} items were deleted permanently. Documents disappear once they are removed from the archive too.",
+    "emptyPartly_one": "{{count}} item could not be deleted and is still in the trash. Try again in a moment.",
+    "emptyPartly": "{{count}} items could not be deleted and are still in the trash. Try again in a moment."
   },
   "settings": {
     "title": "Settings",
