@@ -82,6 +82,8 @@ describe("AI runs on the status page", () => {
     deniedToolCalls: 0,
     inputTokens: 0,
     outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
     cost: 0,
     maxCost: 0.05,
     currency: "USD",

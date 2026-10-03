@@ -60,7 +60,7 @@ class ChatHandlerTest {
 
     private final InMemoryConversations conversations = new InMemoryConversations();
     private final ChatHandler handler = new ChatHandler(conversations, new Texts(), new Contracts(), new Tasks(),
-            BERLIN, Clock.fixed(NOW, ZoneOffset.UTC));
+            BERLIN, Clock.fixed(NOW, ZoneOffset.UTC), ChatRetrieval.LABELS_AND_TEXT);
 
     private Conversation conversation(String question) {
         Conversation conversation = Conversation.start(UUID.randomUUID(), LISA, UUID.randomUUID(), question,
@@ -109,6 +109,22 @@ class ChatHandlerTest {
                 assertThat(message.parts()).containsExactly(new ContentPart.Text("Wann endet der Stromvertrag?")));
         assertThat(handler.grantedTools()).containsExactlyInAnyOrder("household_catalog", "search_documents",
                 "read_document", "list_contracts", "read_contract", "list_tasks");
+        assertThat(prepared.system()).contains("household_catalog lists the folders and labels")
+                .doesNotContain("search_document_text");
+    }
+
+    @Test
+    void searchingByTextAloneWithholdsTheCatalogAndEveryFolderAndLabelFilter() {
+        ChatHandler textOnly = new ChatHandler(conversations, new Texts(), new Contracts(), new Tasks(), BERLIN,
+                Clock.fixed(NOW, ZoneOffset.UTC), ChatRetrieval.TEXT_ONLY);
+        Conversation conversation = conversation("Wann endet der Stromvertrag?");
+
+        PreparedRun prepared = textOnly.prepare(run(conversation));
+
+        assertThat(textOnly.grantedTools()).containsExactlyInAnyOrder("search_document_text", "read_document",
+                "list_contracts", "read_contract", "list_tasks");
+        assertThat(prepared.system()).contains("search_document_text finds documents by words")
+                .doesNotContain("household_catalog").doesNotContain("search_documents ");
     }
 
     @Test

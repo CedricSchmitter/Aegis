@@ -53,6 +53,7 @@ export function waitingMessage(turn: Pick<ChatTurnDto, "failureCode" | "nextAtte
 const TOOL_KEYS: Record<string, string> = {
   household_catalog: "chat.progress.catalog",
   search_documents: "chat.progress.searchDocuments",
+  search_document_text: "chat.progress.searchDocuments",
   read_document: "chat.progress.readDocument",
   list_contracts: "chat.progress.listContracts",
   read_contract: "chat.progress.readContract",

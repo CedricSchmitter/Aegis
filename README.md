@@ -47,6 +47,24 @@ AEGIS_AI_LIVE_TEST=true AEGIS_ANTHROPIC_API_KEY_FILE=/path/to/anthropic-api-key 
   ./mvnw -pl assistant/adapters -am -DskipITs test -Dtest=AnthropicGatewayLiveTest -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
+The household assistant's reference questions (`fixtures/assistant-eval`, issue #25) run as a live evaluation that
+is skipped unless enabled. Each question costs about 0.04 USD API-equivalent per retrieval and repetition; without a
+key file it uses the owner's subscription through the host runner socket, which needs the owner's consent. The raw
+results go to `backend/assistant/adapters/target/assistant-eval/` and are summarized by the ops script below:
+
+```bash
+AEGIS_CHAT_EVAL=true AEGIS_ANTHROPIC_API_KEY_FILE=/path/to/anthropic-api-key AEGIS_CHAT_EVAL_REPETITIONS=1 \
+  ./mvnw -pl assistant/adapters -am -DskipITs test -Dtest=ChatReferenceLiveTest -Dsurefire.failIfNoSpecifiedTests=false
+python3 ../ops/eval/chat_reference_check.py report assistant/adapters/target/assistant-eval/*.json
+```
+
+The same questions run against the deployed instance with `ops/eval/chat_reference_check.py`; see
+[Deployment](docs/operations/DEPLOYMENT.md#household-assistant-reference-questions). Its scoring has offline tests:
+
+```bash
+python3 -m unittest discover -s ops/eval -p 'test_*.py'
+```
+
 The Claude Code host runner (subscription fallback) has hermetic tests with a stand-in CLI; process and socket tests
 run only on Linux:
 

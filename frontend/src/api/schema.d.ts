@@ -2840,6 +2840,16 @@ export interface components {
              * @description Attempts counted against maxAttempts; waits for the next budget day do not count
              */
             attempt: number;
+            /**
+             * Format: int64
+             * @description Input tokens the provider read from its prompt cache, not part of inputTokens
+             */
+            cacheReadTokens: number;
+            /**
+             * Format: int64
+             * @description Input tokens the provider wrote to its prompt cache, not part of inputTokens
+             */
+            cacheWriteTokens: number;
             cancelRequested: boolean;
             cost: number;
             currency: string;

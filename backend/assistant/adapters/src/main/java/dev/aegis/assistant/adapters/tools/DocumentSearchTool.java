@@ -87,7 +87,10 @@ public class DocumentSearchTool implements AiTool {
         } catch (IllegalArgumentException invalid) {
             return ToolInput.invalid(invalid.getMessage());
         }
-        DocumentSearchResult result = documents.search(invocation.actor(), request);
+        return Result.ok(JsonText.write(answer(documents.search(invocation.actor(), request))));
+    }
+
+    static Map<String, Object> answer(DocumentSearchResult result) {
         List<Map<String, Object>> items = new ArrayList<>();
         for (DocumentSummary document : result.items()) {
             items.add(item(document));
@@ -98,27 +101,37 @@ public class DocumentSearchTool implements AiTool {
         answer.put("page", result.page());
         answer.put("notContentIndexed", result.notContentIndexed());
         answer.put("documents", items);
-        return Result.ok(JsonText.write(answer));
+        return answer;
     }
 
     private static DocumentSearchRequest request(Map<String, Object> input) {
         String query = ToolInput.text(input, "query", MAX_QUERY, true);
-        String sort = ToolInput.text(input, "sort", 10, false);
-        if (sort != null && !SORTS.contains(sort)) {
-            throw new IllegalArgumentException("sort must be NEWEST, OLDEST or TITLE");
-        }
-        int limit = ToolInput.integer(input, "limit", 1, MAX_RESULTS, 10);
-        int page = ToolInput.integer(input, "page", 0, 1_000, 0);
         UUID folder = ToolInput.uuid(input, "folderId");
         return new DocumentSearchRequest(query.strip(), folder,
                 ToolInput.flag(input, "includeSubfolders", true), ToolInput.flag(input, "unsortedOnly", false),
                 ToolInput.uuids(input, "documentTypeIds", MAX_IDS), ToolInput.uuids(input, "organizationIds", MAX_IDS),
                 ToolInput.uuids(input, "topicIds", MAX_IDS), ToolInput.uuids(input, "tagIds", MAX_IDS), null,
                 ToolInput.flag(input, "topicsMatchAll", false), ToolInput.flag(input, "tagsMatchAll", false), null,
-                sort, page, limit);
+                sort(input), page(input), limit(input));
     }
 
-    private static Map<String, Object> item(DocumentSummary document) {
+    static String sort(Map<String, Object> input) {
+        String sort = ToolInput.text(input, "sort", 10, false);
+        if (sort != null && !SORTS.contains(sort)) {
+            throw new IllegalArgumentException("sort must be NEWEST, OLDEST or TITLE");
+        }
+        return sort;
+    }
+
+    static int page(Map<String, Object> input) {
+        return ToolInput.integer(input, "page", 0, 1_000, 0);
+    }
+
+    static int limit(Map<String, Object> input) {
+        return ToolInput.integer(input, "limit", 1, MAX_RESULTS, 10);
+    }
+
+    static Map<String, Object> item(DocumentSummary document) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("id", document.id().toString());
         item.put("title", document.title());

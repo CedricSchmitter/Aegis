@@ -46,9 +46,11 @@ final class ToolProtocol {
                 of the required schema.""");
         if (!request.tools().isEmpty()) {
             system.append("\n\n").append("""
-                    You cannot run tools yourself. To use tools, put up to %d calls into toolCalls, each with the \
-                    tool's name and an input object that matches its input schema, and set answer to null. The \
-                    application runs them and asks you again with their results appended. When you are done, set \
+                    You cannot run tools yourself, and your own environment offers none: the tools below are never \
+                    available as functions you call directly, only through toolCalls, which always works. To use \
+                    tools, put up to %d calls into toolCalls, each with the tool's name and an input object that \
+                    matches its input schema, and set answer to null. The application runs them and asks you again \
+                    with their results appended. When you are done, set \
                     toolCalls to an empty list and give your final answer in answer.
 
                     Tools:""".formatted(MAX_CALLS_PER_TURN));
