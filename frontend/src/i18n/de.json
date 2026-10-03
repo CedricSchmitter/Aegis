@@ -67,7 +67,7 @@
   },
   "login": {
     "title": "Anmelden",
-    "intro": "Melde dich mit deinem persönlichen Zugang an. Alle Mitglieder des Haushalts sehen dieselben Dokumente und Aufgaben.",
+    "intro": "Melde dich mit deinem persönlichen Zugang an.",
     "username": "Benutzername",
     "password": "Passwort",
     "submit": "Anmelden",
@@ -91,7 +91,7 @@
     "plannedToday": "Heute geplant",
     "upcoming": "Nächste 7 Tage",
     "unassigned": "Niemand zuständig",
-    "empty": "Nichts für heute. Neue Aufgaben entstehen aus Dokumenten oder direkt in der Aufgabenliste."
+    "empty": "Nichts für heute."
   },
   "documents": {
     "title": "Dokumente",
@@ -105,8 +105,8 @@
     "noPreview": "Für dieses Format gibt es hier keine Vorschau.",
     "subjects": "Betrifft",
     "uploading": "Wird gespeichert …",
-    "uploaded": "„{{title}}“ wurde dauerhaft gespeichert. Die Archivierung läuft.",
-    "duplicate": "Diese Datei war bereits vorhanden: „{{title}}“. Es wurde kein Duplikat angelegt.",
+    "uploaded": "„{{title}}“ gespeichert.",
+    "duplicate": "Diese Datei war bereits vorhanden: „{{title}}“.",
     "duplicateTrashed": "Diese Datei liegt bereits im Papierkorb: „{{title}}“. Öffne den Papierkorb, um sie wiederherzustellen.",
     "search": "Suchen",
     "searchPlaceholder": "Titel oder Inhalt durchsuchen",
@@ -121,11 +121,11 @@
     "archivePdf": "Durchsuchbares PDF",
     "archivePdfHint": "Das Original ist das Foto. Das Archiv hat daraus ein durchsuchbares PDF erzeugt.",
     "archivePdfPending": "Das Original ist das Foto. Ein durchsuchbares PDF steht bereit, sobald es archiviert ist.",
-    "archivePdfScanHint": "Das Original besteht aus gescannten Seiten ohne Textebene. Im durchsuchbaren PDF hat das Archiv den erkannten Text hinterlegt, sodass du ihn markieren, kopieren und darin suchen kannst.",
+    "archivePdfScanHint": "Das Original besteht aus gescannten Seiten. Im durchsuchbaren PDF kannst du den erkannten Text markieren, kopieren und durchsuchen.",
     "heicHint": "HEIC-Fotos kann der Browser meist nicht anzeigen. Öffne stattdessen das durchsuchbare PDF oder lade das Original herunter.",
     "text": {
       "badge": { "NONE": "Kein Text erkannt", "LITTLE": "Kaum Text erkannt" },
-      "none": "Das Archiv hat in diesem Dokument keinen Text erkannt. Die Volltextsuche findet es deshalb nicht, und die automatische Einordnung hat nichts zu lesen.",
+      "none": "Das Archiv hat in diesem Dokument keinen Text erkannt. Die Volltextsuche findet es deshalb nicht.",
       "little": "Das Archiv hat in diesem Dokument kaum Text erkannt ({{count}} Buchstaben und Ziffern). Die Volltextsuche findet es deshalb kaum.",
       "little_one": "Das Archiv hat in diesem Dokument kaum Text erkannt ({{count}} Buchstabe oder Ziffer). Die Volltextsuche findet es deshalb kaum.",
       "advicePhoto": "Fotografiere das Blatt noch einmal: gerade von oben, bei gutem Licht und so, dass die Seite das Bild ausfüllt. Lege dieses Dokument danach in den Papierkorb – oder behalte es und ordne es hier von Hand ein.",
@@ -169,7 +169,6 @@
     "filtersActive": "{{count}} Filter aktiv",
     "filtersActive_one": "{{count}} Filter aktiv",
     "clearFilters": "Filter zurücksetzen",
-    "filterLogic": "Mehrere Werte einer Gruppe gelten als ODER, verschiedene Gruppen als UND.",
     "matchMode": "Verknüpfung",
     "matchAny": "mindestens einer",
     "matchAll": "alle",
@@ -201,9 +200,8 @@
     "labelsSaved": "Labels gespeichert.",
     "folderSaved": "Ablage gespeichert.",
     "suggestion": "Vorschlag",
-    "suggestionHint": "Vorschläge kommen aus automatischer Erkennung und wirken erst, wenn du sie übernimmst.",
+    "suggestionHint": "Wirkt erst nach Übernahme.",
     "confidence": "Modellwert {{value}} %",
-    "confidenceHint": "Der Modellwert ist eine Selbsteinschätzung des Modells, keine geprüfte Zusage.",
     "accept": "Übernehmen",
     "reject": "Ablehnen",
     "addLabel": "Label hinzufügen",
@@ -257,8 +255,7 @@
   "subjects": {
     "HOUSE": "Haus",
     "MEMBER": "{{name}}",
-    "none": "Keine Zuordnung",
-    "hint": "Die Zuordnung ist Suchmetadaten. Sie schränkt nicht ein, wer das Dokument sehen darf."
+    "none": "Keine Zuordnung"
   },
   "tasks": {
     "title": "Aufgaben",
@@ -336,7 +333,7 @@
     "counterpartyLabel": "Vertragspartner: {{name}}",
     "counterpartyUnknown": "Kein Vertragspartner erfasst",
     "create": "Vertrag anlegen",
-    "empty": "Noch keine Verträge. Lege den ersten an und trage ein, was im Dokument steht.",
+    "empty": "Noch keine Verträge.",
     "updatedAt": "Angelegt von {{name}}, letzte Änderung {{date}}",
     "stale": "Jemand anderes hat diesen Vertrag zwischenzeitlich geändert. Der aktuelle Stand wurde neu geladen; bitte prüfe ihn und wiederhole deine Entscheidung.",
     "reload": "Jetzt neu laden",
@@ -396,7 +393,6 @@
       "contractualHint": "Das ist der vertragliche Termin. Geplante Arbeit und Erinnerungen sind davon getrennt und verschieben ihn nie.",
       "evaluatedOn": "Berechnet für den {{date}}",
       "insufficient": "Es lässt sich kein Kündigungstermin berechnen.",
-      "insufficientHint": "Aegis rechnet nur mit bestätigten Regeln und schätzt einen Termin nie.",
       "insufficientUnspecified": "Die bestätigten Angaben ergeben keinen Termin.",
       "missing": "Es fehlt: {{types}}",
       "contradicting": "Bestätigte Angaben widersprechen sich und brauchen zuerst eine Entscheidung: {{types}}",
@@ -408,7 +404,7 @@
     },
     "conflicts": {
       "title": "Widersprüche",
-      "hint": "Aegis meldet Widersprüche und entscheidet sie nicht. Solange ein Widerspruch besteht, gilt für diese Tage kein Wert.",
+      "hint": "Solange ein Widerspruch besteht, gilt für diese Tage kein Wert.",
       "established": "Bisher bestätigt:",
       "against": "Widersprochen von:",
       "kind": {
@@ -426,7 +422,6 @@
       "new": "Angabe eintragen",
       "newLabel": "Angabe zum Vertrag eintragen",
       "enter": "Angabe speichern",
-      "enterHint": "Was du einträgst, gilt als bestätigt, weil ein Mitglied es angibt.",
       "type": "Was steht im Dokument?",
       "summary": "{{type}}: {{value}}",
       "valueText": "Wert",
@@ -484,7 +479,7 @@
       "rename": "Umbenennen",
       "renameLabel": "Vertrag umbenennen",
       "status": "Status",
-      "statusHint": "Der Status hält fest, was der Haushalt mit dem Vertrag gemacht hat. Er ändert keine Angabe und keinen Termin."
+      "statusHint": "Der Status hält fest, was der Haushalt mit dem Vertrag gemacht hat."
     }
   },
   "inbox": {
@@ -670,7 +665,7 @@
     "exportLine": "{{generation}}: {{documents}} Dokumente, {{tasks}} Aufgaben",
     "missingOriginals": "{{count}} Originale fehlen im Export",
     "storageTitle": "Backup und Speicherplatz",
-    "storageIntro": "Das externe Backup läuft jede Nacht um 03:30 auf die USB-Platte am Server. Bei einem Ausfall oder knappem Speicher bekommen alle Mitglieder eine Mitteilung.",
+    "storageIntro": "Das externe Backup läuft jede Nacht um 03:30 auf die USB-Platte am Server.",
     "backup": {
       "title": "Externes Backup",
       "lastAttempt": "Letzter Versuch: {{date}}",
@@ -786,9 +781,9 @@
     "checkStarted": "Die Verbindungsprüfung wurde gestartet.",
     "cancelRequested": "Der Abbruch wurde angefordert.",
     "retryStarted": "Ein neuer Lauf wurde gestartet.",
-    "configured": "Ein KI-Anbieter ist auf dem Server eingerichtet. Jeder Lauf ist durch Zeit, Kosten, Werkzeugaufrufe und Wiederholungen begrenzt.",
-    "notConfigured": "Kein KI-Anbieter eingerichtet. Hochladen, Suche und Aufgaben funktionieren ohne KI.",
-    "memberNotAllowed": "Ohne API-Schlüssel läuft die KI über ein persönliches Claude-Abo, das für dein Konto nicht freigegeben ist. Hochladen, Suche und Aufgaben funktionieren wie gewohnt.",
+    "configured": "Ein KI-Anbieter ist auf dem Server eingerichtet.",
+    "notConfigured": "Kein KI-Anbieter eingerichtet.",
+    "memberNotAllowed": "Ohne API-Schlüssel läuft die KI über ein persönliches Claude-Abo, das für dein Konto nicht freigegeben ist.",
     "provider": {
       "anthropic": "Claude API",
       "claude-code": "Claude-Abo"
@@ -863,7 +858,7 @@
       "task": "Aufgaben",
       "contract": "Verträge"
     },
-    "intro": "Gelöschte Dokumente, Aufgaben und Verträge landen hier und bleiben mindestens bis zum angegebenen Datum wiederherstellbar. Von selbst wird nichts endgültig gelöscht; das geht nur hier, einzeln und mit Bestätigung.",
+    "intro": "Gelöschte Dokumente, Aufgaben und Verträge bleiben mindestens bis zum angegebenen Datum wiederherstellbar. Endgültig löschen geht nur hier, einzeln und mit Bestätigung.",
     "open": "Papierkorb",
     "filter": "Nach Art filtern",
     "empty": "Der Papierkorb ist leer.",
@@ -881,7 +876,7 @@
     "move": "In den Papierkorb",
     "changedMeanwhile": "Das wurde inzwischen geändert. Die Ansicht ist aktualisiert – bitte prüfe es noch einmal.",
     "section": "Löschen",
-    "documentHint": "Das Original bleibt erhalten, ebenso Aufgaben und Verträge, die auf das Dokument verweisen.",
+    "documentHint": "Aufgaben und Verträge bleiben verknüpft.",
     "contractHint": "Alle Angaben bleiben erhalten. Solange der Vertrag im Papierkorb liegt, gibt es für ihn keine Kündigungserinnerung.",
     "sourceInTrash": "(im Papierkorb)",
     "purge": "Endgültig löschen",
@@ -925,7 +920,7 @@
       "nomad": "Orange und Türkis",
       "effects": "Effekte",
       "effectsHint": "Hintergrundraster, feine Zeilen und kurzes Flackern des Logos. Wenn das Gerät Bewegung reduziert, bleibt alles ruhig.",
-      "savedNote": "Gilt nur für dein Konto und wird dort gespeichert, auf jedem Gerät.",
+      "savedNote": "Gilt für dein Konto auf allen Geräten.",
       "reducedMotion": "Dein Gerät reduziert Bewegung: Animationen bleiben aus, auch wenn die Effekte an sind.",
       "saveFailed": "Die Darstellung wurde nicht gespeichert. Es gilt weiter die bisherige Auswahl."
     }
@@ -1120,7 +1115,7 @@
     "title": "Labels",
     "count": "{{count}} Labels",
     "count_one": "{{count}} Label",
-    "intro": "Labels gelten für den ganzen Haushalt. Umbenennen, Zusammenführen und Stilllegen behalten alle Zuordnungen; gelöscht wird nie ein Dokument.",
+    "intro": "Umbenennen, Zusammenführen und Stilllegen behalten alle Zuordnungen; gelöscht wird nie ein Dokument.",
     "empty": "Noch keine eigenen Labels in dieser Gruppe.",
     "create": "Label anlegen",
     "newName": "Neues Label",
@@ -1203,7 +1198,6 @@
     "count_one": "{{count}} Ordner",
     "deleteTitle": "Ordner löschen?",
     "deleteHint": "Dokumente und Unterordner wandern eine Ebene höher; gelöscht wird nie ein Dokument.",
-    "intro": "Ordner sind die gemeinsame Ablage. Jedes Dokument liegt in genau einem Ordner oder in Unsortiert.",
     "tree": "Ordnerbaum",
     "empty": "Noch keine Ordner.",
     "create": "Ordner anlegen",
@@ -1223,7 +1217,7 @@
     "documents_one": "{{count}} Dokument direkt",
     "subtree": "{{count}} mit Unterordnern",
     "implications": "Labels dieses Ordners",
-    "impliedHint": "Dokumente im Ordner und in seinen Unterordnern übernehmen diese Labels automatisch. So pflegst du „Haus“ nur an einer Stelle.",
+    "impliedHint": "Dokumente im Ordner und in seinen Unterordnern übernehmen diese Labels automatisch.",
     "impliedSaved": "Ordnerlabels gespeichert.",
     "impliedSubjects": "Betrifft",
     "affects": "Betrifft {{count}} Dokumente in diesem Ordner und seinen Unterordnern.",
@@ -1240,8 +1234,8 @@
       "NEEDS_REVIEW": "Eingeordnet. Einige Vorschläge warten auf deine Prüfung.",
       "FAILED": "Die Einordnung ist fehlgeschlagen. Das Dokument selbst ist gespeichert und archiviert.",
       "UNAVAILABLE": "Die KI war nicht verfügbar. Das Dokument selbst ist gespeichert.",
-      "NOT_CLASSIFIED": "Nicht automatisch eingeordnet, weil die KI für {{name}} nicht freigegeben ist. Ein Mitglied mit KI-Zugang kann das Dokument mit „Jetzt einordnen“ einordnen. Das Dokument selbst ist gespeichert und archiviert.",
-      "WAITING_FOR_BUDGET": "Wartet auf das KI-Budget von morgen: Das heutige KI-Kostenlimit ist ausgeschöpft. Die Einordnung läuft am {{date}} automatisch weiter. Das Dokument selbst ist gespeichert und archiviert."
+      "NOT_CLASSIFIED": "Nicht automatisch eingeordnet, weil die KI für {{name}} nicht freigegeben ist. Ein Mitglied mit KI-Zugang kann es mit „Jetzt einordnen“ einordnen.",
+      "WAITING_FOR_BUDGET": "Das heutige KI-Kostenlimit ist ausgeschöpft. Die Einordnung läuft am {{date}} automatisch weiter."
     },
     "stateShort": {
       "NOT_REQUESTED": "Nicht eingeordnet",
@@ -1298,7 +1292,7 @@
     "reprocess": "Erneut einordnen",
     "requested": "Die Einordnung wurde gestartet.",
     "costHint": "Nutzt das gemeinsame KI-Tagesbudget.",
-    "policyHint": "Übernommen wird nur, was im Text belegt ist und schon im Vokabular steht. Alles andere bleibt ein Vorschlag. Eure Entscheidungen werden bei späteren Läufen nicht überschrieben.",
+    "policyHint": "Übernommen wird nur, was im Text belegt ist. Eure Entscheidungen bleiben.",
     "history": "Frühere Ergebnisse ({{count}})",
     "analyzeSelected": "Auswahl einordnen",
     "selectionLimit": "Es können höchstens {{max}} Dokumente auf einmal eingeordnet werden.",
@@ -1310,7 +1304,7 @@
   "bulkAnalysis": {
     "title": "Bestand einordnen",
     "eyebrow": "Automatische Einordnung",
-    "intro": "Ordnet Dokumente ein, die noch nie automatisch eingeordnet wurden: Labels, Titel, Datum, Dateiname und Ordnervorschläge. Es startet nur, wenn du es startest. Von Hand gesetzte Labels, abgelegte Ordner und abgelehnte Vorschläge bleiben unangetastet.",
+    "intro": "Ordnet Dokumente ein, die noch nie automatisch eingeordnet wurden. Von Hand gesetzte Labels, abgelegte Ordner und abgelehnte Vorschläge bleiben unangetastet.",
     "open": "Bestand einordnen",
     "back": "Dokumente",
     "scope": "Welche Dokumente?",
@@ -1412,13 +1406,13 @@
     "revert": "Zurück nach Unsortiert",
     "reverted": "Das Dokument liegt wieder in Unsortiert.",
     "manual": "Von einem Haushaltsmitglied abgelegt.",
-    "hint": "Aegis legt neue Ordner nie von selbst an. Namen und übergeordneten Ordner kannst du vorher ändern."
+    "hint": "Namen und übergeordneten Ordner kannst du vorher ändern."
   },
   "share": {
     "title": "Geteilte Dateien speichern",
     "discardAllTitle": "Geteilte Dateien verwerfen?",
     "files": "Geteilte Dateien",
-    "hint": "Geteilte Dateien bleiben auf diesem Handy, bis der Server bestätigt, dass sie dauerhaft gespeichert sind. Bricht das Hochladen ab, geht nichts verloren: einfach erneut versuchen.",
+    "hint": "Geteilte Dateien bleiben auf diesem Handy, bis sie auf dem Server gespeichert sind. Bricht das Hochladen ab, einfach erneut versuchen.",
     "save": "{{count}} Dateien speichern",
     "save_one": "Datei speichern",
     "retry": "{{count}} Dateien erneut versuchen",
@@ -1427,8 +1421,8 @@
     "discardAll": "Verwerfen",
     "discardAllConfirm": "{{count}} geteilte Dateien verwerfen, ohne sie zu speichern? Die Originale bleiben in der App, aus der du geteilt hast.",
     "discardAllConfirm_one": "Geteilte Datei verwerfen, ohne sie zu speichern? Das Original bleibt in der App, aus der du geteilt hast.",
-    "done": "{{count}} Dateien sind dauerhaft gespeichert. Die Archivierung läuft im Hintergrund.",
-    "done_one": "Die Datei ist dauerhaft gespeichert. Die Archivierung läuft im Hintergrund.",
+    "done": "{{count}} Dateien gespeichert.",
+    "done_one": "Datei gespeichert.",
     "returnHint": "Mit der Zurück-Taste des Handys kommst du zur App, aus der du geteilt hast.",
     "toDocuments": "Dokumente anzeigen",
     "openDocument": "Dokument öffnen",
@@ -1514,7 +1508,7 @@
   "pageEdit": {
     "eyebrow": "Dokumente",
     "title": "Seiten bearbeiten",
-    "intro": "Teilen, zusammenfügen, sortieren, drehen und Seiten weglassen. Daraus entstehen neue Dokumente; die Quelldokumente bleiben unverändert.",
+    "intro": "Teilen, zusammenfügen, sortieren, drehen und Seiten weglassen. Die Quelldokumente bleiben unverändert.",
     "edit": "Seiten bearbeiten",
     "editHint": "Teilen, mit anderen Dokumenten zusammenfügen, drehen oder Seiten weglassen. Das Original bleibt unverändert.",
     "editSelected": "Seiten bearbeiten",
@@ -1542,7 +1536,7 @@
     },
     "sources": {
       "heading": "Quellen",
-      "kept": "Diese Dokumente bleiben unverändert erhalten. Wenn du sie nicht mehr brauchst, kannst du sie danach selbst in den Papierkorb legen."
+      "kept": "Diese Dokumente bleiben unverändert erhalten."
     },
     "warning": {
       "SIGNED": "Digital signiert: Die neuen Dokumente enthalten die Signatur nicht, das Original behält sie.",
@@ -1600,7 +1594,7 @@
     },
     "result": {
       "running": "Die neuen Dokumente werden erstellt …",
-      "runningHint": "Das dauert meist nur einen Moment. Du kannst die Seite auch verlassen; es geht trotzdem weiter.",
+      "runningHint": "Du kannst die Seite verlassen.",
       "done_one": "Fertig: {{count}} neues Dokument",
       "done": "Fertig: {{count}} neue Dokumente",
       "existing": "Gab es schon – das vorhandene Dokument wird verwendet.",

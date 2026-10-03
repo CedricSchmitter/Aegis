@@ -42,7 +42,6 @@ export function UploadSubjects({
           </label>
         ))}
       </div>
-      <p className="mt-1 text-xs text-text-3">{t("subjects.hint")}</p>
     </fieldset>
   );
 }

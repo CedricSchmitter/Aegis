@@ -67,7 +67,7 @@
   },
   "login": {
     "title": "Sign in",
-    "intro": "Sign in with your personal login. All members of the household see the same documents and tasks.",
+    "intro": "Sign in with your personal login.",
     "username": "Username",
     "password": "Password",
     "submit": "Sign in",
@@ -91,7 +91,7 @@
     "plannedToday": "Planned for today",
     "upcoming": "Next 7 days",
     "unassigned": "Nobody responsible",
-    "empty": "Nothing for today. New tasks come from documents or the task list."
+    "empty": "Nothing for today."
   },
   "documents": {
     "title": "Documents",
@@ -105,8 +105,8 @@
     "noPreview": "There is no preview for this format here.",
     "subjects": "About",
     "uploading": "Saving …",
-    "uploaded": "“{{title}}” has been stored durably. Archival is in progress.",
-    "duplicate": "This file already existed: “{{title}}”. No duplicate was created.",
+    "uploaded": "“{{title}}” saved.",
+    "duplicate": "This file already existed: “{{title}}”.",
     "duplicateTrashed": "This file is already in the trash: “{{title}}”. Open the trash to restore it.",
     "search": "Search",
     "searchPlaceholder": "Search title or content",
@@ -121,11 +121,11 @@
     "archivePdf": "Searchable PDF",
     "archivePdfHint": "The original is the photo. The archive created a searchable PDF from it.",
     "archivePdfPending": "The original is the photo. A searchable PDF is available once it is archived.",
-    "archivePdfScanHint": "The original consists of scanned pages without a text layer. In the searchable PDF the archive added the recognized text, so you can select, copy and search it.",
+    "archivePdfScanHint": "The original consists of scanned pages. In the searchable PDF you can select, copy and search the recognized text.",
     "heicHint": "Browsers usually cannot display HEIC photos. Open the searchable PDF instead or download the original.",
     "text": {
       "badge": { "NONE": "No text recognized", "LITTLE": "Little text recognized" },
-      "none": "The archive recognized no text in this document. Full-text search cannot find it, and automatic classification has nothing to read.",
+      "none": "The archive recognized no text in this document. Full-text search cannot find it.",
       "little": "The archive recognized almost no text in this document ({{count}} letters and digits). Full-text search will hardly find it.",
       "little_one": "The archive recognized almost no text in this document ({{count}} letter or digit). Full-text search will hardly find it.",
       "advicePhoto": "Take the photo again: straight from above, in good light, with the page filling the frame. Then move this document to the trash, or keep it and label it here by hand.",
@@ -169,7 +169,6 @@
     "filtersActive": "{{count}} filters active",
     "filtersActive_one": "{{count}} filter active",
     "clearFilters": "Clear filters",
-    "filterLogic": "Several values in one group count as OR, different groups as AND.",
     "matchMode": "Matching",
     "matchAny": "any of them",
     "matchAll": "all of them",
@@ -201,9 +200,8 @@
     "labelsSaved": "Labels saved.",
     "folderSaved": "Filing saved.",
     "suggestion": "Suggestion",
-    "suggestionHint": "Suggestions come from automatic classification and only take effect once you accept them.",
+    "suggestionHint": "Takes effect only once accepted.",
     "confidence": "Model score {{value}} %",
-    "confidenceHint": "The model score is the model's own estimate, not a verified guarantee.",
     "accept": "Accept",
     "reject": "Reject",
     "addLabel": "Add label",
@@ -257,8 +255,7 @@
   "subjects": {
     "HOUSE": "House",
     "MEMBER": "{{name}}",
-    "none": "No assignment",
-    "hint": "The assignment is search metadata. It does not restrict who can see the document."
+    "none": "No assignment"
   },
   "tasks": {
     "title": "Tasks",
@@ -336,7 +333,7 @@
     "counterpartyLabel": "Counterparty: {{name}}",
     "counterpartyUnknown": "No counterparty recorded",
     "create": "Create contract",
-    "empty": "No contracts yet. Create the first one and enter what the document states.",
+    "empty": "No contracts yet.",
     "updatedAt": "Created by {{name}}, last change {{date}}",
     "stale": "Someone else changed this contract in the meantime. The current version has been reloaded; please review it and repeat your decision.",
     "reload": "Reload now",
@@ -396,7 +393,6 @@
       "contractualHint": "This is the contractual deadline. Planned work and reminders are separate and never move it.",
       "evaluatedOn": "Calculated for {{date}}",
       "insufficient": "No cancellation deadline can be calculated.",
-      "insufficientHint": "Aegis calculates only from confirmed rules and never estimates a deadline.",
       "insufficientUnspecified": "The confirmed statements do not establish a deadline.",
       "missing": "Missing: {{types}}",
       "contradicting": "Confirmed statements contradict each other and need a decision first: {{types}}",
@@ -408,7 +404,7 @@
     },
     "conflicts": {
       "title": "Conflicts",
-      "hint": "Aegis reports contradictions and does not choose between them. As long as a conflict stands, no value counts as effective for those days.",
+      "hint": "As long as a conflict stands, no value counts as effective for those days.",
       "established": "Confirmed so far:",
       "against": "Contradicted by:",
       "kind": {
@@ -426,7 +422,6 @@
       "new": "Enter a statement",
       "newLabel": "Enter a statement about the contract",
       "enter": "Save statement",
-      "enterHint": "What you enter counts as confirmed, because a member states it.",
       "type": "What does the document state?",
       "summary": "{{type}}: {{value}}",
       "valueText": "Value",
@@ -484,7 +479,7 @@
       "rename": "Rename",
       "renameLabel": "Rename the contract",
       "status": "Status",
-      "statusHint": "The status records what the household did with the contract. It does not change any statement or deadline."
+      "statusHint": "The status records what the household did with the contract."
     }
   },
   "inbox": {
@@ -670,7 +665,7 @@
     "exportLine": "{{generation}}: {{documents}} documents, {{tasks}} tasks",
     "missingOriginals": "{{count}} originals missing from the export",
     "storageTitle": "Backup and storage",
-    "storageIntro": "The external backup runs every night at 03:30 to the USB disk on the server. If it fails or space runs low, every member gets a message.",
+    "storageIntro": "The external backup runs every night at 03:30 to the USB disk on the server.",
     "backup": {
       "title": "External backup",
       "lastAttempt": "Last attempt: {{date}}",
@@ -786,9 +781,9 @@
     "checkStarted": "The connection check has started.",
     "cancelRequested": "Cancellation was requested.",
     "retryStarted": "A new run was started.",
-    "configured": "An AI provider is set up on the server. Every run is limited by time, cost, tool calls and retries.",
-    "notConfigured": "No AI provider is set up. Upload, search and tasks work without AI.",
-    "memberNotAllowed": "Without an API key, AI uses a personal Claude subscription that is not enabled for your account. Upload, search and tasks work as usual.",
+    "configured": "An AI provider is set up on the server.",
+    "notConfigured": "No AI provider is set up.",
+    "memberNotAllowed": "Without an API key, AI uses a personal Claude subscription that is not enabled for your account.",
     "provider": {
       "anthropic": "Claude API",
       "claude-code": "Claude subscription"
@@ -863,7 +858,7 @@
       "task": "Tasks",
       "contract": "Contracts"
     },
-    "intro": "Deleted documents, tasks and contracts end up here and stay restorable at least until the date shown. Nothing is deleted permanently on its own; that happens only here, one at a time and after confirmation.",
+    "intro": "Deleted documents, tasks and contracts stay restorable at least until the date shown. Permanent deletion happens only here, one at a time and after confirmation.",
     "open": "Trash",
     "filter": "Filter by kind",
     "empty": "The trash is empty.",
@@ -881,7 +876,7 @@
     "move": "Move to trash",
     "changedMeanwhile": "This was changed in the meantime. The view is up to date again – please check it once more.",
     "section": "Delete",
-    "documentHint": "The original is kept, and so are tasks and contracts that refer to the document.",
+    "documentHint": "Tasks and contracts stay linked.",
     "contractHint": "All statements are kept. While the contract is in the trash, it gets no cancellation reminder.",
     "sourceInTrash": "(in the trash)",
     "purge": "Delete permanently",
@@ -925,7 +920,7 @@
       "nomad": "Orange and turquoise",
       "effects": "Effects",
       "effectsHint": "Background grid, fine lines and a short flicker of the logo. When the device reduces motion, everything stays still.",
-      "savedNote": "Applies to your account only and is saved there, on every device.",
+      "savedNote": "Applies to your account on every device.",
       "reducedMotion": "Your device reduces motion: animations stay off even when effects are on.",
       "saveFailed": "The appearance was not saved. The previous choice still applies."
     }
@@ -1120,7 +1115,7 @@
     "title": "Labels",
     "count": "{{count}} labels",
     "count_one": "{{count}} label",
-    "intro": "Labels are shared by the household. Renaming, merging and retiring keep every assignment; no document is ever deleted.",
+    "intro": "Renaming, merging and retiring keep every assignment; no document is ever deleted.",
     "empty": "No own labels in this group yet.",
     "create": "Create label",
     "newName": "New label",
@@ -1203,7 +1198,6 @@
     "count_one": "{{count}} folder",
     "deleteTitle": "Delete folder?",
     "deleteHint": "Documents and subfolders move one level up; no document is ever deleted.",
-    "intro": "Folders are the shared filing structure. Every document sits in exactly one folder or in Unsorted.",
     "tree": "Folder tree",
     "empty": "No folders yet.",
     "create": "Create folder",
@@ -1223,7 +1217,7 @@
     "documents_one": "{{count}} document directly",
     "subtree": "{{count}} including subfolders",
     "implications": "Labels of this folder",
-    "impliedHint": "Documents in this folder and its subfolders inherit these labels automatically, so “House” is maintained in one place only.",
+    "impliedHint": "Documents in this folder and its subfolders inherit these labels automatically.",
     "impliedSaved": "Folder labels saved.",
     "impliedSubjects": "Concerns",
     "affects": "Affects {{count}} documents in this folder and its subfolders.",
@@ -1240,8 +1234,8 @@
       "NEEDS_REVIEW": "Classified. Some suggestions are waiting for your review.",
       "FAILED": "Classification failed. The document itself is saved and archived.",
       "UNAVAILABLE": "AI was not available. The document itself is saved.",
-      "NOT_CLASSIFIED": "Not classified automatically because AI is not enabled for {{name}}. A member with AI access can classify the document with “Classify now”. The document itself is saved and archived.",
-      "WAITING_FOR_BUDGET": "Waiting for tomorrow's AI budget: today's AI cost limit is used up. Classification continues automatically on {{date}}. The document itself is saved and archived."
+      "NOT_CLASSIFIED": "Not classified automatically because AI is not enabled for {{name}}. A member with AI access can classify it with “Classify now”.",
+      "WAITING_FOR_BUDGET": "Today's AI cost limit is used up. Classification continues automatically on {{date}}."
     },
     "stateShort": {
       "NOT_REQUESTED": "Not classified",
@@ -1298,7 +1292,7 @@
     "reprocess": "Classify again",
     "requested": "Classification has started.",
     "costHint": "Uses the shared daily AI budget.",
-    "policyHint": "Only what the text evidences and the vocabulary already knows is applied. Everything else stays a suggestion. Your decisions are not overwritten by later runs.",
+    "policyHint": "Only what the text evidences is applied. Your decisions stay.",
     "history": "Earlier results ({{count}})",
     "analyzeSelected": "Classify selection",
     "selectionLimit": "At most {{max}} documents can be classified at once.",
@@ -1310,7 +1304,7 @@
   "bulkAnalysis": {
     "title": "Classify existing documents",
     "eyebrow": "Automatic classification",
-    "intro": "Classifies documents that were never classified automatically: labels, title, date, filename and folder proposals. It only starts when you start it. Labels set by hand, filed folders and rejected suggestions stay untouched.",
+    "intro": "Classifies documents that were never classified automatically. Labels set by hand, filed folders and rejected suggestions stay untouched.",
     "open": "Classify existing documents",
     "back": "Documents",
     "scope": "Which documents?",
@@ -1412,13 +1406,13 @@
     "revert": "Move back to Unsorted",
     "reverted": "The document is back in Unsorted.",
     "manual": "Filed by a household member.",
-    "hint": "Aegis never creates folders on its own. You can change the names and the parent folder first."
+    "hint": "You can change the names and the parent folder first."
   },
   "share": {
     "title": "Save shared files",
     "discardAllTitle": "Discard the shared files?",
     "files": "Shared files",
-    "hint": "Shared files wait on this phone until the server confirms that they are stored durably. If the upload is interrupted, nothing is lost: try again.",
+    "hint": "Shared files wait on this phone until they are stored on the server. If the upload is interrupted, just try again.",
     "save": "Save {{count}} files",
     "save_one": "Save file",
     "retry": "Try again with {{count}} files",
@@ -1427,8 +1421,8 @@
     "discardAll": "Discard",
     "discardAllConfirm": "Discard {{count}} shared files without saving them? The originals stay in the app you shared from.",
     "discardAllConfirm_one": "Discard the shared file without saving it? The original stays in the app you shared from.",
-    "done": "{{count}} files are stored durably. Archival runs in the background.",
-    "done_one": "The file is stored durably. Archival runs in the background.",
+    "done": "{{count}} files saved.",
+    "done_one": "File saved.",
     "returnHint": "Use your phone's back button to return to the app you shared from.",
     "toDocuments": "Show documents",
     "openDocument": "Open document",
@@ -1514,7 +1508,7 @@
   "pageEdit": {
     "eyebrow": "Documents",
     "title": "Edit pages",
-    "intro": "Split, merge, reorder, rotate and leave out pages. This creates new documents; the source documents stay unchanged.",
+    "intro": "Split, merge, reorder, rotate and leave out pages. The source documents stay unchanged.",
     "edit": "Edit pages",
     "editHint": "Split, merge with other documents, rotate or leave out pages. The original stays unchanged.",
     "editSelected": "Edit pages",
@@ -1542,7 +1536,7 @@
     },
     "sources": {
       "heading": "Sources",
-      "kept": "These documents are kept unchanged. If you no longer need them, you can move them to the trash yourself afterwards."
+      "kept": "These documents are kept unchanged."
     },
     "warning": {
       "SIGNED": "Digitally signed: the new documents do not contain the signature; the original keeps it.",
@@ -1600,7 +1594,7 @@
     },
     "result": {
       "running": "Creating the new documents …",
-      "runningHint": "This usually takes only a moment. You can leave this page; it continues anyway.",
+      "runningHint": "You can leave this page.",
       "done_one": "Done: {{count}} new document",
       "done": "Done: {{count}} new documents",
       "existing": "Already existed – the existing document is used.",

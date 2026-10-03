@@ -174,7 +174,6 @@ export function ContractFactForm({ contract, busy, onSubmit, onCancel }: Props) 
           {invalid}
         </p>
       )}
-      <p className="text-sm text-text-3">{t("contracts.fact.enterHint")}</p>
       <div className="flex gap-2">
         <button type="submit" className="btn-primary" disabled={busy}>
           {t("contracts.fact.enter")}

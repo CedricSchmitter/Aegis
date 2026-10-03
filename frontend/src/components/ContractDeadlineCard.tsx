@@ -97,7 +97,6 @@ export function ContractDeadlineCard({ deadline, facts, evaluatedOn, active }: P
       {deadline.missing.length === 0 && deadline.contradicting.length === 0 && (
         <p className="text-sm text-text-2">{t("contracts.deadline.insufficientUnspecified")}</p>
       )}
-      <p className={hint}>{t("contracts.deadline.insufficientHint")}</p>
       <p className="font-mono text-xs text-text-4">
         {t("contracts.deadline.evaluatedOn", { date: formatDate(evaluatedOn, i18n.language) })}
       </p>
