@@ -126,4 +126,70 @@ describe("trash permanent deletion", () => {
     await waitFor(() => expect(api.GET.mock.calls.filter(([path]) => path === "/api/documents/trash")).toHaveLength(2));
     expect(screen.getByText(/Das wurde inzwischen geändert/)).toBeTruthy();
   });
+
+  it("empties the whole trash from the bottom after naming how many records go, skipping running deletions", async () => {
+    const contract = { id: "c1", name: "Altes Abo", version: 7, trash };
+    const pending = { id: "d2", title: "Läuft schon", version: 6, trash: { ...trash, purge: { state: "PENDING", requestedBy: "m-lisa", requestedAt: "2026-10-01T08:00:00Z" } } };
+    let emptied = false;
+    api.GET.mockImplementation((path: string) => {
+      if (path === "/api/documents/trash") return Promise.resolve(ok(emptied ? [pending] : [scan, pending]));
+      if (path === "/api/tasks/trash") return Promise.resolve(ok(emptied ? [] : [task]));
+      if (path === "/api/contracts/trash") return Promise.resolve(ok(emptied ? [] : [contract]));
+      return Promise.resolve(ok([]));
+    });
+    api.POST.mockImplementation(() => {
+      emptied = true;
+      return Promise.resolve(ok(undefined, 204));
+    });
+    renderPage();
+
+    // The filter hides tasks; emptying still deletes everything, and the button comes after the last entry.
+    fireEvent.click(await screen.findByTestId("trash-filter-document"));
+    const button = screen.getByTestId("trash-empty");
+    const entries = screen.getAllByTestId("trash-entry");
+    expect(entries[entries.length - 1].compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(button);
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Papierkorb leeren?")).toBeTruthy();
+    expect(within(dialog).getByText(/^3 Einträge werden endgültig gelöscht/)).toBeTruthy();
+    fireEvent.click(within(dialog).getByTestId("trash-empty-confirm"));
+
+    await waitFor(() => expect(screen.getByTestId("trash-empty-toast").textContent).toContain("3 Einträge wurden endgültig gelöscht."));
+    expect(api.POST).toHaveBeenCalledTimes(3);
+    expect(api.POST).toHaveBeenCalledWith("/api/documents/{id}/purge", { params: { path: { id: "d1" } }, body: { expectedVersion: 4 } });
+    expect(api.POST).toHaveBeenCalledWith("/api/tasks/{id}/purge", { params: { path: { id: "t1" } }, body: { expectedVersion: 2 } });
+    expect(api.POST).toHaveBeenCalledWith("/api/contracts/{id}/purge", { params: { path: { id: "c1" } }, body: { expectedVersion: 7 } });
+    // Only the deletion that was already running is left, and nothing else can be emptied.
+    await waitFor(() => expect(screen.queryByTestId("trash-empty")).toBeNull());
+  });
+
+  it("keeps going when one record is refused and says how many stayed", async () => {
+    answer(() => [scan], () => [task]);
+    api.POST.mockImplementation((path: string) =>
+      Promise.resolve(
+        path === "/api/documents/{id}/purge"
+          ? { error: { code: "document.purge.archiving" }, response: new Response(null, { status: 409 }) }
+          : ok(undefined, 204),
+      ),
+    );
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId("trash-empty"));
+    fireEvent.click(screen.getByTestId("trash-empty-confirm"));
+
+    expect(await screen.findByText(/1 Eintrag ließ sich nicht löschen/)).toBeTruthy();
+    expect(screen.getByTestId("trash-empty-toast").textContent).toContain("1 Eintrag wurde endgültig gelöscht.");
+    expect(api.POST).toHaveBeenCalledTimes(2);
+  });
+
+  it("does nothing when emptying is cancelled", async () => {
+    answer(() => [scan]);
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId("trash-empty"));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Abbrechen" }));
+
+    expect(api.POST).not.toHaveBeenCalled();
+  });
 });

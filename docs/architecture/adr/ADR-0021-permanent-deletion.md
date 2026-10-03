@@ -27,7 +27,11 @@ The owner decided on 2026-09-26 and 2026-10-01:
 
 1. **Only the trash, one record at a time.** `purge` is a version-checked command in each context, offered only on
    the trash page. A record outside the trash is refused with `<resource>.purge.notTrashed` (HTTP 409). There is no
-   bulk purge and no purge by date.
+   bulk purge command and no purge by date. "Empty trash" (decided by the owner on 2026-10-03) is a button below the
+   last trash entry, so a member scrolls past everything it removes; after one danger dialog naming how many records
+   go, the trash page requests this per-record purge for every entry with the version it showed, one after another.
+   Documents whose deletion already runs are skipped, failed ones are requested again, and a refused record stays
+   in the trash and is counted in the message.
 2. **Documents are deleted by a persisted job.** The command stores the request on the trashed document
    (`purge_requested_by/at`) and schedules `purge-document` in the same transaction (HTTP 202). From then on the
    document cannot be restored (`document.purge.pending`), because the job may already have removed the original.

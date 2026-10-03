@@ -91,3 +91,11 @@ export function countTrash(entries: TrashEntry[]): Record<TrashKind | "all", num
 export function hasPendingPurge(entries: TrashEntry[]): boolean {
   return entries.some((entry) => entry.purge?.state === "PENDING");
 }
+
+/**
+ * The entries "empty trash" deletes: everything except documents whose deletion is already running. A failed document
+ * deletion is included, so emptying the trash also retries it.
+ */
+export function emptiableTrash(entries: TrashEntry[]): TrashEntry[] {
+  return entries.filter((entry) => entry.purge?.state !== "PENDING");
+}
