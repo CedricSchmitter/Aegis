@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { api, unwrap } from "../api/client";
 import type { AiOverview, AiRun } from "../api/types";
 import { useSession } from "../auth/SessionContext";
+import { MAX_LIMIT, acceptsMoneyInput, formatMoneyInput, limitProblems, parseMoney, type LimitProblem } from "../lib/costLimits";
 import { formatDateTime, formatMoney } from "../lib/format";
 import { problemMessage } from "../lib/problem";
 import { Badge, EmptyState, ErrorBox, InfoBox } from "./common";
@@ -19,8 +20,8 @@ type Workload = AiOverview["workloads"][number];
 type ModelOption = AiOverview["models"][number];
 
 /**
- * Visible state of the bounded AI execution: configuration, the household's model family per workload, today's
- * spending, the connection check and recent runs with cancel and retry. Capture, search and tasks never depend on
+ * Visible state of the bounded AI execution: configuration, the household's model family and cost limits per workload,
+ * today's spending, the connection check and recent runs with cancel and retry. Capture, search and tasks never depend on
  * this section.
  */
 export function AiSection() {
@@ -93,6 +94,23 @@ export function AiSection() {
         throw failure;
       }
     }, t("ai.model.changed", { workload: t(`ai.workload.${workload.workload}`), family: t(`ai.family.${family}`) }));
+  const saveLimits = (workload: Workload, dailyCostLimit: number, maxRunCost: number) =>
+    act(async () => {
+      try {
+        setOverview(
+          unwrap(
+            await api.PUT("/api/ai/workloads/{workload}/limits", {
+              params: { path: { workload: workload.workload } },
+              body: { dailyCostLimit, maxRunCost, expectedVersion: workload.limitsVersion },
+            }),
+          ),
+        );
+      } catch (failure) {
+        // After a conflict the other member's limits are shown, so the next attempt uses the current version.
+        await load();
+        throw failure;
+      }
+    }, t("ai.limits.saved", { workload: t(`ai.workload.${workload.workload}`) }));
 
   const money = (amount: number | undefined) => formatMoney(amount ?? 0, overview?.currency ?? "USD", i18n.language);
 
@@ -147,6 +165,17 @@ export function AiSection() {
                     currency={overview.currency}
                     changedBy={memberName(workload.choiceChangedBy)}
                     onChoose={(family) => void chooseModel(workload, family)}
+                  />
+                )}
+                {workload.limitsSelectable && (
+                  <CostLimits
+                    // A saved or concurrently changed limit starts the form again from the stored values.
+                    key={`${workload.limitsVersion}:${workload.dailyCostLimit}:${workload.maxCost}`}
+                    workload={workload}
+                    disabled={busy}
+                    currency={overview.currency}
+                    changedBy={memberName(workload.limitsChangedBy)}
+                    onSave={(daily, run) => void saveLimits(workload, daily, run)}
                   />
                 )}
               </li>
@@ -262,6 +291,130 @@ function ModelChoice({
           </>
         )}
       </p>
+    </div>
+  );
+}
+
+/**
+ * Daily limit and session limit (the most one run may cost) of one workload for the whole household. The fields take
+ * only money amounts; the limits are saved together.
+ */
+function CostLimits({
+  workload,
+  disabled,
+  currency,
+  changedBy,
+  onSave,
+}: {
+  workload: Workload;
+  disabled: boolean;
+  currency: string;
+  changedBy: string | null;
+  onSave: (dailyCostLimit: number, maxRunCost: number) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const initialDaily = formatMoneyInput(workload.dailyCostLimit, i18n.language);
+  const initialRun = formatMoneyInput(workload.maxCost, i18n.language);
+  const [daily, setDaily] = useState(initialDaily);
+  const [run, setRun] = useState(initialRun);
+  const problems = limitProblems(daily, run);
+  const changed = parseMoney(daily) !== parseMoney(initialDaily) || parseMoney(run) !== parseMoney(initialRun);
+  const valid = !problems.daily && !problems.run;
+  const id = `ai-limits-${workload.workload}`;
+  const money = (amount: number) => formatMoney(amount, currency, i18n.language);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const dailyAmount = parseMoney(daily);
+    const runAmount = parseMoney(run);
+    if (!valid || !changed || dailyAmount == null || runAmount == null) return;
+    onSave(dailyAmount, runAmount);
+  };
+
+  return (
+    <form className="flex flex-col gap-1" onSubmit={submit} noValidate data-testid={id}>
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
+        <LimitField
+          id={`${id}-daily`}
+          label={t("ai.limits.daily", { currency })}
+          value={daily}
+          problem={problems.daily}
+          max={money(MAX_LIMIT)}
+          disabled={disabled}
+          onChange={setDaily}
+        />
+        <LimitField
+          id={`${id}-run`}
+          label={t("ai.limits.session", { currency })}
+          value={run}
+          problem={problems.run}
+          max={money(MAX_LIMIT)}
+          disabled={disabled}
+          onChange={setRun}
+        />
+        <button type="submit" className="btn-secondary self-end" disabled={disabled || !valid || !changed} data-testid={`${id}-save`}>
+          {t("ai.limits.save")}
+        </button>
+      </div>
+      <p className="text-xs text-text-3">
+        {t("ai.limits.spent", { spent: money(workload.spentToday), limit: money(workload.dailyCostLimit) })}
+        {" · "}
+        {workload.ownLimits ? t("ai.limits.own") : t("ai.limits.shared")}
+        {changedBy && workload.limitsChangedAt && (
+          <>
+            <br />
+            {t("ai.limits.changedBy", { name: changedBy, date: formatDateTime(workload.limitsChangedAt, i18n.language) })}
+          </>
+        )}
+      </p>
+    </form>
+  );
+}
+
+/** One money field; input that is not an amount is not taken over. */
+function LimitField({
+  id,
+  label,
+  value,
+  problem,
+  max,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  problem: LimitProblem | undefined;
+  max: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="w-full max-w-40">
+      <label className="label" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        className="field"
+        type="text"
+        inputMode="decimal"
+        autoComplete="off"
+        value={value}
+        disabled={disabled}
+        aria-invalid={problem ? true : undefined}
+        aria-describedby={problem ? `${id}-problem` : undefined}
+        data-testid={id}
+        onChange={(e) => {
+          if (acceptsMoneyInput(e.target.value)) onChange(e.target.value);
+        }}
+      />
+      {problem && (
+        <p id={`${id}-problem`} className="text-xs text-danger">
+          {t(`ai.limits.problem.${problem}`, { max })}
+        </p>
+      )}
     </div>
   );
 }

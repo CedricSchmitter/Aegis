@@ -43,6 +43,13 @@ const workload = (name: string, fields: Partial<AiOverview["workloads"][number]>
   maxOutputTokens: 2048,
   maxAttempts: 3,
   maxConcurrent: 2,
+  dailyCostLimit: 0.25,
+  spentToday: 0.04,
+  ownLimits: false,
+  limitsSelectable: name !== "CONNECTION_CHECK",
+  limitsVersion: 0,
+  limitsChangedBy: null,
+  limitsChangedAt: null,
   ...fields,
 });
 
@@ -180,5 +187,104 @@ describe("AI model choice", () => {
     await waitFor(() => expect(screen.getByText("Der Datensatz wurde inzwischen geändert.")).toBeTruthy());
     expect((screen.getByTestId("ai-model-DOCUMENT_CLASSIFICATION") as HTMLSelectElement).value).toBe("opus");
     expect(screen.getByText(/Geändert von Lisa/)).toBeTruthy();
+  });
+});
+
+describe("AI cost limits", () => {
+  const field = (id: string) => screen.getByTestId(id) as HTMLInputElement;
+
+  it("shows the daily and session limit of workloads with their own model in the member's notation", async () => {
+    api.GET.mockImplementation((path: string) => Promise.resolve(ok(path === "/api/ai/runs" ? [] : overview())));
+
+    render(<AiSection />);
+
+    expect(((await screen.findByLabelText("Tageslimit (USD)")) as HTMLInputElement).value).toBe("0,25");
+    expect((screen.getByLabelText("Sitzungslimit (USD)") as HTMLInputElement).value).toBe("0,05");
+    expect(screen.queryByTestId("ai-limits-CONNECTION_CHECK")).toBeNull();
+    expect(screen.getByTestId("ai-limits-DOCUMENT_CLASSIFICATION").textContent).toMatch(/Heute verbraucht: 0,04\s\$ von 0,25\s\$/);
+    expect(screen.getByText(/noch keine eigenen Limits/)).toBeTruthy();
+    expect((screen.getByTestId("ai-limits-DOCUMENT_CLASSIFICATION-save") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("takes only money amounts into the fields", async () => {
+    api.GET.mockImplementation((path: string) => Promise.resolve(ok(path === "/api/ai/runs" ? [] : overview())));
+    render(<AiSection />);
+    const daily = (await screen.findByTestId("ai-limits-DOCUMENT_CLASSIFICATION-daily")) as HTMLInputElement;
+
+    for (const rejected of ["abc", "1,2a", "1,234", "-3", "1.2.3", "1e3"]) {
+      fireEvent.change(daily, { target: { value: rejected } });
+      expect(daily.value, rejected).toBe("0,25");
+    }
+    fireEvent.change(daily, { target: { value: "12,5" } });
+    expect(daily.value).toBe("12,5");
+    expect(daily.inputMode).toBe("decimal");
+  });
+
+  it("explains limits that cannot be saved before sending them", async () => {
+    api.GET.mockImplementation((path: string) => Promise.resolve(ok(path === "/api/ai/runs" ? [] : overview())));
+    render(<AiSection />);
+    const save = (await screen.findByTestId("ai-limits-DOCUMENT_CLASSIFICATION-save")) as HTMLButtonElement;
+
+    fireEvent.change(field("ai-limits-DOCUMENT_CLASSIFICATION-run"), { target: { value: "0,30" } });
+    expect(screen.getByText("Darf nicht höher als das Tageslimit sein.")).toBeTruthy();
+    expect(save.disabled).toBe(true);
+    fireEvent.change(field("ai-limits-DOCUMENT_CLASSIFICATION-daily"), { target: { value: "" } });
+    expect(screen.getByText("Bitte einen Betrag eingeben.")).toBeTruthy();
+    fireEvent.change(field("ai-limits-DOCUMENT_CLASSIFICATION-daily"), { target: { value: "1001" } });
+    expect(screen.getByText("Höchstens 1.000,00 $.")).toBeTruthy();
+    fireEvent.change(field("ai-limits-DOCUMENT_CLASSIFICATION-daily"), { target: { value: "0" } });
+    expect(screen.getByText("Der Betrag muss größer als 0 sein.")).toBeTruthy();
+    expect(field("ai-limits-DOCUMENT_CLASSIFICATION-daily").getAttribute("aria-invalid")).toBe("true");
+    expect(save.disabled).toBe(true);
+    expect(api.PUT).not.toHaveBeenCalled();
+  });
+
+  it("sends both limits with the version they were based on and shows who changed them", async () => {
+    let current = overview();
+    api.GET.mockImplementation((path: string) => Promise.resolve(ok(path === "/api/ai/runs" ? [] : current)));
+    api.PUT.mockImplementation(() => {
+      current = overview({
+        dailyCostLimit: 2.5,
+        maxCost: 0.3,
+        spentToday: 0,
+        ownLimits: true,
+        limitsVersion: 1,
+        limitsChangedBy: "m-lisa",
+        limitsChangedAt: "2026-10-04T10:00:00Z",
+      });
+      return Promise.resolve(ok(current));
+    });
+    render(<AiSection />);
+
+    fireEvent.change(await screen.findByTestId("ai-limits-DOCUMENT_CLASSIFICATION-daily"), { target: { value: "2,5" } });
+    fireEvent.change(field("ai-limits-DOCUMENT_CLASSIFICATION-run"), { target: { value: "0.30" } });
+    fireEvent.click(screen.getByTestId("ai-limits-DOCUMENT_CLASSIFICATION-save"));
+
+    await waitFor(() => expect(screen.getByText(/Limits geändert von Lisa/)).toBeTruthy());
+    expect(api.PUT).toHaveBeenCalledWith("/api/ai/workloads/{workload}/limits", {
+      params: { path: { workload: "DOCUMENT_CLASSIFICATION" } },
+      body: { dailyCostLimit: 2.5, maxRunCost: 0.3, expectedVersion: 0 },
+    });
+    expect(screen.getByText("Dokumente einordnen: neue Limits gespeichert.")).toBeTruthy();
+    expect(field("ai-limits-DOCUMENT_CLASSIFICATION-daily").value).toBe("2,50");
+    expect(field("ai-limits-DOCUMENT_CLASSIFICATION-run").value).toBe("0,30");
+    expect(screen.getByText(/eigene Limits dieses Bereichs/)).toBeTruthy();
+  });
+
+  it("shows the other member's limits after a concurrent change", async () => {
+    let current = overview();
+    api.GET.mockImplementation((path: string) => Promise.resolve(ok(path === "/api/ai/runs" ? [] : current)));
+    api.PUT.mockImplementation(() => {
+      current = overview({ dailyCostLimit: 1, maxCost: 0.2, ownLimits: true, limitsVersion: 1, limitsChangedBy: "m-cedric", limitsChangedAt: "2026-10-04T10:00:00Z" });
+      return Promise.resolve({ error: { code: "version.conflict" }, response: new Response(null, { status: 409 }) });
+    });
+    render(<AiSection />);
+
+    fireEvent.change(await screen.findByTestId("ai-limits-DOCUMENT_CLASSIFICATION-daily"), { target: { value: "3" } });
+    fireEvent.click(screen.getByTestId("ai-limits-DOCUMENT_CLASSIFICATION-save"));
+
+    await waitFor(() => expect(screen.getByText("Der Datensatz wurde inzwischen geändert.")).toBeTruthy());
+    expect(field("ai-limits-DOCUMENT_CLASSIFICATION-daily").value).toBe("1,00");
+    expect(screen.getByText(/Limits geändert von Cedric/)).toBeTruthy();
   });
 });

@@ -22,4 +22,9 @@ public record RunBudget(Duration maxDuration, Money maxCost, int maxModelCalls, 
             throw new IllegalArgumentException("model calls, output tokens and attempts must be positive");
         }
     }
+
+    /** The same limits with another cost budget. */
+    public RunBudget withMaxCost(Money cost) {
+        return new RunBudget(maxDuration, cost, maxModelCalls, maxToolCalls, maxOutputTokens, maxAttempts);
+    }
 }

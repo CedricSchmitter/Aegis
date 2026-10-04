@@ -73,14 +73,27 @@ public final class AiDtos {
             @Schema(description = "Version of the model choice, sent back when changing it") long choiceVersion,
             @Schema(nullable = true, description = "Member who last changed the model choice") UUID choiceChangedBy,
             @Schema(nullable = true) Instant choiceChangedAt, boolean providerConfigured, boolean handlerAvailable,
-            boolean available, BigDecimal maxCost, long maxDurationSeconds, int maxModelCalls, int maxToolCalls,
-            int maxOutputTokens, int maxAttempts, int maxConcurrent) {
+            boolean available,
+            @Schema(description = "Session limit: the cost budget of one new run on the shown provider")
+            BigDecimal maxCost, long maxDurationSeconds, int maxModelCalls, int maxToolCalls,
+            int maxOutputTokens, int maxAttempts, int maxConcurrent,
+            @Schema(description = "Daily limit that applies to this workload on the shown provider: its own limit, "
+                    + "otherwise the provider's limit shared with the other workloads without own limits")
+            BigDecimal dailyCostLimit,
+            @Schema(description = "Spent today under dailyCostLimit") BigDecimal spentToday,
+            @Schema(description = "Whether the household set this workload's daily and session limit") boolean ownLimits,
+            @Schema(description = "Whether the household can set this workload's limits; not for the connection check")
+            boolean limitsSelectable,
+            @Schema(description = "Version of the cost limits, sent back when changing them") long limitsVersion,
+            @Schema(nullable = true, description = "Member who last changed the cost limits") UUID limitsChangedBy,
+            @Schema(nullable = true) Instant limitsChangedAt) {
         static WorkloadDto from(WorkloadView view) {
             return new WorkloadDto(view.workload(), view.provider(), view.model(), view.family(),
                     view.choiceVersion(), view.choiceChangedBy(), view.choiceChangedAt(), view.providerConfigured(),
                     view.handlerAvailable(), view.available(), view.maxCost(), view.maxDurationSeconds(),
                     view.maxModelCalls(), view.maxToolCalls(), view.maxOutputTokens(), view.maxAttempts(),
-                    view.maxConcurrent());
+                    view.maxConcurrent(), view.dailyCostLimit(), view.spentToday(), view.ownLimits(),
+                    view.limitsSelectable(), view.limitsVersion(), view.limitsChangedBy(), view.limitsChangedAt());
         }
     }
 
@@ -88,7 +101,8 @@ public final class AiDtos {
             @Schema(description = "Whether the authenticated household member may use a configured provider") boolean memberAllowed,
             @Schema(description = "Provider whose daily limit and spending today are shown: the one this member's "
                     + "runs use now (anthropic or claude-code)", nullable = true) String limitProvider,
-            BigDecimal dailyCostLimit, BigDecimal spentToday, String currency, int maxConcurrentRuns,
+            @Schema(description = "Daily limit shared by the workloads without own limits") BigDecimal dailyCostLimit,
+            @Schema(description = "Spent today by the workloads without own limits") BigDecimal spentToday, String currency, int maxConcurrentRuns,
             List<WorkloadDto> workloads,
             @Schema(description = "Model families the household can choose per workload") List<ModelOptionDto> models) {
         static AiOverviewDto from(AiOverview overview) {
@@ -112,5 +126,11 @@ public final class AiDtos {
     @Schema(description = "New model family of a workload with the choice version the member saw")
     public record ChooseModelRequest(@Schema(allowableValues = {"opus", "sonnet", "haiku"}) String family,
             long expectedVersion) {
+    }
+
+    @Schema(description = "Daily limit and session limit (cost budget of one run) of a workload in the household "
+            + "currency, each a positive amount with at most two decimals and at most 1000, with the limits version "
+            + "the member saw")
+    public record SetCostLimitsRequest(BigDecimal dailyCostLimit, BigDecimal maxRunCost, long expectedVersion) {
     }
 }

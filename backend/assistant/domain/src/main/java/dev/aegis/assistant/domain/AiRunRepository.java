@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /** Persistence of runs and their audit steps. {@link #save} checks the version of an existing run. */
 public interface AiRunRepository {
@@ -53,8 +54,11 @@ public interface AiRunRepository {
      */
     CostSample recentSucceededCost(Workload workload, String model, Currency currency, int limit);
 
-    /** Cost of all model calls recorded at or after {@code since} by runs on {@code provider}. */
-    Money costSince(Instant since, String provider, Currency currency);
+    /**
+     * Cost of all model calls recorded at or after {@code since} by runs of {@code workloads} on {@code provider};
+     * zero without workloads.
+     */
+    Money costSince(Instant since, String provider, Set<Workload> workloads, Currency currency);
 
     /**
      * Inserts a new run or updates an existing one if its stored version still matches, then appends the pending

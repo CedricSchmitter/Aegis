@@ -14,6 +14,8 @@ import dev.aegis.assistant.domain.Money;
 import dev.aegis.assistant.domain.RunBudget;
 import dev.aegis.assistant.domain.RunId;
 import dev.aegis.assistant.domain.Workload;
+import dev.aegis.assistant.domain.WorkloadCostLimits;
+import dev.aegis.assistant.domain.WorkloadCostLimitsRepository;
 import dev.aegis.assistant.domain.WorkloadModelChoice;
 import dev.aegis.assistant.domain.WorkloadModelChoiceRepository;
 import dev.aegis.shared.Actor;
@@ -57,6 +59,7 @@ class AiTestKit {
     final MutableClock clock = new MutableClock(T0);
     final InMemoryAiRunRepository runs = new InMemoryAiRunRepository();
     final InMemoryModelChoices choices = new InMemoryModelChoices();
+    final InMemoryCostLimits limits = new InMemoryCostLimits();
     final ScriptedGateway gateway = new ScriptedGateway();
     /** Second choice of every profile, like the owner's subscription: not configured and limited to Cedric. */
     final ScriptedGateway subscription = new ScriptedGateway(SUBSCRIPTION);
@@ -148,7 +151,7 @@ class AiTestKit {
 
     RunExecutionService execution() {
         if (execution == null) {
-            execution = new RunExecutionService(runs, () -> {
+            execution = new RunExecutionService(runs, limits, () -> {
             }, (key, run, at) -> ledger.add(key), scheduler, handlers(), access, settings(), clock);
         }
         return execution;
@@ -196,7 +199,7 @@ class AiTestKit {
 
     AiRunService service() {
         if (service == null) {
-            service = new AiRunService(runs, choices, scheduler, () -> {
+            service = new AiRunService(runs, choices, limits, scheduler, () -> {
             }, handlers(), gateways(), settings(), access, clock);
         }
         return service;
@@ -328,6 +331,34 @@ class AiTestKit {
                         current);
             }
             stored.put(choice.workload(), choice);
+        }
+    }
+
+    static final class InMemoryCostLimits implements WorkloadCostLimitsRepository {
+        private final Map<Workload, WorkloadCostLimits> stored = new EnumMap<>(Workload.class);
+
+        @Override
+        public synchronized Optional<WorkloadCostLimits> find(Workload workload) {
+            return Optional.ofNullable(stored.get(workload)).map(found -> WorkloadCostLimits.restore(found.workload(),
+                    found.dailyLimit().orElseThrow(), found.runLimit().orElseThrow(), found.version(),
+                    found.changedBy().orElse(null), found.changedAt().orElse(null)));
+        }
+
+        @Override
+        public synchronized Map<Workload, WorkloadCostLimits> findAll() {
+            Map<Workload, WorkloadCostLimits> all = new EnumMap<>(Workload.class);
+            stored.keySet().forEach(workload -> all.put(workload, find(workload).orElseThrow()));
+            return all;
+        }
+
+        @Override
+        public synchronized void save(WorkloadCostLimits limits) {
+            long current = stored.containsKey(limits.workload()) ? stored.get(limits.workload()).version() : 0;
+            if (current != limits.version() - 1) {
+                throw new StaleVersionException("aiCostLimits", limits.workload().name(), limits.version() - 1,
+                        current);
+            }
+            stored.put(limits.workload(), limits);
         }
     }
 

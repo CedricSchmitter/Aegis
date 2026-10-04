@@ -790,8 +790,8 @@
       "anthropic": "Claude API",
       "claude-code": "Claude-Abo"
     },
-    "spentToday": "Heute verbraucht: {{spent}} von {{limit}} Tageslimit",
-    "dailyLimitHint": "Ist das Tageslimit erreicht, warten weitere Läufe bis Mitternacht und laufen dann von selbst weiter.",
+    "spentToday": "Gemeinsames Tageslimit der Bereiche ohne eigene Limits: heute {{spent}} von {{limit}} verbraucht",
+    "dailyLimitHint": "Ist ein Tageslimit erreicht, warten weitere Läufe bis Mitternacht und laufen dann von selbst weiter.",
     "waitingForBudget": "Wartet auf das KI-Budget von morgen (Tageslimit erreicht) · geht am {{date}} weiter",
     "budgetWait": "Wartet auf KI-Budget",
     "budgetLine": "bis {{cost}} je Lauf, {{attempts}} Versuche, {{seconds}} s je Versuch",
@@ -815,6 +815,22 @@
       "changedBy": "Geändert von {{name}} am {{date}}",
       "changed": "{{workload}}: ab dem nächsten Lauf {{family}}.",
       "scope": "Gilt ab dem nächsten Lauf für den ganzen Haushalt."
+    },
+    "limits": {
+      "daily": "Tageslimit ({{currency}})",
+      "session": "Sitzungslimit ({{currency}})",
+      "save": "Limits speichern",
+      "saved": "{{workload}}: neue Limits gespeichert.",
+      "spent": "Heute verbraucht: {{spent}} von {{limit}}",
+      "own": "eigene Limits dieses Bereichs; das Sitzungslimit gilt für jeden einzelnen Lauf (eine Frage, ein Dokument, eine Prüfung)",
+      "shared": "noch keine eigenen Limits: es gelten das gemeinsame Tageslimit und das Standardbudget je Lauf",
+      "changedBy": "Limits geändert von {{name}} am {{date}}",
+      "problem": {
+        "required": "Bitte einen Betrag eingeben.",
+        "notPositive": "Der Betrag muss größer als 0 sein.",
+        "tooHigh": "Höchstens {{max}}.",
+        "runAboveDaily": "Darf nicht höher als das Tageslimit sein."
+      }
     },
     "workload": {
       "CONNECTION_CHECK": "Verbindungsprüfung",
@@ -1104,6 +1120,11 @@
     "ai.model.unknownFamily": "Unbekannte Modellfamilie.",
     "ai.model.notSelectable": "Für diese KI-Aufgabe lässt sich kein Modell wählen.",
     "ai.model.notOffered": "Diese Modellfamilie wird derzeit nicht angeboten.",
+    "ai.limits.notSelectable": "Für diese KI-Aufgabe lassen sich keine Limits einstellen.",
+    "ai.limits.notPositive": "Ein Limit muss ein Betrag größer als 0 sein.",
+    "ai.limits.tooPrecise": "Ein Limit hat höchstens zwei Nachkommastellen.",
+    "ai.limits.tooHigh": "Ein Limit darf höchstens 1000 betragen.",
+    "ai.limits.runAboveDaily": "Das Sitzungslimit darf nicht höher als das Tageslimit sein.",
     "ai.workload.unknown": "Unbekannte KI-Aufgabe.",
     "ai.price.unknown": "Für dieses Modell ist kein Preis hinterlegt, daher kann das Kostenbudget nicht geprüft werden.",
     "ai.run.notRetryable": "Nur fehlgeschlagene oder abgebrochene Läufe können wiederholt werden.",

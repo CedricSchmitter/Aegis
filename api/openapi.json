@@ -65,6 +65,7 @@
             "type" : "string"
           },
           "dailyCostLimit" : {
+            "description" : "Daily limit shared by the workloads without own limits",
             "type" : "number"
           },
           "limitProvider" : {
@@ -87,6 +88,7 @@
             "type" : "array"
           },
           "spentToday" : {
+            "description" : "Spent today by the workloads without own limits",
             "type" : "number"
           },
           "workloads" : {
@@ -3048,6 +3050,23 @@
         "required" : [ "appearance", "member" ],
         "type" : "object"
       },
+      "SetCostLimitsRequest" : {
+        "description" : "Daily limit and session limit (cost budget of one run) of a workload in the household currency, each a positive amount with at most two decimals and at most 1000, with the limits version the member saw",
+        "properties" : {
+          "dailyCostLimit" : {
+            "type" : "number"
+          },
+          "expectedVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "maxRunCost" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "dailyCostLimit", "expectedVersion", "maxRunCost" ],
+        "type" : "object"
+      },
       "SkippedDto" : {
         "properties" : {
           "documentId" : {
@@ -3568,6 +3587,10 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "dailyCostLimit" : {
+            "description" : "Daily limit that applies to this workload on the shown provider: its own limit, otherwise the provider's limit shared with the other workloads without own limits",
+            "type" : "number"
+          },
           "family" : {
             "description" : "Household model family for new runs; none for the connection check",
             "enum" : [ "opus", "sonnet", "haiku" ],
@@ -3575,6 +3598,24 @@
           },
           "handlerAvailable" : {
             "type" : "boolean"
+          },
+          "limitsChangedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "limitsChangedBy" : {
+            "description" : "Member who last changed the cost limits",
+            "format" : "uuid",
+            "type" : [ "string", "null" ]
+          },
+          "limitsSelectable" : {
+            "description" : "Whether the household can set this workload's limits; not for the connection check",
+            "type" : "boolean"
+          },
+          "limitsVersion" : {
+            "description" : "Version of the cost limits, sent back when changing them",
+            "format" : "int64",
+            "type" : "integer"
           },
           "maxAttempts" : {
             "format" : "int32",
@@ -3585,6 +3626,7 @@
             "type" : "integer"
           },
           "maxCost" : {
+            "description" : "Session limit: the cost budget of one new run on the shown provider",
             "type" : "number"
           },
           "maxDurationSeconds" : {
@@ -3606,17 +3648,25 @@
           "model" : {
             "type" : [ "string", "null" ]
           },
+          "ownLimits" : {
+            "description" : "Whether the household set this workload's daily and session limit",
+            "type" : "boolean"
+          },
           "provider" : {
             "type" : [ "string", "null" ]
           },
           "providerConfigured" : {
             "type" : "boolean"
           },
+          "spentToday" : {
+            "description" : "Spent today under dailyCostLimit",
+            "type" : "number"
+          },
           "workload" : {
             "type" : "string"
           }
         },
-        "required" : [ "available", "choiceVersion", "handlerAvailable", "maxAttempts", "maxConcurrent", "maxCost", "maxDurationSeconds", "maxModelCalls", "maxOutputTokens", "maxToolCalls", "providerConfigured", "workload" ],
+        "required" : [ "available", "choiceVersion", "dailyCostLimit", "handlerAvailable", "limitsSelectable", "limitsVersion", "maxAttempts", "maxConcurrent", "maxCost", "maxDurationSeconds", "maxModelCalls", "maxOutputTokens", "maxToolCalls", "ownLimits", "providerConfigured", "spentToday", "workload" ],
         "type" : "object"
       }
     }
@@ -3781,6 +3831,44 @@
           }
         },
         "summary" : "Start a new run for the work of a failed or cancelled run",
+        "tags" : [ "ai" ]
+      }
+    },
+    "/api/ai/workloads/{workload}/limits" : {
+      "put" : {
+        "description" : "Applies to both members, every provider and scheduled work. New runs use the session limit; the daily limit applies to the next model call. Amounts are positive, have at most two decimals and are at most 1000; the session limit is at most the daily limit. A stale expectedVersion is rejected with 409.",
+        "operationId" : "setAiCostLimits",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "workload",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SetCostLimitsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AiOverviewDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Set the daily and session limit of a workload for the household",
         "tags" : [ "ai" ]
       }
     },

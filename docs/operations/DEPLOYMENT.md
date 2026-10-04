@@ -230,8 +230,9 @@ the socket disappears and the provider is reported as not configured. If the CLI
 Costs recorded for subscription runs are API-equivalent estimates from the reported usage, not charges. The
 subscription has its own limits (`aegis.ai.provider-limits.claude-code`): a daily limit of **50 USD**
 (`AEGIS_AI_SUBSCRIPTION_DAILY_COST_LIMIT`) and a budget of **0.50 USD per run** (`AEGIS_AI_SUBSCRIPTION_MAX_RUN_COST`)
-for every workload. Daily limits count each provider separately, so subscription runs never use up the API's
-0.25 USD and vice versa. The status page shows the limit and today's spending of the provider the member's runs use.
+for every workload until the household sets its own limits (see [cost limits](#cost-limits-per-workload)). Daily
+limits count each provider separately, so subscription runs never use up the API's 0.25 USD and vice versa. The
+status page shows the limit and today's spending of the provider the member's runs use.
 Subscription usage limits appear as `RATE_LIMITED` with the reset time.
 
 ### Model choice per workload
@@ -247,6 +248,22 @@ When Anthropic releases a new model of a family, replace its entry in `aegis.ai.
 `aegis.ai.prices` (keep the predecessor's price for queued runs and retries) and deploy. A catalog model without a
 price stops the application at startup instead of running without a cost budget. The budgets stay the same for every
 family, so a more expensive model reaches them sooner.
+
+### Cost limits per workload
+
+Below each model dropdown the status page has two money fields per workload (classification, review, chat): the
+**daily limit** and the **session limit**, the most one run may cost (one question, one document classification, one
+review) ([ADR-0027](../architecture/adr/ADR-0027-household-cost-limits-per-workload.md)). The fields accept only
+amounts with at most two decimals (comma or point); a limit is more than 0 and at most 1000 USD, and the session limit
+is at most the daily limit. "Save limits" stores both for the whole household; a concurrent change by the other member
+is reported instead of overwritten.
+
+Until someone saves limits for a workload, the configured defaults below apply and its spending counts against the
+provider's shared daily limit. Own limits replace them for every provider of that workload, including the
+subscription's 50 USD per day and 0.50 USD per run; spending is still counted per provider, and under an own daily
+limit only the workload's own calls count. New runs use the new session limit; the daily limit applies from the next
+model call. Runs already waiting for the next budget day keep waiting until midnight; cancel and retry such a run to
+start it under the new limit. The stored limits are in the `ai_cost_limits` table and part of the database backup.
 
 ### Verify and understand availability
 
@@ -272,7 +289,8 @@ unavailable" and stay fully usable. To stop automatic runs for new uploads witho
 manual requests keep working. Filenames for downloads and exports use German names for built-in types and topics
 (`aegis.documents.analysis.filename-language`).
 
-The default household daily cost limit is **0.25 USD**, with one run at a time. Classification is limited to
+The default household daily cost limit is **0.25 USD**, with one run at a time; the household can replace it per
+workload on the status page (see [cost limits](#cost-limits-per-workload)). Classification is limited to
 0.05 USD per run (one structured call at low effort; at most 20,000 characters of OCR text are sent);
 review/chat profiles to 0.10 USD. When the daily limit is reached, further runs wait for the next household day
 (midnight Europe/Berlin) and then continue automatically (issue #109); their documents read "Wartet auf KI-Budget"
@@ -282,7 +300,7 @@ exhausted". Cancelling a waiting run on the status page stops it. These are appl
 provider balance or an exact billing ceiling: interrupted requests may be billed without recorded usage.
 The provider's billing controls remain authoritative. No automatic top-up exists. The only provider fallback is the
 choice at request time described above; a failing API call is never repeated on the subscription.
-The model catalog, prices and per-run budgets are in `aegis.ai` of `application.yml`.
+The model catalog, prices and default per-run budgets are in `aegis.ai` of `application.yml`.
 
 Deployment defaults: `AEGIS_AI_PROVIDERS=anthropic,claude-code`, `AEGIS_AI_SUBSCRIPTION_MEMBERS=` (empty: nobody may
 use the subscription), `AEGIS_AI_DAILY_COST_LIMIT=0.25`, `AEGIS_ASSISTANT_MEMBERS=` (empty: every member is a person;

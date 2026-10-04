@@ -169,6 +169,8 @@ aegis:
   ai:
     currency: USD
     # Sum of one provider's model calls per household day (aegis.household.zone), unless provider-limits sets its own.
+    # These limits and the profiles' max-cost are defaults: a workload whose daily and session limit the household set
+    # on the status page uses those instead, for every provider (ADR-0027).
     daily-cost-limit: ${AEGIS_AI_DAILY_COST_LIMIT:0.25}
     max-concurrent-runs: 1
     # A run that finds every slot taken stays queued. A freed slot is handed to the oldest waiting run right away

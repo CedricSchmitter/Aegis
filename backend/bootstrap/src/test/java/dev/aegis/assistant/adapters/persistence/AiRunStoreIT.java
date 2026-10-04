@@ -24,8 +24,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Currency;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -87,10 +89,18 @@ class AiRunStoreIT extends PostgresIT {
         assertThat(loaded.version()).isEqualTo(1);
         assertThat(runs.steps(run.id())).extracting(RunStep::kind).containsExactly(StepKind.ATTEMPT_STARTED,
                 StepKind.MODEL_CALL, StepKind.ATTEMPT_FAILED);
-        assertThat(runs.costSince(AT, "anthropic", Currency.getInstance("USD")).amount())
+        Currency usd = Currency.getInstance("USD");
+        Set<Workload> all = EnumSet.allOf(Workload.class);
+        assertThat(runs.costSince(AT, "anthropic", all, usd).amount())
                 .isGreaterThanOrEqualTo(Money.of("0.0016", "USD").amount());
-        assertThat(runs.costSince(AT, "other-provider", Currency.getInstance("USD")).amount())
+        assertThat(runs.costSince(AT, "other-provider", all, usd).amount())
                 .as("daily limits count only the provider's own calls").isZero();
+        Money classification = runs.costSince(AT, "anthropic", Set.of(Workload.DOCUMENT_CLASSIFICATION), usd);
+        assertThat(classification.amount()).isGreaterThanOrEqualTo(Money.of("0.0016", "USD").amount());
+        assertThat(runs.costSince(AT, "anthropic", EnumSet.complementOf(EnumSet.of(Workload.DOCUMENT_CLASSIFICATION)),
+                usd).plus(classification)).as("a workload's own daily limit counts only its own calls")
+                .isEqualTo(runs.costSince(AT, "anthropic", all, usd));
+        assertThat(runs.costSince(AT, "anthropic", Set.of(), usd).amount()).isZero();
         assertThat(runs.findActiveByKey(run.idempotencyKey())).get().extracting(AiRun::id).isEqualTo(run.id());
     }
 
