@@ -324,10 +324,15 @@ export function DocumentsPage() {
                 {t("documents.notContentIndexed", { count: list.notContentIndexed })}
               </p>
             )}
+            {list.archivalFailed > 0 && filters.query.trim() && (
+              <p className="alert-info" role="status" data-testid="archival-failed">
+                {t("documents.archivalFailed", { count: list.archivalFailed })}
+              </p>
+            )}
             <div className="ui-sec flex-wrap">
               <span data-testid="result-count">
                 {t(list.countAccuracy === "LOWER_BOUND" ? "documents.resultsLowerBound" : "documents.results", { count: list.matchingDocuments })}
-                {filters.query.trim() && ` ÂÂÂÂ· ${t("documents.resultsFor", { query: filters.query.trim() })}`}
+                {filters.query.trim() && ` · ${t("documents.resultsFor", { query: filters.query.trim() })}`}
               </span>
               <label className="flex items-center gap-2">
                 <span className="sr-only">{t("documents.sort")}</span>

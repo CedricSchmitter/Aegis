@@ -137,9 +137,10 @@ model and is not a calibrated guarantee. Only effective values take part in filt
   offer explicit ALL matching. The UI states the active logic.
 - Folder scope includes subfolders by default; `unsorted` selects documents without a folder.
 - "Missing" filters select documents without an effective value of a facet (for example no document type).
-- Text matches titles and, when Paperless answers, archive full-text hits. Documents that are not archived yet
-  are reported as not content-indexed; an unreachable archive keeps title and metadata filtering available and
-  is reported as `UNAVAILABLE`.
+- Text matches titles and, when Paperless answers, archive full-text hits. Documents still on their way into the
+  archive are reported as not content-indexed (`notContentIndexed`); documents whose archival failed are reported
+  separately (`archivalFailed`), because they match by title only until a member retries them. An unreachable
+  archive keeps title and metadata filtering available and is reported as `UNAVAILABLE`.
 - Archive text search collects pages of 200 IDs, at most 10 requests, 2,000 unique IDs and 10 seconds per search.
   Requests keep the configured origin, authentication and original query; response links are validated for the
   same origin/path/parameters and the next sequential page, never fetched directly. Redirects are disabled for
@@ -149,8 +150,11 @@ model and is not a calibrated guarantee. Only effective values take part in filt
   archive query, not semantic recall of all relevant household sources.
 - `archiveTotal`, when known, is the archive's unfiltered count. `matchingDocuments` and `facets` count active Aegis
   matches after its own filters; they never use that archive total. `countAccuracy=LOWER_BOUND` marks every result
-  and facet count when archive traversal is incomplete or an applicable unarchived source may match by content.
-  The empty-text collection listing remains exact. Aegis paging only pages over the collected candidate set;
+  and facet count when archive traversal is incomplete or an applicable document still being archived may match by
+  content. A failed archival does not: it would otherwise turn every search into a lower bound for as long as the
+  document stays failed, and it is shown on its own instead. The empty-text collection listing remains exact.
+  One search page may use the whole 10-second budget; the traversal deadline, not a shorter per-page read timeout,
+  ends a slow search. Aegis paging only pages over the collected candidate set;
   changing folder/label filters cannot recover hits beyond the archive bounds. Narrow the search words or retry.
   The German/English search page and filter sheet label these limitations and avoid an absence claim for zero
   collected matches.

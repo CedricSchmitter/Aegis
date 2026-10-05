@@ -77,6 +77,14 @@ class ArchiveRetrievalIT extends PostgresIT {
             assertThat(fallback.path("contentSearch").asString()).isEqualTo("UNAVAILABLE");
             assertThat(fallback.path("countAccuracy").asString()).isEqualTo("LOWER_BOUND");
             archive.searchResults.put(QUERY, collected());
+            jdbc.update("UPDATE documents SET state='FAILED', paperless_document_id=NULL WHERE id=?", ids.get(201));
+            jdbc.update("INSERT INTO document_classifications (document_id,category_id,updated_by,updated_at,version) VALUES (?,?,?,now(),1)",
+                    ids.get(201), folder, actor.memberId().value());
+            var withFailed = api.json(api.get("/api/documents?query=" + QUERY + "&category=" + folder));
+            assertThat(withFailed.path("matchingDocuments").asLong()).isEqualTo(1);
+            assertThat(withFailed.path("archivalFailed").asLong()).isEqualTo(1);
+            assertThat(withFailed.path("notContentIndexed").asLong()).isZero();
+            assertThat(withFailed.path("countAccuracy").asString()).isEqualTo("EXACT");
             jdbc.update("UPDATE documents SET trashed_by=?, trashed_at=now(), restorable_until=now()+interval '30 days' WHERE id=?",
                     actor.memberId().value(), ids.get(200));
             var trashed = api.json(api.get(query));

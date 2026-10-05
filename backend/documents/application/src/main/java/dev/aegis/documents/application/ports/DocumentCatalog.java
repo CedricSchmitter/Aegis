@@ -103,8 +103,11 @@ public interface DocumentCatalog {
      */
     Page neverClassified(Criteria criteria, int limit);
 
-    /** Matching documents that are not archived yet and therefore have no full text. */
-    long countNotArchived(Criteria criteria);
+    /** Matching documents still on their way into the archive (received or submitted), without full text so far. */
+    long countArchivalPending(Criteria criteria);
+
+    /** Matching documents whose archival failed; they have no full text until a member retries them. */
+    long countArchivalFailed(Criteria criteria);
 
     long countAll();
 

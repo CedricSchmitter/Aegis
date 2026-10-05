@@ -94,9 +94,18 @@ public class JdbcDocumentCatalog implements DocumentCatalog {
     }
 
     @Override
-    public long countNotArchived(Criteria criteria) {
+    public long countArchivalPending(Criteria criteria) {
+        return countInStates(criteria, "'RECEIVED', 'SUBMITTED'");
+    }
+
+    @Override
+    public long countArchivalFailed(Criteria criteria) {
+        return countInStates(criteria, "'FAILED'");
+    }
+
+    private long countInStates(Criteria criteria, String states) {
         Conditions conditions = conditions(criteria);
-        Long count = jdbc.sql("SELECT count(*)" + FROM + conditions.where() + " AND d.state <> 'ARCHIVED'")
+        Long count = jdbc.sql("SELECT count(*)" + FROM + conditions.where() + " AND d.state IN (" + states + ")")
                 .params(conditions.params()).query(Long.class).single();
         return count == null ? 0 : count;
     }

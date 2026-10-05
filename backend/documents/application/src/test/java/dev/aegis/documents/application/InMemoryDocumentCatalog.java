@@ -90,8 +90,14 @@ public class InMemoryDocumentCatalog implements DocumentCatalog {
     }
 
     @Override
-    public long countNotArchived(Criteria criteria) {
-        return matching(criteria).stream().filter(d -> d.state() != ProcessingState.ARCHIVED).count();
+    public long countArchivalPending(Criteria criteria) {
+        return matching(criteria).stream().filter(d -> d.state() == ProcessingState.RECEIVED
+                || d.state() == ProcessingState.SUBMITTED).count();
+    }
+
+    @Override
+    public long countArchivalFailed(Criteria criteria) {
+        return matching(criteria).stream().filter(d -> d.state() == ProcessingState.FAILED).count();
     }
 
     @Override

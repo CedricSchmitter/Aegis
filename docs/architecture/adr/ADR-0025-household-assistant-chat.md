@@ -69,7 +69,7 @@ without folder and label filters. Results still show a document's folder and lab
 ### Search coverage
 
 Both retrieval modes pass `contentSearch`, `searchLimitation`, `archiveTotal`, `countAccuracy`, `notContentIndexed`,
-Aegis paging and `omittedDocuments` to the model. Archive traversal is bounded as described in ADR-0002; a complete
+`archivalFailed`, Aegis paging and `omittedDocuments` to the model. Archive traversal is bounded as described in ADR-0002; a complete
 archive query is not proof of semantic or household-wide recall. Search results are sized before serialization:
 whole metadata items are omitted as needed to keep valid JSON below the executor's existing 20,000-character
 boundary, with an omission count. Ordinary Aegis pages can be requested separately; partial archive traversal
@@ -78,8 +78,10 @@ cannot be repaired by paging Aegis results alone.
 The prompt and tool descriptions ask the model to narrow or retry incomplete retrieval and to explain missing
 sources. A focused, provider-independent guard in the existing executor carries an attempt-local coverage flag
 from search tools to answer validation (not document bodies or a persistent passage observation ledger). Any
-limited/unavailable search, applicable unindexed source, failed search tool or omitted metadata forces `PARTIAL`
-and a German/English caveat. A proposed `NOT_FOUND` answer is replaced by a statement that the retrieved sources
+limited/unavailable search, applicable document still being archived, failed search tool or omitted metadata forces
+`PARTIAL` and a caveat from the German/English `chat/guard` catalogs. Rejected tool input that the model can correct
+and documents whose archival failed do not; the latter are reported to the model as `archivalFailed` so it can
+mention them. A proposed `NOT_FOUND` answer is replaced by a statement that the retrieved sources
 did not establish an answer; it cannot prove absence. Later successful searches in the same attempt do not erase
 an earlier technical gap. This guard does not check the semantic support of prose or inspected-passage provenance.
 Normal CI uses controlled archive responses and a scripted extension of the synthetic reference harness; no model
