@@ -25,6 +25,16 @@ class PassageRevisionTest {
         assertThat(p.identifiers()).contains("k2026004","muller");
         assertThat(PassageRevision.of("x","ARCHIVE_OCR",List.of(" "),false).passages()).isEmpty();
     }
+    @Test void identicalJoinedTextWithDifferentPagesOrSourcesHasDifferentProvenanceRevisions() {
+        var paged=PassageRevision.of("x","ARCHIVE_PDF",List.of("A","B"),true);
+        var unpaged=PassageRevision.of("x","ARCHIVE_OCR",List.of("A\nB"),false);
+        assertThat(paged.text()).isEqualTo(unpaged.text());
+        assertThat(paged.revision()).isNotEqualTo(unpaged.revision());
+        assertThat(PassageRevision.of("x","ARCHIVE_PDF",List.of("A\nB"),true).revision()).isNotEqualTo(paged.revision());
+        var wrong=new PassageRevision.Passage(0,0,1,1,1,"X","x",List.of("x"));
+        assertThatThrownBy(() -> new PassageRevision("revision","x","ARCHIVE_PDF","A",true,List.of(wrong)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
     @Test void unicodeAndOversizedParagraphsRemainContiguousAndBounded() {
         String original="😀".repeat(4000);
         var revision=PassageRevision.of("emoji","ARCHIVE_OCR",List.of(original),false);

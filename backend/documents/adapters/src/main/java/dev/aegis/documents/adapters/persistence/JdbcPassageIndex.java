@@ -42,19 +42,19 @@ public class JdbcPassageIndex implements PassageIndex {
 
     @Override public void request(DocumentId id, Instant now) {
         tx.executeWithoutResult(s -> {
-        // Joins the surrounding archival transaction; this row is the durable work publication.
-        int written = jdbc.sql("""
-                INSERT INTO document_passage_index (document_id,archive_id,original_checksum,build_epoch,next_attempt_at)
-                SELECT d.id,d.paperless_document_id,d.checksum_sha256,c.build_epoch,:now
-                  FROM documents d CROSS JOIN document_passage_control c WHERE d.id=:id AND """ + ACTIVE + """
-                ON CONFLICT (document_id) DO UPDATE SET archive_id=EXCLUDED.archive_id,
-                    original_checksum=EXCLUDED.original_checksum, generation=document_passage_index.generation+1,
-                    build_epoch=EXCLUDED.build_epoch, active_revision=NULL, state='PENDING', attempts=0, next_attempt_at=EXCLUDED.next_attempt_at,
-                    lease=NULL,lease_until=NULL,verified_at=NULL,failure_code=NULL
-                WHERE document_passage_index.archive_id<>EXCLUDED.archive_id
-                   OR document_passage_index.original_checksum<>EXCLUDED.original_checksum
-                """).param("id",id.value()).param("now",at(now)).update();
-        if (written > 0) { changed(); }
+            // Joins the surrounding archival transaction; this row is the durable work publication.
+            int written = jdbc.sql("""
+                    INSERT INTO document_passage_index (document_id,archive_id,original_checksum,build_epoch,next_attempt_at)
+                    SELECT d.id,d.paperless_document_id,d.checksum_sha256,c.build_epoch,:now
+                      FROM documents d CROSS JOIN document_passage_control c WHERE d.id=:id AND """ + ACTIVE + """
+                    ON CONFLICT (document_id) DO UPDATE SET archive_id=EXCLUDED.archive_id,
+                        original_checksum=EXCLUDED.original_checksum, generation=document_passage_index.generation+1,
+                        build_epoch=EXCLUDED.build_epoch, active_revision=NULL, state='PENDING', attempts=0, next_attempt_at=EXCLUDED.next_attempt_at,
+                        lease=NULL,lease_until=NULL,verified_at=NULL,failure_code=NULL
+                    WHERE document_passage_index.archive_id<>EXCLUDED.archive_id
+                       OR document_passage_index.original_checksum<>EXCLUDED.original_checksum
+                    """).param("id",id.value()).param("now",at(now)).update();
+            if (written > 0) { changed(); }
         });
     }
     @Override public void invalidate(DocumentId id, Instant now) {
@@ -73,9 +73,9 @@ public class JdbcPassageIndex implements PassageIndex {
     }
     @Override public void suspend(DocumentId id) {
         tx.executeWithoutResult(s -> {
-        jdbc.sql("UPDATE document_passage_index SET generation=generation+1,state='PENDING',verified_at=NULL,lease=NULL,lease_until=NULL WHERE document_id=:id")
-                .param("id",id.value()).update();
-        changed();
+            jdbc.sql("UPDATE document_passage_index SET generation=generation+1,state='PENDING',verified_at=NULL,lease=NULL,lease_until=NULL WHERE document_id=:id")
+                    .param("id",id.value()).update();
+            changed();
         });
     }
     @Override public void rebuild(Instant now) {

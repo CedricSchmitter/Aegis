@@ -16,9 +16,14 @@ public class PassageIndexTask {
     public static final String NAME="index-document-passages";
     public static final Duration INTERVAL=Duration.ofMinutes(1);
     private static final Logger log=LoggerFactory.getLogger(PassageIndexTask.class);
+    private final Duration interval;
+    public PassageIndexTask(@Value("${aegis.documents.passages.interval:1m}") Duration interval) {
+        if (interval.compareTo(INTERVAL) < 0) { throw new IllegalArgumentException("passage indexing interval must be at least one minute"); }
+        this.interval = interval;
+    }
+    public Duration interval() { return interval; }
     @Bean
-    RecurringTask<Void> indexDocumentPassages(PassageIndexWorker worker,
-            @Value("${aegis.documents.passages.interval:1m}") Duration interval) {
+    RecurringTask<Void> indexDocumentPassages(PassageIndexWorker worker) {
         return Tasks.recurring(NAME,FixedDelay.of(interval)).execute((instance,context) -> {
             var report=worker.sweep(Actor.householdProcess(PassageIndexWorker.PROCESS));
             if (report.prepared()>0) {

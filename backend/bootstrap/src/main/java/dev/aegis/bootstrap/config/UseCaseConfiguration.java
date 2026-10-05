@@ -704,8 +704,8 @@ public class UseCaseConfiguration {
     @Bean
     SystemStatusQuery systemStatusQuery(List<HealthCheckSource> sources, ProcessingOverviewSource processing,
             ReviewReconciliationTask reviewReconciliation, PushDispatchTask pushDispatch, JobHealthWatchTask watchTask,
-            RecurringJobStateSource jobStates, StorageHealthService storage, HouseholdAccess access, Clock clock) {
-        List<RecurringJob> recurringJobs = new ArrayList<>(householdJobs(reviewReconciliation, pushDispatch));
+            RecurringJobStateSource jobStates, StorageHealthService storage, HouseholdAccess access, Clock clock, PassageIndexTask passages) {
+        List<RecurringJob> recurringJobs = new ArrayList<>(householdJobs(reviewReconciliation, pushDispatch, passages));
         recurringJobs.add(new RecurringJob(JobHealthWatchTask.NAME, watchTask.interval()));
         return new IntegrationStatusService(sources, processing, recurringJobs, jobStates, storage, access, clock);
     }
@@ -737,16 +737,16 @@ public class UseCaseConfiguration {
     @Bean
     JobHealthWatch jobHealthWatch(ReviewReconciliationTask reviewReconciliation, PushDispatchTask pushDispatch,
             RecurringJobStateSource jobStates, JobIncidentStore incidents, MemberDirectory members,
-            PublishNotice notices, Clock clock) {
-        return new JobHealthWatchService(householdJobs(reviewReconciliation, pushDispatch), jobStates, incidents,
+            PublishNotice notices, Clock clock, PassageIndexTask passages) {
+        return new JobHealthWatchService(householdJobs(reviewReconciliation, pushDispatch, passages), jobStates, incidents,
                 members, notices, clock);
     }
 
     private static List<RecurringJob> householdJobs(ReviewReconciliationTask reviewReconciliation,
-            PushDispatchTask pushDispatch) {
+            PushDispatchTask pushDispatch, PassageIndexTask passages) {
         return List.of(new RecurringJob(ReviewReconciliationTask.NAME, reviewReconciliation.interval()),
                 new RecurringJob(ArchiveTextCheckTask.NAME, ArchiveTextCheckTask.INTERVAL),
-                new RecurringJob(PassageIndexTask.NAME, PassageIndexTask.INTERVAL),
+                new RecurringJob(PassageIndexTask.NAME, passages.interval()),
                 new RecurringJob(ReconciliationTask.NAME, ReconciliationTask.INTERVAL),
                 new RecurringJob(PushDispatchTask.NAME, pushDispatch.interval()));
     }

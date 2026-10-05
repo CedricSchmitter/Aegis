@@ -17,7 +17,21 @@ public record PassageRevision(String revision, String sourceFingerprint, String 
     public static final int MAX_PASSAGE = 2_000;
     public static final int OVERLAP = 200;
 
-    public PassageRevision { passages = List.copyOf(passages); }
+    public PassageRevision {
+        passages = List.copyOf(passages);
+        if (text == null || text.length() > 2_000_000 || passages.size() > 4_000) {
+            throw new IllegalArgumentException("derived text exceeds its bounds");
+        }
+        for (int ordinal = 0; ordinal < passages.size(); ordinal++) {
+            Passage p = passages.get(ordinal);
+            if (p.ordinal() != ordinal || p.start() < 0 || p.end() > text.length() || p.end() <= p.start()
+                    || p.original().length() > MAX_PASSAGE || !p.original().equals(text.substring(p.start(), p.end()))
+                    || (paged && (p.startPage() == null || p.endPage() == null || p.startPage() < 1 || p.endPage() < p.startPage()))
+                    || (!paged && (p.startPage() != null || p.endPage() != null))) {
+                throw new IllegalArgumentException("passage does not match its original text provenance");
+            }
+        }
+    }
 
     public record Passage(int ordinal, int start, int end, Integer startPage, Integer endPage, String original,
             String normalized, List<String> identifiers) {
@@ -25,8 +39,13 @@ public record PassageRevision(String revision, String sourceFingerprint, String 
     }
 
     public static PassageRevision of(String fingerprint, String kind, List<String> pages, boolean paged) {
+        if (pages.isEmpty() || pages.size() > 1_000 || (!paged && pages.size() != 1)) {
+            throw new IllegalArgumentException("derived text has invalid page bounds");
+        }
         String text = String.join("\n", pages);
-        String revision = hash(fingerprint + "\n" + EXTRACTION_VERSION + "\n" + CHUNK_VERSION + "\n" + text);
+        if (text.length() > 2_000_000) { throw new IllegalArgumentException("derived text exceeds its character bound"); }
+        String revision = hash(fingerprint + "\n" + EXTRACTION_VERSION + "\n" + CHUNK_VERSION + "\n" + kind
+                + "\n" + paged + "\n" + pages.stream().map(String::length).toList() + "\n" + text);
         List<Passage> chunks = new ArrayList<>();
         int pageOffset = 0;
         for (int page = 0; page < pages.size(); page++) {
