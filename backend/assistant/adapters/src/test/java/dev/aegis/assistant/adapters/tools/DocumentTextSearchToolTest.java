@@ -61,7 +61,7 @@ class DocumentTextSearchToolTest {
     @Test
     void bothSearchToolsExposeCoverageInValidBoundedJson() {
         response = new DocumentSearchResult(List.of(), ContentSearchState.LIMITED, 1000, 0, 0, 20,
-                FacetCounts.EMPTY, 0, dev.aegis.documents.application.api.SearchLimitation.HIT_LIMIT, 700L,
+                FacetCounts.EMPTY, 0, 2, dev.aegis.documents.application.api.SearchLimitation.HIT_LIMIT, 700L,
                 dev.aegis.documents.application.api.CountAccuracy.LOWER_BOUND);
         for (AiTool search : List.of(tool, new DocumentSearchTool(new RecordingQueries()))) {
             var result = search.invoke(invocation, Map.of("query", "clause"));
@@ -70,6 +70,7 @@ class DocumentTextSearchToolTest {
             assertThat(json.path("contentSearch").asString()).isEqualTo("LIMITED");
             assertThat(json.path("searchLimitation").asString()).isEqualTo("HIT_LIMIT");
             assertThat(json.path("archiveTotal").asLong()).isEqualTo(700);
+            assertThat(json.path("archivalFailed").asLong()).isEqualTo(2);
             assertThat(json.path("matchingDocuments").asLong()).isZero();
             assertThat(json.path("countAccuracy").asString()).isEqualTo("LOWER_BOUND");
             assertThat(json.path("omittedDocuments").asInt()).isZero();

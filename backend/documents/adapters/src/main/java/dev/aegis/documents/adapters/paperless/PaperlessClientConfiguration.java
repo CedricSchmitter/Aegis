@@ -15,11 +15,16 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties(PaperlessProperties.class)
 class PaperlessClientConfiguration {
 
+    /**
+     * One search page may use the whole traversal budget: the pager already stops at its overall deadline, and a
+     * shorter per-page timeout turns a slow first page into an unavailable search. On the household VM a page took
+     * about 0.6 s when measured idle (October 2026), so a fixed 3 s left little room for load such as OCR.
+     */
     @Bean
     RestClient paperlessSearchRestClient(
             @Qualifier("paperlessRestClient") RestClient client) {
         var settings = HttpClientSettings.defaults().withConnectTimeout(Duration.ofSeconds(2))
-                .withReadTimeout(Duration.ofSeconds(3))
+                .withReadTimeout(ArchiveSearchPager.MAX_TIME)
                 .withRedirects(HttpRedirects.DONT_FOLLOW);
         return client.mutate().requestFactory(ClientHttpRequestFactoryBuilder.jdk().build(settings)).build();
     }

@@ -194,6 +194,8 @@
     "nextPage": "Nächste Seite",
     "notContentIndexed": "{{count}} passende Dokumente sind noch nicht archiviert und daher nicht im Volltext durchsuchbar.",
     "notContentIndexed_one": "Ein passendes Dokument ist noch nicht archiviert und daher nicht im Volltext durchsuchbar.",
+    "archivalFailed": "{{count}} passende Dokumente konnten nicht archiviert werden. Sie werden nur über ihren Titel gefunden, bis die Archivierung erneut versucht wird.",
+    "archivalFailed_one": "Ein passendes Dokument konnte nicht archiviert werden. Es wird nur über seinen Titel gefunden, bis die Archivierung erneut versucht wird.",
     "noResultsFiltered": "Keine Treffer für die aktiven Filter.",
     "select": "Dokument auswählen",
     "selected": "{{count}} ausgewählt",

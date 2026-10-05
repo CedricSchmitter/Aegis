@@ -32,6 +32,10 @@ public class DocumentSearchTool implements AiTool {
     static final int MAX_RESULTS = 20;
     static final int MAX_IDS = 20;
     private static final Set<String> SORTS = Set.of("NEWEST", "OLDEST", "TITLE");
+    static final String COVERAGE = "contentSearch READY means archive traversal completed; LIMITED or UNAVAILABLE "
+            + "means missing sources. matchingDocuments and facets can be lower bounds. Narrow or retry; never infer "
+            + "absence or exhaustive coverage from incomplete search. archivalFailed counts matching documents whose "
+            + "archival failed: they match by title only, so mention them when they may hold the answer.";
 
     private static final ToolSpec SPEC = new ToolSpec(NAME,
             "Searches the shared household documents. Words match the title and the archived full text. Folder and "
@@ -39,7 +43,7 @@ public class DocumentSearchTool implements AiTool {
                     + "group with OR (topics and tags can require ALL). Labels can be missing or wrong, so search "
                     + "with words only as well when a filtered search finds little. Returns metadata only: id, "
                     + "title, upload time, document date, folder path, labels and whether the archive recognized "
-                    + "text. Never returns document content. contentSearch READY means archive traversal completed; LIMITED or UNAVAILABLE means missing sources. matchingDocuments and facets can be lower bounds. Narrow or retry; never infer absence or exhaustive coverage from incomplete search.",
+                    + "text. Never returns document content. " + COVERAGE,
             Map.of("type", "object",
                     "properties", Map.ofEntries(
                             Map.entry("query", Map.of("type", "string",
@@ -123,6 +127,7 @@ public class DocumentSearchTool implements AiTool {
         answer.put("hasMore", (long) (result.page() + 1) * result.size() < result.matchingDocuments());
         answer.put("page", result.page());
         answer.put("notContentIndexed", result.notContentIndexed());
+        answer.put("archivalFailed", result.archivalFailed());
         answer.put("documents", items);
         return answer;
     }

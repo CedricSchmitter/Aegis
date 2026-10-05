@@ -22,10 +22,10 @@ import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.api.OriginalUnavailableException;
 import dev.aegis.documents.application.api.SearchLimitation;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
+import dev.aegis.documents.application.ports.DocumentCatalog;
 import dev.aegis.documents.application.ports.DocumentCatalog.Criteria;
 import dev.aegis.documents.application.ports.DocumentCatalog.Group;
 import dev.aegis.documents.application.ports.DocumentCatalog.ValueFilter;
-import dev.aegis.documents.application.ports.DocumentCatalog;
 import dev.aegis.documents.application.ports.OriginalStore;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.domain.Document;
@@ -156,11 +156,12 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
                 request.page() * request.size(), request.size());
         Map<DocumentId, ClassificationView> views = classificationViews.viewsOf(page.ids(), tree, vocabulary);
         List<DocumentSummary> items = presenter.summarizeAll(documents.findByIds(page.ids()), views);
-        long notContentIndexed = text.isEmpty() ? 0 : catalog.countNotArchived(criteria.withoutText());
+        long notContentIndexed = text.isEmpty() ? 0 : catalog.countArchivalPending(criteria.withoutText());
+        long archivalFailed = text.isEmpty() ? 0 : catalog.countArchivalFailed(criteria.withoutText());
         boolean unindexedFacetCandidates = !text.isEmpty() && Arrays.stream(Group.values())
-                .anyMatch(group -> catalog.countNotArchived(filters.withoutGroup(group)) > 0);
+                .anyMatch(group -> catalog.countArchivalPending(filters.withoutGroup(group)) > 0);
         return new DocumentSearchResult(items, contentSearch, catalog.countAll(), page.total(), request.page(),
-                request.size(), facetCounts(criteria), notContentIndexed, limitation, archiveTotal,
+                request.size(), facetCounts(criteria), notContentIndexed, archivalFailed, limitation, archiveTotal,
                 contentSearch == ContentSearchState.LIMITED || contentSearch == ContentSearchState.UNAVAILABLE
                         || unindexedFacetCandidates
                         ? CountAccuracy.LOWER_BOUND

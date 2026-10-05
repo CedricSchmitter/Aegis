@@ -20,7 +20,7 @@ public class DocumentTextSearchTool implements AiTool {
     private static final ToolSpec SPEC = new ToolSpec(ChatTools.SEARCH_DOCUMENT_TEXT,
             "Searches the shared household documents by words. Words match the title and the archived full text. "
                     + "Returns metadata only: id, title, upload time, document date, folder path, labels and whether "
-                    + "the archive recognized text. Never returns document content. contentSearch READY means archive traversal completed; LIMITED or UNAVAILABLE means missing sources. matchingDocuments and facets can be lower bounds. Narrow or retry; never infer absence or exhaustive coverage from incomplete search.",
+                    + "the archive recognized text. Never returns document content. " + DocumentSearchTool.COVERAGE,
             Map.of("type", "object",
                     "properties", Map.of(
                             "query", Map.of("type", "string",

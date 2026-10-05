@@ -1593,6 +1593,10 @@
       },
       "DocumentListResponse" : {
         "properties" : {
+          "archivalFailed" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "archiveTotal" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
@@ -1639,7 +1643,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "contentSearch", "countAccuracy", "facets", "items", "matchingDocuments", "notContentIndexed", "page", "size", "totalDocuments" ],
+        "required" : [ "archivalFailed", "contentSearch", "countAccuracy", "facets", "items", "matchingDocuments", "notContentIndexed", "page", "size", "totalDocuments" ],
         "type" : "object"
       },
       "DocumentTrashDto" : {

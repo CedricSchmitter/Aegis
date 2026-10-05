@@ -10,19 +10,19 @@ import dev.aegis.assistant.application.ports.ContentPart;
 import dev.aegis.assistant.application.ports.ModelMessage;
 import dev.aegis.assistant.application.ports.ModelTurn;
 import dev.aegis.assistant.domain.Workload;
+import dev.aegis.assistant.domain.chat.ChatAnswer;
 import dev.aegis.assistant.domain.chat.ChatAnswer.Check;
 import dev.aegis.assistant.domain.chat.ChatAnswer.Citation;
 import dev.aegis.assistant.domain.chat.ChatAnswer.Evidence;
 import dev.aegis.assistant.domain.chat.ChatAnswer.SourceKind;
-import dev.aegis.assistant.domain.chat.ChatAnswer;
 import dev.aegis.assistant.domain.chat.ChatTurn;
 import dev.aegis.assistant.domain.chat.Conversation;
 import dev.aegis.assistant.domain.chat.ConversationRepository;
 import dev.aegis.contracts.application.api.ContractQueries;
 import dev.aegis.contracts.application.api.ContractViews.ContractView;
 import dev.aegis.documents.application.api.ContentUnavailableException;
-import dev.aegis.documents.application.api.DocumentTextQuery.DocumentText;
 import dev.aegis.documents.application.api.DocumentTextQuery;
+import dev.aegis.documents.application.api.DocumentTextQuery.DocumentText;
 import dev.aegis.planning.application.api.TaskQueries;
 import dev.aegis.planning.application.api.TaskSummary;
 import dev.aegis.shared.ContractId;
@@ -244,17 +244,13 @@ public class ChatHandler implements WorkloadHandler {
         List<Citation> citations = citations(run, output.get("citations"));
         List<String> caveats = caveats(output.get("caveats"));
         if (!incompleteRetrieval.isEmpty()) {
-            boolean english = turnOf(run, conversationOf(run)).locale() == ProductLocale.EN;
-            String warning = english
-                    ? "Document search was incomplete. Other relevant sources may be missing; this answer is provisional. Narrow the search or retry."
-                    : "Die Dokumentensuche war unvollständig. Weitere relevante Quellen können fehlen; diese Antwort ist vorläufig. Grenze die Suche ein oder versuche es erneut.";
+            ProductLocale locale = turnOf(run, conversationOf(run)).locale();
             if (evidence == Evidence.NOT_FOUND) {
-                text = english ? "The retrieved sources did not establish an answer. Incomplete search cannot show that no relevant source exists."
-                        : "Die abgerufenen Quellen ergaben keine Antwort. Eine unvollständige Suche belegt nicht, dass keine relevante Quelle existiert.";
+                text = ChatGuardTexts.text(locale, ChatGuardTexts.NOT_ESTABLISHED);
             }
             evidence = Evidence.PARTIAL;
             List<String> guarded = new ArrayList<>();
-            guarded.add(warning);
+            guarded.add(ChatGuardTexts.text(locale, ChatGuardTexts.INCOMPLETE_SEARCH));
             caveats.stream().limit(ChatAnswer.MAX_CAVEATS - 1).forEach(guarded::add);
             caveats = List.copyOf(guarded);
         }

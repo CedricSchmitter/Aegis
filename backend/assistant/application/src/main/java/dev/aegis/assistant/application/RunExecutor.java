@@ -230,7 +230,8 @@ public class RunExecutor {
         AiTool tool = tools.get(call.name());
         try {
             AiTool.Result result = tool.invoke(new AiTool.Invocation(run.id(), run.actor()), call.input());
-            if (result.retrievalIncomplete() || (isDocumentSearch(call.name()) && result.error())) {
+            // An error result of a search tool is rejected input the model can correct, not a retrieval gap.
+            if (result.retrievalIncomplete()) {
                 incompleteRetrieval.add(call.name());
             }
             return new ContentPart.ToolResult(call.id(), bounded(result.content()), result.error());
@@ -243,7 +244,9 @@ public class RunExecutor {
         } catch (RuntimeException failure) {
             LOG.log(Level.WARNING, "tool " + call.name() + " failed in AI run " + run.id() + ": "
                     + failure.getClass().getSimpleName());
-            if (isDocumentSearch(call.name())) incompleteRetrieval.add(call.name());
+            if (isDocumentSearch(call.name())) {
+                incompleteRetrieval.add(call.name());
+            }
             return toolError(call, "tool.failed");
         }
     }

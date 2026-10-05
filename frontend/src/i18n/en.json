@@ -194,6 +194,8 @@
     "nextPage": "Next page",
     "notContentIndexed": "{{count}} matching documents are not archived yet and therefore not searchable by content.",
     "notContentIndexed_one": "One matching document is not archived yet and therefore not searchable by content.",
+    "archivalFailed": "{{count}} matching documents could not be archived. They are found by title only until archiving is retried.",
+    "archivalFailed_one": "One matching document could not be archived. It is found by title only until archiving is retried.",
     "noResultsFiltered": "No results for the active filters.",
     "select": "Select document",
     "selected": "{{count}} selected",

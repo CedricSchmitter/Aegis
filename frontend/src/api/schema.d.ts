@@ -2515,6 +2515,8 @@ export interface components {
         };
         DocumentListResponse: {
             /** Format: int64 */
+            archivalFailed: number;
+            /** Format: int64 */
             archiveTotal?: number | null;
             /** @enum {string} */
             contentSearch: "NOT_APPLIED" | "READY" | "LIMITED" | "UNAVAILABLE";

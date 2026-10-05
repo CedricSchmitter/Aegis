@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import dev.aegis.documents.application.api.*;
 import dev.aegis.documents.application.ports.ArchiveSearchResult;
 import dev.aegis.documents.domain.Document;
+import dev.aegis.documents.domain.ProcessingFailure;
 import dev.aegis.shared.*;
 import java.util.List;
 import java.util.Set;
@@ -81,5 +82,19 @@ class RetrievalCoverageTest {
         assertThat(list.contentSearch()).isEqualTo(ContentSearchState.NOT_APPLIED);
         assertThat(list.countAccuracy()).isEqualTo(CountAccuracy.EXACT);
         assertThat(list.matchingDocuments()).isEqualTo(1);
+    }
+
+    @Test
+    void failedArchivalIsReportedOnItsOwnAndLeavesCountsExact() {
+        archived("Clause", 1);
+        Document failed = f.document("Failed upload");
+        failed.recordFailure(new ProcessingFailure("paperless.rejected", "rejected", CatalogFixture.NOW), false, 5);
+        f.documents.save(failed);
+        archive.searchResult = ArchiveSearchResult.complete(List.of(1));
+        var result = queries.search(f.actor, "clause");
+        assertThat(result.archivalFailed()).isEqualTo(1);
+        assertThat(result.notContentIndexed()).isZero();
+        assertThat(result.countAccuracy()).isEqualTo(CountAccuracy.EXACT);
+        assertThat(queries.search(f.actor, "").archivalFailed()).isZero();
     }
 }
