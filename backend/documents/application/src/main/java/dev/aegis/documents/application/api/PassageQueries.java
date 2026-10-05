@@ -12,7 +12,8 @@ public interface PassageQueries {
             long sourceUnavailable, Instant oldestVerifiedAt, Instant generatedAt, long freshnessSeconds) {
         public boolean complete() { return total == current; }
     }
-    record Passage(DocumentId documentId, String title, String revision, int ordinal, String original,
+    record Passage(DocumentId documentId, String title, String revision, String sourceFingerprint, String sourceKind,
+            String extractionVersion, String chunkVersion, int ordinal, String original,
             int start, int end, Integer startPage, Integer endPage, Instant verifiedAt) { }
     record Page(List<Passage> passages, String nextCursor, Coverage coverage) {
         public Page { passages = List.copyOf(passages); }

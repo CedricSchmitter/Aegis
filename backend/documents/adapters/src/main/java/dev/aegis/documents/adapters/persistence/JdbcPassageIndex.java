@@ -22,14 +22,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Component
 public class JdbcPassageIndex implements PassageIndex {
     public static final Duration FRESHNESS = Duration.ofHours(24);
-    private static final String ACTIVE = "d.state='ARCHIVED' AND d.paperless_document_id IS NOT NULL AND d.trashed_at IS NULL AND d.purge_requested_at IS NULL";
-    private static final String CURRENT = ACTIVE + " AND i.state='CURRENT' AND i.archive_id=d.paperless_document_id AND i.original_checksum=d.checksum_sha256 AND i.build_epoch=c.build_epoch AND i.verified_at >= :cutoff";
-    private static final String STATE = """
+    private static final String ACTIVE = " d.state='ARCHIVED' AND d.paperless_document_id IS NOT NULL AND d.trashed_at IS NULL AND d.purge_requested_at IS NULL ";
+    private static final String VERSION = " EXISTS (SELECT 1 FROM document_text_revisions v WHERE v.document_id=i.document_id AND v.revision=i.active_revision AND v.extraction_version='" + PassageRevision.EXTRACTION_VERSION + "' AND v.chunk_version='" + PassageRevision.CHUNK_VERSION + "') ";
+    private static final String CURRENT = ACTIVE + " AND i.state='CURRENT' AND i.archive_id=d.paperless_document_id AND i.original_checksum=d.checksum_sha256 AND i.build_epoch=c.build_epoch AND i.verified_at >= :cutoff AND " + VERSION;
+    private static final String STATE = " CASE WHEN i.active_revision IS NOT NULL AND NOT " + VERSION + " THEN 'STALE' ELSE " + """
             CASE WHEN i.document_id IS NULL THEN 'PENDING'
                  WHEN i.archive_id<>d.paperless_document_id OR i.original_checksum<>d.checksum_sha256
                       OR i.build_epoch<>c.build_epoch THEN 'STALE'
                  WHEN i.state='CURRENT' AND i.verified_at < :cutoff THEN 'STALE'
-                 ELSE i.state END""";
+                 ELSE i.state END END""" + " ";
     private final JdbcClient jdbc;
     private final JdbcTemplate batch;
     private final TransactionTemplate tx;
@@ -47,7 +48,7 @@ public class JdbcPassageIndex implements PassageIndex {
                   FROM documents d CROSS JOIN document_passage_control c WHERE d.id=:id AND """ + ACTIVE + """
                 ON CONFLICT (document_id) DO UPDATE SET archive_id=EXCLUDED.archive_id,
                     original_checksum=EXCLUDED.original_checksum, generation=document_passage_index.generation+1,
-                    build_epoch=EXCLUDED.build_epoch, state='PENDING', attempts=0, next_attempt_at=EXCLUDED.next_attempt_at,
+                    build_epoch=EXCLUDED.build_epoch, active_revision=NULL, state='PENDING', attempts=0, next_attempt_at=EXCLUDED.next_attempt_at,
                     lease=NULL,lease_until=NULL,verified_at=NULL,failure_code=NULL
                 WHERE document_passage_index.archive_id<>EXCLUDED.archive_id
                    OR document_passage_index.original_checksum<>EXCLUDED.original_checksum
@@ -60,7 +61,7 @@ public class JdbcPassageIndex implements PassageIndex {
             if (active.isEmpty()) { throw new NotFoundException("document",id.toString()); }
             request(id,now);
             jdbc.sql("""
-                    UPDATE document_passage_index SET generation=generation+1,state='PENDING',attempts=0,
+                    UPDATE document_passage_index SET generation=generation+1,active_revision=NULL,state='PENDING',attempts=0,
                         next_attempt_at=:now,lease=NULL,lease_until=NULL,verified_at=NULL,failure_code=NULL,
                         build_epoch=(SELECT build_epoch FROM document_passage_control) WHERE document_id=:id
                     """).param("id",id.value()).param("now",at(now)).update();
@@ -88,14 +89,15 @@ public class JdbcPassageIndex implements PassageIndex {
             int reset = jdbc.sql("""
                     UPDATE document_passage_index i SET archive_id=d.paperless_document_id,
                         original_checksum=d.checksum_sha256,build_epoch=c.build_epoch,generation=i.generation+1,
-                        state='PENDING',attempts=0,next_attempt_at=:now,lease=NULL,lease_until=NULL,
+                        active_revision=NULL,state='PENDING',attempts=0,next_attempt_at=:now,lease=NULL,lease_until=NULL,
                         verified_at=NULL,failure_code=NULL
                     FROM documents d CROSS JOIN document_passage_control c
                     WHERE i.document_id=d.id AND d.id IN (
                         SELECT d.id FROM documents d JOIN document_passage_index i ON i.document_id=d.id
                         CROSS JOIN document_passage_control c WHERE """ + ACTIVE + """
                         AND (i.build_epoch<>c.build_epoch OR i.archive_id<>d.paperless_document_id
-                             OR i.original_checksum<>d.checksum_sha256) ORDER BY d.id LIMIT :limit)
+                             OR i.original_checksum<>d.checksum_sha256 OR (i.active_revision IS NOT NULL AND NOT """ + VERSION + """
+                        )) ORDER BY d.id LIMIT :limit)
                     """).param("now",at(now)).param("limit",limit).update();
             jdbc.sql("""
                     UPDATE document_passage_index SET state='FAILED',failure_code='text.workerExpired',lease=NULL,
@@ -213,10 +215,11 @@ public class JdbcPassageIndex implements PassageIndex {
     }
     private static Passage passage(ResultSet rs,int ignored) throws SQLException {
         return new Passage(new DocumentId(rs.getObject("document_id",UUID.class)),rs.getString("title"),
-                rs.getString("revision"),rs.getInt("ordinal"),rs.getString("original_text"),rs.getInt("start_position"),
+                rs.getString("revision"),rs.getString("source_fingerprint"),rs.getString("source_kind"),
+                rs.getString("extraction_version"),rs.getString("chunk_version"),rs.getInt("ordinal"),rs.getString("original_text"),rs.getInt("start_position"),
                 rs.getInt("end_position"),rs.getObject("start_page",Integer.class),rs.getObject("end_page",Integer.class),instant(rs,"verified_at"));
     }
-    private static final String PASSAGES = "SELECT p.*,d.title,i.verified_at FROM document_passages p JOIN documents d ON d.id=p.document_id JOIN document_passage_index i ON i.document_id=d.id AND i.active_revision=p.revision CROSS JOIN document_passage_control c WHERE ";
+    private static final String PASSAGES = "SELECT p.*,d.title,i.verified_at,r.source_fingerprint,r.source_kind,r.extraction_version,r.chunk_version FROM document_passages p JOIN document_text_revisions r ON r.document_id=p.document_id AND r.revision=p.revision JOIN documents d ON d.id=p.document_id JOIN document_passage_index i ON i.document_id=d.id AND i.active_revision=p.revision CROSS JOIN document_passage_control c WHERE ";
     @Override public Optional<Passage> read(DocumentId id,String revision,int ordinal,Instant now) {
         return jdbc.sql(PASSAGES+CURRENT+" AND p.document_id=:id AND p.revision=:revision AND p.ordinal=:ordinal")
                 .param("cutoff",at(now.minus(FRESHNESS))).param("id",id.value()).param("revision",revision)
