@@ -30,10 +30,18 @@ public class DocumentCommandService implements DocumentCommands {
     private final HouseholdAccess access;
     private final Trash.RecoveryWindow recoveryWindow;
     private final Clock clock;
+    private final dev.aegis.documents.application.ports.PassageIndex passages;
 
     public DocumentCommandService(DocumentRepository documents, ProcessingScheduler scheduler,
             DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdPersons persons, HouseholdAccess access,
             Trash.RecoveryWindow recoveryWindow, Clock clock) {
+        this(documents, scheduler, presenter, analysis, persons, access, recoveryWindow, clock, null);
+    }
+
+    public DocumentCommandService(DocumentRepository documents, ProcessingScheduler scheduler,
+            DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdPersons persons, HouseholdAccess access,
+            Trash.RecoveryWindow recoveryWindow, Clock clock, dev.aegis.documents.application.ports.PassageIndex passages) {
+        this.passages = passages;
         this.documents = documents;
         this.scheduler = scheduler;
         this.presenter = presenter;
@@ -85,6 +93,7 @@ public class DocumentCommandService implements DocumentCommands {
         requireVersion(document, expectedVersion);
         document.moveToTrash(actor.memberId(), clock.instant(), recoveryWindow);
         documents.save(document);
+        if (passages != null) { passages.suspend(id); }
         return presenter.summarize(load(id));
     }
 
@@ -102,6 +111,7 @@ public class DocumentCommandService implements DocumentCommands {
         if (restored.state() == ProcessingState.ARCHIVED) {
             // Archived while it was in the trash: the automatic analysis of the upload waited for this moment.
             analysis.archived(restored);
+            if (passages != null) { passages.invalidate(id, clock.instant()); }
         }
         return presenter.summarize(load(id));
     }
@@ -122,6 +132,7 @@ public class DocumentCommandService implements DocumentCommands {
         requireVersion(document, expectedVersion);
         document.requestPurge(actor.memberId(), clock.instant());
         documents.save(document);
+        if (passages != null) { passages.suspend(id); }
         scheduler.schedulePurge(id);
         return Optional.of(presenter.summarize(load(id)));
     }

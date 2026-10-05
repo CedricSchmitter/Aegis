@@ -69,6 +69,7 @@ public abstract class PostgresIT {
         registry.add("aegis.operations.job-health-watch-interval", () -> "12h");
         // Pushes are dispatched only when PushIT triggers it, so other tests' notices are never sent mid-test.
         registry.add("aegis.push.dispatch-interval", () -> "12h");
+        registry.add("aegis.documents.passages.interval", () -> "12h");
         // The same startup run also watches disk space. The temporary data directory can sit on a small tmpfs (3.9 GB
         // on the VM, below the 5 GB limit), so near-zero limits keep the test data disk from counting as low and
         // opening an incident behind StorageHealthWatchIT's back; that test drives its own watch and limits.

@@ -150,7 +150,8 @@ class PaperlessClientTest {
 
         assertThat(client.fetchArchivedText(5)).isEqualTo(new PaperlessArchive.ArchivedText("Rechnung", true));
         assertThat(client.fetchArchivedText(6)).isEqualTo(new PaperlessArchive.ArchivedText("Vertrag", false));
-        assertThat(client.fetchArchivedText(7)).isEqualTo(new PaperlessArchive.ArchivedText("", false));
+        assertThatThrownBy(() -> client.fetchArchivedText(7)).as("missing content is not verified empty text")
+                .isInstanceOf(ArchiveUnavailableException.class);
         assertThatThrownBy(() -> client.fetchArchivedText(8)).isInstanceOf(ArchiveUnavailableException.class);
     }
 

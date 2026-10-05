@@ -36,6 +36,7 @@ public class PdfBoxText implements PdfText {
             List<String> pages = new ArrayList<>(pageCount);
             long characters = 0;
             for (int page = 1; page <= pageCount; page++) {
+                if (Thread.currentThread().isInterrupted()) { throw new dev.aegis.documents.application.DocumentTextExtractor.Refused("text.interrupted"); }
                 stripper.setStartPage(page);
                 stripper.setEndPage(page);
                 String text = clean(stripper.getText(document));

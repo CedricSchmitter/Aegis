@@ -54,7 +54,7 @@ class DocumentTextServiceTest {
         assertThat(text.title()).isEqualTo("Mietvertrag");
         assertThat(text.pages()).containsExactly("Mietvertrag\nMieter: Lisa", "", "Kündigungsfrist 3 Monate");
         assertThat(text.pageAt(text.text().indexOf("Kündigungsfrist"))).hasValue(3);
-        assertThat(archive.contentReads).as("the archive's text without pages is not needed").isZero();
+        assertThat(archive.contentReads).as("actual OCR is verified on both sides of extraction").isEqualTo(2);
     }
 
     @Test
@@ -162,6 +162,28 @@ class DocumentTextServiceTest {
         scan.moveToTrash(Trash.begin(LISA, NOW, Trash.RecoveryWindow.DEFAULT));
         documents.save(scan);
         assertThatThrownBy(() -> service.text(ACTOR, scan.id())).isInstanceOf(TrashedException.class);
+    }
+
+    @Test
+    void renewedOcrAndPdfBytesInvalidateTheCacheWithoutAnOriginalChecksumChange() {
+        Document scan = archived("Scan", "image/jpeg", 61, bytes("original"));
+        archive.texts.put(61,"Old clause");
+        assertThat(service.text(ACTOR,scan.id()).text()).isEqualTo("Old clause");
+        archive.texts.put(61,"New cancellation clause");
+        assertThat(service.text(ACTOR,scan.id()).text()).isEqualTo("New cancellation clause");
+        archive.archivePdfs.put(61,bytes("first pdf")); pdf.pages.put("first pdf",List.of("First PDF"));
+        assertThat(service.text(ACTOR,scan.id()).text()).isEqualTo("First PDF");
+        archive.archivePdfs.put(61,bytes("second pdf")); pdf.pages.put("second pdf",List.of("Second PDF"));
+        assertThat(service.text(ACTOR,scan.id()).text()).isEqualTo("Second PDF");
+        archive.available=false;
+        assertThatThrownBy(() -> service.text(ACTOR,scan.id())).isInstanceOf(ContentUnavailableException.class);
+    }
+
+    @Test
+    void excessiveOcrIsRefusedInsteadOfPublishingAnApparentlyCompletePrefix() {
+        Document scan=archived("Oversized", "image/jpeg", 62, bytes("original"));
+        archive.texts.put(62,"x".repeat(DocumentTextService.MAX_CHARACTERS+1));
+        assertThatThrownBy(() -> service.text(ACTOR,scan.id())).isInstanceOf(ContentUnavailableException.class);
     }
 
     private Document archived(String title, String contentType, int paperlessId, byte[] original) {

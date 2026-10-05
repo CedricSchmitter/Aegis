@@ -143,7 +143,7 @@ public class PaperlessClient implements PaperlessArchive {
     @Override
     public ArchivedText fetchArchivedText(int paperlessDocumentId) {
         try {
-            JsonNode document = getJson("/api/documents/{id}/?fields=id,content,archived_file_name",
+            JsonNode document = getTextJson("/api/documents/{id}/?fields=id,content,archived_file_name",
                     paperlessDocumentId);
             return new ArchivedText(document.path("content").asText(""),
                     hasArchiveVersion(document.path("archived_file_name")));
@@ -194,8 +194,7 @@ public class PaperlessClient implements PaperlessArchive {
             return Optional.empty();
         }
         try {
-            byte[] bytes = client.get().uri("/api/documents/{id}/download/", paperlessDocumentId).retrieve()
-                    .body(byte[].class);
+            byte[] bytes = boundedDownload("/api/documents/{id}/download/", paperlessDocumentId);
             byte[] head = bytes == null ? new byte[0]
                     : Arrays.copyOf(bytes, Math.min(bytes.length, OriginalFormat.SIGNATURE_LENGTH));
             if (OriginalFormat.detect(head).filter(format -> format == OriginalFormat.PDF).isEmpty()) {
@@ -352,6 +351,50 @@ public class PaperlessClient implements PaperlessArchive {
             return new ArchiveProbe(false, null, "Paperless answered " + e.getStatusCode());
         } catch (ResourceAccessException e) {
             return new ArchiveProbe(false, null, "Paperless unreachable: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public OriginalContent fetchTextOriginal(int id) {
+        return new OriginalContent("document-"+id+".pdf", "application/pdf",
+                boundedDownload("/api/documents/{id}/download/?original=true",id),OriginalContent.SOURCE_ARCHIVE);
+    }
+
+    private byte[] boundedDownload(String uri,int id) {
+        try {
+            return client.get().uri(uri,id).exchange((request,response) -> {
+                if (!response.getStatusCode().is2xxSuccessful()) {
+                    throw new ArchiveUnavailableException("Paperless source answered "+response.getStatusCode());
+                }
+                byte[] body=response.getBody().readNBytes(dev.aegis.documents.application.DocumentTextExtractor.MAX_BYTES+1);
+                if (body.length>dev.aegis.documents.application.DocumentTextExtractor.MAX_BYTES) {
+                    throw new dev.aegis.documents.application.DocumentTextExtractor.Refused("text.byteLimit");
+                }
+                return body;
+            });
+        } catch (ResourceAccessException unavailable) {
+            throw new ArchiveUnavailableException("Paperless source unavailable",unavailable);
+        }
+    }
+
+    private JsonNode getTextJson(String uri,Object... variables) {
+        try {
+            return client.get().uri(uri,variables).exchange((request,response) -> {
+                if (!response.getStatusCode().is2xxSuccessful()) {
+                    throw new ArchiveUnavailableException("Paperless text answered "+response.getStatusCode());
+                }
+                // JSON escaping can take six ASCII bytes per character. Refuse instead of truncating source text.
+                int bound=dev.aegis.documents.application.DocumentTextExtractor.MAX_CHARACTERS*6+262144;
+                byte[] body=response.getBody().readNBytes(bound+1);
+                if (body.length>bound) { throw new dev.aegis.documents.application.DocumentTextExtractor.Refused("text.characterLimit"); }
+                JsonNode value=mapper.readTree(body);
+                if (value==null || !value.path("content").isTextual()) {
+                    throw new ArchiveUnavailableException("Paperless did not supply original OCR text");
+                }
+                return value;
+            });
+        } catch (ResourceAccessException unavailable) {
+            throw new ArchiveUnavailableException("Paperless text unavailable",unavailable);
         }
     }
 

@@ -34,6 +34,9 @@ import dev.aegis.documents.application.PlacementService;
 import dev.aegis.documents.application.ClassificationViews;
 import dev.aegis.documents.application.DocumentQueryService;
 import dev.aegis.documents.application.DocumentTextService;
+import dev.aegis.documents.application.DocumentTextExtractor;
+import dev.aegis.documents.application.ports.PassageIndex;
+import dev.aegis.documents.adapters.jobs.PassageIndexTask;
 import dev.aegis.documents.application.LabelService;
 import dev.aegis.documents.application.DocumentRegistrar;
 import dev.aegis.documents.application.HouseholdSubjectMigrationService;
@@ -386,10 +389,9 @@ public class UseCaseConfiguration {
     }
 
     @Bean
-    DocumentTextQuery documentTextQuery(DocumentRepository documents, PaperlessArchive archive, OriginalStore store,
-            PdfText pdfText, HouseholdAccess access) {
+    DocumentTextQuery documentTextQuery(DocumentRepository documents, DocumentTextExtractor extractor, HouseholdAccess access) {
         return TransactionalProxy.expose(DocumentTextQuery.class,
-                new DocumentTextService(documents, archive, store, pdfText, access));
+                new DocumentTextService(documents, extractor, access));
     }
 
     @Bean
@@ -410,16 +412,16 @@ public class UseCaseConfiguration {
     @Bean
     DocumentCommands documentCommands(DocumentRepository documents, ProcessingScheduler scheduler,
             DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdPersons persons, HouseholdAccess access,
-            Trash.RecoveryWindow recoveryWindow, Clock clock, PlatformTransactionManager tm) {
+            Trash.RecoveryWindow recoveryWindow, Clock clock, PlatformTransactionManager tm, PassageIndex passages) {
         return TransactionalProxy.wrap(DocumentCommands.class, new DocumentCommandService(documents, scheduler,
-                presenter, analysis, persons, access, recoveryWindow, clock), tm);
+                presenter, analysis, persons, access, recoveryWindow, clock, passages), tm);
     }
 
     @Bean
     ArchivalUseCases archivalUseCases(DocumentRepository documents, DocumentEvents events, AnalysisTrigger analysis,
-            ArchivalSettings settings, Clock clock, PlatformTransactionManager tm) {
+            ArchivalSettings settings, Clock clock, PlatformTransactionManager tm, PassageIndex passages) {
         return TransactionalProxy.wrap(ArchivalUseCases.class, new ArchivalService(documents, events, analysis,
-                settings, clock), tm);
+                settings, clock, passages), tm);
     }
 
     /** Steps of a document's permanent deletion (ADR-0021); each one short transaction around the job's work. */
@@ -744,6 +746,7 @@ public class UseCaseConfiguration {
             PushDispatchTask pushDispatch) {
         return List.of(new RecurringJob(ReviewReconciliationTask.NAME, reviewReconciliation.interval()),
                 new RecurringJob(ArchiveTextCheckTask.NAME, ArchiveTextCheckTask.INTERVAL),
+                new RecurringJob(PassageIndexTask.NAME, PassageIndexTask.INTERVAL),
                 new RecurringJob(ReconciliationTask.NAME, ReconciliationTask.INTERVAL),
                 new RecurringJob(PushDispatchTask.NAME, pushDispatch.interval()));
     }

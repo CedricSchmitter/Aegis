@@ -16,9 +16,16 @@ public class ArchivalService implements ArchivalUseCases {
     private final AnalysisTrigger analysis;
     private final ArchivalSettings settings;
     private final Clock clock;
+    private final dev.aegis.documents.application.ports.PassageIndex passages;
 
     public ArchivalService(DocumentRepository documents, DocumentEvents events, AnalysisTrigger analysis,
             ArchivalSettings settings, Clock clock) {
+        this(documents, events, analysis, settings, clock, null);
+    }
+
+    public ArchivalService(DocumentRepository documents, DocumentEvents events, AnalysisTrigger analysis,
+            ArchivalSettings settings, Clock clock, dev.aegis.documents.application.ports.PassageIndex passages) {
+        this.passages = passages;
         this.documents = documents;
         this.events = events;
         this.analysis = analysis;
@@ -59,6 +66,7 @@ public class ArchivalService implements ArchivalUseCases {
         boolean alreadyArchived = document.state() == ProcessingState.ARCHIVED;
         document.markArchived(paperlessDocumentId, clock.instant());
         documents.save(document);
+        if (passages != null) { passages.request(id, clock.instant()); }
         if (!alreadyArchived) {
             analysis.archived(document);
         }

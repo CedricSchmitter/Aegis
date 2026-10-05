@@ -54,6 +54,9 @@ public interface PaperlessArchive {
 
     OriginalContent fetchOriginal(int paperlessDocumentId);
 
+    /** Bounded original read for text extraction; transport adapters enforce the extraction byte budget. */
+    default OriginalContent fetchTextOriginal(int paperlessDocumentId) { return fetchOriginal(paperlessDocumentId); }
+
     /**
      * The searchable PDF the archive generated from the original (its archive version), or empty when it keeps
      * none, as for a born-digital PDF. It is derived data of the archive: it never replaces the original and is not
