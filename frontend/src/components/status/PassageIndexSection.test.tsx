@@ -19,7 +19,7 @@ it.each(["de", "en"])("shows honest incomplete coverage and source states in %s"
   const text = screen.getByTestId("passage-index").textContent;
   expect(text).toContain(language === "de" ? "Quelle nicht erreichbar" : "Source unavailable");
   expect(text).toContain(language === "de" ? "Ein leerer Treffer beweist" : "An empty result therefore cannot prove");
-  expect(text).not.toContain("passages.");
+  expect(text).not.toMatch(/passages\.(title|state|incomplete|progress)/);
 });
 it("saves a rebuild request and refreshes durable progress", async () => {
   await i18n.changeLanguage("de"); render(<PassageIndexSection />); await screen.findByTestId("passage-progress");

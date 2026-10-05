@@ -195,6 +195,34 @@ class DocumentTextServiceTest {
     }
 
     @Test
+    void timedOutExtractionHoldsItsSlotUntilItExitsAndCannotSpawnUnboundedReplacements() throws Exception {
+        Document scan=archived("Slow source", "image/jpeg", 64, bytes("original"));
+        archive.archivePdfs.put(64,bytes("pdf"));
+        var entered=new java.util.concurrent.CountDownLatch(2);
+        var release=new java.util.concurrent.CountDownLatch(1);
+        PdfText slow=(bytes,pages,characters) -> {
+            entered.countDown();
+            boolean interrupted=false;
+            while (release.getCount()>0) {
+                try { release.await(); } catch (InterruptedException stopped) { interrupted=true; }
+            }
+            if (interrupted) { Thread.currentThread().interrupt(); }
+            return Optional.of(List.of("Slow original text"));
+        };
+        try (var extractor=new DocumentTextExtractor(archive,store,slow,java.time.Duration.ofMillis(250));
+                var callers=java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var first=callers.submit(() -> assertThatThrownBy(() -> extractor.verified(scan))
+                    .isInstanceOf(DocumentTextExtractor.Refused.class).hasMessage("text.deadline"));
+            var second=callers.submit(() -> assertThatThrownBy(() -> extractor.verified(scan))
+                    .isInstanceOf(DocumentTextExtractor.Refused.class).hasMessage("text.deadline"));
+            assertThat(entered.await(2,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            first.get(); second.get();
+            assertThatThrownBy(() -> extractor.verified(scan)).isInstanceOf(DocumentTextExtractor.Refused.class).hasMessage("text.busy");
+            release.countDown();
+        } finally { release.countDown(); }
+    }
+
+    @Test
     void excessiveOcrIsRefusedInsteadOfPublishingAnApparentlyCompletePrefix() {
         Document scan=archived("Oversized", "image/jpeg", 62, bytes("original"));
         archive.texts.put(62,"x".repeat(DocumentTextService.MAX_CHARACTERS+1));

@@ -20,6 +20,7 @@ public final class DocumentTextExtractor implements AutoCloseable {
     private final PaperlessArchive archive;
     private final OriginalStore store;
     private final PdfText pdf;
+    private final java.time.Duration deadline;
     private final ExecutorService workers = Executors.newVirtualThreadPerTaskExecutor();
     private final Semaphore capacity = new Semaphore(2);
     private final LinkedHashMap<String, Text> cache = new LinkedHashMap<>(16, .75f, true);
@@ -37,7 +38,10 @@ public final class DocumentTextExtractor implements AutoCloseable {
     }
 
     public DocumentTextExtractor(PaperlessArchive archive, OriginalStore store, PdfText pdf) {
-        this.archive = archive; this.store = store; this.pdf = pdf;
+        this(archive,store,pdf,java.time.Duration.ofSeconds(DEADLINE_SECONDS));
+    }
+    DocumentTextExtractor(PaperlessArchive archive, OriginalStore store, PdfText pdf, java.time.Duration deadline) {
+        this.archive = archive; this.store = store; this.pdf = pdf; this.deadline = deadline;
     }
 
     /** Source is captured again before returning; a changing source is retried instead of publishing mixed text. */
@@ -55,7 +59,7 @@ public final class DocumentTextExtractor implements AutoCloseable {
                 return result;
             } finally { capacity.release(); }
         });
-        try { return work.get(DEADLINE_SECONDS, TimeUnit.SECONDS); }
+        try { return work.get(deadline.toMillis(), TimeUnit.MILLISECONDS); }
         catch (TimeoutException timeout) { work.cancel(true); throw new Refused("text.deadline"); }
         catch (InterruptedException interrupted) {
             work.cancel(true); Thread.currentThread().interrupt(); throw new Refused("text.interrupted");
