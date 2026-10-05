@@ -19,7 +19,7 @@ public final class PassageIndexWorker {
         this.index = index; this.documents = documents; this.extractor = extractor; this.clock = clock;
     }
     public Report sweep(Actor actor) {
-        if (!actor.isHouseholdProcess() || !PROCESS.equals(actor.process())) { throw new NotAuthorizedException("Only the document passage index process may run this worker"); }
+        if (actor == null || !actor.isHouseholdProcess() || !PROCESS.equals(actor.process())) { throw new NotAuthorizedException("Only the document passage index process may run this worker"); }
         index.backfill(clock.instant(), BATCH);
         int prepared = 0, published = 0, failed = 0;
         for (int count = 0; count < BATCH; count++) {

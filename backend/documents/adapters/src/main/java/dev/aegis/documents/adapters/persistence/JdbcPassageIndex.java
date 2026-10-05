@@ -41,8 +41,9 @@ public class JdbcPassageIndex implements PassageIndex {
     private void changed() { jdbc.sql("UPDATE document_passage_control SET data_epoch=data_epoch+1").update(); }
 
     @Override public void request(DocumentId id, Instant now) {
+        tx.executeWithoutResult(s -> {
         // Joins the surrounding archival transaction; this row is the durable work publication.
-        jdbc.sql("""
+        int written = jdbc.sql("""
                 INSERT INTO document_passage_index (document_id,archive_id,original_checksum,build_epoch,next_attempt_at)
                 SELECT d.id,d.paperless_document_id,d.checksum_sha256,c.build_epoch,:now
                   FROM documents d CROSS JOIN document_passage_control c WHERE d.id=:id AND """ + ACTIVE + """
@@ -53,6 +54,8 @@ public class JdbcPassageIndex implements PassageIndex {
                 WHERE document_passage_index.archive_id<>EXCLUDED.archive_id
                    OR document_passage_index.original_checksum<>EXCLUDED.original_checksum
                 """).param("id",id.value()).param("now",at(now)).update();
+        if (written > 0) { changed(); }
+        });
     }
     @Override public void invalidate(DocumentId id, Instant now) {
         tx.executeWithoutResult(s -> {
@@ -69,9 +72,11 @@ public class JdbcPassageIndex implements PassageIndex {
         });
     }
     @Override public void suspend(DocumentId id) {
+        tx.executeWithoutResult(s -> {
         jdbc.sql("UPDATE document_passage_index SET generation=generation+1,state='PENDING',verified_at=NULL,lease=NULL,lease_until=NULL WHERE document_id=:id")
                 .param("id",id.value()).update();
         changed();
+        });
     }
     @Override public void rebuild(Instant now) {
         tx.executeWithoutResult(s -> jdbc.sql("UPDATE document_passage_control SET build_epoch=build_epoch+1,data_epoch=data_epoch+1").update());
@@ -99,11 +104,12 @@ public class JdbcPassageIndex implements PassageIndex {
                              OR i.original_checksum<>d.checksum_sha256 OR (i.active_revision IS NOT NULL AND NOT """ + VERSION + """
                         )) ORDER BY d.id LIMIT :limit)
                     """).param("now",at(now)).param("limit",limit).update();
-            jdbc.sql("""
+            int expired = jdbc.sql("""
                     UPDATE document_passage_index SET state='FAILED',failure_code='text.workerExpired',lease=NULL,
-                        lease_until=NULL WHERE lease_until<=:now AND attempts>=5
-                    """).param("now",at(now)).update();
-            if (inserted+reset>0) { changed(); }
+                        lease_until=NULL WHERE document_id IN (SELECT document_id FROM document_passage_index
+                        WHERE lease_until<=:now AND attempts>=5 ORDER BY document_id LIMIT :limit)
+                    """).param("now",at(now)).param("limit",limit).update();
+            if (inserted+reset+expired>0) { changed(); }
             return inserted+reset;
         });
     }
@@ -113,7 +119,8 @@ public class JdbcPassageIndex implements PassageIndex {
                     SELECT d.id,d.paperless_document_id,d.checksum_sha256,d.version,i.generation,i.attempts
                     FROM documents d JOIN document_passage_index i ON i.document_id=d.id
                     CROSS JOIN document_passage_control c WHERE """ + ACTIVE + """
-                      AND i.build_epoch=c.build_epoch AND i.attempts<5 AND i.next_attempt_at<=:now
+                      AND i.build_epoch=c.build_epoch AND i.archive_id=d.paperless_document_id
+                      AND i.original_checksum=d.checksum_sha256 AND i.attempts<5 AND i.next_attempt_at<=:now
                       AND (i.lease IS NULL OR i.lease_until<=:now)
                     ORDER BY i.next_attempt_at,d.id LIMIT 1 FOR UPDATE OF d,i SKIP LOCKED
                     """).param("now",at(now)).query((rs,n) -> new Claim(new DocumentId(rs.getObject("id",UUID.class)),
@@ -138,7 +145,8 @@ public class JdbcPassageIndex implements PassageIndex {
                 SELECT i.document_id FROM document_passage_index i JOIN documents d ON d.id=i.document_id
                 CROSS JOIN document_passage_control c WHERE i.document_id=:id AND i.generation=:generation
                     AND i.lease=:lease AND i.lease_until>:now AND i.build_epoch=c.build_epoch AND d.version=:version
-                    AND d.paperless_document_id=:archive AND d.checksum_sha256=:checksum FOR UPDATE OF i
+                    AND d.paperless_document_id=:archive AND d.checksum_sha256=:checksum
+                    AND i.archive_id=:archive AND i.original_checksum=:checksum FOR UPDATE OF i
                 """).param("id",claim.id().value()).param("generation",claim.generation()).param("lease",claim.lease())
                 .param("now",at(now)).param("version",claim.documentVersion()).param("archive",claim.archiveId()).param("checksum",claim.checksum())
                 .query(UUID.class).optional().isPresent();
