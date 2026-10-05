@@ -19,6 +19,7 @@ import dev.aegis.shared.TrashedException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,8 +39,9 @@ class DocumentTextServiceTest {
     private final TestDoubles.FakeArchive archive = new TestDoubles.FakeArchive();
     private final InMemoryOriginalStore store = new InMemoryOriginalStore();
     private final FakePdfText pdf = new FakePdfText();
+    private final TestDoubles.MutableClock clock = new TestDoubles.MutableClock(NOW);
     private final DocumentTextService service = new DocumentTextService(documents, archive, store, pdf,
-            new TestDoubles.MembersOnly(LISA));
+            new TestDoubles.MembersOnly(LISA), clock);
 
     @Test
     void theArchivesSearchablePdfGivesTheTextOfEveryPage() {
@@ -133,6 +135,35 @@ class DocumentTextServiceTest {
         service.text(ACTOR, read.getLast().id());
         service.text(ACTOR, read.getFirst().id());
         assertThat(pdf.read).hasSize(10);
+    }
+
+    @Test
+    void renewedOcrOfTheSameOriginalIsReadOnceTheCacheLifetimeEnds() {
+        Document scan = archived("Versicherung", "image/jpeg", 35, bytes("photo 35"));
+        archive.archivePdfs.put(35, bytes("first ocr"));
+        pdf.pages.put("first ocr", List.of("Beitrag 4O EUR"));
+        Document photo = archived("Quittung", "image/jpeg", 36, bytes("photo 36"));
+        archive.texts.put(36, "Summe 1O EUR");
+
+        assertThat(service.text(ACTOR, scan.id()).text()).isEqualTo("Beitrag 4O EUR");
+        assertThat(service.text(ACTOR, photo.id()).text()).isEqualTo("Summe 1O EUR");
+        archive.archivePdfs.put(35, bytes("second ocr"));
+        pdf.pages.put("second ocr", List.of("Beitrag 40 EUR"));
+        archive.texts.put(36, "Summe 10 EUR");
+
+        clock.advance(DocumentTextService.CACHE_LIFETIME.minus(Duration.ofSeconds(1)));
+        assertThat(service.text(ACTOR, scan.id()).text()).as("reading in parts and checking quotes within one answer")
+                .isEqualTo("Beitrag 4O EUR");
+        assertThat(service.text(ACTOR, photo.id()).text()).isEqualTo("Summe 1O EUR");
+        assertThat(archive.archivePdfReads).isEqualTo(2);
+        assertThat(pdf.read).containsExactly("first ocr");
+
+        clock.advance(Duration.ofSeconds(1));
+        assertThat(service.text(ACTOR, scan.id()).text()).isEqualTo("Beitrag 40 EUR");
+        assertThat(service.text(ACTOR, photo.id()).text()).isEqualTo("Summe 10 EUR");
+        assertThat(service.text(ACTOR, scan.id()).text()).isEqualTo("Beitrag 40 EUR");
+        assertThat(archive.archivePdfReads).isEqualTo(4);
+        assertThat(pdf.read).containsExactly("first ocr", "second ocr");
     }
 
     @Test

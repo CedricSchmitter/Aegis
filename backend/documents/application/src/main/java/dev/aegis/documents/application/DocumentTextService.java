@@ -18,6 +18,9 @@ import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.NotFoundException;
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,16 +34,19 @@ import java.util.Optional;
  *
  * <p>Texts are kept in memory for recently read documents, bounded in total characters, because one answer reads the
  * same document several times (reading in parts, then checking quotes). The key names the archive document and the
- * original's checksum, so a restored document is read again.
+ * original's checksum, so a restored document is read again. Re-running OCR in Paperless changes the archive's text
+ * but neither the original's checksum nor Paperless' modification time, so an entry also expires a while after it was
+ * read from the archive; the window covers one chat answer.
  */
 public class DocumentTextService implements DocumentTextQuery {
     static final int MAX_PAGES = 1_000;
     static final int MAX_CHARACTERS = 2_000_000;
     static final long CACHED_CHARACTERS = 8_000_000;
+    static final Duration CACHE_LIFETIME = Duration.ofMinutes(5);
 
-    private record Extracted(List<String> pages, boolean paged, long characters) {
-        static Extracted of(List<String> pages, boolean paged) {
-            return new Extracted(List.copyOf(pages), paged, pages.stream().mapToLong(String::length).sum());
+    private record Extracted(List<String> pages, boolean paged, long characters, Instant readAt) {
+        static Extracted of(List<String> pages, boolean paged, Instant readAt) {
+            return new Extracted(List.copyOf(pages), paged, pages.stream().mapToLong(String::length).sum(), readAt);
         }
     }
 
@@ -49,16 +55,18 @@ public class DocumentTextService implements DocumentTextQuery {
     private final OriginalStore store;
     private final PdfText pdf;
     private final HouseholdAccess access;
+    private final Clock clock;
     private final LinkedHashMap<String, Extracted> cache = new LinkedHashMap<>(16, 0.75f, true);
     private long cachedCharacters;
 
     public DocumentTextService(DocumentRepository documents, PaperlessArchive archive, OriginalStore store,
-            PdfText pdf, HouseholdAccess access) {
+            PdfText pdf, HouseholdAccess access, Clock clock) {
         this.documents = documents;
         this.archive = archive;
         this.store = store;
         this.pdf = pdf;
         this.access = access;
+        this.clock = clock;
     }
 
     @Override
@@ -85,20 +93,21 @@ public class DocumentTextService implements DocumentTextQuery {
     }
 
     private Extracted extract(Document document, int paperlessId) {
+        Instant readAt = clock.instant();
         Optional<byte[]> source = pdfOf(document, paperlessId);
         if (source.isPresent()) {
             try {
                 Optional<List<String>> pages = pdf.pageTexts(source.get(), MAX_PAGES, MAX_CHARACTERS);
                 if (pages.isPresent() && !pages.get().isEmpty()
                         && pages.get().stream().anyMatch(page -> !page.isBlank())) {
-                    return Extracted.of(pages.get(), true);
+                    return Extracted.of(pages.get(), true, readAt);
                 }
             } catch (PdfRefusedException unusable) {
                 // The archive's own text still serves, only without pages.
             }
         }
         String content = archive.fetchContent(paperlessId);
-        return Extracted.of(List.of(content == null ? "" : content), false);
+        return Extracted.of(List.of(content == null ? "" : content), false, readAt);
     }
 
     /** The archive's searchable PDF, otherwise a PDF original whose bytes match its checksum. */
@@ -125,7 +134,13 @@ public class DocumentTextService implements DocumentTextQuery {
     }
 
     private synchronized Extracted cached(String key) {
-        return cache.get(key);
+        Extracted extracted = cache.get(key);
+        if (extracted != null && !clock.instant().isBefore(extracted.readAt().plus(CACHE_LIFETIME))) {
+            cache.remove(key);
+            cachedCharacters -= extracted.characters();
+            return null;
+        }
+        return extracted;
     }
 
     private synchronized void remember(String key, Extracted extracted) {
