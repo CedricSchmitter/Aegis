@@ -24,6 +24,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** Real PostgreSQL publication, queue recovery, permissions and lexical recall; no live archive or provider. */
 class PassageIndexIT extends PostgresIT {
     private static final Instant NOW=Instant.parse("2020-01-01T00:00:00Z");
+    @Autowired dev.aegis.bootstrap.support.FakePaperlessArchive archive;
+    @Autowired DocumentCommands documentCommands;
     @Autowired PassageIndex index;
     @Autowired PassageQueries queries;
     @Autowired PassageCommands commands;
@@ -148,6 +150,59 @@ class PassageIndexIT extends PostgresIT {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM document_passage_index i,document_passage_control c WHERE i.document_id IN (?,?) AND i.build_epoch=c.build_epoch",Long.class,a.value(),b.value())).isEqualTo(1);
         assertThat(index.backfill(NOW,1)).isEqualTo(1);
         assertThat(index.backfill(NOW,1)).isZero();
+    }
+    @Test void controlledWorkerReprocessesOcrWithUnchangedOriginalAndReportsOutage() throws Exception {
+        DocumentId id=seed();
+        var file=DATA.resolve("passage-"+id+".jpg");
+        java.nio.file.Files.write(file,("synthetic image "+id).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        archive.ocrText(java.nio.file.Files.readAllBytes(file),"Original cancellation clause");
+        var accepted=(dev.aegis.documents.application.ports.PaperlessArchive.Accepted)archive.submit(file,"Scan","scan.jpg","image/jpeg");
+        archive.checkTask(accepted.taskId());
+        int external=((dev.aegis.documents.application.ports.PaperlessArchive.Completed)archive.checkTask(accepted.taskId())).paperlessDocumentId();
+        try {
+            jdbc.update("UPDATE documents SET paperless_document_id=? WHERE id=?",external,id.value());
+            index.request(id,NOW);
+            assertThat(worker.sweep(Actor.householdProcess(PassageIndexWorker.PROCESS)).published()).isEqualTo(1);
+            var before=queries.status(actor(),id);
+            archive.reprocess(external,"Renewed termination clause R-123/456",null);
+            commands.retry(actor(),id);
+            assertThat(worker.sweep(Actor.householdProcess(PassageIndexWorker.PROCESS)).published()).isEqualTo(1);
+            assertThat(queries.status(actor(),id).revision()).isNotEqualTo(before.revision());
+            assertThat(queries.search(actor(),"R123456",null,20).passages()).hasSize(1);
+            archive.available=false; commands.retry(actor(),id);
+            assertThat(worker.sweep(Actor.householdProcess(PassageIndexWorker.PROCESS)).failed()).isEqualTo(1);
+            assertThat(queries.status(actor(),id).state()).isEqualTo(PassageQueries.State.SOURCE_UNAVAILABLE);
+            assertThat(queries.search(actor(),"R123456",null,20).coverage().complete()).isFalse();
+        } finally { archive.available=true; archive.purge(external); java.nio.file.Files.deleteIfExists(file); }
+    }
+    @Test void memberTrashRestoreInvalidatesRunningWorkerAndTerminalFailureRequiresRetry() {
+        DocumentId id=seed(); var beforeTrash=claim(id);
+        documentCommands.moveToTrash(actor(),id,0);
+        assertThat(index.publish(beforeTrash,revision("Must not return"),NOW)).isFalse();
+        documentCommands.restoreFromTrash(actor(),id,1);
+        assertThat(index.publish(beforeTrash,revision("Must not return"),NOW)).isFalse();
+        index.invalidate(id,NOW);
+        Instant at=NOW;
+        for (int attempt=1;attempt<=5;attempt++) {
+            var claim=index.claim(at).orElseThrow();
+            assertThat(claim.attempts()).isEqualTo(attempt);
+            index.fail(claim,"text.controlledFailure",PassageQueries.State.FAILED,at);
+            at=at.plusSeconds(3601);
+        }
+        assertThat(index.claim(at.plusSeconds(86400))).isEmpty();
+        index.invalidate(id,NOW);
+        assertThat(claim(id).attempts()).isEqualTo(1);
+    }
+    @Test void expiredLeaseAndOldChunkVersionsCannotBePublishedOrRead() {
+        DocumentId id=seed(); var expired=claim(id);
+        assertThat(index.publish(expired,revision("Late text"),NOW.plusSeconds(91))).isFalse();
+        var renewed=index.claim(NOW.plusSeconds(91)).orElseThrow();
+        assertThat(index.publish(renewed,revision("Current text"),NOW.plusSeconds(92))).isTrue();
+        jdbc.update("UPDATE document_text_revisions SET chunk_version='obsolete' WHERE document_id=?",id.value());
+        assertThat(index.status(id,NOW.plusSeconds(93)).state()).isEqualTo(PassageQueries.State.STALE);
+        assertThat(index.search("Current",null,20,NOW.plusSeconds(93)).passages()).isEmpty();
+        assertThat(index.backfill(NOW,1)).isEqualTo(1);
+        assertThat(index.status(id,NOW).state()).isEqualTo(PassageQueries.State.PENDING);
     }
     @Test void syntheticThousandDocumentsFindMislabeledGermanEnglishAndEndOfLongDocument() {
         long start=System.nanoTime();

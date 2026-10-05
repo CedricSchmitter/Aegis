@@ -395,6 +395,8 @@ public class PaperlessClient implements PaperlessArchive {
             });
         } catch (ResourceAccessException unavailable) {
             throw new ArchiveUnavailableException("Paperless text unavailable",unavailable);
+        } catch (tools.jackson.core.JacksonException malformed) {
+            throw new ArchiveUnavailableException("Paperless text response malformed",malformed);
         }
     }
 

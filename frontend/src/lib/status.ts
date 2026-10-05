@@ -38,6 +38,7 @@ export const CHECK_STATES = ["OK", "UNCHECKED", "PROBLEM"] as const;
 export const KNOWN_JOBS = [
   "reconcile-review-inbox",
   "check-archive-text",
+  "index-document-passages",
   "reconcile-documents",
   "dispatch-push-notices",
   "watch-job-health",

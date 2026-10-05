@@ -25,6 +25,13 @@ public interface OriginalStore {
 
     byte[] read(String stagingPath) throws IOException;
 
+    /** Bounded staging read for derived text; filesystem adapters stop before allocating larger contents. */
+    default byte[] readForText(String stagingPath, int maxBytes) throws IOException {
+        byte[] bytes = read(stagingPath);
+        if (bytes.length > maxBytes) { throw new IOException("staged text source exceeds its byte bound"); }
+        return bytes;
+    }
+
     Path resolve(String stagingPath);
 
     void delete(String stagingPath) throws IOException;

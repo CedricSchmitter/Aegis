@@ -773,6 +773,7 @@
       "unnamed": "Background job",
       "name": {
         "reconcile-review-inbox": "Review inbox reconciliation",
+        "index-document-passages": "Prepare document passages",
         "check-archive-text": "Recognized text check",
         "reconcile-documents": "Document processing reconciliation",
         "dispatch-push-notices": "Send notifications",
@@ -780,6 +781,7 @@
       },
       "purpose": {
         "reconcile-review-inbox": "Adds new items to the review inbox and notifies the members.",
+        "index-document-passages": "Verifies archive text and prepares passages.",
         "check-archive-text": "Checks whether the archive recognized text in archived documents.",
         "reconcile-documents": "Resumes interrupted archival and cleans up staging files.",
         "dispatch-push-notices": "Sends new messages to the devices that have notifications switched on.",
@@ -1026,6 +1028,8 @@
     "remove": "Remove"
   },
   "errors": {
+    "passages.invalidSearch": "Enter up to 200 query characters and request at most 50 passages.",
+    "passages.cursorExpired": "Document text changed. Restart the search.",
     "push.subscription.invalid": "The notification registration is invalid. Switch notifications off and on again.",
     "push.endpoint.notAllowed": "This notification service is not supported.",
     "push.category.invalid": "Unknown kind of message.",
@@ -1835,5 +1839,25 @@
       "overdue_one": "day overdue",
       "today": "Due today"
     }
+  },
+  "passages": {
+    "title": "Document text",
+    "intro": "Archive text is prepared with its provenance for searches within individual passages.",
+    "empty": "No archived documents yet.",
+    "progress": "{{current}} of {{total}} document texts are currently searchable.",
+    "state": {
+      "pending": "Being prepared",
+      "stale": "Needs rechecking",
+      "failed": "Preparation failed",
+      "noText": "No readable text",
+      "sourceUnavailable": "Source unavailable"
+    },
+    "complete": "All available document text is currently prepared. A word search can still miss differently worded passages.",
+    "incomplete": "Coverage has gaps. An empty result therefore cannot prove that a passage is absent from the household. Ordinary document search remains available.",
+    "freshness": "Sources are rechecked after {{hours}} hours. Oldest source check: {{date}}.",
+    "refresh": "Refresh status",
+    "rebuild": "Rebuild document text index",
+    "requesting": "Requesting …",
+    "requested": "The rebuild request was saved and continues in small batches."
   }
 }

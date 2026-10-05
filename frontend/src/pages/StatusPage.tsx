@@ -4,6 +4,7 @@ import { api, unwrap } from "../api/client";
 import type { ExportSummary, SystemStatus, VersionResponse } from "../api/types";
 import { AiSection } from "../components/AiSection";
 import { BigTitle, EmptyState, ErrorBox, InfoBox, Loading, StateWord } from "../components/common";
+import { PassageIndexSection } from "../components/status/PassageIndexSection";
 import { StatusOverview } from "../components/status/StatusOverview";
 import { StorageSection } from "../components/StorageSection";
 import { formatDateTime } from "../lib/format";
@@ -46,6 +47,7 @@ export function StatusPage() {
       {status && (
         <div className="flex flex-col gap-5">
           <StatusOverview checks={status.checks} />
+          <PassageIndexSection />
           <details className="ui-details" data-testid="technical-details">
             <summary>{t("status.technicalDetails")}</summary>
             <div className="flex flex-col gap-7 pt-2 pb-4">

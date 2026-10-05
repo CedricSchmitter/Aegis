@@ -175,3 +175,14 @@ with `aegis.dump`, `paperless.dump` and `recovery.json`, plus `srv/aegis/data/` 
 `srv/aegis/deploy/` configuration and `srv/aegis/exports/`. Import both dumps into isolated PostgreSQL 17.11
 and verify originals and links before replacing any live service data. The successful isolated rehearsal above
 is evidence for this route; do not overwrite a running installation as a shortcut.
+
+
+### Derived passage-index recovery
+
+Document text revisions, passages and the indexing outbox (ADR-0028) are derived PostgreSQL data. Normal database dumps include them; readable exports intentionally do not. Restoring them does not establish current OCR freshness, especially after a Paperless restore/re-import with different archive IDs. Keep stable Aegis document IDs and confirmed facts; repair archive bindings through the existing restoration/import procedure before rebuilding derived text.
+
+On an **isolated recovered stack**, verify originals/checksums and source links first. Then log in as a recovered household member, open Status and request **Rebuild document text index** (or use the authenticated, CSRF-protected `POST /api/documents/passages/rebuild`). This records a durable rebuild epoch. The persistent `index-document-passages` job prepares small batches without AI credentials; a restart continues the same request. `GET /api/documents/passages/coverage` reports pending/stale/unavailable/failed/no-text gaps and the oldest verification time. An empty result during that rebuild is not evidence that the household lacks a document or clause.
+
+Use `GET /api/documents/passages/{id}/status` to inspect a particular active document and authenticated `POST /api/documents/passages/{id}/retry` after fixing its source or a terminal extraction failure. Five failed attempts stop automatic retries. Do not mark a restore complete until the required sources can be read, revisions have the recovered binding, a known German/English/identifier clause is retrieved with exact original positions, and trash/purged documents stay inaccessible. Rebuilding only derived tables does not alter originals or confirmed facts. Do not delete live index tables or edit production credentials to simulate recovery.
+
+This procedure is documented for the implemented lifecycle. The passage publication, rebuild and lease-recovery regression tests use synthetic PostgreSQL data; they do not constitute a new production backup/restore rehearsal.

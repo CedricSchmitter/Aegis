@@ -72,6 +72,14 @@ public class FakePaperlessArchive implements PaperlessArchive {
         renditions.put(sha256(original), pdf);
     }
 
+    /** Controlled re-OCR keeps the original bytes/checksum and archive identity unchanged. */
+    public void reprocess(int id, String text, byte[] archivePdf) {
+        Stored old = documents.get(id);
+        if (old == null) { throw new IllegalArgumentException("missing controlled source"); }
+        documents.put(id,new Stored(id,old.title(),old.bytes(),old.checksum(),old.contentType(),archivePdf));
+        texts.put(id,text);
+    }
+
     @Override
     public SubmissionOutcome submit(Path file, String title, String originalFilename, String contentType) {
         requireAvailable();

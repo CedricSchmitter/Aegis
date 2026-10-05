@@ -54,3 +54,6 @@ export type Facet = (typeof FACETS)[number];
 /** Groups that the search API filters and counts, including subjects. */
 export const FACET_GROUPS = [...FACETS, "SUBJECT"] as const;
 export type FacetGroup = (typeof FACET_GROUPS)[number];
+
+export type PassageCoverage = Schemas["PassageCoverageDto"];
+export type PassageStatus = Schemas["PassageStatusDto"];

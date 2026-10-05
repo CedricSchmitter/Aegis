@@ -77,7 +77,7 @@ public final class DocumentTextExtractor implements AutoCloseable {
             if (OriginalFormat.ofContentType(document.contentType()).filter(f -> f == OriginalFormat.PDF).isPresent()) {
                 if (document.isStagingPresent() && store.exists(document.stagingPath())) {
                     try {
-                        byte[] staged = store.read(document.stagingPath());
+                        byte[] staged = store.readForText(document.stagingPath(), MAX_BYTES);
                         if (document.checksum().matches(staged)) { bytes = Optional.of(staged); }
                     } catch (IOException unreadable) { /* Fall back to the archive's verified original. */ }
                 }

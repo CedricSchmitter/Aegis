@@ -773,6 +773,7 @@
       "unnamed": "Hintergrundjob",
       "name": {
         "reconcile-review-inbox": "Prüfkorb abgleichen",
+        "index-document-passages": "Dokumenttexte vorbereiten",
         "check-archive-text": "Texterkennung prüfen",
         "reconcile-documents": "Dokumentverarbeitung abgleichen",
         "dispatch-push-notices": "Benachrichtigungen senden",
@@ -780,6 +781,7 @@
       },
       "purpose": {
         "reconcile-review-inbox": "Legt neue Einträge im Prüfkorb an und benachrichtigt die Mitglieder.",
+        "index-document-passages": "Prüft Archivtexte und bereitet Textstellen vor.",
         "check-archive-text": "Prüft bei archivierten Dokumenten, ob das Archiv Text erkannt hat.",
         "reconcile-documents": "Setzt unterbrochene Archivierungen fort und räumt Zwischendateien auf.",
         "dispatch-push-notices": "Schickt neue Meldungen an die Geräte, auf denen Benachrichtigungen an sind.",
@@ -1026,6 +1028,8 @@
     "remove": "Entfernen"
   },
   "errors": {
+    "passages.invalidSearch": "Gib einen Suchbegriff mit bis zu 200 Zeichen ein und fordere höchstens 50 Textstellen an.",
+    "passages.cursorExpired": "Die Dokumenttexte haben sich geändert. Starte die Suche erneut.",
     "push.subscription.invalid": "Die Anmeldung für Benachrichtigungen ist ungültig. Schalte sie aus und wieder ein.",
     "push.endpoint.notAllowed": "Dieser Benachrichtigungsdienst wird nicht unterstützt.",
     "push.category.invalid": "Unbekannte Art von Meldung.",
@@ -1835,5 +1839,25 @@
       "overdue_one": "Tag überfällig",
       "today": "Heute fällig"
     }
+  },
+  "passages": {
+    "title": "Dokumenttexte",
+    "intro": "Archivtexte werden mit ihrer Herkunft für die Suche nach einzelnen Textstellen vorbereitet.",
+    "empty": "Noch keine archivierten Dokumente.",
+    "progress": "{{current}} von {{total}} Dokumenttexten sind aktuell durchsuchbar.",
+    "state": {
+      "pending": "Wird vorbereitet",
+      "stale": "Erneute Prüfung nötig",
+      "failed": "Vorbereitung fehlgeschlagen",
+      "noText": "Kein lesbarer Text",
+      "sourceUnavailable": "Quelle nicht erreichbar"
+    },
+    "complete": "Alle vorhandenen Dokumenttexte sind aktuell vorbereitet. Eine Wortsuche kann trotzdem anders formulierte Textstellen übersehen.",
+    "incomplete": "Es gibt Lücken. Ein leerer Treffer beweist deshalb nicht, dass eine Textstelle im Haushalt fehlt. Die normale Dokumentsuche bleibt verfügbar.",
+    "freshness": "Quellen werden nach {{hours}} Stunden erneut geprüft. Älteste Quellenprüfung: {{date}}.",
+    "refresh": "Stand aktualisieren",
+    "rebuild": "Dokumenttexte neu vorbereiten",
+    "requesting": "Wird angefordert …",
+    "requested": "Die erneute Vorbereitung wurde gespeichert und läuft in kleinen Schritten weiter."
   }
 }

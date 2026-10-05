@@ -39,7 +39,10 @@ public class PdfBoxText implements PdfText {
                 if (Thread.currentThread().isInterrupted()) { throw new dev.aegis.documents.application.DocumentTextExtractor.Refused("text.interrupted"); }
                 stripper.setStartPage(page);
                 stripper.setEndPage(page);
-                String text = clean(stripper.getText(document));
+                BoundedText output = new BoundedText(maxCharacters - (int) characters);
+                try { stripper.writeText(document, output); }
+                catch (TextLimit exceeded) { return Optional.empty(); }
+                String text = clean(output.value());
                 characters += text.length();
                 if (characters > maxCharacters) {
                     return Optional.empty();
@@ -51,6 +54,25 @@ public class PdfBoxText implements PdfText {
             throw new PdfRefusedException(PdfRefusedException.UNREADABLE, "the PDF text cannot be read: "
                     + damaged.getMessage());
         }
+    }
+
+    private static final class TextLimit extends IOException { }
+
+    /** Stop the stripper's output before a huge single page can allocate an unbounded StringWriter. */
+    private static final class BoundedText extends java.io.Writer {
+        private final StringBuilder text = new StringBuilder();
+        private final int limit;
+        private BoundedText(int limit) { this.limit = limit; }
+        @Override public void write(char[] value, int offset, int length) throws IOException {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new dev.aegis.documents.application.DocumentTextExtractor.Refused("text.interrupted");
+            }
+            if (text.length() + (long) length > limit) { throw new TextLimit(); }
+            text.append(value, offset, length);
+        }
+        @Override public void flush() { }
+        @Override public void close() { }
+        private String value() { return text.toString(); }
     }
 
     private static PDDocument open(byte[] pdf) throws IOException {

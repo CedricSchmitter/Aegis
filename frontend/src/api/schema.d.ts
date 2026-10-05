@@ -709,6 +709,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/passages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search original passages with bounded lexical retrieval */
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/passages/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Passage index coverage and source freshness */
+        get: operations["coverage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/passages/rebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request a bounded restart-safe rebuild of derived passages */
+        post: operations["rebuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/passages/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request source revalidation and passage reindexing */
+        post: operations["retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/passages/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Passage indexing status for an active document */
+        get: operations["status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/passages/{id}/{revision}/{ordinal}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a current original passage with provenance */
+        get: operations["read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/placement": {
         parameters: {
             query?: never;
@@ -2844,6 +2946,70 @@ export interface components {
             sourceKind: "PDF" | "PHOTO";
             warnings: string[];
         };
+        PassageCoverageDto: {
+            complete: boolean;
+            /** Format: int64 */
+            current: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            freshnessSeconds: number;
+            /** Format: date-time */
+            generatedAt: string;
+            /** Format: int64 */
+            noText: number;
+            /** Format: date-time */
+            oldestVerifiedAt?: string | null;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            sourceUnavailable: number;
+            /** Format: int64 */
+            stale: number;
+            /** Format: int64 */
+            total: number;
+        };
+        PassageDto: {
+            chunkVersion: string;
+            documentId: string;
+            /** Format: int32 */
+            end: number;
+            /** Format: int32 */
+            endPage?: number | null;
+            extractionVersion: string;
+            /** Format: int32 */
+            ordinal: number;
+            original: string;
+            revision: string;
+            sourceFingerprint: string;
+            sourceKind: string;
+            /** Format: int32 */
+            start: number;
+            /** Format: int32 */
+            startPage?: number | null;
+            title: string;
+            /** Format: date-time */
+            verifiedAt: string;
+        };
+        PassagePageDto: {
+            coverage: components["schemas"]["PassageCoverageDto"];
+            nextCursor?: string | null;
+            passages: components["schemas"]["PassageDto"][];
+        };
+        PassageStatusDto: {
+            /** Format: int32 */
+            attempts: number;
+            documentId: string;
+            failureCode?: string | null;
+            /** Format: date-time */
+            nextAttemptAt?: string | null;
+            revision?: string | null;
+            sourceKind?: string | null;
+            /** @enum {string} */
+            state: "CURRENT" | "PENDING" | "FAILED" | "STALE" | "NO_TEXT" | "SOURCE_UNAVAILABLE";
+            /** Format: date-time */
+            verifiedAt?: string | null;
+        };
         PasswordChangeRequest: {
             currentPassword: string;
             newPassword: string;
@@ -4451,6 +4617,134 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BulkAnalysisDto"];
+                };
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query: {
+                query: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PassagePageDto"];
+                };
+            };
+        };
+    };
+    coverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PassageCoverageDto"];
+                };
+            };
+        };
+    };
+    rebuild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    retry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PassageStatusDto"];
+                };
+            };
+        };
+    };
+    read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                revision: string;
+                ordinal: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PassageDto"];
                 };
             };
         };

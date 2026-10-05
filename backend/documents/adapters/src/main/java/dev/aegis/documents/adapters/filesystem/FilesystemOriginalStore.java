@@ -74,6 +74,15 @@ public class FilesystemOriginalStore implements OriginalStore {
     }
 
     @Override
+    public byte[] readForText(String stagingPath, int maxBytes) throws IOException {
+        try (InputStream source = Files.newInputStream(resolve(stagingPath))) {
+            byte[] bytes = source.readNBytes(maxBytes + 1);
+            if (bytes.length > maxBytes) { throw new IOException("staged text source exceeds its byte bound"); }
+            return bytes;
+        }
+    }
+
+    @Override
     public byte[] read(String stagingPath) throws IOException {
         return Files.readAllBytes(resolve(stagingPath));
     }

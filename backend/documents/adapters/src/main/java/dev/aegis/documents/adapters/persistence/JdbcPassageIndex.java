@@ -29,7 +29,7 @@ public class JdbcPassageIndex implements PassageIndex {
             CASE WHEN i.document_id IS NULL THEN 'PENDING'
                  WHEN i.archive_id<>d.paperless_document_id OR i.original_checksum<>d.checksum_sha256
                       OR i.build_epoch<>c.build_epoch THEN 'STALE'
-                 WHEN i.state='CURRENT' AND i.verified_at < :cutoff THEN 'STALE'
+                 WHEN i.state IN ('CURRENT','NO_TEXT') AND i.verified_at < :cutoff THEN 'STALE'
                  ELSE i.state END END""" + " ";
     private final JdbcClient jdbc;
     private final JdbcTemplate batch;
@@ -130,22 +130,22 @@ public class JdbcPassageIndex implements PassageIndex {
             return found;
         });
     }
-    private boolean lockCurrent(Claim claim) {
+    private boolean lockCurrent(Claim claim, Instant now) {
         var version = jdbc.sql("SELECT d.version FROM documents d WHERE d.id=:id AND " + ACTIVE + " FOR UPDATE")
                 .param("id",claim.id().value()).query(Long.class).optional();
         if (version.isEmpty()) { return false; }
         return jdbc.sql("""
                 SELECT i.document_id FROM document_passage_index i JOIN documents d ON d.id=i.document_id
                 CROSS JOIN document_passage_control c WHERE i.document_id=:id AND i.generation=:generation
-                    AND i.lease=:lease AND i.build_epoch=c.build_epoch AND d.version=:version
+                    AND i.lease=:lease AND i.lease_until>:now AND i.build_epoch=c.build_epoch AND d.version=:version
                     AND d.paperless_document_id=:archive AND d.checksum_sha256=:checksum FOR UPDATE OF i
                 """).param("id",claim.id().value()).param("generation",claim.generation()).param("lease",claim.lease())
-                .param("version",claim.documentVersion()).param("archive",claim.archiveId()).param("checksum",claim.checksum())
+                .param("now",at(now)).param("version",claim.documentVersion()).param("archive",claim.archiveId()).param("checksum",claim.checksum())
                 .query(UUID.class).optional().isPresent();
     }
     @Override public boolean publish(Claim claim, PassageRevision revision, Instant now) {
         return tx.execute(s -> {
-            if (!lockCurrent(claim)) { return false; }
+            if (!lockCurrent(claim,now)) { return false; }
             jdbc.sql("DELETE FROM document_text_revisions WHERE document_id=:id AND revision<>:revision")
                     .param("id",claim.id().value()).param("revision",revision.revision()).update();
             int fresh = jdbc.sql("""
@@ -180,7 +180,7 @@ public class JdbcPassageIndex implements PassageIndex {
     }
     @Override public void fail(Claim claim, String code, State state, Instant now) {
         tx.executeWithoutResult(s -> {
-            if (!lockCurrent(claim)) { return; }
+            if (!lockCurrent(claim,now)) { return; }
             jdbc.sql("""
                     UPDATE document_passage_index SET state=:state,failure_code=:code,next_attempt_at=:next,
                         lease=NULL,lease_until=NULL WHERE document_id=:id

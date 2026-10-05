@@ -159,6 +159,8 @@ class DocumentTextServiceTest {
                 .isInstanceOf(NotAuthorizedException.class);
         assertThatThrownBy(() -> service.text(ACTOR, pending.id())).isInstanceOf(InvalidInputException.class)
                 .satisfies(e -> assertThat(((InvalidInputException) e).code()).isEqualTo("document.notArchived"));
+        archive.texts.put(51,"Cached household source");
+        assertThat(service.text(ACTOR,scan.id()).text()).isEqualTo("Cached household source");
         scan.moveToTrash(Trash.begin(LISA, NOW, Trash.RecoveryWindow.DEFAULT));
         documents.save(scan);
         assertThatThrownBy(() -> service.text(ACTOR, scan.id())).isInstanceOf(TrashedException.class);
@@ -177,6 +179,19 @@ class DocumentTextServiceTest {
         assertThat(service.text(ACTOR,scan.id()).text()).isEqualTo("Second PDF");
         archive.available=false;
         assertThatThrownBy(() -> service.text(ACTOR,scan.id())).isInstanceOf(ContentUnavailableException.class);
+    }
+
+    @Test
+    void sourceChangeDuringExtractionCannotBeReturnedOrCachedAsVerified() {
+        Document scan=archived("Changing source", "image/jpeg", 63, bytes("original"));
+        archive.texts.put(63,"First OCR"); archive.archivePdfs.put(63,bytes("pdf"));
+        pdf.pages.put("pdf",List.of("First PDF"));
+        pdf.afterRead=() -> archive.texts.put(63,"Renewed OCR");
+        assertThatThrownBy(() -> service.text(ACTOR,scan.id())).isInstanceOf(ContentUnavailableException.class)
+                .hasCauseInstanceOf(DocumentTextExtractor.Refused.class);
+        pdf.afterRead=() -> { }; pdf.pages.put("pdf",List.of("Renewed PDF"));
+        assertThat(service.text(ACTOR,scan.id()).text()).isEqualTo("Renewed PDF");
+        assertThat(pdf.read).hasSize(2);
     }
 
     @Test
@@ -209,6 +224,7 @@ class DocumentTextServiceTest {
 
     /** Stands in for the PDF library: the "PDF" is a name, mapped to its pages. */
     private static final class FakePdfText implements PdfText {
+        Runnable afterRead=() -> { };
         final Map<String, List<String>> pages = new HashMap<>();
         final Set<String> refused = new java.util.HashSet<>();
         final Set<String> tooLarge = new java.util.HashSet<>();
@@ -219,6 +235,7 @@ class DocumentTextServiceTest {
         public Optional<List<String>> pageTexts(byte[] pdf, int maxPages, int maxCharacters) {
             String name = new String(pdf, StandardCharsets.UTF_8);
             read.add(name);
+            afterRead.run();
             limits.add(List.of(maxPages, maxCharacters));
             if (refused.contains(name)) {
                 throw new PdfRefusedException(PdfRefusedException.UNREADABLE, "broken");

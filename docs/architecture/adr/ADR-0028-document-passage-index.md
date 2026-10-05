@@ -1,0 +1,45 @@
+# ADR-0028: Documents-owned, source-verified lexical passage index
+
+Status: Accepted implementation decision
+
+## Context
+
+The bounded archive search in ADR-0025 provides honest technical coverage but cannot efficiently retrieve a clause in a mislabeled, long document. Original files remain in Paperless. Aegis needs reusable deterministic retrieval without an AI provider, embeddings or another authority for household facts.
+
+## Decision
+
+Documents owns the persistent derived text revisions, passages and indexing outbox. Public plain-Java `PassageQueries` and `PassageCommands` require a household member on every call, including cached reads. REST uses these same contracts. The specifically named `document-passage-index` process may only run the internal indexing worker; it cannot impersonate a member or edit business facts. Assistant tools and evidence accumulation are separate work; existing search and title fallback remain unchanged.
+
+### Text and provenance
+
+`DocumentTextExtractor` is shared with `DocumentTextService`, so page extraction and OCR fallback use one algorithm behind the existing `PdfText`, `PaperlessArchive` and staging ports. Prefer the archive PDF, then a checksum-verified PDF original, then Paperless OCR. PDFBox's established page text cleanup/order remains the original representation for both readers. OCR stays unchanged and unpaged; no page numbers are inferred. Pages are joined with exactly one newline. Positions are zero-based Java UTF-16 offsets, with an exclusive end, in this complete joined text; each persisted excerpt must equal its original substring.
+
+Capture actual OCR content and the selected PDF bytes twice, on either side of preparation. Hash archive binding, original checksum, source kind, OCR hash and PDF hash using SHA-256. A changed capture refuses publication and is retried. Paperless's original checksum and `archived_file_name` alone are not text revisions: re-OCR may change content while the original stays identical. The deployed [Paperless 3.1.3 serializer](https://github.com/paperless-ngx/paperless-ngx/blob/v3.1.3/src/documents/serialisers.py) supplies `content` and archive availability, not an immutable OCR revision identifier. Missing/malformed content is unavailable, not verified empty text. The extraction cache is bounded to eight million characters and 128 entries, and its key includes actual source hashes. Cache hits still capture and verify the current source and recheck the active Aegis record.
+
+The revision hashes fingerprint, extraction version, chunk version and unchanged joined text. Versions (`pdfbox-ocr-2`, `paragraph-1`) are also persisted. Version changes make previous revisions stale and eligible for bounded re-preparation. Candidates exist in memory outside database transactions. Publication locks the document and queue row, checks archive binding, document version, generation, lease token and rebuild epoch, and replaces the entire revision in one short transaction. A retry, restore or rebuild invalidates older candidates; trash/purge joins and foreign-key cascades prevent resurrection. Repeated unchanged verification reuses a deterministic revision and updates its verification time.
+
+### Bounds and chunks
+
+Per preparation: 50,000,000 source bytes, 1,000 PDF pages, 2,000,000 original UTF-16 characters including page separators, a 40-second deadline, and at most two extraction tasks in flight across reads and indexing. Source transport reads stop at the byte limit; OCR JSON allows bounded escaping overhead and rejects excessive text. A timed-out task is cancelled; an uninterruptible library/transport operation holds its slot until it exits, preventing unbounded replacement threads. PDF work checks interruption per page. An unusable/oversized PDF can fall back to complete bounded OCR with unknown pages; excessive OCR is refused, never silently truncated.
+
+Chunks stay inside a page when pages are known. Use windows of at most 2,000 UTF-16 characters, prefer a paragraph boundary in the latter half of a window, combine short paragraphs, and overlap adjacent windows by 200 characters (one additional UTF-16 unit when needed to preserve a surrogate pair). Oversized paragraphs split into those same windows. Empty/blank windows produce no passages. Empty pages still contribute their page separator to subsequent offsets. Unpaged OCR uses the same windows with null page bounds. The entire bounded text, including a clause at its end, is indexed.
+
+### Lexical retrieval and completeness
+
+PostgreSQL generated `german`, `english` and `simple` text-search vectors have GIN indexes; normalized literal tokens and compact punctuation-separated identifiers have a separate array GIN index. [PostgreSQL 17 text-search guidance](https://www.postgresql.org/docs/17/textsearch-indexes.html) recommends GIN for this access pattern. Normalization uses NFKD, removes combining marks, folds case and German sharp s, and treats punctuation as separators. Original excerpts are never normalized or translated. Identifier matching additionally removes punctuation without stemming, e.g. `K-2026/004` matches `K2026004`. This is lexical recall, not synonym translation, fuzzy OCR repair or semantic search.
+
+Search accepts 1–200 query characters and 1–50 results. Results are ordered by stable document ID and passage ordinal; a continuation binds query hash and index epoch. A changed index expires the cursor and asks the caller to restart instead of silently skipping changed revisions. Reads accept document ID, revision and ordinal and serve only the active, current revision of an active document. Provenance includes source fingerprint/kind, extraction/chunk versions, exact offsets, known pages and verification time.
+
+Coverage is independent of hit count. `CURRENT` means prepared, source-verified within 24 hours, and matching binding/versions/build epoch. `PENDING`, `FAILED`, `STALE`, `NO_TEXT` and `SOURCE_UNAVAILABLE` are not searchable current coverage. Zero hits with incomplete coverage is not household-wide evidence of absence. Even complete technical coverage does not guarantee semantic recall. Previous text may remain stored while a retry is pending, but public passage reads never silently serve it as current.
+
+### Durable lifecycle and freshness
+
+Archival state and the indexing outbox row share the existing transaction, proven by rollback integration tests. The existing persistent db-scheduler invokes `index-document-passages` once per minute; no archive I/O runs inside a database transaction. Each sweep admits at most five missing records and five stale binding/version/rebuild records, then prepares at most five documents sequentially. Claims use row locks with `SKIP LOCKED`, a unique lease and a 90-second expiry. A restart reclaims expired work. Failures retry with bounded exponential delay (up to one hour), at most five attempts; terminal failures need a member retry or rebuild. An unavailable archive stops that sweep's preparation batch. Successful and no-text records are scheduled for actual-source revalidation after 24 hours; overdue searchable records are stale immediately even if backlog delays the check. This window is explicit best-effort freshness, not live synchronization with Paperless. The status page shows progress, gaps and oldest verification and offers a durable rebuild request.
+
+Trash immediately removes a document from all passage queries/reads, invalidates running claims, and retains derived data only while the source remains restorable. Restore requests revalidation before passages become current. Purge remains the existing durable process: final record deletion cascades derived revisions, passages and queue rows; no worker can recreate the absent parent. Rebound archive IDs invalidate previous revisions without changing stable Aegis IDs or confirmed facts. A rebuild changes one durable build epoch immediately and lets the bounded sweep reset records; it does not hold a transaction while extracting the household archive.
+
+## Recovery and verification
+
+A database backup includes derived index state, but recovered text must be rebuilt/revalidated against the recovered Paperless binding before being trusted. Readable exports omit this index; originals and confirmed facts remain portable. See the passage-index recovery procedure in [BACKUP.md](../../operations/BACKUP.md). No production restore or deployment is claimed for this change.
+
+Verification uses synthetic original text, controlled archive responses and real PostgreSQL: original offsets/pages, long/empty/unpaged text, unchanged-original renewed OCR, source changes during preparation, malformed/unavailable sources, authorization, transaction rollback, concurrent claims, obsolete workers, trash/purge, restart leases, retries, freshness, rebuild and deterministic continuation. The synthetic 500/1,000-document exercise checks content-only German/English/identifier recall and an end-of-document clause and prints actual indexing/search times in CI. It is a controlled regression exercise, not a production throughput estimate.
