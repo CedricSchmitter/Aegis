@@ -26,6 +26,8 @@ class PassageIndexIT extends PostgresIT {
     private static final Instant NOW=Instant.parse("2020-01-01T00:00:00Z");
     @Autowired dev.aegis.bootstrap.support.FakePaperlessArchive archive;
     @Autowired DocumentCommands documentCommands;
+    @Autowired dev.aegis.documents.domain.DocumentRepository documents;
+    @Autowired dev.aegis.documents.application.DocumentTextExtractor extractor;
     @Autowired PassageIndex index;
     @Autowired PassageQueries queries;
     @Autowired PassageCommands commands;
@@ -165,8 +167,9 @@ class PassageIndexIT extends PostgresIT {
             assertThat(worker.sweep(Actor.householdProcess(PassageIndexWorker.PROCESS)).published()).isEqualTo(1);
             var before=queries.status(actor(),id);
             archive.reprocess(external,"Renewed termination clause R-123/456",null);
-            commands.retry(actor(),id);
-            assertThat(worker.sweep(Actor.householdProcess(PassageIndexWorker.PROCESS)).published()).isEqualTo(1);
+            var periodic = new PassageIndexWorker(index,documents,extractor,java.time.Clock.fixed(
+                    before.verifiedAt().plusSeconds(86401),java.time.ZoneOffset.UTC));
+            assertThat(periodic.sweep(Actor.householdProcess(PassageIndexWorker.PROCESS)).published()).isEqualTo(1);
             assertThat(queries.status(actor(),id).revision()).isNotEqualTo(before.revision());
             assertThat(queries.search(actor(),"R123456",null,20).passages()).hasSize(1);
             archive.available=false; commands.retry(actor(),id);
@@ -204,31 +207,51 @@ class PassageIndexIT extends PostgresIT {
         assertThat(index.backfill(NOW,1)).isEqualTo(1);
         assertThat(index.status(id,NOW).state()).isEqualTo(PassageQueries.State.PENDING);
     }
+    @Test void publicationRacingTrashAndPurgeCannotLeaveReadableOrOrphanedDerivedText() throws Exception {
+        DocumentId id=seed(); var candidate=claim(id); var revision=revision("Concurrent original text");
+        try (var pool=Executors.newFixedThreadPool(2)) {
+            var start=new CountDownLatch(1);
+            var publishing=pool.submit(() -> { start.await(); return index.publish(candidate,revision,NOW); });
+            var trashing=pool.submit(() -> { start.await(); return documentCommands.moveToTrash(actor(),id,0); });
+            start.countDown(); publishing.get(10,TimeUnit.SECONDS); trashing.get(10,TimeUnit.SECONDS);
+            assertThat(index.read(id,revision.revision(),0,NOW)).isEmpty();
+            documentCommands.restoreFromTrash(actor(),id,1); index.invalidate(id,NOW);
+            var restored=claim(id); var purgeStart=new CountDownLatch(1);
+            var republishing=pool.submit(() -> { purgeStart.await(); return index.publish(restored,revision,NOW); });
+            var deleting=pool.submit(() -> { purgeStart.await(); return jdbc.update("DELETE FROM documents WHERE id=?",id.value()); });
+            purgeStart.countDown(); republishing.get(10,TimeUnit.SECONDS); deleting.get(10,TimeUnit.SECONDS);
+            assertThat(index.read(id,revision.revision(),0,NOW)).isEmpty();
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM document_text_revisions WHERE document_id=?",Long.class,id.value())).isZero();
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM document_passages WHERE document_id=?",Long.class,id.value())).isZero();
+        }
+    }
     @Test void syntheticThousandDocumentsFindMislabeledGermanEnglishAndEndOfLongDocument() {
-        long start=System.nanoTime();
+        long indexingNanos=0;
         for (int count=0;count<1000;count++) {
+            long preparationStart=System.nanoTime();
             DocumentId id=seed();
-            String text=count==999?"Routine paragraph.\n\n".repeat(2500)+"Müller K-2026/004 Kündigungsfristen: drei Monate. Cancellation requires written notice.":"Routine unrelated household text "+count;
+            String text=(count==499 || count==999)?"Routine paragraph.\n\n".repeat(2500)+"Müller K-2026/004 Kündigungsfristen: drei Monate. Cancellation requires written notice.":"Routine unrelated household text "+count;
             assertThat(index.publish(claim(id),revision(text),NOW)).isTrue();
+            indexingNanos+=System.nanoTime()-preparationStart;
             if (count==499 || count==999) {
                 assertThat(index.search("unrelated",null,50,NOW).passages()).hasSize(50);
+                for (String query:List.of("Kündigungsfrist","cancellations","Muller","K2026004")) {
+                    assertThat(index.search(query,null,20,NOW).passages()).anySatisfy(p -> {
+                        assertThat(p.documentId()).isEqualTo(ids.getLast());
+                        assertThat(p.original()).contains("written notice"); assertThat(p.start()).isGreaterThan(40000);
+                        assertThat(p.startPage()).isNull();
+                    });
+                }
+                long searchStart=System.nanoTime();
+                for (int i=0;i<100;i++) { index.search("K2026004",null,20,NOW); }
+                System.out.printf("Synthetic passage corpus: documents=%d expected_sources_found=4/4 index_ms=%d mean_search_ms=%.2f%n",
+                        count+1,indexingNanos/1_000_000,(System.nanoTime()-searchStart)/100_000_000.0);
             }
         }
-        for (String query:List.of("Kündigungsfrist","cancellations","Muller","K2026004")) {
-            assertThat(index.search(query,null,20,NOW).passages()).anySatisfy(p -> {
-                assertThat(p.documentId()).isEqualTo(ids.getLast());
-                assertThat(p.original()).contains("written notice"); assertThat(p.start()).isGreaterThan(40000);
-                assertThat(p.startPage()).isNull();
-            });
-        }
-        long searchStart=System.nanoTime();
-        for (int i=0;i<100;i++) { index.search("K2026004",null,20,NOW); }
-        System.out.printf("Synthetic passage corpus: documents=1000 index_ms=%d mean_search_ms=%.2f%n",
-                (searchStart-start)/1_000_000,(System.nanoTime()-searchStart)/100_000_000.0);
-        jdbc.execute("SET enable_seqscan=off");
-        try {
+        new TransactionTemplate(manager).executeWithoutResult(transaction -> {
+            jdbc.execute("SET LOCAL enable_seqscan=off");
             String plan=String.join("\n",jdbc.queryForList("EXPLAIN SELECT * FROM document_passages WHERE german @@ plainto_tsquery('german','Kündigung')",String.class));
             assertThat(plan).contains("document_passages_german");
-        } finally { jdbc.execute("RESET enable_seqscan"); }
+        });
     }
 }
