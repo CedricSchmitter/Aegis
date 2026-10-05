@@ -5,6 +5,7 @@ import dev.aegis.assistant.application.chat.ChatTools;
 import dev.aegis.assistant.application.ports.AiTool;
 import dev.aegis.assistant.application.ports.ToolSpec;
 import dev.aegis.documents.application.api.CategoryRef;
+import dev.aegis.documents.application.api.CountAccuracy;
 import dev.aegis.documents.application.api.DocumentQueries;
 import dev.aegis.documents.application.api.DocumentSearchRequest;
 import dev.aegis.documents.application.api.DocumentSearchResult;
@@ -38,7 +39,7 @@ public class DocumentSearchTool implements AiTool {
                     + "group with OR (topics and tags can require ALL). Labels can be missing or wrong, so search "
                     + "with words only as well when a filtered search finds little. Returns metadata only: id, "
                     + "title, upload time, document date, folder path, labels and whether the archive recognized "
-                    + "text. Never returns document content.",
+                    + "text. Never returns document content. contentSearch READY means archive traversal completed; LIMITED or UNAVAILABLE means missing sources. matchingDocuments and facets can be lower bounds. Narrow or retry; never infer absence or exhaustive coverage from incomplete search.",
             Map.of("type", "object",
                     "properties", Map.ofEntries(
                             Map.entry("query", Map.of("type", "string",
@@ -87,7 +88,24 @@ public class DocumentSearchTool implements AiTool {
         } catch (IllegalArgumentException invalid) {
             return ToolInput.invalid(invalid.getMessage());
         }
-        return Result.ok(JsonText.write(answer(documents.search(invocation.actor(), request))));
+        return response(documents.search(invocation.actor(), request));
+    }
+
+    /** Size before serialization; preserve coverage and valid JSON even with unusually large metadata. */
+    static Result response(DocumentSearchResult result) {
+        Map<String, Object> payload = answer(result);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> documents = (List<Map<String, Object>>) payload.get("documents");
+        int omitted = 0;
+        payload.put("omittedDocuments", omitted);
+        String json = JsonText.write(payload);
+        while (json.length() > 18_000 && !documents.isEmpty()) {
+            documents.removeLast();
+            payload.put("omittedDocuments", ++omitted);
+            json = JsonText.write(payload);
+        }
+        return new Result(json, false, omitted > 0 || result.notContentIndexed() > 0
+                || result.countAccuracy() == CountAccuracy.LOWER_BOUND);
     }
 
     static Map<String, Object> answer(DocumentSearchResult result) {
@@ -97,7 +115,12 @@ public class DocumentSearchTool implements AiTool {
         }
         Map<String, Object> answer = new LinkedHashMap<>();
         answer.put("contentSearch", result.contentSearch().name());
+        answer.put("searchLimitation", result.searchLimitation() == null ? null : result.searchLimitation().name());
+        answer.put("archiveTotal", result.archiveTotal());
+        answer.put("countAccuracy", result.countAccuracy().name());
         answer.put("matchingDocuments", result.matchingDocuments());
+        answer.put("size", result.size());
+        answer.put("hasMore", (long) (result.page() + 1) * result.size() < result.matchingDocuments());
         answer.put("page", result.page());
         answer.put("notContentIndexed", result.notContentIndexed());
         answer.put("documents", items);

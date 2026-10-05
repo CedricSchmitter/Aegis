@@ -5,6 +5,7 @@ import dev.aegis.documents.application.api.ArchivePdf;
 import dev.aegis.documents.application.api.CatalogExport;
 import dev.aegis.documents.application.api.ClassificationView;
 import dev.aegis.documents.application.api.ContentSearchState;
+import dev.aegis.documents.application.api.CountAccuracy;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentExportRecord;
 import dev.aegis.documents.application.api.DocumentQueries;
@@ -16,22 +17,22 @@ import dev.aegis.documents.application.api.DocumentStatusQuery;
 import dev.aegis.documents.application.api.DocumentSummary;
 import dev.aegis.documents.application.api.DocumentThumbnail;
 import dev.aegis.documents.application.api.FacetCounts;
+import dev.aegis.documents.application.api.FilenameView;
 import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.api.OriginalUnavailableException;
+import dev.aegis.documents.application.api.SearchLimitation;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
-import dev.aegis.documents.application.ports.DocumentCatalog;
 import dev.aegis.documents.application.ports.DocumentCatalog.Criteria;
 import dev.aegis.documents.application.ports.DocumentCatalog.Group;
 import dev.aegis.documents.application.ports.DocumentCatalog.ValueFilter;
+import dev.aegis.documents.application.ports.DocumentCatalog;
 import dev.aegis.documents.application.ports.OriginalStore;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.domain.Document;
-import dev.aegis.documents.application.api.FilenameView;
-import dev.aegis.documents.domain.analysis.DocumentAnalysis;
-import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.ProcessingState;
-import dev.aegis.documents.domain.naming.FriendlyFilename;
+import dev.aegis.documents.domain.analysis.DocumentAnalysis;
+import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
 import dev.aegis.documents.domain.catalog.Category;
 import dev.aegis.documents.domain.catalog.CategoryId;
 import dev.aegis.documents.domain.catalog.CategoryRepository;
@@ -43,10 +44,11 @@ import dev.aegis.documents.domain.catalog.LabelRepository;
 import dev.aegis.documents.domain.catalog.LabelVocabulary;
 import dev.aegis.documents.domain.classification.ClassificationRepository;
 import dev.aegis.documents.domain.classification.DocumentClassification;
+import dev.aegis.documents.domain.classification.LabelAssignment;
+import dev.aegis.documents.domain.naming.FriendlyFilename;
 import dev.aegis.documents.domain.placement.PlacementSuggestion;
 import dev.aegis.documents.domain.placement.PlacementSuggestionRepository;
 import dev.aegis.documents.domain.placement.PlacementTarget;
-import dev.aegis.documents.domain.classification.LabelAssignment;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
@@ -56,6 +58,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -132,13 +135,19 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         String text = request.text() == null ? "" : request.text().trim();
         ContentSearchState contentSearch = ContentSearchState.NOT_APPLIED;
         Criteria criteria = filters;
+        SearchLimitation limitation = null;
+        Long archiveTotal = null;
         if (!text.isEmpty()) {
             List<Integer> hits = List.of();
             try {
-                hits = archive.searchContent(text);
-                contentSearch = ContentSearchState.READY;
+                var retrieved = archive.searchContent(text);
+                hits = retrieved.ids();
+                contentSearch = retrieved.state();
+                limitation = retrieved.limitation();
+                archiveTotal = retrieved.archiveTotal();
             } catch (ArchiveUnavailableException unavailable) {
                 contentSearch = ContentSearchState.UNAVAILABLE;
+                limitation = SearchLimitation.ARCHIVE_FAILURE;
             }
             criteria = new Criteria(new DocumentCatalog.TextMatch(text, hits), filters.categoryScope(),
                     filters.unsortedOnly(), filters.filters(), filters.missing());
@@ -148,8 +157,14 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
         Map<DocumentId, ClassificationView> views = classificationViews.viewsOf(page.ids(), tree, vocabulary);
         List<DocumentSummary> items = presenter.summarizeAll(documents.findByIds(page.ids()), views);
         long notContentIndexed = text.isEmpty() ? 0 : catalog.countNotArchived(criteria.withoutText());
+        boolean unindexedFacetCandidates = !text.isEmpty() && Arrays.stream(Group.values())
+                .anyMatch(group -> catalog.countNotArchived(filters.withoutGroup(group)) > 0);
         return new DocumentSearchResult(items, contentSearch, catalog.countAll(), page.total(), request.page(),
-                request.size(), facetCounts(criteria), notContentIndexed);
+                request.size(), facetCounts(criteria), notContentIndexed, limitation, archiveTotal,
+                contentSearch == ContentSearchState.LIMITED || contentSearch == ContentSearchState.UNAVAILABLE
+                        || unindexedFacetCandidates
+                        ? CountAccuracy.LOWER_BOUND
+                        : CountAccuracy.EXACT);
     }
 
     /** The unchanged original bytes, named with the friendly filename. */

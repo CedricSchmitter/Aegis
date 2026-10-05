@@ -34,6 +34,7 @@ function withoutMissing(filters: CatalogFilters, group: FacetGroup): CatalogFilt
 interface Props {
   filters: CatalogFilters;
   facets: FacetCounts;
+  partial?: boolean;
   labels: LabelDto[];
   members: MemberDto[];
   onChange: (filters: CatalogFilters) => void;
@@ -44,7 +45,7 @@ interface Props {
  * to all), different groups are combined with AND, and a group offers an explicit "not set" filter next to its
  * values. A group without values is left out.
  */
-export function FacetFilters({ filters, facets, labels, members, onChange }: Props) {
+export function FacetFilters({ filters, facets, partial = false, labels, members, onChange }: Props) {
   const { t } = useTranslation();
   const valueName = useValueName(labels, members);
 
@@ -79,7 +80,7 @@ export function FacetFilters({ filters, facets, labels, members, onChange }: Pro
                   onClick={() => onChange(toggled(filters, group, key))}
                 >
                   {valueName(group, key)}
-                  <span className="ui-pill-count">{counts[key] ?? 0}</span>
+                  <span className="ui-pill-count">{partial ? t("documents.facetLowerBound", { count: counts[key] ?? 0 }) : counts[key] ?? 0}</span>
                 </button>
               ))}
               {(missingCount > 0 || missingSelected) && (
@@ -91,7 +92,7 @@ export function FacetFilters({ filters, facets, labels, members, onChange }: Pro
                   onClick={() => onChange(withoutMissing(filters, group))}
                 >
                   {t("documents.missingValue")}
-                  <span className="ui-pill-count">{missingCount}</span>
+                  <span className="ui-pill-count">{partial ? t("documents.facetLowerBound", { count: missingCount }) : missingCount}</span>
                 </button>
               )}
             </div>

@@ -8,6 +8,7 @@ import { Breadcrumbs } from "../components/Breadcrumbs";
 import { BigTitle, EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
 import { DocumentPanel } from "../components/documents/DocumentPanel";
 import { DocumentCard, DocumentTable } from "../components/documents/DocumentRows";
+import { SearchCoverageNotice } from "../components/documents/SearchCoverageNotice";
 import { FilterSheet } from "../components/documents/FilterSheet";
 import { FolderRail } from "../components/documents/FolderRail";
 import { UploadSheet } from "../components/documents/UploadSheet";
@@ -225,7 +226,9 @@ export function DocumentsPage() {
       : folderName(filters.category) || t("documents.title");
   const emptyText = !list
     ? ""
-    : facetCount > 0
+    : list.countAccuracy === "LOWER_BOUND"
+      ? t("documents.noResultsIncomplete")
+      : facetCount > 0
       ? t("documents.noResultsFiltered")
       : list.totalDocuments === 0
         ? t("documents.empty")
@@ -315,11 +318,7 @@ export function DocumentsPage() {
         {!list && !error && <Loading />}
         {list && (
           <section className="flex flex-col gap-2" aria-label={t("documents.title")}>
-            {list.contentSearch === "UNAVAILABLE" && (
-              <p className="alert-warn" role="alert">
-                {t("documents.contentSearchUnavailable")}
-              </p>
-            )}
+            <SearchCoverageNotice result={list} />
             {list.notContentIndexed > 0 && filters.query.trim() && (
               <p className="alert-info" role="status">
                 {t("documents.notContentIndexed", { count: list.notContentIndexed })}
@@ -327,8 +326,8 @@ export function DocumentsPage() {
             )}
             <div className="ui-sec flex-wrap">
               <span data-testid="result-count">
-                {t("documents.results", { count: list.matchingDocuments })}
-                {filters.query.trim() && ` · ${t("documents.resultsFor", { query: filters.query.trim() })}`}
+                {t(list.countAccuracy === "LOWER_BOUND" ? "documents.resultsLowerBound" : "documents.results", { count: list.matchingDocuments })}
+                {filters.query.trim() && ` ÂÂÂÂ· ${t("documents.resultsFor", { query: filters.query.trim() })}`}
               </span>
               <label className="flex items-center gap-2">
                 <span className="sr-only">{t("documents.sort")}</span>
@@ -485,6 +484,7 @@ export function DocumentsPage() {
         filters={filters}
         facets={list?.facets ?? null}
         matching={list?.matchingDocuments ?? 0}
+        partial={list?.countAccuracy === "LOWER_BOUND"}
         labels={labels}
         members={members}
         onChange={apply}

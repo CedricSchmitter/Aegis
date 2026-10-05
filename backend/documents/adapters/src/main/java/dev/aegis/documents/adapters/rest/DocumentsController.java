@@ -2,9 +2,10 @@ package dev.aegis.documents.adapters.rest;
 
 import dev.aegis.documents.adapters.rest.DocumentDto.SubjectDto;
 import dev.aegis.documents.application.api.ArchivePdf;
-import dev.aegis.documents.application.api.ClassificationCommands;
 import dev.aegis.documents.application.api.ClassificationCommands.Placement;
+import dev.aegis.documents.application.api.ClassificationCommands;
 import dev.aegis.documents.application.api.ContentSearchState;
+import dev.aegis.documents.application.api.CountAccuracy;
 import dev.aegis.documents.application.api.DocumentCommands;
 import dev.aegis.documents.application.api.DocumentQueries;
 import dev.aegis.documents.application.api.DocumentSearchRequest;
@@ -12,10 +13,11 @@ import dev.aegis.documents.application.api.DocumentSearchResult;
 import dev.aegis.documents.application.api.DocumentThumbnail;
 import dev.aegis.documents.application.api.FacetCounts;
 import dev.aegis.documents.application.api.OriginalContent;
+import dev.aegis.documents.application.api.SearchLimitation;
 import dev.aegis.documents.application.api.SubjectView;
-import dev.aegis.documents.application.api.UploadDocument;
 import dev.aegis.documents.application.api.UploadDocument.UploadCommand;
 import dev.aegis.documents.application.api.UploadDocument.UploadResult;
+import dev.aegis.documents.application.api.UploadDocument;
 import dev.aegis.documents.domain.naming.FriendlyFilename;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
@@ -80,7 +82,8 @@ public class DocumentsController {
      */
     public record DocumentListResponse(List<DocumentDto> items, ContentSearchState contentSearch,
             long totalDocuments, long matchingDocuments, int page, int size, FacetCounts facets,
-            long notContentIndexed) {
+            long notContentIndexed, @Schema(nullable = true) SearchLimitation searchLimitation,
+            @Schema(nullable = true) Long archiveTotal, CountAccuracy countAccuracy) {
     }
 
     public record UploadResponse(DocumentDto document, boolean duplicate) {
@@ -135,7 +138,8 @@ public class DocumentsController {
         DocumentSearchResult result = queries.search(actor, request);
         return new DocumentListResponse(result.items().stream().map(DocumentDto::from).toList(),
                 result.contentSearch(), result.totalDocuments(), result.matchingDocuments(), result.page(),
-                result.size(), result.facets(), result.notContentIndexed());
+                result.size(), result.facets(), result.notContentIndexed(), result.searchLimitation(),
+                result.archiveTotal(), result.countAccuracy());
     }
 
     @Operation(operationId = "uploadDocument", summary = "Upload a PDF or a photo (JPEG, PNG, WebP, HEIC); the type "

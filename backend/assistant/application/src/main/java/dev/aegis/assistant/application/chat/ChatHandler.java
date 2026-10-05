@@ -10,19 +10,19 @@ import dev.aegis.assistant.application.ports.ContentPart;
 import dev.aegis.assistant.application.ports.ModelMessage;
 import dev.aegis.assistant.application.ports.ModelTurn;
 import dev.aegis.assistant.domain.Workload;
-import dev.aegis.assistant.domain.chat.ChatAnswer;
 import dev.aegis.assistant.domain.chat.ChatAnswer.Check;
 import dev.aegis.assistant.domain.chat.ChatAnswer.Citation;
 import dev.aegis.assistant.domain.chat.ChatAnswer.Evidence;
 import dev.aegis.assistant.domain.chat.ChatAnswer.SourceKind;
+import dev.aegis.assistant.domain.chat.ChatAnswer;
 import dev.aegis.assistant.domain.chat.ChatTurn;
 import dev.aegis.assistant.domain.chat.Conversation;
 import dev.aegis.assistant.domain.chat.ConversationRepository;
 import dev.aegis.contracts.application.api.ContractQueries;
 import dev.aegis.contracts.application.api.ContractViews.ContractView;
 import dev.aegis.documents.application.api.ContentUnavailableException;
-import dev.aegis.documents.application.api.DocumentTextQuery;
 import dev.aegis.documents.application.api.DocumentTextQuery.DocumentText;
+import dev.aegis.documents.application.api.DocumentTextQuery;
 import dev.aegis.planning.application.api.TaskQueries;
 import dev.aegis.planning.application.api.TaskSummary;
 import dev.aegis.shared.ContractId;
@@ -75,6 +75,9 @@ public class ChatHandler implements WorkloadHandler {
             - A search result's title, folder and labels can be wrong too. When a result matches your search words \
             but its title or labels do not seem to fit, read it before you leave it out, above all when the question \
             asks for every document, contract or insurance of a kind.
+            - Search coverage is technical traversal only, not semantic recall. LIMITED or UNAVAILABLE, lower-bound \
+            counts, omitted results or unindexed documents mean sources may be missing. Narrow or retry the search. \
+            Never use partial retrieval as proof of absence or an exhaustive answer; report PARTIAL and explain it.
             - list_contracts and read_contract show the contracts with their facts. Each fact names the document, \
             page and quote it comes from and whether a member confirmed it; the cancellation deadline is calculated \
             from confirmed facts only. Prefer confirmed facts, and check them in the documents when they matter.
@@ -221,6 +224,11 @@ public class ChatHandler implements WorkloadHandler {
 
     @Override
     public ValidatedOutput validate(RunContext run, ModelTurn turn) {
+        return validate(run, turn, Set.of());
+    }
+
+    @Override
+    public ValidatedOutput validate(RunContext run, ModelTurn turn, Set<String> incompleteRetrieval) {
         if (!(turn.structuredOutput() instanceof Map<?, ?> output)) {
             throw new InvalidModelOutputException("output.schemaMismatch", "the answer is not a JSON object");
         }
@@ -235,6 +243,21 @@ public class ChatHandler implements WorkloadHandler {
         Evidence evidence = enumValue(Evidence.class, output.get("evidence"), "evidence");
         List<Citation> citations = citations(run, output.get("citations"));
         List<String> caveats = caveats(output.get("caveats"));
+        if (!incompleteRetrieval.isEmpty()) {
+            boolean english = turnOf(run, conversationOf(run)).locale() == ProductLocale.EN;
+            String warning = english
+                    ? "Document search was incomplete. Other relevant sources may be missing; this answer is provisional. Narrow the search or retry."
+                    : "Die Dokumentensuche war unvollständig. Weitere relevante Quellen können fehlen; diese Antwort ist vorläufig. Grenze die Suche ein oder versuche es erneut.";
+            if (evidence == Evidence.NOT_FOUND) {
+                text = english ? "The retrieved sources did not establish an answer. Incomplete search cannot show that no relevant source exists."
+                        : "Die abgerufenen Quellen ergaben keine Antwort. Eine unvollständige Suche belegt nicht, dass keine relevante Quelle existiert.";
+            }
+            evidence = Evidence.PARTIAL;
+            List<String> guarded = new ArrayList<>();
+            guarded.add(warning);
+            caveats.stream().limit(ChatAnswer.MAX_CAVEATS - 1).forEach(guarded::add);
+            caveats = List.copyOf(guarded);
+        }
         ChatAnswer answer = new ChatAnswer(text, evidence, citations, caveats);
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("turn", run.parameters().get(TURN));

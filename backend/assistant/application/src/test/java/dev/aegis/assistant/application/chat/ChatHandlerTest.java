@@ -14,11 +14,11 @@ import dev.aegis.assistant.domain.ModelSelection;
 import dev.aegis.assistant.domain.RunId;
 import dev.aegis.assistant.domain.TokenUsage;
 import dev.aegis.assistant.domain.Workload;
-import dev.aegis.assistant.domain.chat.ChatAnswer;
 import dev.aegis.assistant.domain.chat.ChatAnswer.Check;
 import dev.aegis.assistant.domain.chat.ChatAnswer.Citation;
 import dev.aegis.assistant.domain.chat.ChatAnswer.Evidence;
 import dev.aegis.assistant.domain.chat.ChatAnswer.SourceKind;
+import dev.aegis.assistant.domain.chat.ChatAnswer;
 import dev.aegis.assistant.domain.chat.Conversation;
 import dev.aegis.contracts.application.api.ContractQueries;
 import dev.aegis.contracts.application.api.ContractViews.ContractSummary;
@@ -98,6 +98,31 @@ class ChatHandlerTest {
     }
 
     @Test
+    void technicalGapsGuardCompleteAndNotFoundAnswersInBothRetrievalsAndLocales() {
+        for (ChatRetrieval mode : ChatRetrieval.values()) {
+            for (ProductLocale locale : ProductLocale.values()) {
+                for (String level : List.of("COMPLETE", "NOT_FOUND")) {
+                    Conversation c = Conversation.start(UUID.randomUUID(), LISA, UUID.randomUUID(), "All policies?",
+                            locale, RunId.random(), NOW.minusSeconds(60));
+                    conversations.save(c);
+                    ChatHandler guarded = new ChatHandler(conversations, new Texts(), new Contracts(), new Tasks(),
+                            BERLIN, Clock.fixed(NOW, ZoneOffset.UTC), mode);
+                    var output = Map.<String, Object>of("answer", "There are no policies.", "evidence", level,
+                            "citations", List.of(), "caveats", List.of());
+                    ChatAnswer answer = (ChatAnswer) guarded.validate(run(c), answer(output),
+                            java.util.Set.of(mode == ChatRetrieval.TEXT_ONLY ? ChatTools.SEARCH_DOCUMENT_TEXT
+                                    : ChatTools.SEARCH_DOCUMENTS)).value();
+                    assertThat(answer.evidence()).isEqualTo(Evidence.PARTIAL);
+                    assertThat(answer.caveats()).singleElement().asString().contains(locale == ProductLocale.EN
+                            ? "incomplete" : "unvollständig");
+                    if (level.equals("NOT_FOUND")) assertThat(answer.text()).doesNotContain("There are no policies");
+                    assertThat(guarded.prepare(run(c)).system()).contains("Never use partial retrieval as proof of absence");
+                }
+            }
+        }
+    }
+
+    @Test
     void theModelGetsTheHouseholdDateTheFallbackLanguageAndTheGrantedReadOnlyTools() {
         Conversation conversation = conversation("Wann endet der Stromvertrag?");
 
@@ -113,6 +138,7 @@ class ChatHandlerTest {
                 .doesNotContain("search_document_text");
     }
 
+
     @Test
     void searchingByTextAloneWithholdsTheCatalogAndEveryFolderAndLabelFilter() {
         ChatHandler textOnly = new ChatHandler(conversations, new Texts(), new Contracts(), new Tasks(), BERLIN,
@@ -126,6 +152,7 @@ class ChatHandlerTest {
         assertThat(prepared.system()).contains("search_document_text finds documents by words")
                 .doesNotContain("household_catalog").doesNotContain("search_documents ");
     }
+
 
     @Test
     void earlierAnsweredQuestionsComeFirstWithTheirSources() {
@@ -151,6 +178,7 @@ class ChatHandlerTest {
                 .isEqualTo("Und wie hoch ist der Grundpreis?");
     }
 
+
     @Test
     void anotherMembersConversationIsNeverRead() {
         Conversation conversation = conversation("Wann endet der Stromvertrag?");
@@ -158,6 +186,7 @@ class ChatHandlerTest {
         assertThatThrownBy(() -> handler.prepare(run(conversation, conversation.latest().id(),
                 conversation.latest().run(), MemberId.random()))).isInstanceOf(NotAuthorizedException.class);
     }
+
 
     @Test
     void everyCitationIsCheckedAgainstItsSource() {
@@ -188,6 +217,7 @@ class ChatHandlerTest {
                 .contains("\"citations\":7").contains("\"verifiedCitations\":3");
     }
 
+
     @Test
     void answersOutsideTheContractAreInvalidOutput() {
         Conversation conversation = conversation("Frage");
@@ -208,6 +238,7 @@ class ChatHandlerTest {
                 .isInstanceOf(InvalidModelOutputException.class);
     }
 
+
     @Test
     void theAnswerIsStoredOnceInTheConversationOfTheTurn() {
         Conversation conversation = conversation("Wann kann ich kündigen?");
@@ -222,6 +253,7 @@ class ChatHandlerTest {
         assertThat(stored.latest().answer()).map(ChatAnswer::text).contains("Kündigen bis 31.10.2026 [1].");
         assertThat(conversations.saves).as("created plus one answer").isEqualTo(2);
     }
+
 
     @Test
     void aDeletedConversationOrASupersededRunStoresNothing() {

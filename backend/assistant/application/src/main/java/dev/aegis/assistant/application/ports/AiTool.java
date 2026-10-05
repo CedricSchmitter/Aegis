@@ -24,7 +24,10 @@ public interface AiTool {
     }
 
     /** Result text for the model (usually JSON); {@code error} marks a failed call. */
-    record Result(String content, boolean error) {
+    record Result(String content, boolean error, boolean retrievalIncomplete) {
+        public Result(String content, boolean error) {
+            this(content, error, false);
+        }
         public Result {
             Objects.requireNonNull(content, "content");
         }

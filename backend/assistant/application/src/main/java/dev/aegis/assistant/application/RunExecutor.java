@@ -1,5 +1,6 @@
 package dev.aegis.assistant.application;
 
+import dev.aegis.assistant.application.chat.ChatTools;
 import dev.aegis.assistant.application.ports.AiTool;
 import dev.aegis.assistant.application.ports.ContentPart;
 import dev.aegis.assistant.application.ports.ModelCallException;
@@ -156,6 +157,7 @@ public class RunExecutor {
         PreparedRun prepared = handler.prepare(run);
         String system = prepared.system() + "\n\n" + UntrustedContent.SYSTEM_RULES;
         List<ModelMessage> conversation = new ArrayList<>(prepared.messages());
+        Set<String> incompleteRetrieval = new LinkedHashSet<>();
         while (true) {
             long estimate = TokenEstimate.inputTokens(system, conversation, offered, prepared.outputSchema());
             AiRun.Checkpoint admission = execution.beforeModelCall(run.id(), run.attempt(),
@@ -180,13 +182,13 @@ public class RunExecutor {
                 case OTHER -> throw new InvalidModelOutputException("output.unexpectedStop",
                         "the model stopped without a final answer");
                 case TOOL_USE -> {
-                    Outcome halted = callTools(run, turn, offeredNames, conversation);
+                    Outcome halted = callTools(run, turn, offeredNames, conversation, incompleteRetrieval);
                     if (halted != null) {
                         return halted;
                     }
                 }
                 case END -> {
-                    ValidatedOutput output = handler.validate(run, turn);
+                    ValidatedOutput output = handler.validate(run, turn, Set.copyOf(incompleteRetrieval));
                     if (output.json().length() > MAX_OUTPUT_CHARS) {
                         throw new InvalidModelOutputException("output.tooLarge",
                                 "the answer exceeds " + MAX_OUTPUT_CHARS + " characters");
@@ -199,7 +201,7 @@ public class RunExecutor {
 
     /** Runs the requested tools; returns an outcome when the attempt must stop, otherwise null. */
     private Outcome callTools(RunContext run, ModelTurn turn, Set<String> offeredNames,
-            List<ModelMessage> conversation) {
+            List<ModelMessage> conversation, Set<String> incompleteRetrieval) {
         List<ContentPart.ToolCall> calls = turn.toolCalls();
         if (calls.isEmpty()) {
             throw new InvalidModelOutputException("output.missingToolCall",
@@ -211,7 +213,7 @@ public class RunExecutor {
             boolean granted = offeredNames.contains(call.name());
             AiRun.Checkpoint gate = execution.beforeToolCall(run.id(), run.attempt(), call.name(), granted);
             switch (gate) {
-                case AiRun.Continue allowed -> results.add(invoke(run, call));
+                case AiRun.Continue allowed -> results.add(invoke(run, call, incompleteRetrieval));
                 case AiRun.Denied denied -> results.add(new ContentPart.ToolResult(call.id(),
                         JsonText.write(Map.of("error", denied.code(),
                                 "detail", "This tool is not available for this task.")), true));
@@ -224,10 +226,13 @@ public class RunExecutor {
         return null;
     }
 
-    private ContentPart.ToolResult invoke(RunContext run, ContentPart.ToolCall call) {
+    private ContentPart.ToolResult invoke(RunContext run, ContentPart.ToolCall call, Set<String> incompleteRetrieval) {
         AiTool tool = tools.get(call.name());
         try {
             AiTool.Result result = tool.invoke(new AiTool.Invocation(run.id(), run.actor()), call.input());
+            if (result.retrievalIncomplete() || (isDocumentSearch(call.name()) && result.error())) {
+                incompleteRetrieval.add(call.name());
+            }
             return new ContentPart.ToolResult(call.id(), bounded(result.content()), result.error());
         } catch (NotAuthorizedException forbidden) {
             throw forbidden;
@@ -238,12 +243,18 @@ public class RunExecutor {
         } catch (RuntimeException failure) {
             LOG.log(Level.WARNING, "tool " + call.name() + " failed in AI run " + run.id() + ": "
                     + failure.getClass().getSimpleName());
+            if (isDocumentSearch(call.name())) incompleteRetrieval.add(call.name());
             return toolError(call, "tool.failed");
         }
     }
 
     private static ContentPart.ToolResult toolError(ContentPart.ToolCall call, String code) {
         return new ContentPart.ToolResult(call.id(), JsonText.write(Map.of("error", code)), true);
+    }
+
+    private static boolean isDocumentSearch(String name) {
+        return ChatTools.SEARCH_DOCUMENTS.equals(name)
+                || ChatTools.SEARCH_DOCUMENT_TEXT.equals(name);
     }
 
     private static String bounded(String content) {

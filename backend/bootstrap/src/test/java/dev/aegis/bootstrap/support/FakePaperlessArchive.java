@@ -32,6 +32,9 @@ public class FakePaperlessArchive implements PaperlessArchive {
     }
 
     public volatile boolean available = true;
+    /** Query-specific controlled coverage, without changing other tests or background archive work. */
+    public final Map<String, dev.aegis.documents.application.ports.ArchiveSearchResult> searchResults =
+            new ConcurrentHashMap<>();
     /** Switches off only the OCR text, as when the archive stored a document but cannot deliver its text. */
     public volatile boolean contentAvailable = true;
     public final AtomicInteger submissions = new AtomicInteger();
@@ -192,8 +195,9 @@ public class FakePaperlessArchive implements PaperlessArchive {
     }
 
     @Override
-    public List<Integer> searchContent(String query) {
+    public dev.aegis.documents.application.ports.ArchiveSearchResult searchContent(String query) {
         requireAvailable();
+        if (searchResults.containsKey(query)) return searchResults.get(query);
         String needle = query.toLowerCase(Locale.ROOT);
         List<Integer> hits = new ArrayList<>();
         for (Stored stored : documents.values()) {
@@ -203,7 +207,7 @@ public class FakePaperlessArchive implements PaperlessArchive {
                 hits.add(stored.id());
             }
         }
-        return hits;
+        return dev.aegis.documents.application.ports.ArchiveSearchResult.complete(hits);
     }
 
     @Override

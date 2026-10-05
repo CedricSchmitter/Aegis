@@ -140,6 +140,20 @@ model and is not a calibrated guarantee. Only effective values take part in filt
 - Text matches titles and, when Paperless answers, archive full-text hits. Documents that are not archived yet
   are reported as not content-indexed; an unreachable archive keeps title and metadata filtering available and
   is reported as `UNAVAILABLE`.
+- Archive text search collects pages of 200 IDs, at most 10 requests, 2,000 unique IDs and 10 seconds per search.
+  Requests keep the configured origin, authentication and original query; response links are validated for the
+  same origin/path/parameters and the next sequential page, never fetched directly. Redirects are disabled for
+  search. Duplicate IDs are removed; missing/inconsistent metadata, empty continuation pages and loops stop
+  traversal conservatively. Collected IDs and title matches survive a later failure or bound as `LIMITED`, with
+  a stable `searchLimitation`; first-request failures are `UNAVAILABLE`. `READY` means complete traversal of this
+  archive query, not semantic recall of all relevant household sources.
+- `archiveTotal`, when known, is the archive's unfiltered count. `matchingDocuments` and `facets` count active Aegis
+  matches after its own filters; they never use that archive total. `countAccuracy=LOWER_BOUND` marks every result
+  and facet count when archive traversal is incomplete or an applicable unarchived source may match by content.
+  The empty-text collection listing remains exact. Aegis paging only pages over the collected candidate set;
+  changing folder/label filters cannot recover hits beyond the archive bounds. Narrow the search words or retry.
+  The German/English search page and filter sheet label these limitations and avoid an absence claim for zero
+  collected matches.
 - Filtering, counting, sorting and pagination run in PostgreSQL through a read-model port
   (`DocumentCatalog`), not in the browser. Facet counts are computed per group with the filters of all other
   groups (disjunctive faceting) and include a missing-value count. All parameters are reflected in the page URL.

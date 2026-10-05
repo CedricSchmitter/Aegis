@@ -1,8 +1,11 @@
 package dev.aegis.documents.adapters.paperless;
 
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.HttpClientSettings;
+import org.springframework.boot.http.client.HttpRedirects;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
@@ -11,6 +14,15 @@ import org.springframework.web.client.RestClient;
 @Configuration
 @EnableConfigurationProperties(PaperlessProperties.class)
 class PaperlessClientConfiguration {
+
+    @Bean
+    RestClient paperlessSearchRestClient(
+            @Qualifier("paperlessRestClient") RestClient client) {
+        var settings = HttpClientSettings.defaults().withConnectTimeout(Duration.ofSeconds(2))
+                .withReadTimeout(Duration.ofSeconds(3))
+                .withRedirects(HttpRedirects.DONT_FOLLOW);
+        return client.mutate().requestFactory(ClientHttpRequestFactoryBuilder.jdk().build(settings)).build();
+    }
 
     @Bean
     RestClient paperlessRestClient(RestClient.Builder builder, PaperlessProperties properties) {

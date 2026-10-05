@@ -1593,8 +1593,16 @@
       },
       "DocumentListResponse" : {
         "properties" : {
+          "archiveTotal" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "contentSearch" : {
-            "enum" : [ "NOT_APPLIED", "READY", "UNAVAILABLE" ],
+            "enum" : [ "NOT_APPLIED", "READY", "LIMITED", "UNAVAILABLE" ],
+            "type" : "string"
+          },
+          "countAccuracy" : {
+            "enum" : [ "EXACT", "LOWER_BOUND" ],
             "type" : "string"
           },
           "facets" : {
@@ -1618,6 +1626,10 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "searchLimitation" : {
+            "enum" : [ "REQUEST_LIMIT", "TIME_LIMIT", "HIT_LIMIT", "ARCHIVE_FAILURE", "INVALID_PAGINATION", "UNSAFE_PAGINATION" ],
+            "type" : [ "string", "null" ]
+          },
           "size" : {
             "format" : "int32",
             "type" : "integer"
@@ -1627,7 +1639,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "contentSearch", "facets", "items", "matchingDocuments", "notContentIndexed", "page", "size", "totalDocuments" ],
+        "required" : [ "contentSearch", "countAccuracy", "facets", "items", "matchingDocuments", "notContentIndexed", "page", "size", "totalDocuments" ],
         "type" : "object"
       },
       "DocumentTrashDto" : {
