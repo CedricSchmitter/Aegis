@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import de from "./de.json";
 import en from "./en.json";
 import { SKIP_REASONS } from "../lib/bulkAnalysis";
+import { LIMIT_PROBLEMS } from "../lib/costLimits";
 import { FAILURE_REASONS } from "../lib/failureReasons";
 import { CHECK_AREAS, CHECK_REASONS, CHECK_STATES, KNOWN_JOBS } from "../lib/status";
 
@@ -86,6 +87,7 @@ describe("locale catalogs", () => {
       ...["pending", "uploading", "saved", "duplicate", "failed", "rejected"].map((s) => `share.status.${s}`),
       ...["CONNECTION_CHECK", "DOCUMENT_CLASSIFICATION", "DOCUMENT_REVIEW", "CHAT"].map((w) => `ai.workload.${w}`),
       ...["QUEUED", "RUNNING", "WAITING_RETRY", "SUCCEEDED", "FAILED", "CANCELLED"].map((s) => `ai.state.${s}`),
+      ...LIMIT_PROBLEMS.map((problem) => `ai.limits.problem.${problem}`),
       // Analysis states of a document (ADR-0004), including the neutral NOT_CLASSIFIED and WAITING_FOR_BUDGET.
       ...["NOT_REQUESTED", "WAITING_FOR_ARCHIVE", "PENDING", "CLASSIFIED", "NEEDS_REVIEW", "FAILED", "UNAVAILABLE",
         "NOT_CLASSIFIED", "WAITING_FOR_BUDGET"].flatMap((s) => [`analysis.state.${s}`, `analysis.stateShort.${s}`]),

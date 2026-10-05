@@ -2,6 +2,7 @@ package dev.aegis.assistant.application;
 
 import dev.aegis.assistant.application.api.AiHealth;
 import dev.aegis.assistant.application.api.AiHealthQuery;
+import dev.aegis.assistant.application.api.AiLimitCommands;
 import dev.aegis.assistant.application.api.AiModelCommands;
 import dev.aegis.assistant.application.api.AiOverview;
 import dev.aegis.assistant.application.api.AiRunCommands;
@@ -22,11 +23,14 @@ import dev.aegis.assistant.domain.AiRun;
 import dev.aegis.assistant.domain.AiRunRepository;
 import dev.aegis.assistant.domain.ModelFamily;
 import dev.aegis.assistant.domain.ModelSelection;
+import dev.aegis.assistant.domain.Money;
 import dev.aegis.assistant.domain.RunBudget;
 import dev.aegis.assistant.domain.RunId;
 import dev.aegis.assistant.domain.RunState;
 import dev.aegis.assistant.domain.SourceRef;
 import dev.aegis.assistant.domain.Workload;
+import dev.aegis.assistant.domain.WorkloadCostLimits;
+import dev.aegis.assistant.domain.WorkloadCostLimitsRepository;
 import dev.aegis.assistant.domain.WorkloadModelChoice;
 import dev.aegis.assistant.domain.WorkloadModelChoiceRepository;
 import dev.aegis.shared.Actor;
@@ -51,14 +55,15 @@ import java.util.function.Predicate;
 
 /**
  * Member-facing AI use cases: requesting, inspecting, cancelling and retrying runs, the connection check and the
- * household's model choice. Every entry point checks household membership. A run uses the model of the household's
- * family for its workload with the first provider of the profile that has credentials and serves the requesting
- * member; provider and model are recorded with the run, so a later choice affects new runs only. Requests that cannot
+ * household's model choice and cost limits per workload. Every entry point checks household membership. A run uses
+ * the model of the household's family for its workload with the first provider of the profile that has credentials
+ * and serves the requesting member; provider, model and run budget are recorded with the run, so a later choice or
+ * session limit affects new runs only. Requests that cannot
  * run (no credentials, provider not available to the member, no handler, unknown price) are refused instead of
  * queued. Wrapped in a transaction by the composition root; no call waits on a model.
  */
 public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, AiHealthQuery, AiRunStatusQuery,
-        AiModelCommands {
+        AiModelCommands, AiLimitCommands {
     public static final int MAX_LIST = 100;
     /** Succeeded runs whose mean cost estimates the next one. */
     static final int ESTIMATE_SAMPLES = 20;
@@ -69,6 +74,8 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
 
     private final AiRunRepository runs;
     private final WorkloadModelChoiceRepository choices;
+    private final WorkloadCostLimitsRepository limits;
+    private final CostLimits costLimits;
     private final RunScheduler scheduler;
     private final AiLock lock;
     private final Map<Workload, WorkloadHandler> handlers;
@@ -83,11 +90,14 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
     private record CredentialState(String revision, Instant freshSince) {
     }
 
-    public AiRunService(AiRunRepository runs, WorkloadModelChoiceRepository choices, RunScheduler scheduler,
-            AiLock lock, Map<Workload, WorkloadHandler> handlers, Map<String, ModelGateway> gateways,
-            AiSettings settings, HouseholdAccess access, Clock clock) {
+    public AiRunService(AiRunRepository runs, WorkloadModelChoiceRepository choices,
+            WorkloadCostLimitsRepository limits, RunScheduler scheduler, AiLock lock,
+            Map<Workload, WorkloadHandler> handlers, Map<String, ModelGateway> gateways, AiSettings settings,
+            HouseholdAccess access, Clock clock) {
         this.runs = runs;
         this.choices = choices;
+        this.limits = limits;
+        this.costLimits = new CostLimits(settings, limits, runs);
         this.scheduler = scheduler;
         this.lock = lock;
         this.handlers = Map.copyOf(handlers);
@@ -119,8 +129,9 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
                 throw new InvalidInputException("validation.failed", "Invalid run source");
             }
         }
-        return view(create(actor, workload, request.idempotencyKey(), null, model, settings.budget(profile, model.provider()), sources,
-                request.parameters(), request.reprocess()));
+        return view(create(actor, workload, request.idempotencyKey(), null, model,
+                costLimits.current().runBudget(profile, model.provider()), sources, request.parameters(),
+                request.reprocess()));
     }
 
     @Override
@@ -182,8 +193,9 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
             throw new InvalidInputException("ai.run.notRetryable", "Only failed or cancelled runs can be retried");
         }
         ModelSelection model = requireRunnable(actor, previous.workload(), retryCandidates(previous));
+        CostLimits.Current current = costLimits.current();
         return view(create(actor, previous.workload(), previous.idempotencyKey(), previous.id(), model,
-                settings.profile(previous.workload()).map(profile -> settings.budget(profile, model.provider()))
+                settings.profile(previous.workload()).map(profile -> current.runBudget(profile, model.provider()))
                         .orElse(previous.budget()), previous.sources(), previous.parameters(), true));
     }
 
@@ -302,6 +314,25 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         return overview(actor);
     }
 
+    @Override
+    public AiOverview setCostLimits(Actor actor, String workload, BigDecimal dailyCostLimit, BigDecimal maxRunCost,
+            long version) {
+        access.requireMember(actor);
+        Workload target = workload(workload);
+        settings.profile(target).filter(candidate -> !candidate.providers().isEmpty())
+                .orElseThrow(() -> new InvalidInputException("ai.limits.notSelectable",
+                        "Workload " + target + " has no cost limits of its own", Map.of("workload", target.name())));
+        WorkloadCostLimits current = limits.find(target).orElseGet(() -> WorkloadCostLimits.defaultOf(target));
+        if (current.change(money(dailyCostLimit), money(maxRunCost), version, actor.memberId(), clock.instant())) {
+            limits.save(current);
+        }
+        return overview(actor);
+    }
+
+    private Money money(BigDecimal amount) {
+        return amount == null ? null : new Money(amount, settings.currency());
+    }
+
     /** A family of the catalog by its key; members choose families, never model identifiers. */
     private ModelFamily offeredFamily(String family) {
         ModelFamily chosen;
@@ -360,6 +391,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         access.requireMember(actor);
         Instant now = clock.instant();
         boolean configured = anyProviderConfigured();
+        CostLimits.Current current = costLimits.current();
         List<WorkloadView> workloads = new ArrayList<>();
         // Limits and spending are shown for the provider this member's runs use now, otherwise the first shown one.
         String usableProvider = null;
@@ -367,7 +399,7 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         for (Workload workload : Workload.values()) {
             Optional<WorkloadProfile> profile = settings.profile(workload);
             if (profile.isPresent()) {
-                WorkloadView view = workloadView(profile.get(), actor);
+                WorkloadView view = workloadView(profile.get(), actor, current, now);
                 workloads.add(view);
                 shownProvider = shownProvider == null ? view.provider() : shownProvider;
                 Optional<ModelSelection> usable = first(candidates(profile.get()), model -> usable(model, actor));
@@ -378,15 +410,15 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         boolean memberAllowed = usableProvider != null;
         String limitProvider = memberAllowed ? usableProvider : shownProvider;
-        return new AiOverview(configured, memberAllowed, limitProvider,
-                settings.dailyCostLimit(limitProvider).amount(),
-                limitProvider == null ? BigDecimal.ZERO
-                        : runs.costSince(settings.startOfDay(now), limitProvider, settings.currency()).amount(),
-                settings.currency().getCurrencyCode(), settings.maxConcurrentRuns(), workloads, modelOptions());
+        CostLimits.Daily shared = current.shared(limitProvider, now);
+        return new AiOverview(configured, memberAllowed, limitProvider, shared.limit().amount(),
+                shared.spent().amount(), settings.currency().getCurrencyCode(), settings.maxConcurrentRuns(),
+                workloads, modelOptions());
     }
 
     /** Shows the candidate a run of this member would use now, otherwise the configured or most preferred one. */
-    private WorkloadView workloadView(WorkloadProfile profile, Actor actor) {
+    private WorkloadView workloadView(WorkloadProfile profile, Actor actor, CostLimits.Current current,
+            Instant now) {
         List<ModelSelection> candidates = candidates(profile);
         ModelSelection model = first(candidates, candidate -> usable(candidate, actor))
                 .or(() -> first(candidates, this::providerConfigured)).or(() -> candidates.stream().findFirst())
@@ -399,7 +431,9 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
                         && gateway.allows(actor.memberId()))
                 : usable(model, actor);
         boolean priced = model == null || priced(model);
-        RunBudget budget = model == null ? profile.budget() : settings.budget(profile, model.provider());
+        RunBudget budget = model == null ? profile.budget() : current.runBudget(profile, model.provider());
+        CostLimits.Daily day = current.daily(profile.workload(), model == null ? null : model.provider(), now);
+        Optional<WorkloadCostLimits> own = current.own(profile.workload());
         return new WorkloadView(profile.workload().name(), model == null ? null : model.provider(),
                 model == null ? null : model.model(), choice == null ? null : choice.family().key(),
                 choice == null ? 0 : choice.version(),
@@ -407,7 +441,11 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
                 choice == null ? null : choice.changedAt().orElse(null), provider, handler,
                 handler && provider && allowed && priced,
                 budget.maxCost().amount(), budget.maxDuration().toSeconds(), budget.maxModelCalls(),
-                budget.maxToolCalls(), budget.maxOutputTokens(), budget.maxAttempts(), profile.maxConcurrent());
+                budget.maxToolCalls(), budget.maxOutputTokens(), budget.maxAttempts(), profile.maxConcurrent(),
+                day.limit().amount(), day.spent().amount(), day.own(), !profile.providers().isEmpty(),
+                own.map(WorkloadCostLimits::version).orElse(0L),
+                own.flatMap(WorkloadCostLimits::changedBy).map(MemberId::value).orElse(null),
+                own.flatMap(WorkloadCostLimits::changedAt).orElse(null));
     }
 
     @Override
@@ -449,12 +487,12 @@ public class AiRunService implements RequestAiRun, AiRunQueries, AiRunCommands, 
         }
         AiRunRepository.CostSample sample = runs.recentSucceededCost(workload, model.model(), settings.currency(),
                 ESTIMATE_SAMPLES);
+        CostLimits.Current current = costLimits.current();
+        CostLimits.Daily day = current.daily(workload, model.provider(), now);
         return new WorkloadEstimate(workload.name(), refusal, model.provider(), model.model(),
                 sample.average() == null ? null : sample.average().amount(), sample.runs(),
-                settings.budget(profile.get(), model.provider()).maxCost().amount(),
-                settings.dailyCostLimit(model.provider()).amount(),
-                runs.costSince(settings.startOfDay(now), model.provider(), settings.currency()).amount(), currency,
-                settings.startOfNextDay(now));
+                current.runBudget(profile.get(), model.provider()).maxCost().amount(), day.limit().amount(),
+                day.spent().amount(), currency, settings.startOfNextDay(now));
     }
 
     @Override

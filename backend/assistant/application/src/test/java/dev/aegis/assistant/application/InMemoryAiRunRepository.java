@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Behaves like the PostgreSQL store: every load returns a fresh copy, updates are version-checked and at most one
@@ -115,10 +116,12 @@ class InMemoryAiRunRepository implements AiRunRepository {
     }
 
     @Override
-    public synchronized Money costSince(Instant since, String provider, Currency currency) {
+    public synchronized Money costSince(Instant since, String provider, Set<Workload> workloads,
+            Currency currency) {
         Money total = Money.zero(currency);
         for (Map.Entry<RunId, List<RunStep>> entry : steps.entrySet()) {
-            if (!runs.get(entry.getKey()).model().provider().equals(provider)) {
+            AiRun run = runs.get(entry.getKey());
+            if (!run.model().provider().equals(provider) || !workloads.contains(run.workload())) {
                 continue;
             }
             for (RunStep step : entry.getValue()) {

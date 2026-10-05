@@ -3,6 +3,8 @@ package dev.aegis.assistant.adapters.rest;
 import dev.aegis.assistant.adapters.rest.AiDtos.AiOverviewDto;
 import dev.aegis.assistant.adapters.rest.AiDtos.ChooseModelRequest;
 import dev.aegis.assistant.adapters.rest.AiDtos.RunDto;
+import dev.aegis.assistant.adapters.rest.AiDtos.SetCostLimitsRequest;
+import dev.aegis.assistant.application.api.AiLimitCommands;
 import dev.aegis.assistant.application.api.AiModelCommands;
 import dev.aegis.assistant.application.api.AiRunCommands;
 import dev.aegis.assistant.application.api.AiRunQueries;
@@ -30,11 +32,14 @@ public class AiController {
     private final AiRunQueries queries;
     private final AiRunCommands commands;
     private final AiModelCommands models;
+    private final AiLimitCommands limits;
 
-    public AiController(AiRunQueries queries, AiRunCommands commands, AiModelCommands models) {
+    public AiController(AiRunQueries queries, AiRunCommands commands, AiModelCommands models,
+            AiLimitCommands limits) {
         this.queries = queries;
         this.commands = commands;
         this.models = models;
+        this.limits = limits;
     }
 
     @Operation(operationId = "aiOverview", summary = "Configured workloads, budgets and today's AI spending")
@@ -50,6 +55,18 @@ public class AiController {
     public AiOverviewDto chooseModel(Actor actor, @PathVariable String workload,
             @RequestBody ChooseModelRequest body) {
         return AiOverviewDto.from(models.chooseModel(actor, workload, body.family(), body.expectedVersion()));
+    }
+
+    @Operation(operationId = "setAiCostLimits", summary = "Set the daily and session limit of a workload for the "
+            + "household", description = "Applies to both members, every provider and scheduled work. New runs use "
+            + "the session limit; the daily limit applies to the next model call. Amounts are positive, have at most "
+            + "two decimals and are at most 1000; the session limit is at most the daily limit. A stale "
+            + "expectedVersion is rejected with 409.")
+    @PutMapping("/workloads/{workload}/limits")
+    public AiOverviewDto setCostLimits(Actor actor, @PathVariable String workload,
+            @RequestBody SetCostLimitsRequest body) {
+        return AiOverviewDto.from(limits.setCostLimits(actor, workload, body.dailyCostLimit(), body.maxRunCost(),
+                body.expectedVersion()));
     }
 
     @Operation(operationId = "listAiRuns", summary = "Most recent AI runs of the household")

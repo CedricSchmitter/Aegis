@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
@@ -160,12 +161,17 @@ public class JdbcAiRunRepository implements AiRunRepository {
     }
 
     @Override
-    public Money costSince(Instant since, String provider, Currency currency) {
+    public Money costSince(Instant since, String provider, Set<Workload> workloads, Currency currency) {
+        if (workloads.isEmpty()) {
+            return Money.zero(currency);
+        }
         BigDecimal total = jdbc.sql("""
                 SELECT coalesce(sum(s.cost), 0) FROM ai_run_steps s JOIN ai_runs r ON r.id = s.run_id
-                 WHERE s.kind = 'MODEL_CALL' AND s.at >= ? AND s.currency = ? AND r.provider = ?""")
-                .params(Timestamp.from(since), currency.getCurrencyCode(), provider).query(BigDecimal.class)
-                .single();
+                 WHERE s.kind = 'MODEL_CALL' AND s.at >= :since AND s.currency = :currency
+                   AND r.provider = :provider AND r.workload IN (:workloads)""")
+                .param("since", Timestamp.from(since)).param("currency", currency.getCurrencyCode())
+                .param("provider", provider).param("workloads", workloads.stream().map(Workload::name).toList())
+                .query(BigDecimal.class).single();
         return new Money(total, currency);
     }
 

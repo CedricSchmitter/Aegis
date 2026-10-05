@@ -106,6 +106,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/workloads/{workload}/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the daily and session limit of a workload for the household
+         * @description Applies to both members, every provider and scheduled work. New runs use the session limit; the daily limit applies to the next model call. Amounts are positive, have at most two decimals and are at most 1000; the session limit is at most the daily limit. A stale expectedVersion is rejected with 409.
+         */
+        put: operations["setAiCostLimits"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/workloads/{workload}/model": {
         parameters: {
             query?: never;
@@ -1934,6 +1954,7 @@ export interface components {
         AiOverviewDto: {
             configured: boolean;
             currency: string;
+            /** @description Daily limit shared by the workloads without own limits */
             dailyCostLimit: number;
             /** @description Provider whose daily limit and spending today are shown: the one this member's runs use now (anthropic or claude-code) */
             limitProvider?: string | null;
@@ -1943,6 +1964,7 @@ export interface components {
             memberAllowed: boolean;
             /** @description Model families the household can choose per workload */
             models: components["schemas"]["ModelOptionDto"][];
+            /** @description Spent today by the workloads without own limits */
             spentToday: number;
             workloads: components["schemas"]["WorkloadDto"][];
         };
@@ -3055,6 +3077,13 @@ export interface components {
             appearance: components["schemas"]["AppearanceDto"];
             member: components["schemas"]["MemberDto"];
         };
+        /** @description Daily limit and session limit (cost budget of one run) of a workload in the household currency, each a positive amount with at most two decimals and at most 1000, with the limits version the member saw */
+        SetCostLimitsRequest: {
+            dailyCostLimit: number;
+            /** Format: int64 */
+            expectedVersion: number;
+            maxRunCost: number;
+        };
         SkippedDto: {
             documentId: string;
             reason: string;
@@ -3251,16 +3280,33 @@ export interface components {
              * @description Version of the model choice, sent back when changing it
              */
             choiceVersion: number;
+            /** @description Daily limit that applies to this workload on the shown provider: its own limit, otherwise the provider's limit shared with the other workloads without own limits */
+            dailyCostLimit: number;
             /**
              * @description Household model family for new runs; none for the connection check
              * @enum {string|null}
              */
             family?: "opus" | "sonnet" | "haiku" | null;
             handlerAvailable: boolean;
+            /** Format: date-time */
+            limitsChangedAt?: string | null;
+            /**
+             * Format: uuid
+             * @description Member who last changed the cost limits
+             */
+            limitsChangedBy?: string | null;
+            /** @description Whether the household can set this workload's limits; not for the connection check */
+            limitsSelectable: boolean;
+            /**
+             * Format: int64
+             * @description Version of the cost limits, sent back when changing them
+             */
+            limitsVersion: number;
             /** Format: int32 */
             maxAttempts: number;
             /** Format: int32 */
             maxConcurrent: number;
+            /** @description Session limit: the cost budget of one new run on the shown provider */
             maxCost: number;
             /** Format: int64 */
             maxDurationSeconds: number;
@@ -3271,8 +3317,12 @@ export interface components {
             /** Format: int32 */
             maxToolCalls: number;
             model?: string | null;
+            /** @description Whether the household set this workload's daily and session limit */
+            ownLimits: boolean;
             provider?: string | null;
             providerConfigured: boolean;
+            /** @description Spent today under dailyCostLimit */
+            spentToday: number;
             workload: string;
         };
     };
@@ -3408,6 +3458,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RunDto"];
+                };
+            };
+        };
+    };
+    setAiCostLimits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workload: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCostLimitsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AiOverviewDto"];
                 };
             };
         };

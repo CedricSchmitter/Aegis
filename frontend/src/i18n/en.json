@@ -790,8 +790,8 @@
       "anthropic": "Claude API",
       "claude-code": "Claude subscription"
     },
-    "spentToday": "Spent today: {{spent}} of the {{limit}} daily limit",
-    "dailyLimitHint": "Once the daily limit is reached, further runs wait until midnight and then continue on their own.",
+    "spentToday": "Shared daily limit of the areas without limits of their own: {{spent}} of {{limit}} spent today",
+    "dailyLimitHint": "Once a daily limit is reached, further runs wait until midnight and then continue on their own.",
     "waitingForBudget": "Waiting for tomorrow's AI budget (daily limit reached) · continues on {{date}}",
     "budgetWait": "Waiting for AI budget",
     "budgetLine": "up to {{cost}} per run, {{attempts}} attempts, {{seconds}} s per attempt",
@@ -815,6 +815,22 @@
       "changedBy": "Changed by {{name}} on {{date}}",
       "changed": "{{workload}}: {{family}} from the next run on.",
       "scope": "Applies to the whole household from the next run on."
+    },
+    "limits": {
+      "daily": "Daily limit ({{currency}})",
+      "session": "Session limit ({{currency}})",
+      "save": "Save limits",
+      "saved": "{{workload}}: new limits saved.",
+      "spent": "Spent today: {{spent}} of {{limit}}",
+      "own": "this area's own limits; the session limit applies to every single run (one question, one document, one review)",
+      "shared": "no limits of its own yet: the shared daily limit and the default budget per run apply",
+      "changedBy": "Limits changed by {{name}} on {{date}}",
+      "problem": {
+        "required": "Please enter an amount.",
+        "notPositive": "The amount must be greater than 0.",
+        "tooHigh": "At most {{max}}.",
+        "runAboveDaily": "Must not be higher than the daily limit."
+      }
     },
     "workload": {
       "CONNECTION_CHECK": "Connection check",
@@ -1104,6 +1120,11 @@
     "ai.model.unknownFamily": "Unknown model family.",
     "ai.model.notSelectable": "No model can be chosen for this AI task.",
     "ai.model.notOffered": "This model family is not offered at the moment.",
+    "ai.limits.notSelectable": "Limits cannot be set for this AI task.",
+    "ai.limits.notPositive": "A limit must be an amount greater than 0.",
+    "ai.limits.tooPrecise": "A limit has at most two decimals.",
+    "ai.limits.tooHigh": "A limit can be at most 1000.",
+    "ai.limits.runAboveDaily": "The session limit must not be higher than the daily limit.",
     "ai.workload.unknown": "Unknown AI task.",
     "ai.price.unknown": "No price is configured for this model, so its cost budget cannot be enforced.",
     "ai.run.notRetryable": "Only failed or cancelled runs can be retried.",

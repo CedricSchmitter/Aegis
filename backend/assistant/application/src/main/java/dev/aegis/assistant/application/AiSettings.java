@@ -86,8 +86,7 @@ public record AiSettings(Map<Workload, WorkloadProfile> profiles, Money dailyCos
         if (limits == null || limits.maxRunCost() == null) {
             return budget;
         }
-        return new RunBudget(budget.maxDuration(), limits.maxRunCost(), budget.maxModelCalls(), budget.maxToolCalls(),
-                budget.maxOutputTokens(), budget.maxAttempts());
+        return budget.withMaxCost(limits.maxRunCost());
     }
 
     public Currency currency() {

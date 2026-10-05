@@ -11,6 +11,7 @@ import dev.aegis.assistant.domain.RunId;
 import dev.aegis.assistant.domain.RunState;
 import dev.aegis.assistant.domain.TokenUsage;
 import dev.aegis.assistant.domain.Workload;
+import dev.aegis.assistant.domain.WorkloadCostLimitsRepository;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.NotAuthorizedException;
@@ -31,10 +32,12 @@ public class RunExecutionService implements RunExecution {
     private final Map<Workload, WorkloadHandler> handlers;
     private final HouseholdAccess access;
     private final AiSettings settings;
+    private final CostLimits costLimits;
     private final Clock clock;
 
-    public RunExecutionService(AiRunRepository runs, AiLock lock, EffectLedger ledger, RunScheduler scheduler,
-            Map<Workload, WorkloadHandler> handlers, HouseholdAccess access, AiSettings settings, Clock clock) {
+    public RunExecutionService(AiRunRepository runs, WorkloadCostLimitsRepository limits, AiLock lock,
+            EffectLedger ledger, RunScheduler scheduler, Map<Workload, WorkloadHandler> handlers,
+            HouseholdAccess access, AiSettings settings, Clock clock) {
         this.runs = runs;
         this.lock = lock;
         this.ledger = ledger;
@@ -42,6 +45,7 @@ public class RunExecutionService implements RunExecution {
         this.handlers = Map.copyOf(handlers);
         this.access = access;
         this.settings = settings;
+        this.costLimits = new CostLimits(settings, limits, runs);
         this.clock = clock;
     }
 
@@ -151,11 +155,9 @@ public class RunExecutionService implements RunExecution {
         if (membership != null) {
             return membership;
         }
-        String provider = run.model().provider();
-        Money spentToday = runs.costSince(settings.startOfDay(now), provider, settings.currency());
+        CostLimits.Daily day = costLimits.current().daily(run.workload(), run.model().provider(), now);
         AiRun.Checkpoint checkpoint = run.authorizeModelCall(attempt, quote,
-                new AiRun.DailyBudget(settings.dailyCostLimit(provider), spentToday, settings.startOfNextDay(now)),
-                now);
+                new AiRun.DailyBudget(day.limit(), day.spent(), settings.startOfNextDay(now)), now);
         saveIfChanged(run);
         return checkpoint;
     }

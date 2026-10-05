@@ -12,6 +12,7 @@ import dev.aegis.assistant.application.chat.ChatHandler;
 import dev.aegis.assistant.application.chat.ChatRetrieval;
 import dev.aegis.assistant.application.chat.ChatService;
 import dev.aegis.assistant.application.api.AiHealthQuery;
+import dev.aegis.assistant.application.api.AiLimitCommands;
 import dev.aegis.assistant.application.api.AiModelCommands;
 import dev.aegis.assistant.application.api.AiRunCommands;
 import dev.aegis.assistant.application.api.AiRunQueries;
@@ -26,6 +27,7 @@ import dev.aegis.assistant.application.ports.ModelGateway;
 import dev.aegis.assistant.application.ports.RunScheduler;
 import dev.aegis.assistant.domain.AiRunRepository;
 import dev.aegis.assistant.domain.Workload;
+import dev.aegis.assistant.domain.WorkloadCostLimitsRepository;
 import dev.aegis.assistant.domain.WorkloadModelChoiceRepository;
 import dev.aegis.assistant.domain.chat.ConversationRepository;
 import dev.aegis.contracts.application.api.ContractQueries;
@@ -95,11 +97,11 @@ public class AssistantConfiguration {
     }
 
     @Bean
-    RunExecution runExecution(AiRunRepository runs, AiLock lock, EffectLedger ledger, RunScheduler scheduler,
-            AssistantParts parts, HouseholdAccess access, AiSettings settings, Clock clock,
-            PlatformTransactionManager tm) {
-        return TransactionalProxy.wrap(RunExecution.class,
-                new RunExecutionService(runs, lock, ledger, scheduler, parts.handlers(), access, settings, clock), tm);
+    RunExecution runExecution(AiRunRepository runs, WorkloadCostLimitsRepository limits, AiLock lock,
+            EffectLedger ledger, RunScheduler scheduler, AssistantParts parts, HouseholdAccess access,
+            AiSettings settings, Clock clock, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(RunExecution.class, new RunExecutionService(runs, limits, lock, ledger,
+                scheduler, parts.handlers(), access, settings, clock), tm);
     }
 
     @Bean
@@ -112,10 +114,10 @@ public class AssistantConfiguration {
 
     @Bean
     AssistantServices assistantServices(AiRunRepository runs, WorkloadModelChoiceRepository choices,
-            ConversationRepository conversations, RunScheduler scheduler, AiLock lock, AssistantParts parts,
-            AiSettings settings, HouseholdAccess access, Clock clock) {
-        AiRunService service = new AiRunService(runs, choices, scheduler, lock, parts.handlers(), parts.gateways(),
-                settings, access, clock);
+            WorkloadCostLimitsRepository limits, ConversationRepository conversations, RunScheduler scheduler,
+            AiLock lock, AssistantParts parts, AiSettings settings, HouseholdAccess access, Clock clock) {
+        AiRunService service = new AiRunService(runs, choices, limits, scheduler, lock, parts.handlers(),
+                parts.gateways(), settings, access, clock);
         return new AssistantServices(service, new ChatService(conversations, runs, service, service, service, access,
                 clock));
     }
@@ -148,6 +150,11 @@ public class AssistantConfiguration {
     @Bean
     AiModelCommands aiModelCommands(AssistantServices services, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(AiModelCommands.class, services.runs(), tm);
+    }
+
+    @Bean
+    AiLimitCommands aiLimitCommands(AssistantServices services, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(AiLimitCommands.class, services.runs(), tm);
     }
 
     @Bean
