@@ -22,6 +22,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /** Real PostgreSQL publication, queue recovery, permissions and lexical recall; no live archive or provider. */
+@org.springframework.test.context.TestPropertySource(properties={
+        "spring.flyway.default-schema=passage161", "spring.flyway.schemas=passage161",
+        "spring.datasource.hikari.schema=passage161", "spring.jpa.properties.hibernate.default_schema=passage161"})
 class PassageIndexIT extends PostgresIT {
     private static final Instant NOW=Instant.parse("2020-01-01T00:00:00Z");
     @Autowired dev.aegis.bootstrap.support.FakePaperlessArchive archive;
@@ -38,6 +41,9 @@ class PassageIndexIT extends PostgresIT {
     @Autowired PlatformTransactionManager manager;
     @LocalServerPort int port;
     private final List<DocumentId> ids=new ArrayList<>();
+    @BeforeEach void dedicatedSchema() {
+        assertThat(jdbc.queryForObject("SELECT current_schema()",String.class)).isEqualTo("passage161");
+    }
     private Actor actor() { return new Actor(members.findCredentials(ANNA).orElseThrow().id()); }
     private DocumentId seed() {
         DocumentId id=DocumentId.random(); ids.add(id);

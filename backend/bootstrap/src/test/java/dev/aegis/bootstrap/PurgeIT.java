@@ -29,6 +29,7 @@ import tools.jackson.databind.JsonNode;
  * it say so, notices and cards about it disappear, and an uncertain archive outcome keeps the purge pending.
  */
 class PurgeIT extends PostgresIT {
+    @Autowired dev.aegis.documents.application.ports.PassageIndex passageIndex;
     @Autowired FakePaperlessArchive archive;
     @Autowired TaskRepository tasks;
     @Autowired JdbcClient jdbc;
@@ -51,6 +52,16 @@ class PurgeIT extends PostgresIT {
         String taskId = anna.json(task).path("id").asText();
         String contractId = contractCitingPage(anna, documentId);
 
+        // Real derived rows must disappear with the existing durable purge, not just empty child tables.
+        var indexedId=dev.aegis.shared.DocumentId.of(documentId);
+        var indexingAt=java.time.Instant.parse("2019-01-01T00:00:00Z");
+        passageIndex.invalidate(indexedId,indexingAt);
+        var claim=passageIndex.claim(indexingAt).orElseThrow();
+        assertThat(claim.id()).isEqualTo(indexedId);
+        assertThat(passageIndex.publish(claim,dev.aegis.documents.domain.text.PassageRevision.of(
+                dev.aegis.documents.domain.text.PassageRevision.hash("Synthetic purge source"),"ARCHIVE_OCR",
+                List.of("Synthetic purge source"),false),indexingAt)).isTrue();
+
         // Outside the trash nothing can be deleted permanently.
         var refused = anna.postJson("/api/documents/" + documentId + "/purge", version(document(anna, documentId)));
         assertThat(refused.status()).isEqualTo(409);
@@ -70,7 +81,7 @@ class PurgeIT extends PostgresIT {
         assertThat(anna.get("/api/documents/trash").body()).doesNotContain(documentId);
         UUID id = UUID.fromString(documentId);
         for (String table : List.of("document_subjects", "document_classifications", "document_analyses",
-                "document_text_checks")) {
+                "document_text_checks", "document_passage_index", "document_text_revisions", "document_passages")) {
             assertThat(jdbc.sql("SELECT count(*) FROM " + table + " WHERE document_id = ?").param(id)
                     .query(Long.class).single()).as(table).isZero();
         }
