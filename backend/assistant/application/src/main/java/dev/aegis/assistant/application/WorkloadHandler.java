@@ -31,6 +31,11 @@ public interface WorkloadHandler {
      */
     ValidatedOutput validate(RunContext run, ModelTurn turn);
 
+    /** Attempt-local tool coverage; no source bodies or observations are persisted in shared run audit. */
+    default ValidatedOutput validate(RunContext run, ModelTurn turn, Set<String> incompleteRetrieval) {
+        return validate(run, turn);
+    }
+
     /** Whether every analyzed source still has the version recorded in the run. */
     default boolean sourcesCurrent(RunContext run) {
         return true;

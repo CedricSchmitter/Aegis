@@ -3,13 +3,10 @@ package dev.aegis.documents.application;
 import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.ports.AnalysisRuns;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
-import dev.aegis.documents.domain.naming.BuiltinLabelNames;
-import java.time.ZoneId;
-import java.util.Collection;
-import java.util.UUID;
 import dev.aegis.documents.application.ports.DocumentEvents;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.application.ports.ProcessingScheduler;
+import dev.aegis.documents.domain.naming.BuiltinLabelNames;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
@@ -17,13 +14,16 @@ import dev.aegis.shared.MemberId;
 import dev.aegis.shared.NotAuthorizedException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /** Small hand-written doubles keep application tests fast and explicit. */
 final class TestDoubles {
@@ -203,6 +203,7 @@ final class TestDoubles {
         final Map<Integer, byte[]> archivePdfs = new HashMap<>();
         static final byte[] THUMBNAIL = "RIFF\0\0\0\0WEBPVP8 ".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
         final Map<Integer, String> texts = new HashMap<>();
+        dev.aegis.documents.application.ports.ArchiveSearchResult searchResult;
         final Map<String, List<Integer>> contentHits = new HashMap<>();
         int contentReads;
 
@@ -274,9 +275,10 @@ final class TestDoubles {
         }
 
         @Override
-        public List<Integer> searchContent(String query) {
+        public dev.aegis.documents.application.ports.ArchiveSearchResult searchContent(String query) {
             requireAvailable();
-            return contentHits.getOrDefault(query, List.of());
+            if (searchResult != null) return searchResult;
+            return dev.aegis.documents.application.ports.ArchiveSearchResult.complete(contentHits.getOrDefault(query, List.of()));
         }
 
         @Override

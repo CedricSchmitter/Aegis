@@ -32,13 +32,16 @@ import tools.jackson.databind.json.JsonMapper;
 class PaperlessClientTest {
     private MockRestServiceServer server;
     private PaperlessClient client;
+    private RestClient transport;
 
     @BeforeEach
     void setUp() {
         RestClient.Builder builder = RestClient.builder().baseUrl("http://paperless.test")
-                .defaultHeader("Accept", PaperlessClient.ACCEPT_V10);
+                .defaultHeader("Accept", PaperlessClient.ACCEPT_V10)
+                .defaultHeader("Authorization", "Basic synthetic-test-token");
         server = MockRestServiceServer.bindTo(builder).build();
-        client = new PaperlessClient(builder.build(), JsonMapper.builder().build());
+        transport = builder.build();
+        client = new PaperlessClient(transport, JsonMapper.builder().build());
     }
 
     @Test
@@ -254,14 +257,82 @@ class PaperlessClientTest {
     }
 
     @Test
+    void contentOnlyMatchesBeyondTheFirstTwoHundredAreCollectedWithTheOriginalQueryAndAuthentication() {
+        String first = java.util.stream.IntStream.rangeClosed(1, 200).mapToObj(id -> "{\"id\":" + id + "}")
+                .collect(java.util.stream.Collectors.joining(","));
+        server.expect(requestTo("http://paperless.test/api/documents/?text=late%20clause&fields=id&page_size=200"))
+                .andExpect(header("Accept", PaperlessClient.ACCEPT_V10))
+                .andExpect(header("Authorization", "Basic synthetic-test-token"))
+                .andRespond(withSuccess("{\"count\":201,\"next\":\"http://paperless.test/api/documents/?text=late%20clause&fields=id&page_size=200&page=2\",\"results\":[" + first + "]}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://paperless.test/api/documents/?text=late%20clause&fields=id&page_size=200&page=2"))
+                .andExpect(header("Accept", PaperlessClient.ACCEPT_V10))
+                .andExpect(header("Authorization", "Basic synthetic-test-token"))
+                .andRespond(withSuccess("{\"count\":201,\"next\":null,\"results\":[{\"id\":201}]}", MediaType.APPLICATION_JSON));
+        var result = client.searchContent("late clause");
+        assertThat(result.ids()).hasSize(201).contains(201);
+        assertThat(result.state()).isEqualTo(dev.aegis.documents.application.api.ContentSearchState.READY);
+        assertThat(result.archiveTotal()).isEqualTo(201L);
+        server.verify();
+    }
+
+    @Test
+    void failedLaterPageRetainsMatchesAndTitleFallbackCanBeUsed() {
+        server.expect(requestTo("http://paperless.test/api/documents/?text=strom&fields=id&page_size=200"))
+                .andRespond(withSuccess("{\"count\":2,\"next\":\"?text=strom&fields=id&page_size=200&page=2\",\"results\":[{\"id\":3}]}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://paperless.test/api/documents/?text=strom&fields=id&page_size=200&page=2"))
+                .andRespond(withServerError());
+        var result = client.searchContent("strom");
+        assertThat(result.ids()).containsExactly(3);
+        assertThat(result.state()).isEqualTo(dev.aegis.documents.application.api.ContentSearchState.LIMITED);
+        assertThat(result.limitation()).isEqualTo(dev.aegis.documents.application.api.SearchLimitation.ARCHIVE_FAILURE);
+        assertThat(result.archiveTotal()).isEqualTo(2L);
+        server.verify();
+    }
+
+    @Test
+    void stalledResponseStopsAtTheOverallDeadlineAndCancelsItsWorker() throws Exception {
+        var finished = new java.util.concurrent.CountDownLatch(1);
+        server.expect(requestTo("http://paperless.test/api/documents/?text=strom&fields=id&page_size=200"))
+                .andRespond(request -> {
+                    try {
+                        new java.util.concurrent.CountDownLatch(1).await(2, java.util.concurrent.TimeUnit.SECONDS);
+                    } catch (InterruptedException cancelled) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        finished.countDown();
+                    }
+                    return withSuccess("{\"count\":0,\"next\":null,\"results\":[]}", MediaType.APPLICATION_JSON)
+                            .createResponse(request);
+                });
+        var bounded = new PaperlessClient(transport, transport, JsonMapper.builder().build(),
+                new ArchiveSearchPager(10, 2000, java.time.Duration.ofMillis(100), System::nanoTime));
+        long start = System.nanoTime();
+        var result = bounded.searchContent("strom");
+        assertThat(java.time.Duration.ofNanos(System.nanoTime() - start)).isLessThan(java.time.Duration.ofSeconds(1));
+        assertThat(result.state()).isEqualTo(dev.aegis.documents.application.api.ContentSearchState.UNAVAILABLE);
+        assertThat(result.limitation()).isEqualTo(dev.aegis.documents.application.api.SearchLimitation.TIME_LIMIT);
+        assertThat(finished.await(1, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+    }
+
+    @Test
+    void archiveFailureOnTheFirstPageIsUnavailable() {
+        server.expect(requestTo("http://paperless.test/api/documents/?text=strom&fields=id&page_size=200"))
+                .andRespond(withBadRequest());
+        var result = client.searchContent("strom");
+        assertThat(result.ids()).isEmpty();
+        assertThat(result.state()).isEqualTo(dev.aegis.documents.application.api.ContentSearchState.UNAVAILABLE);
+        assertThat(result.limitation()).isEqualTo(dev.aegis.documents.application.api.SearchLimitation.ARCHIVE_FAILURE);
+    }
+
+    @Test
     void searchAndProbeUseTheDocumentedEndpoints() {
         server.expect(requestTo("http://paperless.test/api/documents/?text=strom&fields=id&page_size=200"))
-                .andRespond(withSuccess("{\"count\":2,\"results\":[{\"id\":3},{\"id\":5}]}",
+                .andRespond(withSuccess("{\"count\":2,\"next\":null,\"results\":[{\"id\":3},{\"id\":5}]}",
                         MediaType.APPLICATION_JSON));
         server.expect(requestTo("http://paperless.test/api/documents/?page_size=1&fields=id"))
                 .andRespond(withSuccess().header("X-Version", "3.1.3"));
 
-        assertThat(client.searchContent("strom")).containsExactly(3, 5);
+        assertThat(client.searchContent("strom").ids()).containsExactly(3, 5);
         var probe = client.probe();
         assertThat(probe.reachable()).isTrue();
         assertThat(probe.serverVersion()).isEqualTo("3.1.3");

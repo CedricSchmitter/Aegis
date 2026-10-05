@@ -3,12 +3,14 @@ package dev.aegis.documents.adapters.paperless;
 import dev.aegis.documents.application.api.DocumentThumbnail;
 import dev.aegis.documents.application.api.OriginalContent;
 import dev.aegis.documents.application.ports.ArchiveRejectedException;
+import dev.aegis.documents.application.ports.ArchiveSearchResult;
 import dev.aegis.documents.application.ports.ArchiveUnavailableException;
 import dev.aegis.documents.application.ports.PaperlessArchive;
 import dev.aegis.documents.domain.OriginalFormat;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,8 +20,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,10 +49,25 @@ public class PaperlessClient implements PaperlessArchive {
 
     private final RestClient client;
     private final ObjectMapper mapper;
+    private final RestClient searchClient;
+    private final ArchiveSearchPager searchPager;
 
     public PaperlessClient(RestClient paperlessRestClient, ObjectMapper mapper) {
-        this.client = paperlessRestClient;
+        this(paperlessRestClient, paperlessRestClient, mapper);
+    }
+
+    @Autowired
+    public PaperlessClient(@Qualifier("paperlessRestClient") RestClient paperlessRestClient,
+            @Qualifier("paperlessSearchRestClient") RestClient searchClient,
+            ObjectMapper mapper) {
+        this(paperlessRestClient, searchClient, mapper, new ArchiveSearchPager());
+    }
+
+    PaperlessClient(RestClient client, RestClient searchClient, ObjectMapper mapper, ArchiveSearchPager searchPager) {
+        this.client = client;
+        this.searchClient = searchClient;
         this.mapper = mapper;
+        this.searchPager = searchPager;
     }
 
     @Override
@@ -289,15 +311,33 @@ public class PaperlessClient implements PaperlessArchive {
     }
 
     @Override
-    public List<Integer> searchContent(String query) {
-        JsonNode page = getJson("/api/documents/?text={q}&fields=id&page_size=200", query);
-        List<Integer> ids = new ArrayList<>();
-        for (JsonNode node : page.path("results")) {
-            if (node.path("id").isNumber()) {
-                ids.add(node.path("id").asInt());
+    public ArchiveSearchResult searchContent(String query) {
+        return searchPager.search((number, remaining) -> {
+            // A virtual task bounds the whole request (including response parsing) by the traversal deadline.
+            // Cancellation stops further pages; the dedicated transport also bounds blocked socket work.
+            var request = new FutureTask<ArchiveSearchPager.Page>(() -> {
+                URI[] uri = new URI[1];
+                String raw = searchClient.get().uri(builder -> {
+                    var search = builder.path("/api/documents/").queryParam("text", "{q}")
+                            .queryParam("fields", "id").queryParam("page_size", ArchiveSearchPager.PAGE_SIZE);
+                    if (number > 1) search.queryParam("page", number);
+                    uri[0] = search.build(query);
+                    return uri[0];
+                }).retrieve().body(String.class);
+                return new ArchiveSearchPager.Page(mapper.readTree(raw == null ? "{}" : raw), uri[0]);
+            });
+            Thread.ofVirtual().start(request);
+            try {
+                return request.get(remaining.toNanos(), TimeUnit.NANOSECONDS);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new ArchiveUnavailableException("Archive search interrupted", interrupted);
+            } catch (ExecutionException failed) {
+                throw new ArchiveUnavailableException("Archive search failed", failed);
+            } finally {
+                request.cancel(true);
             }
-        }
-        return ids;
+        });
     }
 
     @Override

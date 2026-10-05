@@ -2514,8 +2514,12 @@ export interface components {
             version: number;
         };
         DocumentListResponse: {
+            /** Format: int64 */
+            archiveTotal?: number | null;
             /** @enum {string} */
-            contentSearch: "NOT_APPLIED" | "READY" | "UNAVAILABLE";
+            contentSearch: "NOT_APPLIED" | "READY" | "LIMITED" | "UNAVAILABLE";
+            /** @enum {string} */
+            countAccuracy: "EXACT" | "LOWER_BOUND";
             facets: components["schemas"]["FacetCounts"];
             items: components["schemas"]["DocumentDto"][];
             /** Format: int64 */
@@ -2524,6 +2528,8 @@ export interface components {
             notContentIndexed: number;
             /** Format: int32 */
             page: number;
+            /** @enum {string|null} */
+            searchLimitation?: "REQUEST_LIMIT" | "TIME_LIMIT" | "HIT_LIMIT" | "ARCHIVE_FAILURE" | "INVALID_PAGINATION" | "UNSAFE_PAGINATION" | null;
             /** Format: int32 */
             size: number;
             /** Format: int64 */

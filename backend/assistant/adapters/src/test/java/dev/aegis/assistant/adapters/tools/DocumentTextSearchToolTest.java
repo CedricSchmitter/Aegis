@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 class DocumentTextSearchToolTest {
     private final List<DocumentSearchRequest> requests = new ArrayList<>();
+    private DocumentSearchResult response;
     private final DocumentTextSearchTool tool = new DocumentTextSearchTool(new RecordingQueries());
     private final AiTool.Invocation invocation = new AiTool.Invocation(RunId.random(), new Actor(MemberId.random()));
 
@@ -57,10 +58,48 @@ class DocumentTextSearchToolTest {
         assertThat(requests).isEmpty();
     }
 
+    @Test
+    void bothSearchToolsExposeCoverageInValidBoundedJson() {
+        response = new DocumentSearchResult(List.of(), ContentSearchState.LIMITED, 1000, 0, 0, 20,
+                FacetCounts.EMPTY, 0, dev.aegis.documents.application.api.SearchLimitation.HIT_LIMIT, 700L,
+                dev.aegis.documents.application.api.CountAccuracy.LOWER_BOUND);
+        for (AiTool search : List.of(tool, new DocumentSearchTool(new RecordingQueries()))) {
+            var result = search.invoke(invocation, Map.of("query", "clause"));
+            var json = tools.jackson.databind.json.JsonMapper.builder().build().readTree(result.content());
+            assertThat(result.retrievalIncomplete()).isTrue();
+            assertThat(json.path("contentSearch").asString()).isEqualTo("LIMITED");
+            assertThat(json.path("searchLimitation").asString()).isEqualTo("HIT_LIMIT");
+            assertThat(json.path("archiveTotal").asLong()).isEqualTo(700);
+            assertThat(json.path("matchingDocuments").asLong()).isZero();
+            assertThat(json.path("countAccuracy").asString()).isEqualTo("LOWER_BOUND");
+            assertThat(json.path("omittedDocuments").asInt()).isZero();
+        }
+    }
+
+    @Test
+    void oversizedMetadataOmitsWholeDocumentsAndRetainsCoverageAsValidJson() {
+        DocumentSummary large = new DocumentSummary(DocumentId.random(), "x".repeat(5000), "MANUAL", "scan.pdf",
+                "application/pdf", 10, "checksum", MemberId.random(), java.time.Instant.EPOCH, List.of(),
+                new dev.aegis.documents.application.api.ProcessingInfo("ARCHIVED", 0, null, null, null, false, null, 1, java.time.Instant.EPOCH), true, 0,
+                dev.aegis.documents.application.api.ClassificationView.UNSORTED, null, null, null, false, null, null);
+        response = new DocumentSearchResult(java.util.Collections.nCopies(20, large), ContentSearchState.READY,
+                20, 20, 0, 20, FacetCounts.EMPTY, 0);
+        for (AiTool search : List.of(tool, new DocumentSearchTool(new RecordingQueries()))) {
+            var result = search.invoke(invocation, Map.of("query", "clause"));
+            var json = tools.jackson.databind.json.JsonMapper.builder().build().readTree(result.content());
+            assertThat(result.content().length()).isLessThanOrEqualTo(18_000);
+            assertThat(json.path("documents").size() + json.path("omittedDocuments").asInt()).isEqualTo(20);
+            assertThat(json.path("documents").size()).isPositive().isLessThan(20);
+            assertThat(json.path("countAccuracy").asString()).isEqualTo("EXACT");
+            assertThat(result.retrievalIncomplete()).isTrue();
+        }
+    }
+
     private final class RecordingQueries implements DocumentQueries {
         @Override
         public DocumentSearchResult search(Actor actor, DocumentSearchRequest request) {
             requests.add(request);
+            if (response != null) return response;
             return new DocumentSearchResult(List.of(), ContentSearchState.READY, 0, 0, request.page(),
                     request.size(), FacetCounts.EMPTY, 0);
         }

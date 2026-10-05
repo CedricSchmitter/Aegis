@@ -164,7 +164,10 @@ receives notices and can own tasks but is never what a document is about,
 photos with Paperless archival, document list/search/original access, a browsable folder tree with an Unsorted
 inbox, structured labels (document type, organization, topic, tags) with faceted search, source-linked
 tasks, deterministic Today, one inbox for review cards and in-app messages, a status overview, portable exports and isolated
-recovery. Folders, labels and search work without AI. New uploads are classified automatically once archived
+recovery. Folders, labels and search work without AI. Archive content search follows result pages within request, time and
+hit bounds; partial or unavailable searches retain title matches and show lower-bound counts and German/English
+guidance (ADR-0002). Both chat retrieval modes receive this coverage, and technical gaps force provisional `PARTIAL`
+evidence (ADR-0025). New uploads are classified automatically once archived
 (title, type, organization, topics, evidenced issue date; conservative policy with reviewable suggestions), and
 downloads and exports use readable filenames such as `2026-09-17_Telekom_Rechnung_Internet_a1b2c3d4.pdf`
 ([ADR-0004](docs/architecture/adr/ADR-0004-automatic-document-classification.md)). The same run also files the

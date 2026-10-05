@@ -84,7 +84,7 @@ public interface PaperlessArchive {
     void purge(int paperlessDocumentId);
 
     /** Paperless ids matching the query in title or content. */
-    List<Integer> searchContent(String query);
+    ArchiveSearchResult searchContent(String query);
 
     ArchiveProbe probe();
 }

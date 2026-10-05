@@ -66,6 +66,25 @@ behavior above. `TEXT_ONLY` exists to compare retrieval with the reference quest
 `household_catalog` and grants `search_document_text` instead of `search_documents`, the same structured search
 without folder and label filters. Results still show a document's folder and labels.
 
+### Search coverage
+
+Both retrieval modes pass `contentSearch`, `searchLimitation`, `archiveTotal`, `countAccuracy`, `notContentIndexed`,
+Aegis paging and `omittedDocuments` to the model. Archive traversal is bounded as described in ADR-0002; a complete
+archive query is not proof of semantic or household-wide recall. Search results are sized before serialization:
+whole metadata items are omitted as needed to keep valid JSON below the executor's existing 20,000-character
+boundary, with an omission count. Ordinary Aegis pages can be requested separately; partial archive traversal
+cannot be repaired by paging Aegis results alone.
+
+The prompt and tool descriptions ask the model to narrow or retry incomplete retrieval and to explain missing
+sources. A focused, provider-independent guard in the existing executor carries an attempt-local coverage flag
+from search tools to answer validation (not document bodies or a persistent passage observation ledger). Any
+limited/unavailable search, applicable unindexed source, failed search tool or omitted metadata forces `PARTIAL`
+and a German/English caveat. A proposed `NOT_FOUND` answer is replaced by a statement that the retrieved sources
+did not establish an answer; it cannot prove absence. Later successful searches in the same attempt do not erase
+an earlier technical gap. This guard does not check the semantic support of prose or inspected-passage provenance.
+Normal CI uses controlled archive responses and a scripted extension of the synthetic reference harness; no model
+calls or household documents are needed.
+
 ### Checked citations
 
 The answer is JSON: text with markers such as `[2]`, an evidence level (`COMPLETE`, `PARTIAL`, `NOT_FOUND`), up to 12
@@ -188,7 +207,7 @@ read results despite their labels removed the misses that labels and titles caus
 - The assistant reads and quotes the PDF's text layer, while full-text search uses the archive's index of its OCR
   text. Both come from the same PDF and differ at most in line order and spacing, which the quote check ignores.
 - Quotes are checked for presence, not for whether they support the sentence that cites them; the evidence level and
-  caveats remain the model's assessment.
+  caveats remain the model's assessment, except that known technical retrieval gaps force `PARTIAL` and a caveat.
 - Conversations are not part of the portable export; they are personal working notes in the database backup.
   Permanently deleting a document does not remove quotes from earlier answers; deleting the conversation does.
 - Not yet done in #25: writing actions with concrete authorization and token streaming. The reference questions
