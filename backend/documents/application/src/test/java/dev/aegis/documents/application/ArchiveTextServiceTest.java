@@ -13,10 +13,8 @@ import dev.aegis.documents.domain.Subject;
 import dev.aegis.documents.domain.text.ArchiveTextCheck;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +25,7 @@ class ArchiveTextServiceTest {
     private static final Instant NOW = Instant.parse("2026-09-23T10:00:00Z");
     private static final String LETTER = "Sehr geehrte Frau Muster, anbei erhalten Sie die Rechnung für September.";
 
-    private final MutableClock clock = new MutableClock(NOW);
+    private final TestDoubles.MutableClock clock = new TestDoubles.MutableClock(NOW);
     private InMemoryDocumentRepository documents;
     private InMemoryArchiveTextCheckRepository checks;
     private TestDoubles.FakeArchive archive;
@@ -218,32 +216,5 @@ class ArchiveTextServiceTest {
     private DocumentSummary summary(Document document) {
         return presenter.summarizeAll(List.of(documents.findById(document.id()).orElseThrow()), java.util.Map.of())
                 .getFirst();
-    }
-
-    private static final class MutableClock extends Clock {
-        private Instant now;
-
-        MutableClock(Instant now) {
-            this.now = now;
-        }
-
-        void advance(Duration duration) {
-            now = now.plus(duration);
-        }
-
-        @Override
-        public Instant instant() {
-            return now;
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneId.of("UTC");
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
     }
 }

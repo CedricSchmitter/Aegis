@@ -115,8 +115,11 @@ of more than 1,000 pages or 2,000,000 characters. The assistant uses only the pu
 
 One answer reads the same document several times (in parts, then to check its quotes), so the extracted texts of
 recently read documents are kept in memory, at most 8,000,000 characters in total, keyed by the document, its archive
-id and the original's checksum. They are derived data: never stored, exported or logged, and read again after a
-restart. An unreachable archive is reported and not remembered.
+id and the original's checksum. Renewed OCR in Paperless changes the archive's text and PDF but neither that key nor
+Paperless' `modified` time (verified for Paperless-ngx 3.1.3, whose reprocess task writes the row without `save()`), so
+each entry also expires 5 minutes after it was read from the archive, the chat workload's default `max-duration`. They
+are derived data: never stored, exported or logged, and read again after a restart. An unreachable archive is reported
+and not remembered.
 
 ### Tool loop on the subscription
 

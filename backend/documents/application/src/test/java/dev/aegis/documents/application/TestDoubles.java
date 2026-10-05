@@ -13,6 +13,8 @@ import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.NotAuthorizedException;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -197,6 +199,33 @@ final class TestDoubles {
                 new RecordingRuns(), analysisSettings()), textChecks);
     }
 
+    static final class MutableClock extends Clock {
+        private Instant now;
+
+        MutableClock(Instant now) {
+            this.now = now;
+        }
+
+        void advance(Duration duration) {
+            now = now.plus(duration);
+        }
+
+        @Override
+        public Instant instant() {
+            return now;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneId.of("UTC");
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+    }
+
     static final class FakeArchive implements PaperlessArchive {
         boolean available = true;
         final Map<Integer, byte[]> originals = new HashMap<>();
@@ -206,6 +235,7 @@ final class TestDoubles {
         dev.aegis.documents.application.ports.ArchiveSearchResult searchResult;
         final Map<String, List<Integer>> contentHits = new HashMap<>();
         int contentReads;
+        int archivePdfReads;
 
         @Override
         public String fetchContent(int paperlessDocumentId) {
@@ -244,6 +274,7 @@ final class TestDoubles {
         @Override
         public java.util.Optional<byte[]> fetchArchivePdf(int paperlessDocumentId) {
             requireAvailable();
+            archivePdfReads++;
             if (!originals.containsKey(paperlessDocumentId)) {
                 throw new ArchiveUnavailableException("missing " + paperlessDocumentId);
             }

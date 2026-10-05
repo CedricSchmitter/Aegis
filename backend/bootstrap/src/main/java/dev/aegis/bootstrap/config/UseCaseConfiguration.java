@@ -387,9 +387,9 @@ public class UseCaseConfiguration {
 
     @Bean
     DocumentTextQuery documentTextQuery(DocumentRepository documents, PaperlessArchive archive, OriginalStore store,
-            PdfText pdfText, HouseholdAccess access) {
+            PdfText pdfText, HouseholdAccess access, Clock clock) {
         return TransactionalProxy.expose(DocumentTextQuery.class,
-                new DocumentTextService(documents, archive, store, pdfText, access));
+                new DocumentTextService(documents, archive, store, pdfText, access, clock));
     }
 
     @Bean
