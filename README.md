@@ -305,3 +305,10 @@ For dated verification, use the relevant issues, pull requests and CI runs.
 
 Source is maintained in this repository; the Aegis VM is the deployment environment. Private keys,
 tokens, household documents and service data must not be committed.
+
+## License
+
+Aegis is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). Personal, hobby and other
+noncommercial use, changes and redistribution are permitted; commercial use requires a separate license from the
+copyright holder. Third-party components keep their own licenses. Paperless-ngx (GPL-3.0) is a separate service that
+Aegis reaches only through its HTTP API; it is not part of this repository.
