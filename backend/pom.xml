@@ -11,6 +11,14 @@
   <name>Aegis backend</name>
   <description>Modular household workspace backend: DDD and hexagonal Maven modules</description>
 
+  <licenses>
+    <license>
+      <name>PolyForm-Noncommercial-1.0.0</name>
+      <url>https://polyformproject.org/licenses/noncommercial/1.0.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
