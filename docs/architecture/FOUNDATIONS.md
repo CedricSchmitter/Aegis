@@ -1,6 +1,6 @@
 # Architecture foundations
 
-Owner-approved engineering rules and architectural boundaries. See [README.md](../../README.md) for implemented capabilities and [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues) for proposed integrations. An architectural boundary does not imply that an adapter is already implemented.
+Owner-approved engineering rules and architectural boundaries. See [FEATURES.md](../FEATURES.md) for implemented capabilities and [GitHub Issues](https://github.com/CedricSchmitter/Aegis/issues) for proposed integrations. An architectural boundary does not imply that an adapter is already implemented.
 
 ## Accepted requirements
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Prepares and cleans up a Claude Code cloud session (claude.ai/code) so the full backend verify can run there.
 # The cloud container has Docker installed but no running daemon; Testcontainers needs one. Run it by hand in a
-# session, or let the cloud environment's setup script start Docker (see README). It does nothing outside a cloud
+# session, or let the cloud environment's setup script start Docker (see docs/DEVELOPMENT.md). It does nothing outside a cloud
 # session (CLAUDE_CODE_REMOTE unset), so the developer PC and the VM are never touched.
 #
 # Usage: sh ops/cloud/session.sh start   start dockerd if needed and wait until it answers

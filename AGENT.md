@@ -81,7 +81,7 @@ Trusted HTTPS is LAN-only. Public access, router changes and remote-access infra
 - Verify both locale catalogs, interpolation variables, and visible language behavior when adding UI text. Never use translation-key strings as acceptable finished UI.
 - Run the checks appropriate to the change and report actual results. Fix a defect with a meaningful regression test when feasible; avoid tests that only duplicate implementation details.
 - Measure coverage to discover untested behavior, not to satisfy an arbitrary project-wide percentage. Prioritize invariants, error paths, permissions, concurrency, migrations, and adapters. Do not add getter/setter, framework, or trivial delegation tests merely to raise coverage.
-- Keep README build and verification commands accurate when changing the build.
+- Keep the build and verification commands in README.md and docs/DEVELOPMENT.md accurate when changing the build.
 
 ## Infrastructure scope
 
