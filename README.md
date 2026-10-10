@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/public/icons/favicon.svg" alt="Aegis logo" width="120" height="120">
+  <img src="frontend/public/icons/icon-512.png" alt="Aegis logo" width="200" height="200">
 </p>
 
 <h1 align="center">Aegis</h1>
