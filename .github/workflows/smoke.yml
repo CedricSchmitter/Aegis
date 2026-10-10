@@ -95,3 +95,6 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report
           if-no-files-found: ignore
+          # Failure traces can reach several hundred MB and Actions storage is billed per stored GB over time;
+          # keep them only long enough to debug the failed run (default would be 90 days).
+          retention-days: 7
