@@ -160,7 +160,7 @@ external backup with a localized reason for a failure, and the free space of the
 stale backup and a disk with less than 10 % or 5 GB free each notify every member once per incident
 ([ADR-0015](architecture/adr/ADR-0015-backup-and-storage-health.md)).
 
-The household uses trusted LAN HTTPS at `https://192.168.2.159`. An encrypted external Restic backup
+The household uses trusted LAN HTTPS at `https://<aegis-host>`. An encrypted external Restic backup
 passed isolated recovery and runs daily at 03:30; scheduled-run evidence is recorded in #39.
 Aegis can be installed from Chrome on Android and receives PDFs and photos from Android's Share menu into the normal
 durable upload flow ([details](operations/DEPLOYMENT.md#installable-app-and-android-share-target)); real-device

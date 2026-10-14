@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Browser smoke test of the first runnable test. Runs against a deployed stack (LAN preview or CI compose):
- *   AEGIS_BASE_URL=http://192.168.2.159 AEGIS_USER_A=anna AEGIS_PASSWORD_A=... AEGIS_USER_B=ben AEGIS_PASSWORD_B=...
+ *   AEGIS_BASE_URL=http://<aegis-host> AEGIS_USER_A=anna AEGIS_PASSWORD_A=... AEGIS_USER_B=ben AEGIS_PASSWORD_B=...
  */
 export default defineConfig({
   testDir: "./tests",

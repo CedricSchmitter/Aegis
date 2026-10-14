@@ -85,7 +85,7 @@ Trusted HTTPS is LAN-only. Public access, router changes and remote-access infra
 
 ## Infrastructure scope
 
-- The authorized development target is VM 102, `aegis-dev`, at `192.168.2.159`; see VM-ACCESS.md for the verified SSH identity.
+- The authorized development target is VM 102, `aegis-dev`, at its reserved LAN address; see VM-ACCESS.md for the address placeholder and the verified SSH identity.
 - Existing Home Assistant (VM 100), Mealie (101), Proxmox host settings, and unrelated storage/network resources are outside the development target. Do not alter them without a specific user request.
 - Restrict initial services to the intended VM/network scope. Keep databases and Docker administration private; do not publish them merely for convenience.
 - Use persistent data outside disposable containers. Check capacity and existing state before changes; the host's free resources cannot be inferred from the VM alone.

@@ -83,7 +83,7 @@ Browser smoke test against a deployed stack:
 
 ```bash
 cd e2e && npm ci && npm run install:browsers
-AEGIS_BASE_URL=https://192.168.2.159 AEGIS_USER_A=lisa AEGIS_PASSWORD_A=... AEGIS_USER_B=cedric AEGIS_PASSWORD_B=... npm test
+AEGIS_BASE_URL=https://<aegis-host> AEGIS_USER_A=lisa AEGIS_PASSWORD_A=... AEGIS_USER_B=cedric AEGIS_PASSWORD_B=... npm test
 ```
 
 CI runs on pull requests only, and each workflow only when its paths change: `backend.yml` (Maven verify with

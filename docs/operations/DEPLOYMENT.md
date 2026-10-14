@@ -1,6 +1,6 @@
 # Deployment on the Aegis VM
 
-Target: Proxmox VM 102 `aegis-dev`, `192.168.2.159`, user `aegis-agent` (see [VM-ACCESS.md](../VM-ACCESS.md)).
+Target: Proxmox VM 102 `aegis-dev` at its reserved LAN address (`<aegis-host>` below), user `aegis-agent` (see [VM-ACCESS.md](../VM-ACCESS.md)).
 Application deployment touches only this VM. The separately authorized backup setup passed the identified
 `BackupIntenso` USB device through Proxmox to VM 102; Home Assistant, Mealie and the other host disk were
 untouched.
@@ -22,7 +22,7 @@ published. Aegis talks to Paperless over the internal Compose network with a ser
 
 ## Access mode: trusted LAN HTTPS
 
-The first synthetic test used HTTP. The current endpoint is `https://192.168.2.159/` with the local CA trusted
+The first synthetic test used HTTP. The current endpoint is `https://<aegis-host>/` with the local CA trusted
 on the PC and both Android phones. `AEGIS_HTTPS=true` enables the Compose override and Secure session cookies.
 The preferred local name `aegis` remains optional and unconfigured. See [ACCESS.md](ACCESS.md)
 for verification and owner-confirmed phone tests. No Web Push or public access is configured. External
@@ -93,7 +93,7 @@ version (PR #117's `V1_3` on 2026-09-26); deploy a merge onto the running commit
 
 ## Onboarding the two logins
 
-The current login is at `https://192.168.2.159/login`. Passwords are stored as
+The current login is at `https://<aegis-host>/login`. Passwords are stored as
 BCrypt hashes. The explicit household onboarding maps the test accounts to `lisa` and `cedric` without
 resetting passwords; see ACCESS.md. The provisioning seed passwords are stale and must not be used
 for login checks. The owner confirmed both accounts changed from shared temporary test passwords to
@@ -113,7 +113,7 @@ installation it is the agent login `aegis-dev`, shown as `Aegis`. Which account 
 
 ```sh
 # on the VM, as aegis-agent, from a checkout of the commit (or from the PC before deploying it:
-#   ssh <verified options> aegis-agent@192.168.2.159 'python3 - aegis-dev' < ops/deploy/set-assistant-member.py)
+#   ssh <verified options> aegis-agent@<aegis-host> 'python3 - aegis-dev' < ops/deploy/set-assistant-member.py)
 python3 ops/deploy/set-assistant-member.py aegis-dev
 ```
 
@@ -145,7 +145,7 @@ plan and only afterwards apply it, from the VM against the trusted HTTPS endpoin
 ```sh
 # on the VM, as aegis-agent, from a checkout of the deployed commit
 sudo -n cat /srv/aegis/data/caddy/data/caddy/pki/authorities/local/root.crt > /tmp/aegis-root.crt
-python3 ops/deploy/seed-folder-tree.py --base-url https://192.168.2.159 --ca-cert /tmp/aegis-root.crt     --credentials /srv/aegis/deploy/secrets/aegis-dev-login.json
+python3 ops/deploy/seed-folder-tree.py --base-url https://<aegis-host> --ca-cert /tmp/aegis-root.crt     --credentials /srv/aegis/deploy/secrets/aegis-dev-login.json
 # repeat with --apply once the plan is what you want
 ```
 

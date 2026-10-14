@@ -105,23 +105,23 @@ the databases, originals, source links, configuration and a working login.
 ### Destination and key
 
 The owner personally formatted and attached the 1 TB disk. User-supplied Proxmox output identified it as
-`BackupIntenso`, TOSHIBA MQ01ABD100, serial `7376SWFGS`, 931.5 GiB, USB port `1-3`, NTFS, UUID
-`30DAE27ADAE23C2A`. The other 1 TB host disk is SATA/ext4 and was not touched. After the owner's specific
+`BackupIntenso` by label, model, serial number, size (931.5 GiB), USB port, NTFS filesystem and UUID; the
+identifiers are not repeated here (the VM's fstab carries the UUID). The other 1 TB host disk is SATA/ext4 and
+was not touched. After the owner's specific
 approval, only this USB device was passed through to VM 102. Inside the VM, model, serial, label and UUID
 matched independently. A read-only NTFS3 mount showed only `System Volume Information` at the root, with
 about 932 GiB free and 128 MiB used. It was unmounted before any write.
 
-The VM now mounts this UUID with `ntfs3` and `nofail` at `/mnt/aegis-backup`; the fstab entry was verified by
-unmounting and remounting. The marker is at the mount root. Only the new
-`/mnt/aegis-backup/aegis-backup/restic` directory holds the Restic repository (ID `70388d4b72`). No existing
+The VM now mounts the identified UUID with `ntfs3` and `nofail` at `/mnt/aegis-backup`; the fstab entry was
+verified by unmounting and remounting. The marker is at the mount root. Only the new
+`/mnt/aegis-backup/aegis-backup/restic` directory holds the Restic repository. No existing
 disk entry was removed or moved. `/srv/aegis/deploy/backup.env` and the VM password file are root-only.
-The recovery password also exists outside the VM at
-`C:\Users\cedri\Aegis-Recovery\restic-password.txt` with an ACL for the Windows owner only. Never print or
-commit it. A second independent key copy is tracked in [issue #40](https://github.com/CedricSchmitter/Aegis/issues/40).
+The recovery password also exists outside the VM in a file on the owner's Windows PC with an ACL for the Windows
+owner only. Never print or commit it. A second independent key copy is tracked in [issue #40](https://github.com/CedricSchmitter/Aegis/issues/40).
 
 ### Backup and restore evidence (2026-09-17)
 
-- Manual external snapshot `7ceae7c9` succeeded; `restic check --read-data` read every pack without errors.
+- A manual external snapshot succeeded; `restic check --read-data` read every pack without errors.
 - Restic restored that snapshot to the root-only `/srv/aegis/restore-external-20260917` directory. Both
   PostgreSQL dumps imported into a separate, network-isolated PostgreSQL instance. The recovered Aegis,
   Paperless and broker containers started on an internal Docker network; no LAN port was published.
@@ -134,7 +134,7 @@ commit it. A second independent key copy is tracked in [issue #40](https://githu
 - The isolated `/api/status` returned `CONNECTED` for the success state and `DEGRADED` for simulated failure
   and staleness. Only the isolated state file was changed during this test, then restored. The isolated
   containers were stopped; their root-only data remains available for review.
-- The tracked systemd service completed a second real snapshot `bb4a6aa0` with `Result=success`.
+- The tracked systemd service completed a second real snapshot with `Result=success`.
   `aegis-backup.timer` is enabled and active, scheduled daily at 03:30 Europe/Berlin; the next run was
   reported as 2026-09-18 03:30 CEST. `Persistent=true` catches up after downtime. The service deliberately
   calls the script even if the disk is missing, allowing its failure state to reach the Status page.
