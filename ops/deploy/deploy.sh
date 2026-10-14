@@ -31,4 +31,4 @@ $SSH "$TARGET" "set -eu
   ln -sfn /srv/aegis/source/releases/aegis-$COMMIT /srv/aegis/source/current
   sh /srv/aegis/source/current/ops/deploy/remote-deploy.sh $COMMIT
 "
-echo "Deployed commit $COMMIT ($SHORT). Check http://192.168.2.159/api/system/version"
+echo "Deployed commit $COMMIT ($SHORT). Check https://${TARGET#*@}/api/system/version"

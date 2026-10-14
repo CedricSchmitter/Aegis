@@ -14,7 +14,7 @@ complete tree: pointing it at a partial file would propose deleting everything e
 
 Usage (read-only plan first, then apply):
 
-    python3 ops/deploy/seed-folder-tree.py --base-url https://192.168.2.159 \\
+    python3 ops/deploy/seed-folder-tree.py --base-url https://<aegis-host> \\
         --ca-cert /tmp/aegis-root.crt --credentials /srv/aegis/deploy/secrets/aegis-dev-login.json
     ... same command with --apply
 
@@ -258,7 +258,7 @@ def credentials(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Seed a household folder tree from tracked data.")
-    parser.add_argument("--base-url", required=True, help="Household endpoint, for example https://192.168.2.159")
+    parser.add_argument("--base-url", required=True, help="Household endpoint, for example https://<aegis-host>")
     parser.add_argument("--tree", default=str(Path(__file__).with_name("folder-tree.json")))
     parser.add_argument("--ca-cert", help="Certificate authority file for the household's HTTPS endpoint")
     parser.add_argument("--credentials", help="JSON file with username and password")

@@ -1,6 +1,7 @@
 # Household access
 
-The household endpoint is `https://192.168.2.159` on the local network. Public access is not configured.
+The household endpoint is `https://<aegis-host>` on the local network, where `<aegis-host>` is the VM's reserved
+private IPv4 address (see [VM-ACCESS.md](../VM-ACCESS.md)). Public access is not configured.
 The optional hostname `aegis` is unconfigured; private-IP HTTPS works without local DNS.
 For dated device and release verification, use the relevant issues, pull requests and CI runs.
 
