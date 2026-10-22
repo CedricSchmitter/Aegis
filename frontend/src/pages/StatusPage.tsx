@@ -153,6 +153,7 @@ function Exports({ exports, onCreated, onError }: { exports: ExportSummary[] | n
                 <span className="font-mono text-text-2">
                   {t("status.exportLine", { generation: e.generation, documents: e.documentCount, tasks: e.taskCount })}
                 </span>
+                {(e.trigger === "MANUAL" || e.trigger === "SCHEDULED") && <span className="text-text-2">{t(`status.exportTrigger.${e.trigger}`)}</span>}
                 {e.missingOriginals.length > 0 && (
                   <span className="text-danger">{t("status.missingOriginals", { count: e.missingOriginals.length })}</span>
                 )}

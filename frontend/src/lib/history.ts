@@ -1,5 +1,5 @@
 /**
- * The change history of a document or a task (ADR-0029). Both share this shape; values are ids, ISO dates, enum
+ * The change history of a document or a task (ADR-0030). Both share this shape; values are ids, ISO dates, enum
  * names or the member's own text, and the page turns them into words.
  */
 export interface HistoryFieldChange {

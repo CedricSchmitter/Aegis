@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-/** Task history rows (ADR-0029); the changed fields are stored as a JSON array. */
+/** Task history rows (ADR-0030); the changed fields are stored as a JSON array. */
 @Component
 public class JdbcTaskHistoryRepository implements TaskHistoryRepository {
     private static final TypeReference<List<FieldChange>> CHANGES = new TypeReference<>() {

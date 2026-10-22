@@ -70,7 +70,7 @@ public class ProblemDetailsAdvice {
         return problem;
     }
 
-    /** An undo conflicts with the record's history (ADR-0029): not undoable, already undone or changed since. */
+    /** An undo conflicts with the record's history (ADR-0030): not undoable, already undone or changed since. */
     @ExceptionHandler(UndoConflictException.class)
     ProblemDetail undoConflict(UndoConflictException e) {
         ProblemDetail problem = problem(HttpStatus.CONFLICT, e.code(), e.getMessage());

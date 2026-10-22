@@ -122,7 +122,7 @@ contract stay as history, and review cards and notices about the record disappea
 kept. Backups and export generations keep their earlier copies.
 
 Tasks and documents have a "Verlauf" (history) at the bottom of their page
-([ADR-0029](architecture/adr/ADR-0029-change-history-and-undo.md)). It is closed by default, loads when opened and lists
+([ADR-0030](architecture/adr/ADR-0030-change-history-and-undo.md)). It is closed by default, loads when opened and lists
 newest first who changed which field from what to what: a member, an automation with the member who triggered it
 (contract deadlines), or an AI analysis. Tasks record creation, edits of title and note, owner, planned day, due date,
 completion, reopening, trash and restore, and the changes the contract deadline automation makes; documents record

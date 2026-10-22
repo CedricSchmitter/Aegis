@@ -69,6 +69,6 @@ for at least 30 days; this change implements the trash only, and permanent delet
   deletion exists.
 - Who trashed a record and when is kept while it is trashed. After a restore only the record's current state
   remains in the record itself; the change history of
-  [ADR-0029](ADR-0029-change-history-and-undo.md) records the trash and the restore.
+  [ADR-0030](ADR-0030-change-history-and-undo.md) records the trash and the restore.
 - Permanent deletion, including the Paperless original and its own trash, is a separate explicit action
   ([ADR-0021](ADR-0021-permanent-deletion.md)).

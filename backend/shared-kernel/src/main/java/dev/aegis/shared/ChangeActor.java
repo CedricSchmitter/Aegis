@@ -3,7 +3,7 @@ package dev.aegis.shared;
 import java.util.Objects;
 
 /**
- * Who made a recorded change (ADR-0029). Documents and tasks keep their own history, but both name the author the
+ * Who made a recorded change (ADR-0030). Documents and tasks keep their own history, but both name the author the
  * same way, so the household reads one vocabulary.
  *
  * <ul>

@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * One recorded change of a task (ADR-0029). {@code taskVersion} is the task's version after the change, so one saved
+ * One recorded change of a task (ADR-0030). {@code taskVersion} is the task's version after the change, so one saved
  * state is recorded at most once. {@code undoOf} names the change an undo reversed.
  */
 public record TaskChange(UUID id, TaskId taskId, long taskVersion, Instant occurredAt, ChangeActor actor,

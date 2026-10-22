@@ -90,6 +90,13 @@ public final class ExportFormat {
             Instant uploadedAt, List<SubjectEntry> subjects, String processingState, Integer paperlessDocumentId,
             Instant archivedAt, String originalPath, ClassificationEntry classification, AnalysisEntry analysis,
             TrashEntry trash, DerivationEntry derivedFrom) {
+
+        /** The same entry for a document whose original could not be included. */
+        public DocumentEntry withoutOriginal() {
+            return new DocumentEntry(id, title, titleOrigin, originalFilename, filename, contentType, sizeBytes,
+                    checksumSha256, uploadedBy, uploadedAt, subjects, processingState, paperlessDocumentId,
+                    archivedAt, null, classification, analysis, trash, derivedFrom);
+        }
     }
 
     /**
@@ -198,6 +205,16 @@ public final class ExportFormat {
     /** Checksums of every file in the generation plus completeness information. */
     public record Manifest(int schemaVersion, String generation, Instant exportedAt, String producer,
             int documentCount, int taskCount, int memberCount, int contractCount, List<String> missingOriginals,
-            Map<String, String> fileChecksumsSha256) {
+            Map<String, String> fileChecksumsSha256, String trigger, String dataFingerprint) {
+    }
+
+    /**
+     * Everything a generation is rendered from, apart from its name and time, ordered by id. Its SHA-256 is the
+     * generation's {@code dataFingerprint}: equal fingerprints render equal files. Originals enter through their
+     * checksum, which is fixed for a document's lifetime; the producer covers changes of the format itself.
+     */
+    public record FingerprintInput(int schemaVersion, String producer, List<DocumentEntry> documents,
+            List<TaskEntry> tasks, List<ContractEntry> contracts, List<ReviewEntry> reviews,
+            List<MemberEntry> members, List<LabelEntry> labels, List<FolderEntry> folders) {
     }
 }

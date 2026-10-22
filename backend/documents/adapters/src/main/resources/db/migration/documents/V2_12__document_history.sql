@@ -1,4 +1,4 @@
--- Change history of documents (issue #47, ADR-0029): title, friendly filename, folder and own labels. Append-only: one
+-- Change history of documents (issue #47, ADR-0030): title, friendly filename, folder and own labels. Append-only: one
 -- row per recorded change, written in the transaction of the change. seq orders the entries. Rows leave only with their
 -- document when a member deletes it permanently. Member ids are not foreign keys; identity owns them.
 CREATE TABLE document_changes (

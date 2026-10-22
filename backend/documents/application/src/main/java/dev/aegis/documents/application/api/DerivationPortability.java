@@ -38,6 +38,7 @@ public interface DerivationPortability {
     record ImportResult(ImportOutcome outcome, int sourcesCleared) {
     }
 
+    /** Every derivation; open to household processes (ADR-0029) for the daily export. */
     List<DerivationRecord> exportAll(Actor actor);
 
     /**

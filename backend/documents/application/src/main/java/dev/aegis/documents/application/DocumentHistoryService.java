@@ -39,7 +39,7 @@ import java.util.UUID;
 
 /**
  * Reads a document's recorded history and undoes a member's edit of its title, friendly filename, folder or labels
- * (ADR-0029). The undo uses the same domain operations as the original commands, so a restored automatic label is
+ * (ADR-0030). The undo uses the same domain operations as the original commands, so a restored automatic label is
  * remembered as rejected and a restored folder counts as the member's decision. Wrapped in a transaction.
  */
 public class DocumentHistoryService implements DocumentHistory {

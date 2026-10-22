@@ -30,4 +30,5 @@ Accepted decisions, newest last. The rules they build on are in [FOUNDATIONS.md]
 - [ADR-0026](ADR-0026-web-push-notifications.md): Web Push to the members' devices
 - [ADR-0027](ADR-0027-household-cost-limits-per-workload.md): The household sets a daily and a session limit per workload
 - [ADR-0028](ADR-0028-near-duplicate-hints.md): Near duplicates are hinted from a text fingerprint and never removed
-- [ADR-0029](ADR-0029-change-history-and-undo.md): Documents and tasks keep an append-only change history with field-bound undo
+- [ADR-0029](ADR-0029-daily-export.md): The portable export refreshes itself daily and only when the data changed
+- [ADR-0030](ADR-0030-change-history-and-undo.md): Documents and tasks keep an append-only change history with field-bound undo

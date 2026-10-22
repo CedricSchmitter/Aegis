@@ -13,7 +13,7 @@ import dev.aegis.shared.NotFoundException;
 import dev.aegis.shared.TaskId;
 import java.util.List;
 
-/** Reads a task's recorded history (ADR-0029) and says which changes can be undone right now. */
+/** Reads a task's recorded history (ADR-0030) and says which changes can be undone right now. */
 public class TaskHistoryService implements TaskHistoryQueries {
     public static final int MAX_PAGE = 100;
 

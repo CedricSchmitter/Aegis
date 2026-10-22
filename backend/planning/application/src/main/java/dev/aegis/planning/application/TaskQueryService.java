@@ -75,7 +75,7 @@ public class TaskQueryService implements TaskQueries, TaskExportQuery {
 
     @Override
     public List<TaskExportRecord> exportAll(Actor actor) {
-        access.requireMember(actor);
+        access.requireReader(actor);
         return tasks.findAll().stream().map(presenter::exportRecord).toList();
     }
 

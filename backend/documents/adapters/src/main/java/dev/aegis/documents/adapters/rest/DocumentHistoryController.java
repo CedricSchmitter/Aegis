@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Recorded changes of a document and the undo of a member's edit (ADR-0029). */
+/** Recorded changes of a document and the undo of a member's edit (ADR-0030). */
 @RestController
 @RequestMapping("/api/documents")
 @Tag(name = "documents")
@@ -57,7 +57,7 @@ public class DocumentHistoryController {
         }
     }
 
-    @Operation(operationId = "documentHistory", summary = "Recorded changes of a document, newest first (ADR-0029)")
+    @Operation(operationId = "documentHistory", summary = "Recorded changes of a document, newest first (ADR-0030)")
     @GetMapping("/{id}/history")
     public DocumentHistoryDto history(Actor actor, @PathVariable("id") String id,
             @RequestParam(name = "beforeSequence", required = false) Long beforeSequence,
@@ -67,7 +67,7 @@ public class DocumentHistoryController {
                 page.changes().stream().map(DocumentHistoryController::change).toList(), page.nextBeforeSequence());
     }
 
-    @Operation(operationId = "undoDocumentChange", summary = "Undo one recorded change of a document (ADR-0029)",
+    @Operation(operationId = "undoDocumentChange", summary = "Undo one recorded change of a document (ADR-0030)",
             description = "Bound to the values the change left: 409 history.undo.changedSince when a later change "
                     + "replaced one of them, history.undo.alreadyUndone, history.undo.notSupported, "
                     + "history.undo.folderGone or history.undo.labelGone.")

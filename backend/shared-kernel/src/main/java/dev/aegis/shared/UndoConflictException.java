@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Raised when a recorded change cannot be undone (ADR-0029): it is not an undoable kind of change, it was already
+ * Raised when a recorded change cannot be undone (ADR-0030): it is not an undoable kind of change, it was already
  * undone, or a later change touched the same field, which an undo must never overwrite. Mapped to HTTP 409 with the
  * code {@code history.undo.<reason>}.
  */

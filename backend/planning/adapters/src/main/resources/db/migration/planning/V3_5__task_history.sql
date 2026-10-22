@@ -1,4 +1,4 @@
--- Change history of tasks (issue #47, ADR-0029). Append-only: one row per saved change, written in the transaction of
+-- Change history of tasks (issue #47, ADR-0030). Append-only: one row per saved change, written in the transaction of
 -- the change. task_version is the task's version after the change, so a saved state is recorded at most once. Rows
 -- leave only with their task when a member deletes it permanently. Member ids are not foreign keys; identity owns them.
 CREATE TABLE task_changes (

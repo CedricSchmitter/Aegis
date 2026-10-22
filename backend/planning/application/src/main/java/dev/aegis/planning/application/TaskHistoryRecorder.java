@@ -14,7 +14,7 @@ import java.time.Clock;
 import java.util.List;
 
 /**
- * Records a saved task change in the history (ADR-0029). Called inside the transaction of the change, after the save,
+ * Records a saved task change in the history (ADR-0030). Called inside the transaction of the change, after the save,
  * so the entry carries the persisted version and commits or rolls back with it.
  */
 final class TaskHistoryRecorder {

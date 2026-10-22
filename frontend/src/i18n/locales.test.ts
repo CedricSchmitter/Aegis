@@ -132,7 +132,7 @@ describe("locale catalogs", () => {
         "otherTool"].map((step) => `chat.progress.${step}`),
       ...["generic", "ai.notConfigured", "ai.provider.memberNotAllowed", "ai.workload.unavailable", "ai.price.unknown"]
         .map((reason) => `chat.unavailable.${reason}`),
-      // Change history (ADR-0029): actions, fields and the automations named as authors.
+      // Change history (ADR-0030): actions, fields and the automations named as authors.
       ...HISTORY_ACTIONS.map((action) => `history.action.${action}`),
       ...HISTORY_FIELDS.map((field) => `history.field.${field}`),
       ...HISTORY_AUTOMATIONS.map((automation) => `history.automation.${automation}`),

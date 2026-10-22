@@ -52,7 +52,7 @@ public interface TaskCommands {
     void purge(Actor actor, TaskId id, long expectedVersion);
 
     /**
-     * Reverses one recorded member edit (ADR-0029) with the task's ordinary operations and records the undo as a new
+     * Reverses one recorded member edit (ADR-0030) with the task's ordinary operations and records the undo as a new
      * change. Refused with {@link dev.aegis.shared.UndoConflictException} when the change cannot be undone, was undone
      * already, or a later change replaced one of its fields; a later change to another field does not matter.
      */

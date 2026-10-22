@@ -21,7 +21,7 @@ interface Props {
 }
 
 /**
- * Who changed what and when, newest first (ADR-0029). Closed by default and loaded when opened, so a record's page
+ * Who changed what and when, newest first (ADR-0030). Closed by default and loaded when opened, so a record's page
  * stays short on a phone. A member's own edit offers "Undo" while nothing newer replaced it; the undo is added as a
  * new entry and earlier entries never change.
  */

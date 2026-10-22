@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Append-only task history (ADR-0029). Entries are written in the transaction of the change they describe and never
+ * Append-only task history (ADR-0030). Entries are written in the transaction of the change they describe and never
  * updated; they leave only together with their task, when it is deleted permanently.
  */
 public interface TaskHistoryRepository {

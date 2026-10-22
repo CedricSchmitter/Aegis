@@ -1,7 +1,7 @@
 package dev.aegis.documents.domain.history;
 
 /**
- * The document fields the history records (ADR-0029), with the stable code used in the API and the stored change.
+ * The document fields the history records (ADR-0030), with the stable code used in the API and the stored change.
  * {@code labels} holds the document's own effective labels as a sorted, comma-separated list of label ids.
  */
 public enum DocumentField {

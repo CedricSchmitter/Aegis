@@ -954,7 +954,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Recorded changes of a document, newest first (ADR-0029) */
+        /** Recorded changes of a document, newest first (ADR-0030) */
         get: operations["documentHistory"];
         put?: never;
         post?: never;
@@ -974,7 +974,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Undo one recorded change of a document (ADR-0029)
+         * Undo one recorded change of a document (ADR-0030)
          * @description Bound to the values the change left: 409 history.undo.changedSince when a later change replaced one of them, history.undo.alreadyUndone, history.undo.notSupported, history.undo.folderGone or history.undo.labelGone.
          */
         post: operations["undoDocumentChange"];
@@ -1887,7 +1887,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Recorded changes of a task, newest first (ADR-0029) */
+        /** Recorded changes of a task, newest first (ADR-0030) */
         get: operations["taskHistory"];
         put?: never;
         post?: never;
@@ -1907,7 +1907,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Undo one recorded change of a task (ADR-0029)
+         * Undo one recorded change of a task (ADR-0030)
          * @description 409 history.undo.changedSince when a later change replaced one of its fields, history.undo.alreadyUndone or history.undo.notSupported.
          */
         post: operations["undoTaskChange"];
@@ -2708,6 +2708,8 @@ export interface components {
             missingOriginals: string[];
             /** Format: int32 */
             taskCount: number;
+            /** @description MANUAL or SCHEDULED; null for generations from before the daily export */
+            trigger?: string | null;
         };
         FacetCounts: {
             missing: {

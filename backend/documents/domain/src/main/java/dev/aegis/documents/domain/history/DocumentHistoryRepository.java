@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Append-only document history (ADR-0029). Entries are written in the transaction of the change they describe and
+ * Append-only document history (ADR-0030). Entries are written in the transaction of the change they describe and
  * never updated; they leave only together with their document, when it is deleted permanently.
  */
 public interface DocumentHistoryRepository {

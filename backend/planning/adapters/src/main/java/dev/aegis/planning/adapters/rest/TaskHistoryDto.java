@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * A page of a task's history, newest first (ADR-0029). Field values are locale-independent (ISO dates, member ids,
+ * A page of a task's history, newest first (ADR-0030). Field values are locale-independent (ISO dates, member ids,
  * status names) or the member's own text; {@code nextBeforeVersion} continues the page.
  */
 public record TaskHistoryDto(String taskId, Instant recordingSince, List<TaskChangeDto> changes,

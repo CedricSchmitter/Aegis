@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** The recorded history of one task (ADR-0029). Both members read every task's history. */
+/** The recorded history of one task (ADR-0030). Both members read every task's history. */
 public interface TaskHistoryQueries {
 
     /**

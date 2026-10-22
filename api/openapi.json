@@ -1852,6 +1852,10 @@
           "taskCount" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "trigger" : {
+            "description" : "MANUAL or SCHEDULED; null for generations from before the daily export",
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "contractCount", "createdAt", "documentCount", "generation", "memberCount", "missingOriginals", "taskCount" ],
@@ -5930,7 +5934,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Recorded changes of a document, newest first (ADR-0029)",
+        "summary" : "Recorded changes of a document, newest first (ADR-0030)",
         "tags" : [ "documents" ]
       }
     },
@@ -5966,7 +5970,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Undo one recorded change of a document (ADR-0029)",
+        "summary" : "Undo one recorded change of a document (ADR-0030)",
         "tags" : [ "documents" ]
       }
     },
@@ -7770,7 +7774,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Recorded changes of a task, newest first (ADR-0029)",
+        "summary" : "Recorded changes of a task, newest first (ADR-0030)",
         "tags" : [ "tasks" ]
       }
     },
@@ -7816,7 +7820,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Undo one recorded change of a task (ADR-0029)",
+        "summary" : "Undo one recorded change of a task (ADR-0030)",
         "tags" : [ "tasks" ]
       }
     },

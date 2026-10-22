@@ -24,7 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Change history and undo (ADR-0029) against PostgreSQL and the HTTP API: entries commit and roll back with their
+ * Change history and undo (ADR-0030) against PostgreSQL and the HTTP API: entries commit and roll back with their
  * change, an undo is a new entry bound to the version the member saw, and history leaves with a deleted record.
  */
 class ChangeHistoryIT extends PostgresIT {

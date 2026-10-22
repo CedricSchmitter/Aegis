@@ -162,7 +162,7 @@ public class TasksController {
         return TaskDto.from(commands.reopen(actor, TaskId.of(id), body.expectedVersion()));
     }
 
-    @Operation(operationId = "taskHistory", summary = "Recorded changes of a task, newest first (ADR-0029)")
+    @Operation(operationId = "taskHistory", summary = "Recorded changes of a task, newest first (ADR-0030)")
     @GetMapping("/tasks/{id}/history")
     public TaskHistoryDto history(Actor actor, @PathVariable("id") String id,
             @RequestParam(name = "beforeVersion", required = false) Long beforeVersion,
@@ -170,7 +170,7 @@ public class TasksController {
         return TaskHistoryDto.from(history.history(actor, TaskId.of(id), beforeVersion, limit));
     }
 
-    @Operation(operationId = "undoTaskChange", summary = "Undo one recorded change of a task (ADR-0029)",
+    @Operation(operationId = "undoTaskChange", summary = "Undo one recorded change of a task (ADR-0030)",
             description = "409 history.undo.changedSince when a later change replaced one of its fields, "
                     + "history.undo.alreadyUndone or history.undo.notSupported.")
     @PostMapping("/tasks/{id}/history/{changeId}/undo")

@@ -5,7 +5,7 @@ import java.util.Set;
 
 /**
  * What a recorded task change was. Only a member's own edits of a field can be undone; creation, the trash, a
- * restore from an export and automatic contract work are recorded but have their own way back or none (ADR-0029).
+ * restore from an export and automatic contract work are recorded but have their own way back or none (ADR-0030).
  */
 public enum TaskAction {
     CREATED,

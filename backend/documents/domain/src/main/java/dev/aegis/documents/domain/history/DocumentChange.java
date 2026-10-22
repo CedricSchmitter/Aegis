@@ -12,7 +12,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 
 /**
- * One recorded change of a document (ADR-0029). {@code sequence} orders the entries of the household; it is assigned
+ * One recorded change of a document (ADR-0030). {@code sequence} orders the entries of the household; it is assigned
  * when the entry is stored. {@code undoOf} names the change an undo reversed.
  */
 public record DocumentChange(UUID id, DocumentId documentId, long sequence, Instant occurredAt, ChangeActor actor,

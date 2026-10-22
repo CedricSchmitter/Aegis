@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** The recorded history of one document and the undo of a member's edit (ADR-0029). */
+/** The recorded history of one document and the undo of a member's edit (ADR-0030). */
 public interface DocumentHistory {
 
     /**

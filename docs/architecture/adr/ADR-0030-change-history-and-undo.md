@@ -1,4 +1,4 @@
-# ADR-0029: Documents and tasks keep an append-only change history with field-bound undo
+# ADR-0030: Documents and tasks keep an append-only change history with field-bound undo
 
 Status: accepted and implemented for issue #47 (first slice). Date: 2026-10-22.
 

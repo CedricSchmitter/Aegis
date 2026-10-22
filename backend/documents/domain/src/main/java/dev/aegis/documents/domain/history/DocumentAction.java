@@ -4,7 +4,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * What a recorded document change was (ADR-0029). A member's own edits of title, friendly filename, folder and labels
+ * What a recorded document change was (ADR-0030). A member's own edits of title, friendly filename, folder and labels
  * can be undone. An automatic analysis is recorded but corrected through its own review controls, which also remember
  * the member's decision; the trash has its own way back.
  */

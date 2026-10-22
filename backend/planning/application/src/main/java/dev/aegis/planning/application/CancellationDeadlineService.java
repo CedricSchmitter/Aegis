@@ -38,7 +38,7 @@ import java.util.UUID;
 public class CancellationDeadlineService
         implements CancellationDeadlineReconciliation, CancellationReminderPublication {
     public static final int REMINDER_LEAD_DAYS = 7;
-    /** The automation named as the author of the changes this service makes (ADR-0029). */
+    /** The automation named as the author of the changes this service makes (ADR-0030). */
     public static final String AUTOMATION = "contractDeadlines";
 
     private final ContractDeadlineQuery contracts;

@@ -37,7 +37,7 @@ function backendReasons(): Set<string> {
   for (const file of files) {
     const source = readFileSync(file, "utf8");
     if (!source.includes("HealthCheck")) continue;
-    for (const match of source.matchAll(/"((?:database|archive|backup|storage|ai|jobs|probe)\.[a-zA-Z]+)"/g)) {
+    for (const match of source.matchAll(/"((?:database|archive|backup|export|storage|ai|jobs|probe)\.[a-zA-Z]+)"/g)) {
       reasons.add(match[1]);
     }
   }
@@ -93,6 +93,21 @@ describe("status overview", () => {
     expect(checkText(german, ai, "de")).toBe("Der letzte Lauf ist gescheitert: Zugangsdaten abgelehnt.");
     const provider = check({ area: "ai", state: "PROBLEM", reason: "ai.credentialsMissing", params: { provider: "something-new" } });
     expect(checkText(english, provider, "en")).toBe("The credentials for the AI provider are missing.");
+  });
+
+  it("names the newest export and when the daily export last confirmed it", () => {
+    const ok = check({ area: "export", state: "OK", reason: "export.ok", params: { generatedAt: "2026-10-19T00:30:00Z" }, lastSuccessAt: "2026-10-22T00:30:00Z" });
+    expect(areaLabel(german, ok.area)).toBe("Täglicher Export");
+    expect(checkText(german, ok, "de")).toMatch(/^Aktuell\. Neuester Export: .*19.*, zuletzt geprüft: .*22.*\.$/);
+    expect(checkText(english, ok, "en")).toMatch(/^Up to date\. Newest export: .*, last checked: .*\.$/);
+
+    const pending = check({ area: "export", state: "UNCHECKED", reason: "export.pending" });
+    expect(checkText(german, pending, "de")).toBe("Der tägliche Export läuft jede Nacht und hat noch nicht stattgefunden. Neuester Export: noch keiner.");
+    expect(problemCount([pending])).toBe(0);
+
+    const failed = check({ area: "export", state: "PROBLEM", reason: "export.failed", params: { generatedAt: "2026-10-19T00:30:00Z" } });
+    expect(checkText(english, failed, "en")).toMatch(/^The last daily export failed\. Newest complete export: /);
+    expect(whatNowText(german, failed)).toContain("letzte vollständige Export bleibt erhalten");
   });
 
   it("falls back to generic words for an unknown area or reason instead of showing codes", () => {

@@ -20,13 +20,15 @@ import org.springframework.stereotype.Component;
 
 /**
  * Export generations on the persistent data volume: {@code staging/<gen>} while writing, {@code generations/<gen>}
- * once complete (atomic directory move), and a {@code LATEST} pointer file updated last.
+ * once complete (atomic directory move), and a {@code LATEST} pointer file updated last. {@code scheduled-run.json}
+ * records when the daily export last finished and last failed.
  */
 @Component
 public class FilesystemExportStore implements ExportStore {
     static final String GENERATIONS = "generations";
     static final String STAGING = "staging";
     static final String LATEST = "LATEST";
+    static final String SCHEDULED_RUN = "scheduled-run.json";
 
     private final Path root;
     private final ExportSerializer serializer;
@@ -61,10 +63,7 @@ public class FilesystemExportStore implements ExportStore {
             @Override
             public String publish() throws IOException {
                 Files.move(staging, target, StandardCopyOption.ATOMIC_MOVE);
-                Path latestTemp = Files.createTempFile(root, LATEST + "-", ".tmp");
-                Files.writeString(latestTemp, generation, StandardCharsets.UTF_8);
-                Files.move(latestTemp, root.resolve(LATEST), StandardCopyOption.ATOMIC_MOVE,
-                        StandardCopyOption.REPLACE_EXISTING);
+                replaceAtomically(LATEST, generation.getBytes(StandardCharsets.UTF_8));
                 return target.toString();
             }
 
@@ -88,12 +87,49 @@ public class FilesystemExportStore implements ExportStore {
 
     @Override
     public Optional<ExportSummary> latest() throws IOException {
-        Path pointer = root.resolve(LATEST);
-        if (!Files.isRegularFile(pointer)) {
+        Optional<String> generation = latestGeneration();
+        return generation.isEmpty() ? Optional.empty()
+                : readSummary(root.resolve(GENERATIONS).resolve(generation.get()));
+    }
+
+    @Override
+    public void deleteGeneration(String generation) throws IOException {
+        Path generations = root.resolve(GENERATIONS);
+        Path dir = generations.resolve(generation).normalize();
+        if (generation.isBlank() || !generations.equals(dir.getParent())) {
+            throw new IOException("not an export generation: " + generation);
+        }
+        if (generation.equals(latestGeneration().orElse(null))) {
+            throw new IOException("the latest export generation is never deleted");
+        }
+        deleteRecursively(dir);
+    }
+
+    @Override
+    public Optional<ScheduledRun> scheduledRun() throws IOException {
+        Path file = root.resolve(SCHEDULED_RUN);
+        if (!Files.isRegularFile(file)) {
             return Optional.empty();
         }
-        String generation = Files.readString(pointer, StandardCharsets.UTF_8).trim();
-        return readSummary(root.resolve(GENERATIONS).resolve(generation));
+        return Optional.of(serializer.fromJson(Files.readAllBytes(file), ScheduledRun.class));
+    }
+
+    @Override
+    public void recordScheduledRun(ScheduledRun run) throws IOException {
+        replaceAtomically(SCHEDULED_RUN, serializer.toJson(run));
+    }
+
+    private Optional<String> latestGeneration() throws IOException {
+        Path pointer = root.resolve(LATEST);
+        return Files.isRegularFile(pointer)
+                ? Optional.of(Files.readString(pointer, StandardCharsets.UTF_8).trim())
+                : Optional.empty();
+    }
+
+    private void replaceAtomically(String name, byte[] content) throws IOException {
+        Path temp = Files.createTempFile(root, name + "-", ".tmp");
+        Files.write(temp, content);
+        Files.move(temp, root.resolve(name), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
     }
 
     private Optional<ExportSummary> readSummary(Path generationDir) throws IOException {
@@ -104,7 +140,8 @@ public class FilesystemExportStore implements ExportStore {
         Manifest manifest = serializer.fromJson(Files.readAllBytes(manifestFile), Manifest.class);
         return Optional.of(new ExportSummary(manifest.generation(), manifest.exportedAt(), manifest.documentCount(),
                 manifest.taskCount(), manifest.memberCount(), manifest.contractCount(),
-                manifest.missingOriginals(), generationDir.toString()));
+                manifest.missingOriginals(), generationDir.toString(), manifest.trigger(),
+                manifest.dataFingerprint()));
     }
 
     private static void deleteRecursively(Path path) throws IOException {

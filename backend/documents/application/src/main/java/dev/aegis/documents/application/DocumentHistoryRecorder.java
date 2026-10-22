@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Records a saved document change in the history (ADR-0029). The caller takes a {@link #snapshot} before the change
+ * Records a saved document change in the history (ADR-0030). The caller takes a {@link #snapshot} before the change
  * and calls {@link #record} after saving, inside the same transaction, so the entry commits or rolls back with it.
  */
 public final class DocumentHistoryRecorder {
