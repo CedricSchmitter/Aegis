@@ -1779,6 +1779,7 @@
       "catalog": "Liest Ordner und Labels",
       "searchDocuments": "Durchsucht Dokumente",
       "readDocument": "Liest ein Dokument",
+      "findInDocument": "Sucht in einem Dokument",
       "listContracts": "Sieht die Verträge durch",
       "readContract": "Liest einen Vertrag",
       "listTasks": "Sieht die Aufgaben durch",

@@ -8,6 +8,7 @@ import dev.aegis.assistant.adapters.claudecode.ClaudeCodeGateway;
 import dev.aegis.assistant.adapters.claudecode.ClaudeCodeProperties;
 import dev.aegis.assistant.adapters.tools.DocumentSearchTool;
 import dev.aegis.assistant.adapters.tools.DocumentTextSearchTool;
+import dev.aegis.assistant.adapters.tools.FindInDocumentTool;
 import dev.aegis.assistant.adapters.tools.HouseholdCatalogTool;
 import dev.aegis.assistant.adapters.tools.ListContractsTool;
 import dev.aegis.assistant.adapters.tools.ListTasksTool;
@@ -228,7 +229,8 @@ class ChatReferenceLiveTest {
                     household.keyOf(UUID.fromString(document.path("id").asString())).ifPresent(keys::add);
                 }
             }
-            if (!searched && use.name().equals("read_document") && use.input().get("id") instanceof String id) {
+            boolean read = use.name().equals("read_document") || use.name().equals("find_in_document");
+            if (!searched && read && use.input().get("id") instanceof String id) {
                 try {
                     household.keyOf(UUID.fromString(id)).ifPresent(keys::add);
                 } catch (IllegalArgumentException notAnId) {
@@ -254,7 +256,8 @@ class ChatReferenceLiveTest {
         Map<String, AiTool> tools = new HashMap<>();
         for (AiTool tool : List.of(new HouseholdCatalogTool(household), new DocumentSearchTool(household),
                 new DocumentTextSearchTool(household), new ReadDocumentTool(household, household,
-                        household.contracts()), new ListContractsTool(household.contracts()),
+                        household.contracts()), new FindInDocumentTool(household),
+                new ListContractsTool(household.contracts()),
                 new ReadContractTool(household.contracts()), new ListTasksTool(household.tasks(), nobody))) {
             tools.put(tool.spec().name(), new RecordedTool(tool, uses));
         }

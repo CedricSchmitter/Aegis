@@ -59,6 +59,7 @@ const TOOL_KEYS: Record<string, string> = {
   search_documents: "chat.progress.searchDocuments",
   search_document_text: "chat.progress.searchDocuments",
   read_document: "chat.progress.readDocument",
+  find_in_document: "chat.progress.findInDocument",
   list_contracts: "chat.progress.listContracts",
   read_contract: "chat.progress.readContract",
   list_tasks: "chat.progress.listTasks",
