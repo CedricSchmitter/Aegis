@@ -58,12 +58,16 @@ class ExportServiceTest {
         final Map<String, byte[]> staged = new LinkedHashMap<>();
         boolean published;
         boolean discarded;
+        boolean failWrites;
 
         @Override
         public ExportStaging beginGeneration(String generation) {
             return new ExportStaging() {
                 @Override
-                public void write(String relativePath, byte[] content) {
+                public void write(String relativePath, byte[] content) throws java.io.IOException {
+                    if (failWrites) {
+                        throw new java.io.IOException("disk full");
+                    }
                     staged.put(relativePath, content);
                 }
 
@@ -88,6 +92,20 @@ class ExportServiceTest {
         @Override
         public Optional<ExportSummary> latest() {
             return Optional.empty();
+        }
+
+        @Override
+        public void deleteGeneration(String generation) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<ScheduledRun> scheduledRun() {
+            return Optional.empty();
+        }
+
+        @Override
+        public void recordScheduledRun(ScheduledRun run) {
         }
     }
 
@@ -256,6 +274,38 @@ class ExportServiceTest {
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.export(new Actor(anna)))
                 .isInstanceOf(IllegalStateException.class);
+
+        // The data is read before a generation is begun, so a failed read leaves nothing to discard.
+        assertThat(store.staged).isEmpty();
+        assertThat(store.published).isFalse();
+    }
+
+    @Test
+    void generationThatCannotBeWrittenIsDiscarded() {
+        MemoryStore store = new MemoryStore();
+        store.failWrites = true;
+        DocumentExportQuery empty = new DocumentExportQuery() {
+            @Override
+            public List<DocumentExportRecord> exportAll(Actor actor) {
+                return List.of();
+            }
+
+            @Override
+            public OriginalContent originalForExport(Actor actor, DocumentId id) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public CatalogExport exportCatalog(Actor actor) {
+                return new CatalogExport(List.of(), List.of());
+            }
+        };
+        ExportService service = new ExportService(empty, actor -> List.of(), actor -> List.of(), onlyAnna(), store,
+                new StubSerializer(), actor -> {
+                }, Clock.fixed(NOW, ZoneOffset.UTC), "test");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.export(new Actor(anna)))
+                .isInstanceOf(java.io.UncheckedIOException.class);
 
         assertThat(store.discarded).isTrue();
         assertThat(store.published).isFalse();

@@ -109,7 +109,8 @@ class ReviewServiceTest {
         assertThatThrownBy(() -> service.act(RECONCILER, card.id(), "RETRY", card.version()))
                 .isInstanceOf(NotAuthorizedException.class);
         assertThatThrownBy(() -> service.list(RECONCILER, null, null)).isInstanceOf(NotAuthorizedException.class);
-        assertThatThrownBy(() -> service.exportAll(RECONCILER)).isInstanceOf(NotAuthorizedException.class);
+        // The export query only reads and is open to household processes for the daily export (ADR-0029).
+        assertThat(service.exportAll(RECONCILER)).hasSize(1);
         assertThatThrownBy(() -> service.reconcile(Actor.householdProcess("portable-export")))
                 .isInstanceOf(NotAuthorizedException.class);
         assertThatThrownBy(() -> service.reconcile(new Actor(MemberId.random())))

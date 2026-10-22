@@ -2,6 +2,7 @@ package dev.aegis.portability.application.ports;
 
 import dev.aegis.portability.application.api.ExportSummary;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,10 +21,21 @@ public interface ExportStore {
         void discard() throws IOException;
     }
 
+    /** When the daily export last finished and last failed; either may be null. */
+    record ScheduledRun(Instant lastCheckedAt, Instant lastFailedAt) {
+    }
+
     ExportStaging beginGeneration(String generation) throws IOException;
 
     /** Published generations, newest first, read from their manifests. */
     List<ExportSummary> listGenerations() throws IOException;
 
     Optional<ExportSummary> latest() throws IOException;
+
+    /** Removes a published generation. The latest generation is never removed. */
+    void deleteGeneration(String generation) throws IOException;
+
+    Optional<ScheduledRun> scheduledRun() throws IOException;
+
+    void recordScheduledRun(ScheduledRun run) throws IOException;
 }

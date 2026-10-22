@@ -31,10 +31,12 @@ public class ExportsController {
 
     public record ExportSummaryDto(String generation, Instant createdAt, int documentCount, int taskCount,
             int memberCount, int contractCount, List<String> missingOriginals,
-            @Schema(nullable = true) String location) {
+            @Schema(nullable = true) String location,
+            @Schema(nullable = true, description = "MANUAL or SCHEDULED; null for generations from before the "
+                    + "daily export") String trigger) {
         static ExportSummaryDto from(ExportSummary s) {
             return new ExportSummaryDto(s.generation(), s.createdAt(), s.documentCount(), s.taskCount(),
-                    s.memberCount(), s.contractCount(), s.missingOriginals(), s.location());
+                    s.memberCount(), s.contractCount(), s.missingOriginals(), s.location(), s.trigger());
         }
     }
 

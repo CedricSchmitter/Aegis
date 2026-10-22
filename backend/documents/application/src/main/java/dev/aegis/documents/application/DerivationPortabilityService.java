@@ -35,7 +35,7 @@ public class DerivationPortabilityService implements DerivationPortability {
 
     @Override
     public List<DerivationRecord> exportAll(Actor actor) {
-        access.requireMember(actor);
+        access.requireReader(actor);
         return derivations.findAll().stream().map(derivation -> new DerivationRecord(derivation.document(),
                 derivation.pageEdit(), derivation.createdBy(), derivation.createdAt(), derivation.ranges().stream()
                         .map(range -> new RangeRecord(range.firstPage(), range.lastPage(), range.kind().name(),

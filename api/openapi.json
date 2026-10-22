@@ -1770,6 +1770,10 @@
           "taskCount" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "trigger" : {
+            "description" : "MANUAL or SCHEDULED; null for generations from before the daily export",
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "contractCount", "createdAt", "documentCount", "generation", "memberCount", "missingOriginals", "taskCount" ],

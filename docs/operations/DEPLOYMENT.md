@@ -392,8 +392,8 @@ neither part of the server backup nor of an export, because the document does no
 
 ## Operations
 
-- Status page (in the app) and `GET /api/status`: an overview of the database, Paperless, the external backup, disk
-  space and AI with stable reason codes (ADR-0018). AI is not listed without credentials and reads "Noch nicht
+- Status page (in the app) and `GET /api/status`: an overview of the database, Paperless, the external backup, the daily
+  export, disk space and AI with stable reason codes (ADR-0018). AI is not listed without credentials and reads "Noch nicht
   geprüft" after every start or deployment until its next run or a manual connection check; integrations without an
   adapter (calendar, mail, Telegram) are not listed. The collapsed technical details hold the processing
   counts, backup and disk details, recurring jobs, the AI section (workload budgets, today's spending, the connection
@@ -406,6 +406,9 @@ neither part of the server backup nor of an export, because the document does no
   the data disk through `aegis.storage.data-path`. A failed, stale or interrupted backup and a disk below
   `aegis.storage.low-free-fraction` (10 %) or `aegis.storage.low-free-space` (5 GB) send one `BACKUP_FAILED` or
   `DISK_SPACE_LOW` notice per member and incident (ADR-0015).
+- Daily export (ADR-0029): `refresh-export` runs at 02:30 household time (`aegis.exports.daily-at`) and writes a
+  new generation to `/srv/aegis/exports` only when the data changed; it keeps the newest 14 scheduled generations
+  (`aegis.exports.scheduled-retention`). See [backup](BACKUP.md).
 - Web Push (ADR-0026): `dispatch-push-notices` runs every minute and needs outbound HTTPS from the VM to the
   browsers' push service (`fcm.googleapis.com` for Chrome and Samsung Internet). The VAPID key is created in the
   database on first use and restored with it. Optional settings: `AEGIS_PUSH_SUBJECT` / `aegis.push.subject` (contact

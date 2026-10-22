@@ -161,10 +161,12 @@ import dev.aegis.planning.application.ports.CalendarPort;
 import dev.aegis.planning.application.ports.CancellationReminderScheduler;
 import dev.aegis.planning.application.ports.PlanningEvents;
 import dev.aegis.planning.domain.TaskRepository;
+import dev.aegis.portability.adapters.jobs.DailyExportTask;
 import dev.aegis.portability.application.ExportService;
 import dev.aegis.portability.application.RestoreService;
 import dev.aegis.portability.application.api.CreateExport;
 import dev.aegis.portability.application.api.ExportQueries;
+import dev.aegis.portability.application.api.RefreshExport;
 import dev.aegis.portability.application.api.RestoreExport;
 import dev.aegis.portability.application.ports.ExportSerializer;
 import dev.aegis.portability.application.ports.ExportSourceOpener;
@@ -754,7 +756,8 @@ public class UseCaseConfiguration {
         return List.of(new RecurringJob(ReviewReconciliationTask.NAME, reviewReconciliation.interval()),
                 new RecurringJob(ArchiveTextCheckTask.NAME, ArchiveTextCheckTask.INTERVAL),
                 new RecurringJob(ReconciliationTask.NAME, ReconciliationTask.INTERVAL),
-                new RecurringJob(PushDispatchTask.NAME, pushDispatch.interval()));
+                new RecurringJob(PushDispatchTask.NAME, pushDispatch.interval()),
+                new RecurringJob(DailyExportTask.NAME, DailyExportTask.INTERVAL));
     }
 
     record PortabilityServices(ExportService exports) {
@@ -764,14 +767,21 @@ public class UseCaseConfiguration {
     PortabilityServices portabilityServices(DocumentExportQuery documents, DerivationPortability derivations,
             TaskExportQuery tasks, ContractExportQuery contracts, ReviewPortability reviews, MemberDirectory members,
             ExportStore store, ExportSerializer serializer, HouseholdAccess access, Clock clock,
-            @Value("${aegis.build.commit:dev}") String commit) {
+            @Value("${aegis.build.commit:dev}") String commit,
+            @Value("${aegis.exports.scheduled-retention:14}") int scheduledRetention) {
         return new PortabilityServices(new ExportService(documents, derivations, tasks, contracts, reviews, members,
-                store, serializer, access, clock, "aegis@" + commit));
+                store, serializer, access, clock, "aegis@" + commit, scheduledRetention));
     }
 
     @Bean
     CreateExport createExport(PortabilityServices services) {
         return TransactionalProxy.expose(CreateExport.class, services.exports());
+    }
+
+    /** Runs without a surrounding transaction, like a manual export: it only reads through other contexts' APIs. */
+    @Bean
+    RefreshExport refreshExport(PortabilityServices services) {
+        return TransactionalProxy.expose(RefreshExport.class, services.exports());
     }
 
     @Bean
