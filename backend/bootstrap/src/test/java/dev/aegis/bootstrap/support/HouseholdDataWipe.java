@@ -10,11 +10,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * repeated a few times.
  */
 public final class HouseholdDataWipe {
-    private static final String TRUNCATE = "TRUNCATE TABLE scheduled_tasks, push_deliveries, notices, tasks, document_labels, "
+    private static final String TRUNCATE = "TRUNCATE TABLE scheduled_tasks, push_deliveries, notices, task_changes, tasks, document_labels, "
             + "document_placement_suggestions, document_placement_rejections, document_classifications, "
             + "document_analyses, document_text_checks, document_subjects, document_bulk_analysis_items, "
             + "document_derivations, document_page_edits, "
-            + "document_bulk_analyses, documents";
+            + "document_bulk_analyses, document_changes, documents";
     private static final int ATTEMPTS = 5;
 
     private HouseholdDataWipe() {

@@ -19,10 +19,13 @@ import dev.aegis.documents.domain.classification.Confidence;
 import dev.aegis.documents.domain.classification.DocumentClassification;
 import dev.aegis.documents.domain.classification.LabelRef;
 import dev.aegis.documents.domain.classification.Proposal;
+import dev.aegis.documents.domain.history.DocumentAction;
+import dev.aegis.documents.domain.history.DocumentSnapshot;
 import dev.aegis.documents.domain.placement.PlacementSuggestion;
 import dev.aegis.documents.domain.placement.PlacementSuggestionRepository;
 import dev.aegis.documents.domain.placement.PlacementTarget;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ChangeActor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
@@ -49,10 +52,12 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
     private final DocumentPresenter presenter;
     private final HouseholdAccess access;
     private final Clock clock;
+    private final DocumentHistoryRecorder history;
 
     public ClassificationService(ClassificationRepository classifications, DocumentRepository documents,
             CategoryRepository categories, LabelRepository labels, PlacementSuggestionRepository placements,
-            CatalogLock lock, DocumentPresenter presenter, HouseholdAccess access, Clock clock) {
+            CatalogLock lock, DocumentPresenter presenter, HouseholdAccess access, Clock clock,
+            DocumentHistoryRecorder history) {
         this.classifications = classifications;
         this.documents = documents;
         this.categories = categories;
@@ -62,6 +67,7 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
         this.presenter = presenter;
         this.access = access;
         this.clock = clock;
+        this.history = history;
     }
 
     @Override
@@ -71,8 +77,10 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
         Document document = requireActiveDocument(id);
         CategoryId target = folder(categoryId);
         DocumentClassification classification = loadVersion(id, expectedVersion);
+        DocumentSnapshot before = history.snapshot(id);
         classification.placeIn(target, actor.memberId(), clock.instant());
         classifications.save(classification);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.MOVED);
         // The member decided where this document belongs; a pending proposal is obsolete.
         placements.delete(id);
         return presenter.summarize(document);
@@ -92,10 +100,12 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
         for (Placement move : moves) {
             requireActiveDocument(move.documentId());
             DocumentClassification classification = loadVersion(move.documentId(), move.expectedVersion());
+            DocumentSnapshot before = history.snapshot(move.documentId());
             if (classification.placeIn(target, actor.memberId(), now)) {
                 moved++;
             }
             classifications.save(classification);
+            history.record(before, move.documentId(), ChangeActor.of(actor), DocumentAction.MOVED);
             placements.delete(move.documentId());
         }
         return moved;
@@ -118,8 +128,10 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
             }
             refs.add(new LabelRef(label.id(), label.facet()));
         }
+        DocumentSnapshot before = history.snapshot(id);
         classification.setLabels(refs, actor.memberId(), clock.instant());
         classifications.save(classification);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.LABELS_CHANGED);
         return presenter.summarize(document);
     }
 
@@ -129,8 +141,10 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
         lock.shared();
         Document document = requireActiveDocument(id);
         DocumentClassification classification = loadVersion(id, expectedVersion);
+        DocumentSnapshot before = history.snapshot(id);
         classification.accept(new LabelId(labelId), actor.memberId(), clock.instant());
         classifications.save(classification);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.LABELS_CHANGED);
         return presenter.summarize(document);
     }
 
@@ -140,8 +154,10 @@ public class ClassificationService implements ClassificationCommands, ProposeCla
         lock.shared();
         Document document = requireActiveDocument(id);
         DocumentClassification classification = loadVersion(id, expectedVersion);
+        DocumentSnapshot before = history.snapshot(id);
         classification.reject(new LabelId(labelId), actor.memberId(), clock.instant());
         classifications.save(classification);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.LABELS_CHANGED);
         return presenter.summarize(document);
     }
 

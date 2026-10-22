@@ -26,6 +26,7 @@ class TaskCommandServiceTest {
     private final Actor asAnna = new Actor(anna);
     private final Actor asBen = new Actor(ben);
     private PlanningTestSupport.InMemoryTaskRepository repository;
+    private final PlanningTestSupport.InMemoryTaskHistory history = new PlanningTestSupport.InMemoryTaskHistory();
     private PlanningTestSupport.KnownDocuments documents;
     private PlanningTestSupport.RecordingEvents events;
     private TaskCommandService service;
@@ -39,7 +40,7 @@ class TaskCommandServiceTest {
         var presenter = new TaskPresenter(documents);
         var access = new PlanningTestSupport.Members(anna, ben);
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-        service = new TaskCommandService(repository, documents, events, presenter, access, (actor, contract) -> { },
+        service = new TaskCommandService(repository, history, documents, events, presenter, access, (actor, contract) -> { },
                 Trash.RecoveryWindow.DEFAULT, clock);
         queries = new TaskQueryService(repository, new PlanningTestSupport.NoCalendar(), presenter, access, clock);
     }

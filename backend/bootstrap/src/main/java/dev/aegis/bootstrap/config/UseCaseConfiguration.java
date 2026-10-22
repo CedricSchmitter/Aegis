@@ -20,6 +20,7 @@ import dev.aegis.documents.adapters.jobs.ReconciliationTask;
 import dev.aegis.documents.application.ArchivalService;
 import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
+import dev.aegis.documents.domain.history.DocumentHistoryRepository;
 import dev.aegis.documents.application.ArchivalSettings;
 import dev.aegis.documents.application.ArchivalUseCases;
 import dev.aegis.documents.application.ArchiveTextService;
@@ -31,6 +32,8 @@ import dev.aegis.documents.application.CatalogQueryService;
 import dev.aegis.documents.application.SimilarDocumentService;
 import dev.aegis.documents.application.CategoryService;
 import dev.aegis.documents.application.ClassificationService;
+import dev.aegis.documents.application.DocumentHistoryRecorder;
+import dev.aegis.documents.application.DocumentHistoryService;
 import dev.aegis.documents.application.PlacementService;
 import dev.aegis.documents.application.ClassificationViews;
 import dev.aegis.documents.application.DocumentQueryService;
@@ -66,6 +69,7 @@ import dev.aegis.documents.application.api.CategoryCommands;
 import dev.aegis.documents.application.api.ClassificationCommands;
 import dev.aegis.documents.application.api.PlacementCommands;
 import dev.aegis.documents.application.api.DocumentCommands;
+import dev.aegis.documents.application.api.DocumentHistory;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentQueries;
 import dev.aegis.documents.application.api.DocumentReferenceQuery;
@@ -151,16 +155,19 @@ import dev.aegis.planning.application.TaskCommandService;
 import dev.aegis.planning.application.CancellationDeadlineService;
 import dev.aegis.planning.application.TaskPresenter;
 import dev.aegis.planning.application.TaskQueryService;
+import dev.aegis.planning.application.TaskHistoryService;
 import dev.aegis.planning.application.api.ImportTask;
 import dev.aegis.planning.application.api.CancellationDeadlineReconciliation;
 import dev.aegis.planning.application.api.CancellationReminderPublication;
 import dev.aegis.planning.application.api.TaskCommands;
 import dev.aegis.planning.application.api.TaskExportQuery;
 import dev.aegis.planning.application.api.TaskQueries;
+import dev.aegis.planning.application.api.TaskHistoryQueries;
 import dev.aegis.planning.application.ports.CalendarPort;
 import dev.aegis.planning.application.ports.CancellationReminderScheduler;
 import dev.aegis.planning.application.ports.PlanningEvents;
 import dev.aegis.planning.domain.TaskRepository;
+import dev.aegis.planning.domain.history.TaskHistoryRepository;
 import dev.aegis.portability.adapters.jobs.DailyExportTask;
 import dev.aegis.portability.application.ExportService;
 import dev.aegis.portability.application.RestoreService;
@@ -345,9 +352,28 @@ public class UseCaseConfiguration {
     ClassificationServices classificationServices(ClassificationRepository classifications,
             DocumentRepository documents, CategoryRepository categories, LabelRepository labels,
             PlacementSuggestionRepository placements, CatalogLock lock, DocumentPresenter presenter,
-            HouseholdAccess access, Clock clock) {
+            HouseholdAccess access, Clock clock, DocumentHistoryRecorder history) {
         return new ClassificationServices(new ClassificationService(classifications, documents, categories, labels,
-                placements, lock, presenter, access, clock));
+                placements, lock, presenter, access, clock, history));
+    }
+
+    /** Records document changes inside the transaction of each change (ADR-0030). */
+    @Bean
+    DocumentHistoryRecorder documentHistoryRecorder(DocumentRepository documents,
+            ClassificationRepository classifications, DocumentAnalysisRepository analyses,
+            DocumentHistoryRepository history, Clock clock) {
+        return new DocumentHistoryRecorder(documents, classifications, analyses, history, clock);
+    }
+
+    /** The history query reads only the database; undo is a command and runs in one transaction. */
+    @Bean
+    DocumentHistory documentHistory(DocumentRepository documents, ClassificationRepository classifications,
+            DocumentAnalysisRepository analyses, CategoryRepository categories, LabelRepository labels,
+            PlacementSuggestionRepository placements, DocumentHistoryRepository history,
+            DocumentHistoryRecorder recorder, CatalogLock lock, DocumentPresenter presenter, HouseholdAccess access,
+            Clock clock, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(DocumentHistory.class, new DocumentHistoryService(documents, classifications,
+                analyses, categories, labels, placements, history, recorder, lock, presenter, access, clock), tm);
     }
 
     /** Member decisions about proposed folder placements; accepting creates folders and moves. */
@@ -355,9 +381,9 @@ public class UseCaseConfiguration {
     PlacementCommands placementCommands(ClassificationRepository classifications,
             PlacementSuggestionRepository placements, CategoryRepository categories, LabelRepository labels,
             DocumentRepository documents, CatalogLock lock, DocumentPresenter presenter, HouseholdAccess access,
-            Clock clock, PlatformTransactionManager tm) {
+            Clock clock, DocumentHistoryRecorder history, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(PlacementCommands.class, new PlacementService(classifications, placements,
-                categories, labels, documents, lock, presenter, access, clock), tm);
+                categories, labels, documents, lock, presenter, access, clock, history), tm);
     }
 
     @Bean
@@ -421,9 +447,10 @@ public class UseCaseConfiguration {
     @Bean
     DocumentCommands documentCommands(DocumentRepository documents, ProcessingScheduler scheduler,
             DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdPersons persons, HouseholdAccess access,
-            Trash.RecoveryWindow recoveryWindow, Clock clock, PlatformTransactionManager tm) {
+            Trash.RecoveryWindow recoveryWindow, Clock clock, DocumentHistoryRecorder history,
+            PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(DocumentCommands.class, new DocumentCommandService(documents, scheduler,
-                presenter, analysis, persons, access, recoveryWindow, clock), tm);
+                presenter, analysis, persons, access, recoveryWindow, clock, history), tm);
     }
 
     @Bean
@@ -572,13 +599,21 @@ public class UseCaseConfiguration {
     }
 
     @Bean
-    PlanningServices planningServices(TaskRepository tasks, DocumentReferenceQuery documents,
-            PlanningEvents events, TaskPresenter presenter, HouseholdAccess access, Clock clock,
-            CalendarPort calendar, CancellationDeadlineReconciliation cancellations,
+    PlanningServices planningServices(TaskRepository tasks, TaskHistoryRepository taskHistory,
+            DocumentReferenceQuery documents, PlanningEvents events, TaskPresenter presenter, HouseholdAccess access,
+            Clock clock, CalendarPort calendar, CancellationDeadlineReconciliation cancellations,
             Trash.RecoveryWindow recoveryWindow) {
-        return new PlanningServices(new TaskCommandService(tasks, documents, events, presenter, access,
+        return new PlanningServices(new TaskCommandService(tasks, taskHistory, documents, events, presenter, access,
                 cancellations, recoveryWindow, clock), new TaskQueryService(tasks, calendar, presenter, access,
                 clock));
+    }
+
+    /** Reads only the database; exposed without a transaction like the other task queries. */
+    @Bean
+    TaskHistoryQueries taskHistoryQueries(TaskRepository tasks, TaskHistoryRepository taskHistory,
+            HouseholdAccess access) {
+        return TransactionalProxy.expose(TaskHistoryQueries.class,
+                new TaskHistoryService(tasks, taskHistory, access));
     }
 
     @Bean
@@ -606,10 +641,10 @@ public class UseCaseConfiguration {
 
     @Bean
     CancellationServices cancellationServices(ContractDeadlineQuery contracts, TaskRepository tasks,
-            CancellationReminderScheduler reminders, MemberDirectory members, PublishNotice notices,
+            TaskHistoryRepository taskHistory, CancellationReminderScheduler reminders, MemberDirectory members, PublishNotice notices,
             PlanningEvents events, HouseholdAccess access, Clock clock) {
-        return new CancellationServices(new CancellationDeadlineService(contracts, tasks, reminders, members,
-                notices, events, access, clock));
+        return new CancellationServices(new CancellationDeadlineService(contracts, tasks, taskHistory, reminders,
+                members, notices, events, access, clock));
     }
 
     @Bean

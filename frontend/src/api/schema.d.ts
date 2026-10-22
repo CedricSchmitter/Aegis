@@ -947,6 +947,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recorded changes of a document, newest first (ADR-0030) */
+        get: operations["documentHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{id}/history/{changeId}/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo one recorded change of a document (ADR-0030)
+         * @description Bound to the values the change left: 409 history.undo.changedSince when a later change replaced one of them, history.undo.alreadyUndone, history.undo.notSupported, history.undo.folderGone or history.undo.labelGone.
+         */
+        post: operations["undoDocumentChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{id}/labels": {
         parameters: {
             query?: never;
@@ -1843,6 +1880,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recorded changes of a task, newest first (ADR-0030) */
+        get: operations["taskHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/history/{changeId}/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo one recorded change of a task (ADR-0030)
+         * @description 409 history.undo.changedSince when a later change replaced one of its fields, history.undo.alreadyUndone or history.undo.notSupported.
+         */
+        post: operations["undoTaskChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks/{id}/plan": {
         parameters: {
             query?: never;
@@ -2509,6 +2583,21 @@ export interface components {
             /** Format: int64 */
             totalBytes?: number | null;
         };
+        DocumentChangeDto: {
+            action: string;
+            actorKind: string;
+            actorMemberId?: string | null;
+            actorReference?: string | null;
+            changes: components["schemas"]["DocumentFieldChangeDto"][];
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: int64 */
+            sequence: number;
+            undoOf?: string | null;
+            undoable: boolean;
+            undoneBy?: string | null;
+        };
         DocumentDto: {
             analysis: components["schemas"]["AnalysisDto"];
             archivePdfAvailable: boolean;
@@ -2532,6 +2621,19 @@ export interface components {
             uploadedBy: string;
             /** Format: int64 */
             version: number;
+        };
+        DocumentFieldChangeDto: {
+            after?: string | null;
+            before?: string | null;
+            field: string;
+        };
+        DocumentHistoryDto: {
+            changes: components["schemas"]["DocumentChangeDto"][];
+            documentId: string;
+            /** Format: int64 */
+            nextBeforeSequence?: number | null;
+            /** Format: date-time */
+            recordingSince: string;
         };
         DocumentListResponse: {
             /** Format: int64 */
@@ -3224,6 +3326,21 @@ export interface components {
             jobs: components["schemas"]["JobHealthDto"][];
             storage: components["schemas"]["StorageHealthDto"];
         };
+        TaskChangeDto: {
+            action: string;
+            actorKind: string;
+            actorMemberId?: string | null;
+            actorReference?: string | null;
+            changes: components["schemas"]["TaskFieldChangeDto"][];
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: int64 */
+            taskVersion: number;
+            undoOf?: string | null;
+            undoable: boolean;
+            undoneBy?: string | null;
+        };
         TaskDto: {
             cancellationReview?: components["schemas"]["CancellationReviewDto"];
             /** Format: date-time */
@@ -3247,6 +3364,19 @@ export interface components {
             updatedAt: string;
             /** Format: int64 */
             version: number;
+        };
+        TaskFieldChangeDto: {
+            after?: string | null;
+            before?: string | null;
+            field: string;
+        };
+        TaskHistoryDto: {
+            changes: components["schemas"]["TaskChangeDto"][];
+            /** Format: int64 */
+            nextBeforeVersion?: number | null;
+            /** Format: date-time */
+            recordingSince: string;
+            taskId: string;
         };
         TaskTrashDto: {
             /** Format: date-time */
@@ -4825,6 +4955,54 @@ export interface operations {
             };
         };
     };
+    documentHistory: {
+        parameters: {
+            query?: {
+                beforeSequence?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentHistoryDto"];
+                };
+            };
+        };
+    };
+    undoDocumentChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                changeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
     changeDocumentLabels: {
         parameters: {
             query?: never;
@@ -6166,6 +6344,58 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DueDateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TaskDto"];
+                };
+            };
+        };
+    };
+    taskHistory: {
+        parameters: {
+            query?: {
+                beforeVersion?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TaskHistoryDto"];
+                };
+            };
+        };
+    };
+    undoTaskChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                changeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskVersionRequest"];
             };
         };
         responses: {

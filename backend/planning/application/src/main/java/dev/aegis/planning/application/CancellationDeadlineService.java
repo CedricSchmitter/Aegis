@@ -14,7 +14,11 @@ import dev.aegis.planning.domain.Task;
 import dev.aegis.planning.domain.TaskRepository;
 import dev.aegis.planning.domain.TaskSource;
 import dev.aegis.planning.domain.TaskStatus;
+import dev.aegis.planning.domain.history.TaskAction;
+import dev.aegis.planning.domain.history.TaskHistoryRepository;
+import dev.aegis.planning.domain.history.TaskSnapshot;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ChangeActor;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.TaskId;
@@ -34,9 +38,12 @@ import java.util.UUID;
 public class CancellationDeadlineService
         implements CancellationDeadlineReconciliation, CancellationReminderPublication {
     public static final int REMINDER_LEAD_DAYS = 7;
+    /** The automation named as the author of the changes this service makes (ADR-0030). */
+    public static final String AUTOMATION = "contractDeadlines";
 
     private final ContractDeadlineQuery contracts;
     private final TaskRepository tasks;
+    private final TaskHistoryRecorder recorder;
     private final CancellationReminderScheduler reminders;
     private final MemberDirectory members;
     private final PublishNotice notices;
@@ -45,10 +52,11 @@ public class CancellationDeadlineService
     private final Clock clock;
 
     public CancellationDeadlineService(ContractDeadlineQuery contracts, TaskRepository tasks,
-            CancellationReminderScheduler reminders, MemberDirectory members, PublishNotice notices,
-            PlanningEvents events, HouseholdAccess access, Clock clock) {
+            TaskHistoryRepository history, CancellationReminderScheduler reminders, MemberDirectory members,
+            PublishNotice notices, PlanningEvents events, HouseholdAccess access, Clock clock) {
         this.contracts = contracts;
         this.tasks = tasks;
+        this.recorder = new TaskHistoryRecorder(tasks, history, clock);
         this.reminders = reminders;
         this.members = members;
         this.notices = notices;
@@ -67,7 +75,7 @@ public class CancellationDeadlineService
         LocalDate today = LocalDate.now(clock);
         ContractDeadlineView deadline = contracts.confirmedDeadline(actor, contractId, today).orElse(null);
         if (deadline == null || !"ACTIVE".equals(deadline.status())) {
-            supersedeOpenOccurrences(contractId);
+            supersedeOpenOccurrences(actor, contractId);
             return;
         }
 
@@ -81,7 +89,7 @@ public class CancellationDeadlineService
             if (existing.cancellationDeadline().equals(review.cancellationDeadline())) {
                 current = task;
             } else {
-                cancelIfOpen(task);
+                cancelIfOpen(actor, task);
             }
         }
         if (current == null) {
@@ -93,18 +101,22 @@ public class CancellationDeadlineService
                     deadline.name(), deadline.cancellationDeadline(), source, review, actor.memberId(),
                     clock.instant());
             tasks.save(current);
+            current = recorder.record(TaskSnapshot.NONE, current.id(), automation(actor), TaskAction.CREATED);
         } else {
-            boolean changed = false;
+            TaskSnapshot before = TaskSnapshot.of(current);
+            boolean updated = false;
             if (!Objects.equals(current.cancellationReview().orElseThrow(), review)
                     || !Objects.equals(current.source().orElse(null), source)) {
                 current.reconcileCancellationReview(review, source, clock.instant());
-                changed = true;
+                updated = true;
             }
             // The occurrence was superseded (its contract was trashed or resolved, or a correction was undone) and
             // its deadline is current again: the same task, with the member's edits, becomes open work again.
-            changed |= current.reviveAutomatic(clock.instant());
-            if (changed) {
+            boolean revived = current.reviveAutomatic(clock.instant());
+            if (updated || revived) {
                 tasks.save(current);
+                current = recorder.record(before, current.id(), automation(actor),
+                        revived ? TaskAction.REVIVED : TaskAction.CONTRACT_UPDATED);
             }
         }
         // A task a member moved to the trash is not open work, so it gets no reminder until it is restored.
@@ -139,17 +151,23 @@ public class CancellationDeadlineService
         }
     }
 
-    private void supersedeOpenOccurrences(ContractId contractId) {
-        tasks.findCancellationReviews(contractId).forEach(this::cancelIfOpen);
+    private void supersedeOpenOccurrences(Actor actor, ContractId contractId) {
+        tasks.findCancellationReviews(contractId).forEach(task -> cancelIfOpen(actor, task));
     }
 
-    private void cancelIfOpen(Task task) {
+    private void cancelIfOpen(Actor actor, Task task) {
         // Also supersedes an occurrence in the trash, so restoring it later does not revive work for a resolved
         // contract.
         if (task.status() == TaskStatus.OPEN) {
+            TaskSnapshot before = TaskSnapshot.of(task);
             task.cancelAutomatic(clock.instant());
             tasks.save(task);
+            recorder.record(before, task.id(), automation(actor), TaskAction.SUPERSEDED);
         }
+    }
+
+    private static ChangeActor automation(Actor actor) {
+        return ChangeActor.automation(AUTOMATION, actor.memberId());
     }
 
     /**
@@ -160,8 +178,10 @@ public class CancellationDeadlineService
     private void forgetDeletedContract(Actor actor, ContractId contractId) {
         for (Task task : tasks.findCancellationReviews(contractId)) {
             if (task.status() == TaskStatus.DONE) {
+                TaskSnapshot before = TaskSnapshot.of(task);
                 if (task.markContractDeleted(clock.instant())) {
                     tasks.save(task);
+                    recorder.record(before, task.id(), automation(actor), TaskAction.CONTRACT_DELETED);
                 }
             } else {
                 tasks.purge(task, actor.memberId(), clock.instant());

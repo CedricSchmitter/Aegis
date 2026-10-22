@@ -9,7 +9,10 @@ import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.ProcessingState;
 import dev.aegis.documents.domain.Subject;
+import dev.aegis.documents.domain.history.DocumentAction;
+import dev.aegis.documents.domain.history.DocumentSnapshot;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ChangeActor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.NotFoundException;
@@ -30,10 +33,11 @@ public class DocumentCommandService implements DocumentCommands {
     private final HouseholdAccess access;
     private final Trash.RecoveryWindow recoveryWindow;
     private final Clock clock;
+    private final DocumentHistoryRecorder history;
 
     public DocumentCommandService(DocumentRepository documents, ProcessingScheduler scheduler,
             DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdPersons persons, HouseholdAccess access,
-            Trash.RecoveryWindow recoveryWindow, Clock clock) {
+            Trash.RecoveryWindow recoveryWindow, Clock clock, DocumentHistoryRecorder history) {
         this.documents = documents;
         this.scheduler = scheduler;
         this.presenter = presenter;
@@ -42,6 +46,7 @@ public class DocumentCommandService implements DocumentCommands {
         this.access = access;
         this.recoveryWindow = recoveryWindow;
         this.clock = clock;
+        this.history = history;
     }
 
     @Override
@@ -70,8 +75,10 @@ public class DocumentCommandService implements DocumentCommands {
     public DocumentSummary rename(Actor actor, DocumentId id, String title, long expectedVersion) {
         access.requireMember(actor);
         Document document = loadVersion(id, expectedVersion);
+        DocumentSnapshot before = history.snapshot(id);
         document.rename(title);
         documents.save(document);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.RENAMED);
         return presenter.summarize(load(id));
     }
 
@@ -83,8 +90,10 @@ public class DocumentCommandService implements DocumentCommands {
             return presenter.summarize(document);
         }
         requireVersion(document, expectedVersion);
+        DocumentSnapshot before = history.snapshot(id);
         document.moveToTrash(actor.memberId(), clock.instant(), recoveryWindow);
         documents.save(document);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.TRASHED);
         return presenter.summarize(load(id));
     }
 
@@ -96,8 +105,10 @@ public class DocumentCommandService implements DocumentCommands {
             return presenter.summarize(document);
         }
         requireVersion(document, expectedVersion);
+        DocumentSnapshot before = history.snapshot(id);
         document.restoreFromTrash();
         documents.save(document);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.RESTORED);
         Document restored = load(id);
         if (restored.state() == ProcessingState.ARCHIVED) {
             // Archived while it was in the trash: the automatic analysis of the upload waited for this moment.

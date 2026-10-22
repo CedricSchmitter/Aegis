@@ -2,6 +2,7 @@ package dev.aegis.planning.adapters.rest;
 
 import dev.aegis.planning.application.api.TaskCommands;
 import dev.aegis.planning.application.api.TaskCommands.CreateTaskCommand;
+import dev.aegis.planning.application.api.TaskHistoryQueries;
 import dev.aegis.planning.application.api.TaskQueries;
 import dev.aegis.planning.application.api.TaskQueries.TodayView;
 import dev.aegis.shared.Actor;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,10 +35,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class TasksController {
     private final TaskCommands commands;
     private final TaskQueries queries;
+    private final TaskHistoryQueries history;
 
-    public TasksController(TaskCommands commands, TaskQueries queries) {
+    public TasksController(TaskCommands commands, TaskQueries queries, TaskHistoryQueries history) {
         this.commands = commands;
         this.queries = queries;
+        this.history = history;
     }
 
     public record CreateTaskRequest(@NotBlank String title, @Schema(nullable = true) String note,
@@ -156,6 +160,23 @@ public class TasksController {
     @PostMapping("/tasks/{id}/reopen")
     public TaskDto reopen(Actor actor, @PathVariable("id") String id, @RequestBody VersionRequest body) {
         return TaskDto.from(commands.reopen(actor, TaskId.of(id), body.expectedVersion()));
+    }
+
+    @Operation(operationId = "taskHistory", summary = "Recorded changes of a task, newest first (ADR-0030)")
+    @GetMapping("/tasks/{id}/history")
+    public TaskHistoryDto history(Actor actor, @PathVariable("id") String id,
+            @RequestParam(name = "beforeVersion", required = false) Long beforeVersion,
+            @RequestParam(name = "limit", defaultValue = "30") int limit) {
+        return TaskHistoryDto.from(history.history(actor, TaskId.of(id), beforeVersion, limit));
+    }
+
+    @Operation(operationId = "undoTaskChange", summary = "Undo one recorded change of a task (ADR-0030)",
+            description = "409 history.undo.changedSince when a later change replaced one of its fields, "
+                    + "history.undo.alreadyUndone or history.undo.notSupported.")
+    @PostMapping("/tasks/{id}/history/{changeId}/undo")
+    public TaskDto undo(Actor actor, @PathVariable("id") String id, @PathVariable("changeId") UUID changeId,
+            @RequestBody VersionRequest body) {
+        return TaskDto.from(commands.undo(actor, TaskId.of(id), changeId, body.expectedVersion()));
     }
 
     @Operation(operationId = "today", summary = "Deterministic Today view computed from persisted tasks")

@@ -26,7 +26,7 @@ class SubjectPersonsTest {
         f = new CatalogFixture();
         f.access.members.add(assistant);
         commands = new DocumentCommandService(f.documents, f.scheduler, f.presenter, id -> { }, f.persons, f.access,
-                Trash.RecoveryWindow.DEFAULT, f.clock);
+                Trash.RecoveryWindow.DEFAULT, f.clock, f.recorder);
     }
 
     @Test

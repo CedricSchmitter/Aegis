@@ -6,6 +6,7 @@ import en from "./en.json";
 import { SKIP_REASONS } from "../lib/bulkAnalysis";
 import { LIMIT_PROBLEMS } from "../lib/costLimits";
 import { FAILURE_REASONS } from "../lib/failureReasons";
+import { HISTORY_ACTIONS, HISTORY_AUTOMATIONS, HISTORY_FIELDS } from "../lib/history";
 import { CHECK_AREAS, CHECK_REASONS, CHECK_STATES, KNOWN_JOBS } from "../lib/status";
 
 /** All TypeScript sources of the app, so no translation key is missed. */
@@ -131,6 +132,10 @@ describe("locale catalogs", () => {
         "otherTool"].map((step) => `chat.progress.${step}`),
       ...["generic", "ai.notConfigured", "ai.provider.memberNotAllowed", "ai.workload.unavailable", "ai.price.unknown"]
         .map((reason) => `chat.unavailable.${reason}`),
+      // Change history (ADR-0030): actions, fields and the automations named as authors.
+      ...HISTORY_ACTIONS.map((action) => `history.action.${action}`),
+      ...HISTORY_FIELDS.map((field) => `history.field.${field}`),
+      ...HISTORY_AUTOMATIONS.map((automation) => `history.automation.${automation}`),
       // Short reasons for the failure codes of review cards and archival notices.
       ...FAILURE_REASONS.map((reason) => `review.failureReason.${reason}`),
     ];

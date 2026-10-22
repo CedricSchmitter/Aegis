@@ -11,9 +11,13 @@ import dev.aegis.notifications.application.api.PublishNotice;
 import dev.aegis.planning.domain.Task;
 import dev.aegis.planning.domain.TaskStatus;
 import dev.aegis.planning.domain.TodayPolicy;
+import dev.aegis.planning.domain.history.TaskAction;
+import dev.aegis.planning.domain.history.TaskChange;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ChangeActor;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
+import dev.aegis.shared.FieldChange;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.ProductLocale;
 import java.time.Clock;
@@ -36,6 +40,7 @@ class CancellationDeadlineServiceTest {
     private final Actor actor = new Actor(anna);
     private final ContractId contractId = ContractId.random();
     private final DocumentId documentId = DocumentId.random();
+    private final PlanningTestSupport.InMemoryTaskHistory history = new PlanningTestSupport.InMemoryTaskHistory();
     private final PlanningTestSupport.InMemoryTaskRepository tasks =
             new PlanningTestSupport.InMemoryTaskRepository();
     private final MutableClock clock = new MutableClock("2027-11-22T12:00:00Z");
@@ -77,7 +82,7 @@ class CancellationDeadlineServiceTest {
                 return listMembers(actor).stream().filter(member -> member.id().equals(id)).findFirst();
             }
         };
-        service = new CancellationDeadlineService(contracts, tasks, reminders, members, notices, events,
+        service = new CancellationDeadlineService(contracts, tasks, history, reminders, members, notices, events,
                 new PlanningTestSupport.Members(anna, ben), clock);
     }
 
@@ -158,6 +163,22 @@ class CancellationDeadlineServiceTest {
         view = deadline(LocalDate.of(2027, 12, 15), "CANCELLED", 5);
         service.reconcile(actor, contractId);
         assertThat(tasks.findCancellationReviews(contractId)).noneMatch(Task::isOpen);
+    }
+
+    @Test
+    void automaticWorkIsRecordedAsTheContractAutomationTriggeredByTheMemberAndCannotBeUndone() {
+        service.reconcile(actor, contractId);
+        Task first = tasks.findCancellationReviews(contractId).getFirst();
+        view = deadline(LocalDate.of(2027, 12, 15), "ACTIVE", 4);
+        service.reconcile(actor, contractId);
+
+        List<TaskChange> changes = history.of(first.id());
+        assertThat(changes).extracting(TaskChange::action).containsExactly(TaskAction.SUPERSEDED, TaskAction.CREATED);
+        assertThat(changes).allSatisfy(change -> {
+            assertThat(change.actor()).isEqualTo(ChangeActor.automation(CancellationDeadlineService.AUTOMATION, anna));
+            assertThat(change.undoable()).isFalse();
+        });
+        assertThat(changes.getFirst().changes()).containsExactly(new FieldChange("status", "OPEN", "CANCELLED"));
     }
 
     @Test

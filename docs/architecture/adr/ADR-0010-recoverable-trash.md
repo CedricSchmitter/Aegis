@@ -68,6 +68,7 @@ for at least 30 days; this change implements the trash only, and permanent delet
 - Records in the trash still occupy storage and count in exports and backups; that is intended until permanent
   deletion exists.
 - Who trashed a record and when is kept while it is trashed. After a restore only the record's current state
-  remains; a full change history belongs to issue #47.
+  remains in the record itself; the change history of
+  [ADR-0030](ADR-0030-change-history-and-undo.md) records the trash and the restore.
 - Permanent deletion, including the Paperless original and its own trash, is a separate explicit action
   ([ADR-0021](ADR-0021-permanent-deletion.md)).

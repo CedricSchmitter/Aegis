@@ -957,6 +957,65 @@
     "emptyPartly_one": "{{count}} Eintrag ließ sich nicht löschen und liegt weiter im Papierkorb. Versuche es in einem Moment noch einmal.",
     "emptyPartly": "{{count}} Einträge ließen sich nicht löschen und liegen weiter im Papierkorb. Versuche es in einem Moment noch einmal."
   },
+  "history": {
+    "title": "Verlauf",
+    "empty": "Noch keine Änderungen aufgezeichnet.",
+    "more": "Ältere Änderungen",
+    "undo": "Rückgängig",
+    "undone": "Rückgängig gemacht.",
+    "undoneMessage": "Änderung rückgängig gemacht.",
+    "notRecordedBefore": "Änderungen vor dem {{date}} wurden nicht aufgezeichnet.",
+    "fromTo": "{{before}} → {{after}}",
+    "labelAdded": "+ {{name}}",
+    "labelRemoved": "− {{name}}",
+    "actor": {
+      "aiRun": "KI-Analyse",
+      "automation": "Automatik",
+      "triggered": "{{name}} (ausgelöst von {{member}})"
+    },
+    "automation": {
+      "contractDeadlines": "Vertragsfristen"
+    },
+    "value": {
+      "none": "—",
+      "generatedFilename": "automatischer Name",
+      "deletedFolder": "gelöschter Ordner",
+      "unknownLabel": "gelöschtes Label"
+    },
+    "field": {
+      "title": "Titel",
+      "note": "Notiz",
+      "owner": "Zuständig",
+      "status": "Status",
+      "dueDate": "Frist",
+      "plannedDate": "Geplant",
+      "filename": "Dateiname",
+      "folder": "Ordner",
+      "labels": "Labels"
+    },
+    "action": {
+      "CREATED": "Angelegt",
+      "EDITED": "Titel oder Notiz geändert",
+      "ASSIGNED": "Zuständigkeit geändert",
+      "PLANNED": "Geplanten Tag geändert",
+      "DUE_DATE_CHANGED": "Frist geändert",
+      "COMPLETED": "Erledigt",
+      "REOPENED": "Wieder geöffnet",
+      "TRASHED": "In den Papierkorb gelegt",
+      "RESTORED": "Aus dem Papierkorb geholt",
+      "IMPORTED": "Aus einem Export wiederhergestellt",
+      "UNDONE": "Änderung rückgängig gemacht",
+      "CONTRACT_UPDATED": "An den Vertrag angepasst",
+      "SUPERSEDED": "Durch eine neue Frist ersetzt",
+      "REVIVED": "Wieder offen, weil die Frist wieder gilt",
+      "CONTRACT_DELETED": "Vertrag endgültig gelöscht",
+      "RENAMED": "Umbenannt",
+      "FILENAME_CHANGED": "Dateiname geändert",
+      "MOVED": "Verschoben",
+      "LABELS_CHANGED": "Labels geändert",
+      "ANALYZED": "Automatisch eingeordnet"
+    }
+  },
   "settings": {
     "title": "Einstellungen",
     "signedInLabel": "Angemeldet als",
@@ -1216,7 +1275,15 @@
     "contract.source.missing": "Eine Seite oder ein Zitat braucht das Dokument, in dem es steht.",
     "contract.source.page.invalid": "Seitenzahlen beginnen bei 1.",
     "contract.source.quote.tooLong": "Das Zitat ist zu lang.",
-    "contract.reminder.lead.invalid": "Die Vorlaufzeit darf nicht negativ sein."
+    "contract.reminder.lead.invalid": "Die Vorlaufzeit darf nicht negativ sein.",
+    "history.undo.changedSince": "Das wurde inzwischen wieder geändert. Rückgängig machen würde die neuere Änderung überschreiben.",
+    "history.undo.alreadyUndone": "Diese Änderung wurde schon rückgängig gemacht.",
+    "history.undo.notSupported": "Diese Änderung lässt sich hier nicht rückgängig machen.",
+    "history.undo.ownerInactive": "Die frühere Person gehört nicht mehr zum Haushalt.",
+    "history.undo.folderGone": "Der frühere Ordner existiert nicht mehr.",
+    "history.undo.labelGone": "Ein früheres Label existiert nicht mehr oder ist stillgelegt.",
+    "taskChange.notFound": "Diese Änderung gibt es nicht.",
+    "documentChange.notFound": "Diese Änderung gibt es nicht."
   },
   "format": {
     "bytes": "{{value}} B",

@@ -39,18 +39,26 @@ final class CatalogFixture {
     final TestDoubles.MembersOnly access = new TestDoubles.MembersOnly(lisa, cedric);
     final TestDoubles.Persons persons = new TestDoubles.Persons(lisa, cedric);
     final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+    final InMemoryDocumentAnalysisRepository analyses = new InMemoryDocumentAnalysisRepository();
+    final InMemoryDocumentHistoryRepository history = new InMemoryDocumentHistoryRepository();
+    final DocumentHistoryRecorder recorder = recorder(analyses);
 
     final CategoryService categoryService = new CategoryService(categories, labels, classifications, documents,
             catalog, lock, persons, access, clock);
     final LabelService labelService = new LabelService(labels, categories, classifications, catalog, lock, access,
             clock);
     final ClassificationService classificationService = new ClassificationService(classifications, documents,
-            categories, labels, placements, lock, presenter, access, clock);
+            categories, labels, placements, lock, presenter, access, clock, recorder);
     final PlacementService placementService = new PlacementService(classifications, placements, categories, labels,
-            documents, lock, presenter, access, clock);
+            documents, lock, presenter, access, clock, recorder);
     final CatalogQueryService catalogQueries = new CatalogQueryService(categories, labels, catalog, access);
     final CatalogImportService importService = new CatalogImportService(labels, categories, classifications,
             placements, documents, lock, access, clock);
+
+    /** A recorder over the given analyses, for tests that keep their own analysis repository. */
+    DocumentHistoryRecorder recorder(InMemoryDocumentAnalysisRepository analysisRepository) {
+        return new DocumentHistoryRecorder(documents, classifications, analysisRepository, history, clock);
+    }
 
     CategoryView folder(String name, UUID parent) {
         return categoryService.create(actor, new CreateCategory(null, parent, name));

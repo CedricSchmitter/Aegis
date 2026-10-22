@@ -6,6 +6,8 @@ import dev.aegis.planning.application.ports.CalendarPort;
 import dev.aegis.planning.application.ports.PlanningEvents;
 import dev.aegis.planning.domain.Task;
 import dev.aegis.planning.domain.TaskRepository;
+import dev.aegis.planning.domain.history.TaskChange;
+import dev.aegis.planning.domain.history.TaskHistoryRepository;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.ContractId;
 import dev.aegis.shared.DocumentId;
@@ -110,6 +112,50 @@ final class PlanningTestSupport {
                     task.dueDate().orElse(null), task.plannedDate().orElse(null), task.source().orElse(null), task.cancellationReview().orElse(null),
                     task.createdBy(), task.createdAt(), task.updatedAt(), task.completedAt().orElse(null),
                     task.completedBy().orElse(null), task.trash().orElse(null), task.version());
+        }
+    }
+
+    /** Keeps the database's guarantees: one entry per task version, at most one undo per change. */
+    static final class InMemoryTaskHistory implements TaskHistoryRepository {
+        static final java.time.Instant RECORDING_SINCE = java.time.Instant.parse("2026-09-01T00:00:00Z");
+        final List<TaskChange> changes = new ArrayList<>();
+
+        @Override
+        public void append(TaskChange change) {
+            boolean recorded = changes.stream().anyMatch(c -> c.taskId().equals(change.taskId())
+                    && c.taskVersion() == change.taskVersion());
+            if (change.undoOf() != null && changes.stream().anyMatch(c -> change.undoOf().equals(c.undoOf()))) {
+                throw new IllegalStateException("change undone twice");
+            }
+            if (!recorded) {
+                changes.add(change);
+            }
+        }
+
+        @Override
+        public List<TaskChange> findByTask(TaskId taskId, Long beforeVersion, int limit) {
+            return changes.stream().filter(c -> c.taskId().equals(taskId))
+                    .filter(c -> beforeVersion == null || c.taskVersion() < beforeVersion)
+                    .sorted(Comparator.comparingLong(TaskChange::taskVersion).reversed()).limit(limit).toList();
+        }
+
+        @Override
+        public Optional<TaskChange> find(java.util.UUID changeId) {
+            return changes.stream().filter(c -> c.id().equals(changeId)).findFirst();
+        }
+
+        @Override
+        public Optional<java.util.UUID> undoneBy(java.util.UUID changeId) {
+            return changes.stream().filter(c -> changeId.equals(c.undoOf())).map(TaskChange::id).findFirst();
+        }
+
+        @Override
+        public java.time.Instant recordingSince() {
+            return RECORDING_SINCE;
+        }
+
+        List<TaskChange> of(TaskId taskId) {
+            return findByTask(taskId, null, Integer.MAX_VALUE);
         }
     }
 
