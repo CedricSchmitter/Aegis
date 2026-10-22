@@ -13,6 +13,7 @@ import type {
 } from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { AnalysisPanel } from "../components/AnalysisPanel";
+import { ChangeHistory } from "../components/ChangeHistory";
 import { DocumentHead, DocumentPreview, DocumentViewer } from "../components/documents/DocumentHead";
 import { SimilarDocuments } from "../components/documents/SimilarDocuments";
 import { FolderSelect } from "../components/FolderSelect";
@@ -32,10 +33,12 @@ import { ProcessingSteps } from "../components/ui";
 import { EmptyState, ErrorBox, InfoBox, Loading } from "../components/common";
 import { documentProgress } from "../lib/documentView";
 import { formatBytes, formatDate, formatDateTime } from "../lib/format";
-import { subjectChoices, subjectKey } from "../lib/labels";
+import type { HistoryEntry } from "../lib/history";
+import { labelName, subjectChoices, subjectKey } from "../lib/labels";
 import { problemMessage } from "../lib/problem";
 import { searchablePdf } from "../lib/searchablePdf";
 import { awaitingTextCheck } from "../lib/textRecognition";
+import { pathOf } from "../lib/tree";
 
 /** A titled block of the document view, headed by a mono section line like in the approved mockup. */
 function Block({ id, title, action, children, testId }: { id: string; title: ReactNode; action?: ReactNode; children: ReactNode; testId?: string }) {
@@ -106,6 +109,21 @@ export function DocumentDetailPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const loadHistory = useCallback(async (before: number | null) => {
+    const query = before == null ? {} : { beforeSequence: before };
+    const page = unwrap(await api.GET("/api/documents/{id}/history", { params: { path: { id }, query } }));
+    return { recordingSince: page.recordingSince, changes: page.changes, next: page.nextBeforeSequence ?? null };
+  }, [id]);
+
+  /** An undo is bound to the values the change left, not to a version: no stale-version conflict to reload for. */
+  const undoChange = async (entry: HistoryEntry) => {
+    setError(null);
+    const changed = unwrap(await api.POST("/api/documents/{id}/history/{changeId}/undo", { params: { path: { id, changeId: entry.id } } }));
+    setDocument(changed);
+    setFolderDraft(changed.classification.categoryId ?? null);
+    setMessage(t("history.undoneMessage"));
+  };
 
   useEffect(() => {
     if (!document) return;
@@ -279,6 +297,17 @@ export function DocumentDetailPage() {
   const p = document.processing;
   const folderName = (folderId: string) => categories.find((category) => category.id === folderId)?.name ?? "";
   const trashed = !!document.trash;
+  const historyValue = (field: string, value: string | null | undefined) => {
+    if (field === "folder") {
+      if (!value) return t("documents.unsorted");
+      const path = pathOf(categories, value);
+      return path.length > 0 ? path.map((step) => step.name).join(" / ") : t("history.value.deletedFolder");
+    }
+    if (field === "filename") return value || t("history.value.generatedFilename");
+    return value || t("history.value.none");
+  };
+  const historyLabel = (labelId: string) =>
+    labelName(labels.find((label) => label.id === labelId), t) || t("history.value.unknownLabel");
   const searchable = searchablePdf(document);
   const progress = documentProgress(document);
   const hint = "text-sm text-text-3";
@@ -653,6 +682,15 @@ export function DocumentDetailPage() {
                 </dd>
               </dl>
             </details>
+            <ChangeHistory
+              refreshKey={`${document.version}:${document.classification.version}:${document.analysis.generation}:${document.analysis.state}:${document.title}:${document.filename.override ?? ""}`}
+              createdAt={document.uploadedAt}
+              load={loadHistory}
+              undo={undoChange}
+              formatValue={historyValue}
+              labelName={historyLabel}
+              readOnly={trashed}
+            />
           </Block>
 
           {!trashed && (

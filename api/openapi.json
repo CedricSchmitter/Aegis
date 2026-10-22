@@ -1521,6 +1521,50 @@
         "required" : [ "measuredAt", "name", "state" ],
         "type" : "object"
       },
+      "DocumentChangeDto" : {
+        "properties" : {
+          "action" : {
+            "type" : "string"
+          },
+          "actorKind" : {
+            "type" : "string"
+          },
+          "actorMemberId" : {
+            "type" : [ "string", "null" ]
+          },
+          "actorReference" : {
+            "type" : [ "string", "null" ]
+          },
+          "changes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentFieldChangeDto"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "sequence" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "undoOf" : {
+            "type" : [ "string", "null" ]
+          },
+          "undoable" : {
+            "type" : "boolean"
+          },
+          "undoneBy" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "action", "actorKind", "changes", "id", "occurredAt", "sequence", "undoable" ],
+        "type" : "object"
+      },
       "DocumentDto" : {
         "properties" : {
           "analysis" : {
@@ -1589,6 +1633,44 @@
           }
         },
         "required" : [ "analysis", "archivePdfAvailable", "checksumSha256", "classification", "contentType", "filename", "id", "originalAvailable", "originalFilename", "processing", "sizeBytes", "subjects", "textRecognition", "title", "titleOrigin", "uploadedAt", "uploadedBy", "version" ],
+        "type" : "object"
+      },
+      "DocumentFieldChangeDto" : {
+        "properties" : {
+          "after" : {
+            "type" : [ "string", "null" ]
+          },
+          "before" : {
+            "type" : [ "string", "null" ]
+          },
+          "field" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "field" ],
+        "type" : "object"
+      },
+      "DocumentHistoryDto" : {
+        "properties" : {
+          "changes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentChangeDto"
+            },
+            "type" : "array"
+          },
+          "documentId" : {
+            "type" : "string"
+          },
+          "nextBeforeSequence" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "recordingSince" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "changes", "documentId", "recordingSince" ],
         "type" : "object"
       },
       "DocumentListResponse" : {
@@ -3382,6 +3464,50 @@
         "required" : [ "checks", "documentProcessing", "generatedAt", "jobs", "storage" ],
         "type" : "object"
       },
+      "TaskChangeDto" : {
+        "properties" : {
+          "action" : {
+            "type" : "string"
+          },
+          "actorKind" : {
+            "type" : "string"
+          },
+          "actorMemberId" : {
+            "type" : [ "string", "null" ]
+          },
+          "actorReference" : {
+            "type" : [ "string", "null" ]
+          },
+          "changes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TaskFieldChangeDto"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "taskVersion" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "undoOf" : {
+            "type" : [ "string", "null" ]
+          },
+          "undoable" : {
+            "type" : "boolean"
+          },
+          "undoneBy" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "action", "actorKind", "changes", "id", "occurredAt", "taskVersion", "undoable" ],
+        "type" : "object"
+      },
       "TaskDto" : {
         "properties" : {
           "cancellationReview" : {
@@ -3443,6 +3569,44 @@
           }
         },
         "required" : [ "createdAt", "createdBy", "id", "note", "status", "title", "updatedAt", "version" ],
+        "type" : "object"
+      },
+      "TaskFieldChangeDto" : {
+        "properties" : {
+          "after" : {
+            "type" : [ "string", "null" ]
+          },
+          "before" : {
+            "type" : [ "string", "null" ]
+          },
+          "field" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "field" ],
+        "type" : "object"
+      },
+      "TaskHistoryDto" : {
+        "properties" : {
+          "changes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TaskChangeDto"
+            },
+            "type" : "array"
+          },
+          "nextBeforeVersion" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "recordingSince" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "taskId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "changes", "recordingSince", "taskId" ],
         "type" : "object"
       },
       "TaskTrashDto" : {
@@ -5726,6 +5890,86 @@
         "tags" : [ "documents" ]
       }
     },
+    "/api/documents/{id}/history" : {
+      "get" : {
+        "operationId" : "documentHistory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "beforeSequence",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "default" : 30,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentHistoryDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Recorded changes of a document, newest first (ADR-0029)",
+        "tags" : [ "documents" ]
+      }
+    },
+    "/api/documents/{id}/history/{changeId}/undo" : {
+      "post" : {
+        "description" : "Bound to the values the change left: 409 history.undo.changedSince when a later change replaced one of them, history.undo.alreadyUndone, history.undo.notSupported, history.undo.folderGone or history.undo.labelGone.",
+        "operationId" : "undoDocumentChange",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "changeId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Undo one recorded change of a document (ADR-0029)",
+        "tags" : [ "documents" ]
+      }
+    },
     "/api/documents/{id}/labels" : {
       "put" : {
         "operationId" : "changeDocumentLabels",
@@ -7483,6 +7727,96 @@
           }
         },
         "summary" : "Explicitly change the actual deadline",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/history" : {
+      "get" : {
+        "operationId" : "taskHistory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "beforeVersion",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "default" : 30,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskHistoryDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Recorded changes of a task, newest first (ADR-0029)",
+        "tags" : [ "tasks" ]
+      }
+    },
+    "/api/tasks/{id}/history/{changeId}/undo" : {
+      "post" : {
+        "description" : "409 history.undo.changedSince when a later change replaced one of its fields, history.undo.alreadyUndone or history.undo.notSupported.",
+        "operationId" : "undoTaskChange",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "changeId",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TaskVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TaskDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Undo one recorded change of a task (ADR-0029)",
         "tags" : [ "tasks" ]
       }
     },

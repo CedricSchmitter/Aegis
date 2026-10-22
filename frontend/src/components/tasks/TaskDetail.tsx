@@ -1,11 +1,13 @@
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { api } from "../../api/client";
+import { api, toApiError, unwrap } from "../../api/client";
 import type { TaskDto } from "../../api/types";
 import { useSession } from "../../auth/SessionContext";
 import { formatDate, formatDateTime, todayIso } from "../../lib/format";
+import type { HistoryEntry } from "../../lib/history";
 import { daysUntil, isOverdue } from "../../lib/tasks";
+import { ChangeHistory } from "../ChangeHistory";
 import { MoveToTrashButton, TrashBanner } from "../TrashControls";
 import { OwnerMark, useTaskTitle } from "./TaskCard";
 import { useTaskMutation } from "./useTaskMutation";
@@ -49,6 +51,35 @@ export function TaskDetail({ task, onChange, heading, onCompleted, onTrashed }: 
   const start = (mode: Editing, value: string) => {
     setEditing(mode);
     setDraft(value);
+  };
+
+  const taskId = task.id;
+  const loadHistory = useCallback(async (before: number | null) => {
+    const query = before == null ? {} : { beforeVersion: before };
+    const page = unwrap(await api.GET("/api/tasks/{id}/history", { params: { path: { id: taskId }, query } }));
+    return { recordingSince: page.recordingSince, changes: page.changes, next: page.nextBeforeVersion ?? null };
+  }, [taskId]);
+  const undoChange = async (entry: HistoryEntry) => {
+    try {
+      onChange(unwrap(await api.POST("/api/tasks/{id}/history/{changeId}/undo", {
+        params: { path: { id: task.id, changeId: entry.id } },
+        body: { expectedVersion: task.version },
+      })));
+    } catch (failure) {
+      // Someone else changed the task meanwhile: show its current state next to the reason.
+      if (toApiError(failure).status === 409) {
+        const fresh = await api.GET("/api/tasks/{id}", path);
+        if (fresh.data) onChange(fresh.data);
+      }
+      throw failure;
+    }
+  };
+  const historyValue = (field: string, value: string | null | undefined) => {
+    if (!value) return field === "owner" ? t("tasks.nobodyShort") : t("history.value.none");
+    if (field === "owner") return memberName(value) ?? t("app.unknownMember");
+    if (field === "status") return t(`tasks.status.${value}`, { defaultValue: value });
+    if (field === "dueDate" || field === "plannedDate") return formatDate(value, i18n.language);
+    return value;
   };
 
   return (
@@ -273,6 +304,15 @@ export function TaskDetail({ task, onChange, heading, onCompleted, onTrashed }: 
           </div>
         </form>
       )}
+
+      <ChangeHistory
+        refreshKey={String(task.version)}
+        createdAt={task.createdAt}
+        load={loadHistory}
+        undo={undoChange}
+        formatValue={historyValue}
+        readOnly={Boolean(task.trash)}
+      />
 
       {!task.trash && (
         <div className="border-t border-line pt-3">

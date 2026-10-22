@@ -121,6 +121,19 @@ deleted document say "source deleted" (facts keep page and quote), completed can
 contract stay as history, and review cards and notices about the record disappear. Only who deleted what and when is
 kept. Backups and export generations keep their earlier copies.
 
+Tasks and documents have a "Verlauf" (history) at the bottom of their page
+([ADR-0029](architecture/adr/ADR-0029-change-history-and-undo.md)). It is closed by default, loads when opened and lists
+newest first who changed which field from what to what: a member, an automation with the member who triggered it
+(contract deadlines), or an AI analysis. Tasks record creation, edits of title and note, owner, planned day, due date,
+completion, reopening, trash and restore, and the changes the contract deadline automation makes; documents record
+title, filename, folder and labels, including accepted suggestions, plus trash and restore. Each entry is written in
+the same transaction as the change. A member's own edit of these fields offers "Rückgängig" (undo): the undo is a new
+entry that restores the earlier values, and it is refused with a reason when a later change replaced one of them, the
+change was already undone, or the earlier folder, label or owner no longer exists. Changes by automations and AI runs
+are shown but are corrected with the regular controls instead. Records that existed before recording began say from
+when changes were recorded. Deleting a record permanently also deletes its history, and the history is not part of
+the portable export. Subjects, contracts and structural changes to folders and labels are not recorded yet.
+
 A bounded AI execution boundary (ADR-0003) exists: per-workload provider, model and budgets, durable runs with
 visible state, cancellation and retry, a connection check, the direct Claude API adapter and, without an API key, a
 fallback to the owner's Claude subscription through headless `claude -p` on the VM.
