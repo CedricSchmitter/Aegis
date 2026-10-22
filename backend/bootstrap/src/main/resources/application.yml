@@ -84,6 +84,10 @@ aegis:
     dir: ${AEGIS_INGRESS_DIR:./data/ingress}
   exports:
     dir: ${AEGIS_EXPORTS_DIR:./data/exports}
+    # The daily export (ADR-0029): household time of the run, before the nightly backup at 03:30, and how many
+    # scheduled generations to keep (0 keeps all). Unchanged data writes no new generation; manual ones are kept.
+    daily-at: "02:30"
+    scheduled-retention: 14
   members:
     file: ${AEGIS_MEMBERS_FILE:}
     # Usernames of the household's assistant account (ADR-0017): a member that logs in, receives notices and can be

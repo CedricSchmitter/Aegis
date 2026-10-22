@@ -2606,6 +2606,8 @@ export interface components {
             missingOriginals: string[];
             /** Format: int32 */
             taskCount: number;
+            /** @description MANUAL or SCHEDULED; null for generations from before the daily export */
+            trigger?: string | null;
         };
         FacetCounts: {
             missing: {

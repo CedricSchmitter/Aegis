@@ -11,10 +11,19 @@ against losing the VM or host; the external recovery evidence is recorded below.
 and publishes it atomically (staging directory, then rename, then `LATEST` pointer). A failed generation is
 discarded and never replaces a good one.
 
+The daily job `refresh-export` ([ADR-0029](../architecture/adr/ADR-0029-daily-export.md)) runs at 02:30 household
+time (`aegis.exports.daily-at`), before the backup at 03:30 copies `/srv/aegis/exports` to the backup disk. It
+writes a new generation only when the data fingerprint in `manifest.json` differs from the latest generation's, or
+when an original missing from it can be read again; otherwise it only records the check in `scheduled-run.json`.
+Scheduled generations beyond the newest 14 (`aegis.exports.scheduled-retention`, 0 keeps all) are removed from the
+export directory; manual generations and the latest one are kept. The status overview's "Täglicher Export" line
+shows the newest generation, the last confirmation and a failed or stale run.
+
 ```text
 <generation>/
   README.md                       Markdown index with relative links to originals and source-linked tasks
-  manifest.json                   schema version, counts, missing originals, SHA-256 of every file
+  manifest.json                   schema version, counts, missing originals, SHA-256 of every file, trigger
+                                  (MANUAL or SCHEDULED) and the data fingerprint
   data/documents.json             versioned records (stable Aegis ids, checksums, subjects, Paperless ids, page origins)
   data/tasks.json                 tasks with owner, due date, planned date and source document id
   data/members.json               members (ids, usernames, display names, locale, person or assistant); no credentials

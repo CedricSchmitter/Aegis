@@ -592,6 +592,10 @@
       "backup": {
         "notConfigured": "Das externe Backup muss auf dem Server eingerichtet werden (Anleitung: docs/operations/BACKUP.md). Deine Dokumente in Aegis sind davon nicht betroffen."
       },
+      "export": {
+        "failed": "Deine Daten in Aegis sind nicht betroffen, und der letzte vollständige Export bleibt erhalten. Aegis versucht es in der nächsten Nacht erneut; unter „Technische Details“ lässt sich ein Export auch sofort erstellen. Bleibt es so: Das muss auf dem Server geprüft werden (Anleitung: docs/operations/BACKUP.md).",
+        "stale": "Deine Daten in Aegis sind nicht betroffen. Unter „Technische Details“ steht, wann der Export zuletzt lief. Oft hilft ein Neustart von Aegis auf dem Server."
+      },
       "storage": {
         "low": "Alte Exporte oder nicht mehr benötigte Dateien auf dem Server aufräumen. Dokumente in Aegis bleiben erhalten.",
         "unmeasured": "Das muss auf dem Server geprüft werden. Dokumente in Aegis bleiben erhalten."
@@ -616,6 +620,7 @@
       "database": "Datenbank",
       "archive": "Archiv (Paperless)",
       "backup": "Backup",
+      "export": "Täglicher Export",
       "storage": "Speicherplatz",
       "ai": "KI",
       "jobs": "Hintergrundjobs",
@@ -643,6 +648,13 @@
         "interrupted": "Ein Backup wurde gestartet, aber nicht beendet.",
         "notConfigured": "Es ist kein externes Backup eingerichtet.",
         "unknown": "Der Zustand des Backups lässt sich nicht lesen: {{reason}}"
+      },
+      "export": {
+        "ok": "Aktuell. Neuester Export: {{generatedAt}}, zuletzt geprüft: {{date}}.",
+        "pending": "Der tägliche Export läuft jede Nacht und hat noch nicht stattgefunden. Neuester Export: {{generatedAt}}.",
+        "failed": "Der letzte tägliche Export ist fehlgeschlagen. Neuester vollständiger Export: {{generatedAt}}.",
+        "stale": "Seit mehr als zwei Tagen lief kein täglicher Export. Neuester vollständiger Export: {{generatedAt}}.",
+        "noneYet": "noch keiner"
       },
       "storage": {
         "ok": "Genug freier Platz.",
@@ -679,6 +691,7 @@
     "exportCreated": "Export {{generation}} wurde vollständig veröffentlicht.",
     "noExports": "Noch kein Export erstellt.",
     "exportLine": "{{generation}}: {{documents}} Dokumente, {{tasks}} Aufgaben",
+    "exportTrigger": { "MANUAL": "von Hand", "SCHEDULED": "automatisch" },
     "missingOriginals": "{{count}} Originale fehlen im Export",
     "storageTitle": "Backup und Speicherplatz",
     "storageIntro": "Das externe Backup läuft jede Nacht um 03:30 auf die USB-Platte am Server.",
@@ -782,14 +795,16 @@
         "check-archive-text": "Texterkennung prüfen",
         "reconcile-documents": "Dokumentverarbeitung abgleichen",
         "dispatch-push-notices": "Benachrichtigungen senden",
-        "watch-job-health": "Jobs, Backup und Speicher überwachen"
+        "watch-job-health": "Jobs, Backup und Speicher überwachen",
+        "refresh-export": "Täglicher Export"
       },
       "purpose": {
         "reconcile-review-inbox": "Legt neue Einträge im Prüfkorb an und benachrichtigt die Mitglieder.",
         "check-archive-text": "Prüft bei archivierten Dokumenten, ob das Archiv Text erkannt hat.",
         "reconcile-documents": "Setzt unterbrochene Archivierungen fort und räumt Zwischendateien auf.",
         "dispatch-push-notices": "Schickt neue Meldungen an die Geräte, auf denen Benachrichtigungen an sind.",
-        "watch-job-health": "Benachrichtigt die Mitglieder, wenn ein anderer Hintergrundjob nicht mehr läuft, das Backup ausfällt oder der Speicherplatz knapp wird."
+        "watch-job-health": "Benachrichtigt die Mitglieder, wenn ein anderer Hintergrundjob nicht mehr läuft, das Backup ausfällt oder der Speicherplatz knapp wird.",
+        "refresh-export": "Schreibt jede Nacht um 02:30 einen neuen vollständigen Export, wenn sich seit dem letzten etwas geändert hat. Das Backup um 03:30 nimmt ihn mit."
       }
     }
   },

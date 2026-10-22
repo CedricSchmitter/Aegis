@@ -23,6 +23,7 @@ import dev.aegis.portability.application.ExportFormat.DerivationEntry;
 import dev.aegis.portability.application.ExportFormat.DerivationRangeEntry;
 import dev.aegis.portability.application.ExportFormat.DocumentEntry;
 import dev.aegis.portability.application.ExportFormat.DocumentsFile;
+import dev.aegis.portability.application.ExportFormat.FingerprintInput;
 import dev.aegis.portability.application.ExportFormat.FolderEntry;
 import dev.aegis.portability.application.ExportFormat.LabelEntry;
 import dev.aegis.portability.application.ExportFormat.Manifest;
@@ -36,12 +37,16 @@ import dev.aegis.portability.application.ExportFormat.ReviewsFile;
 import dev.aegis.review.application.api.ReviewPortability;
 import dev.aegis.portability.application.api.CreateExport;
 import dev.aegis.portability.application.api.ExportQueries;
+import dev.aegis.portability.application.api.ExportStatus;
 import dev.aegis.portability.application.api.ExportSummary;
+import dev.aegis.portability.application.api.RefreshExport;
 import dev.aegis.portability.application.ports.ExportSerializer;
 import dev.aegis.portability.application.ports.ExportStore;
 import dev.aegis.portability.application.ports.ExportStore.ExportStaging;
+import dev.aegis.portability.application.ports.ExportStore.ScheduledRun;
 import dev.aegis.shared.Actor;
 import dev.aegis.shared.HouseholdAccess;
+import dev.aegis.shared.NotAuthorizedException;
 import dev.aegis.shared.Trash;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -53,20 +58,24 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Builds a complete export generation: originals, versioned JSON (documents with the page ranges they were created
  * from, tasks, contracts, members and the shared catalog), readable CSV/Markdown and a checksum manifest with relative links. Published atomically
- * through the store.
+ * through the store. The manifest carries a fingerprint of the exported data, so the daily export (ADR-0029) writes a
+ * new generation only when the data changed.
  */
-public class ExportService implements CreateExport, ExportQueries {
+public class ExportService implements CreateExport, RefreshExport, ExportQueries {
     private static final DateTimeFormatter GENERATION_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
     private static final String UNSORTED = "(unsorted)";
+    static final int DEFAULT_SCHEDULED_RETENTION = 14;
 
     private static final DerivationPortability NO_DERIVATIONS = new DerivationPortability() {
         @Override
@@ -91,6 +100,7 @@ public class ExportService implements CreateExport, ExportQueries {
     private final HouseholdAccess access;
     private final Clock clock;
     private final String producerVersion;
+    private final int scheduledRetention;
 
     public ExportService(DocumentExportQuery documents, TaskExportQuery tasks, ContractExportQuery contracts,
             MemberDirectory members, ExportStore store, ExportSerializer serializer, HouseholdAccess access,
@@ -108,6 +118,21 @@ public class ExportService implements CreateExport, ExportQueries {
     public ExportService(DocumentExportQuery documents, DerivationPortability derivations, TaskExportQuery tasks,
             ContractExportQuery contracts, ReviewPortability reviews, MemberDirectory members, ExportStore store,
             ExportSerializer serializer, HouseholdAccess access, Clock clock, String producerVersion) {
+        this(documents, derivations, tasks, contracts, reviews, members, store, serializer, access, clock,
+                producerVersion, DEFAULT_SCHEDULED_RETENTION);
+    }
+
+    /**
+     * @param scheduledRetention how many scheduled generations to keep; 0 keeps all. Manual generations are kept.
+     */
+    public ExportService(DocumentExportQuery documents, DerivationPortability derivations, TaskExportQuery tasks,
+            ContractExportQuery contracts, ReviewPortability reviews, MemberDirectory members, ExportStore store,
+            ExportSerializer serializer, HouseholdAccess access, Clock clock, String producerVersion,
+            int scheduledRetention) {
+        if (scheduledRetention < 0) {
+            throw new IllegalArgumentException("the scheduled export retention must not be negative");
+        }
+        this.scheduledRetention = scheduledRetention;
         this.documents = documents;
         this.derivations = derivations;
         this.tasks = tasks;
@@ -124,29 +149,118 @@ public class ExportService implements CreateExport, ExportQueries {
     @Override
     public ExportSummary export(Actor actor) {
         access.requireMember(actor);
-        Instant now = clock.instant();
-        String generation = GENERATION_FORMAT.format(now.atZone(ZoneId.of("UTC"))) + "-" + java.util.UUID.randomUUID();
         try {
-            ExportStaging staging = store.beginGeneration(generation);
-            try {
-                ExportSummary summary = write(actor, staging, generation, now);
-                String location = staging.publish();
-                return new ExportSummary(summary.generation(), summary.createdAt(), summary.documentCount(),
-                        summary.taskCount(), summary.memberCount(), summary.contractCount(),
-                        summary.missingOriginals(), location);
-            } catch (IOException | RuntimeException failure) {
-                staging.discard();
-                throw failure;
-            }
+            return publish(actor, collect(actor), ExportSummary.MANUAL);
         } catch (IOException e) {
-            throw new UncheckedIOException("export generation " + generation + " failed", e);
+            throw new UncheckedIOException("export failed", e);
         }
     }
 
-    private ExportSummary write(Actor actor, ExportStaging staging, String generation, Instant now)
-            throws IOException {
-        Map<String, String> checksums = new LinkedHashMap<>();
-        List<String> missingOriginals = new ArrayList<>();
+    /**
+     * Compares the data fingerprint with the latest generation and publishes a new one only when they differ, or
+     * when an original the latest one is missing can be read now. Every finished or failed run is recorded
+     * for the status page; a failure is rethrown so that the scheduler records it too.
+     */
+    @Override
+    public Result refresh(Actor actor) {
+        if (!EXPORTER.equals(actor)) {
+            throw new NotAuthorizedException("only the exporter runs the daily export");
+        }
+        access.requireReader(actor);
+        try {
+            Snapshot snapshot = collect(actor);
+            Optional<ExportSummary> latest = store.latest();
+            Result result;
+            if (latest.isPresent() && snapshot.fingerprint().equals(latest.get().dataFingerprint())
+                    && !anyOriginalRecovered(actor, snapshot, latest.get().missingOriginals())) {
+                result = new Result(Outcome.UNCHANGED, latest.get(), List.of());
+            } else {
+                ExportSummary created = publish(actor, snapshot, ExportSummary.SCHEDULED);
+                result = new Result(Outcome.CREATED, created, prune(created.generation()));
+            }
+            recordRun(clock.instant(), null);
+            return result;
+        } catch (IOException | RuntimeException failure) {
+            try {
+                recordRun(null, clock.instant());
+            } catch (IOException | RuntimeException unrecorded) {
+                failure.addSuppressed(unrecorded);
+            }
+            if (failure instanceof IOException io) {
+                throw new UncheckedIOException("daily export failed", io);
+            }
+            throw (RuntimeException) failure;
+        }
+    }
+
+    /** Whether an original missing from the latest generation, for example during an archive outage, is back. */
+    private boolean anyOriginalRecovered(Actor actor, Snapshot snapshot, List<String> missing) {
+        for (DocumentExportRecord record : snapshot.records()) {
+            if (!missing.contains(record.id().toString())) {
+                continue;
+            }
+            try {
+                if (record.checksumSha256().equals(sha256(documents.originalForExport(actor, record.id()).bytes()))) {
+                    return true;
+                }
+            } catch (OriginalUnavailableException stillMissing) {
+                // still unavailable; the next run tries again
+            }
+        }
+        return false;
+    }
+
+    private void recordRun(Instant checkedAt, Instant failedAt) throws IOException {
+        ScheduledRun previous = store.scheduledRun().orElse(new ScheduledRun(null, null));
+        store.recordScheduledRun(new ScheduledRun(checkedAt == null ? previous.lastCheckedAt() : checkedAt,
+                failedAt == null ? previous.lastFailedAt() : failedAt));
+    }
+
+    /**
+     * Keeps the newest {@code scheduledRetention} scheduled generations and every manual one. The generation just
+     * published is newest, so the latest generation is never removed.
+     */
+    private List<String> prune(String published) throws IOException {
+        if (scheduledRetention <= 0) {
+            return List.of();
+        }
+        List<String> pruned = new ArrayList<>();
+        int kept = 0;
+        for (ExportSummary generation : store.listGenerations()) {
+            if (!ExportSummary.SCHEDULED.equals(generation.trigger())) {
+                continue;
+            }
+            if (generation.generation().equals(published) || kept < scheduledRetention) {
+                kept++;
+                continue;
+            }
+            store.deleteGeneration(generation.generation());
+            pruned.add(generation.generation());
+        }
+        return pruned;
+    }
+
+    private ExportSummary publish(Actor actor, Snapshot snapshot, String trigger) throws IOException {
+        Instant now = clock.instant();
+        String generation = GENERATION_FORMAT.format(now.atZone(ZoneId.of("UTC"))) + "-" + java.util.UUID.randomUUID();
+        ExportStaging staging = store.beginGeneration(generation);
+        try {
+            ExportSummary summary = write(actor, snapshot, staging, generation, now, trigger);
+            return summary.withLocation(staging.publish());
+        } catch (IOException | RuntimeException failure) {
+            staging.discard();
+            throw failure;
+        }
+    }
+
+    /** Everything a generation is rendered from, read once; originals are read only when a generation is written. */
+    private record Snapshot(List<DocumentExportRecord> records, Map<String, String> filenames,
+            Map<String, String> memberNames, List<DocumentEntry> documents, List<TaskEntry> tasks,
+            List<ContractEntry> contracts, List<ReviewEntry> reviews, List<MemberEntry> members,
+            List<LabelEntry> labels, List<FolderEntry> folders, String fingerprint) {
+    }
+
+    private Snapshot collect(Actor actor) {
         List<MemberSummary> memberList = members.listMembers(actor);
         Map<String, String> memberNames = new LinkedHashMap<>();
         memberList.forEach(m -> memberNames.put(m.id().toString(), m.displayName()));
@@ -158,25 +272,15 @@ public class ExportService implements CreateExport, ExportQueries {
         Map<String, DerivationEntry> derivedFrom = new LinkedHashMap<>();
         derivations.exportAll(actor).forEach(d -> derivedFrom.put(d.document().toString(), derivationEntry(d)));
         for (DocumentExportRecord record : records) {
-            String originalPath = null;
-            try {
-                OriginalContent original = documents.originalForExport(actor, record.id());
-                if (!record.checksumSha256().equals(sha256(original.bytes()))) {
-                    throw new OriginalUnavailableException("original checksum mismatch");
-                }
-                originalPath = ExportFormat.ORIGINALS_DIR + filenames.get(record.id().toString());
-                put(staging, checksums, originalPath, original.bytes());
-            } catch (OriginalUnavailableException unavailable) {
-                missingOriginals.add(record.id().toString());
-            }
             documentEntries.add(new DocumentEntry(record.id().toString(), record.title(), record.titleOrigin(),
                     record.originalFilename(), filenames.get(record.id().toString()), record.contentType(),
                     record.sizeBytes(), record.checksumSha256(), record.uploadedBy().toString(),
                     record.uploadedAt(), record.subjects().stream()
                             .map(s -> new SubjectEntry(s.kind(), s.memberId() == null ? null : s.memberId().toString()))
                             .toList(), record.processingState(), record.paperlessDocumentId(), record.archivedAt(),
-                    originalPath, classification(record), ExportAnalysis.toEntry(record.analysis()),
-                    trashEntry(record.trash()), derivedFrom.get(record.id().toString())));
+                    ExportFormat.ORIGINALS_DIR + filenames.get(record.id().toString()), classification(record),
+                    ExportAnalysis.toEntry(record.analysis()), trashEntry(record.trash()),
+                    derivedFrom.get(record.id().toString())));
         }
 
         List<TaskEntry> taskEntries = new ArrayList<>();
@@ -211,6 +315,47 @@ public class ExportService implements CreateExport, ExportQueries {
                 folder.impliedSubjects().stream().map(s -> new SubjectEntry(s.kind(),
                         s.memberId() == null ? null : s.memberId().toString())).toList())).toList();
 
+        String fingerprint = sha256(serializer.toCanonicalJson(new FingerprintInput(ExportFormat.SCHEMA_VERSION,
+                producerVersion, byId(documentEntries, DocumentEntry::id), byId(taskEntries, TaskEntry::id),
+                byId(contractEntries, ContractEntry::id), byId(reviewEntries, ReviewEntry::id),
+                byId(memberEntries, MemberEntry::id), byId(labelEntries, LabelEntry::id),
+                byId(folderEntries, FolderEntry::id))));
+        return new Snapshot(records, filenames, memberNames, documentEntries, taskEntries, contractEntries,
+                reviewEntries, memberEntries, labelEntries, folderEntries, fingerprint);
+    }
+
+    /** The order of records read from the database is not guaranteed, so the fingerprint orders them by id. */
+    private static <T> List<T> byId(List<T> entries, Function<T, String> id) {
+        return entries.stream().sorted(Comparator.comparing(id)).toList();
+    }
+
+    private ExportSummary write(Actor actor, Snapshot snapshot, ExportStaging staging, String generation,
+            Instant now, String trigger) throws IOException {
+        Map<String, String> checksums = new LinkedHashMap<>();
+        List<String> missingOriginals = new ArrayList<>();
+        Map<String, String> memberNames = snapshot.memberNames();
+        List<DocumentEntry> documentEntries = new ArrayList<>();
+        for (int i = 0; i < snapshot.records().size(); i++) {
+            DocumentExportRecord record = snapshot.records().get(i);
+            DocumentEntry entry = snapshot.documents().get(i);
+            try {
+                OriginalContent original = documents.originalForExport(actor, record.id());
+                if (!record.checksumSha256().equals(sha256(original.bytes()))) {
+                    throw new OriginalUnavailableException("original checksum mismatch");
+                }
+                put(staging, checksums, entry.originalPath(), original.bytes());
+            } catch (OriginalUnavailableException unavailable) {
+                missingOriginals.add(record.id().toString());
+                entry = entry.withoutOriginal();
+            }
+            documentEntries.add(entry);
+        }
+        List<TaskEntry> taskEntries = snapshot.tasks();
+        List<ContractEntry> contractEntries = snapshot.contracts();
+        List<MemberEntry> memberEntries = snapshot.members();
+        List<LabelEntry> labelEntries = snapshot.labels();
+        List<FolderEntry> folderEntries = snapshot.folders();
+
         put(staging, checksums, ExportFormat.DOCUMENTS_JSON,
                 serializer.toJson(new DocumentsFile(ExportFormat.SCHEMA_VERSION, now, documentEntries)));
         put(staging, checksums, ExportFormat.TASKS_JSON,
@@ -222,7 +367,7 @@ public class ExportService implements CreateExport, ExportQueries {
         put(staging, checksums, ExportFormat.CONTRACTS_JSON,
                 serializer.toJson(new ContractsFile(ExportFormat.SCHEMA_VERSION, now, contractEntries)));
         put(staging, checksums, ExportFormat.REVIEWS_JSON,
-                serializer.toJson(new ReviewsFile(ExportFormat.SCHEMA_VERSION, now, reviewEntries)));
+                serializer.toJson(new ReviewsFile(ExportFormat.SCHEMA_VERSION, now, snapshot.reviews())));
         put(staging, checksums, ExportFormat.DOCUMENTS_CSV, documentsCsv(documentEntries, memberNames));
         put(staging, checksums, ExportFormat.TASKS_CSV, tasksCsv(taskEntries, memberNames, documentEntries));
         put(staging, checksums, ExportFormat.LABELS_CSV, labelsCsv(labelEntries, folderEntries));
@@ -233,10 +378,10 @@ public class ExportService implements CreateExport, ExportQueries {
 
         Manifest manifest = new Manifest(ExportFormat.SCHEMA_VERSION, generation, now, producerVersion,
                 documentEntries.size(), taskEntries.size(), memberEntries.size(), contractEntries.size(),
-                missingOriginals, checksums);
+                missingOriginals, checksums, trigger, snapshot.fingerprint());
         staging.write(ExportFormat.MANIFEST, serializer.toJson(manifest));
         return new ExportSummary(generation, now, documentEntries.size(), taskEntries.size(), memberEntries.size(),
-                contractEntries.size(), List.copyOf(missingOriginals), null);
+                contractEntries.size(), List.copyOf(missingOriginals), null, trigger, snapshot.fingerprint());
     }
 
     @Override
@@ -254,6 +399,17 @@ public class ExportService implements CreateExport, ExportQueries {
         access.requireMember(actor);
         try {
             return store.latest();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @Override
+    public ExportStatus status(Actor actor) {
+        access.requireMember(actor);
+        try {
+            ScheduledRun run = store.scheduledRun().orElse(new ScheduledRun(null, null));
+            return new ExportStatus(store.latest().orElse(null), run.lastCheckedAt(), run.lastFailedAt());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

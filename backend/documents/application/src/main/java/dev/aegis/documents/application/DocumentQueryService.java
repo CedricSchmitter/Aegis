@@ -206,7 +206,7 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
 
     @Override
     public List<DocumentExportRecord> exportAll(Actor actor) {
-        access.requireMember(actor);
+        access.requireReader(actor);
         List<Document> all = documents.findAll();
         CategoryTree tree = categories.load();
         LabelVocabulary vocabulary = labels.load();
@@ -229,12 +229,14 @@ public class DocumentQueryService implements DocumentQueries, DocumentReferenceQ
 
     @Override
     public OriginalContent originalForExport(Actor actor, DocumentId id) {
-        return original(actor, id);
+        access.requireReader(actor);
+        Document document = load(id);
+        return originalOf(document, friendlyFilename(document));
     }
 
     @Override
     public CatalogExport exportCatalog(Actor actor) {
-        access.requireMember(actor);
+        access.requireReader(actor);
         CategoryTree tree = categories.load();
         LabelVocabulary vocabulary = labels.load();
         List<CatalogExport.LabelEntry> labelEntries = vocabulary.all().stream()

@@ -99,7 +99,7 @@ public class ContractQueryService implements ContractQueries, ContractDeadlineQu
 
     @Override
     public List<ContractExportRecord> exportAll(Actor actor) {
-        access.requireMember(actor);
+        access.requireReader(actor);
         return contracts.findAll().stream().map(presenter::exportRecord).toList();
     }
 

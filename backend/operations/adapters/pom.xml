@@ -23,6 +23,10 @@
       <artifactId>aegis-assistant-application</artifactId>
     </dependency>
     <dependency>
+      <groupId>dev.aegis</groupId>
+      <artifactId>aegis-portability-application</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webmvc</artifactId>
     </dependency>

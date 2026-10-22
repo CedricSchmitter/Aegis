@@ -232,11 +232,13 @@ class ApiFlowIT extends PostgresIT {
         ApiClient anna = loggedIn(ANNA);
         JsonNode status = anna.json(anna.get("/api/status"));
         // The overview answers "is everything OK?" with stable codes; integrations that are not set up (calendar,
-        // mail, push) are not listed, while a missing backup is a problem. The test gateway sets up AI.
+        // mail, push) are not listed, while a missing backup is a problem. The test gateway sets up AI. The daily
+        // export (ADR-0029) is always listed: unchecked before its first run, OK once a run confirmed the data.
         JsonNode checks = status.path("checks");
         assertThat(checks).extracting(c -> c.path("area").asText())
-                .startsWith("database", "archive", "backup", "storage", "ai")
-                .doesNotContain("calendar", "mail", "webPush", "telegram", "export", "externalBackup");
+                .startsWith("database", "archive", "backup", "export", "storage", "ai")
+                .doesNotContain("calendar", "mail", "webPush", "telegram", "externalBackup");
+        assertThat(checks.get(3).path("reason").asText()).isIn("export.pending", "export.ok");
         assertThat(checks.get(0).path("state").asText()).isEqualTo("OK");
         assertThat(checks.get(0).path("reason").asText()).isEqualTo("database.connected");
         assertThat(checks.get(0).path("lastSuccessAt").isNull()).as("a connected database has a last success")

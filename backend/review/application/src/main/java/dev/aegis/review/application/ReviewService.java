@@ -212,7 +212,7 @@ public class ReviewService implements ReviewInbox, ReviewReconciliation, ReviewP
 
     @Override
     public List<Record> exportAll(Actor actor) {
-        access.requireMember(actor);
+        access.requireReader(actor);
         return repository.findAll().stream().map(i -> new Record(i.id(), i.fingerprint(), i.producer(),
                 i.sourceKind(), i.sourceId(), i.sourceVersion(), i.category(), i.reason(), i.priority(),
                 i.titleKey(), i.params(), i.linkType(), i.linkId(), i.actions(), i.status().name(), i.createdAt(),

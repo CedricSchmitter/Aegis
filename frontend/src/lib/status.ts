@@ -7,7 +7,7 @@ import { backupHintText, backupReasonText, diskName } from "./storage";
  * The status overview that answers "is everything OK?". The API sends stable area and reason codes
  * with stable parameters; this module turns them into words and never shows a code or parameter as it is.
  */
-export const CHECK_AREAS = ["database", "archive", "backup", "storage", "ai", "jobs"] as const;
+export const CHECK_AREAS = ["database", "archive", "backup", "export", "storage", "ai", "jobs"] as const;
 
 export const CHECK_REASONS = [
   "database.connected",
@@ -21,6 +21,10 @@ export const CHECK_REASONS = [
   "backup.interrupted",
   "backup.notConfigured",
   "backup.unknown",
+  "export.ok",
+  "export.pending",
+  "export.failed",
+  "export.stale",
   "storage.ok",
   "storage.low",
   "storage.unmeasured",
@@ -41,6 +45,7 @@ export const KNOWN_JOBS = [
   "reconcile-documents",
   "dispatch-push-notices",
   "watch-job-health",
+  "refresh-export",
 ];
 const KNOWN_PROVIDERS = ["anthropic", "claude-code"];
 const KNOWN_AI_FAILURES = ["NOT_CONFIGURED", "AUTHENTICATION", "MODEL_UNAVAILABLE", "INVALID_REQUEST", "RATE_LIMITED",
@@ -89,6 +94,12 @@ export function checkText(t: TFunction, check: HealthCheck, language: string): s
     case "storage.unmeasured":
       values.disks = list(names(params.disks).map((disk) => diskName(t, disk)), language);
       break;
+    case "export.ok":
+    case "export.pending":
+    case "export.failed":
+    case "export.stale":
+      values.generatedAt = params.generatedAt ? formatDateTime(params.generatedAt, language) : String(t("status.check.export.noneYet"));
+      break;
     case "jobs.notRunning":
       values.jobs = list(names(params.jobs).map((job) => jobName(t, job)), language);
       break;
@@ -132,6 +143,8 @@ export const WHAT_NOW_REASONS = [
   "database.unavailable",
   "archive.unavailable",
   "backup.notConfigured",
+  "export.failed",
+  "export.stale",
   "storage.low",
   "storage.unmeasured",
   "ai.credentialsMissing",
