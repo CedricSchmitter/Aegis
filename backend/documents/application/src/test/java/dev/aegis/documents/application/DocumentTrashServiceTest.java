@@ -30,7 +30,7 @@ class DocumentTrashServiceTest {
     void setUp() {
         f = new CatalogFixture();
         commands = new DocumentCommandService(f.documents, f.scheduler, f.presenter, analysisTriggers::add,
-                f.persons, f.access, Trash.RecoveryWindow.DEFAULT, f.clock);
+                f.persons, f.access, Trash.RecoveryWindow.DEFAULT, f.clock, f.recorder);
         queries = new DocumentQueryService(f.documents, new TestDoubles.FakeArchive(), new InMemoryOriginalStore(),
                 f.presenter, f.catalog, f.categories, f.labels, f.classifications, f.views, f.placements,
                 new InMemoryDocumentAnalysisRepository(), TestDoubles.analysisSettings(), f.access, f.clock);

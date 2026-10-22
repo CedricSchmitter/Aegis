@@ -14,7 +14,7 @@ public final class HouseholdDataWipe {
             + "document_placement_suggestions, document_placement_rejections, document_classifications, "
             + "document_analyses, document_text_checks, document_subjects, document_bulk_analysis_items, "
             + "document_derivations, document_page_edits, "
-            + "document_bulk_analyses, documents";
+            + "document_bulk_analyses, document_changes, documents";
     private static final int ATTEMPTS = 5;
 
     private HouseholdDataWipe() {

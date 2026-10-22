@@ -18,8 +18,12 @@ import dev.aegis.shared.MemberId;
 import dev.aegis.documents.domain.Document;
 import dev.aegis.documents.domain.TitleOrigin;
 import dev.aegis.documents.domain.analysis.DocumentAnalysis;
+import dev.aegis.documents.domain.history.DocumentAction;
+import dev.aegis.documents.domain.history.DocumentChange;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ChangeActor;
 import dev.aegis.shared.DocumentId;
+import dev.aegis.shared.FieldChange;
 import dev.aegis.shared.InvalidInputException;
 import dev.aegis.shared.StaleVersionException;
 import java.time.Instant;
@@ -69,7 +73,7 @@ class DocumentAnalysisServiceTest {
                 settings), new InMemoryArchiveTextCheckRepository());
         service = new DocumentAnalysisService(f.documents, analyses, f.classifications, f.labels, f.categories,
                 f.catalog, f.classificationService, f.labelService, f.lock, archive, runs, f.views, presenter,
-                f.persons, f.access, settings, f.clock);
+                f.persons, f.access, settings, f.clock, f.recorder(analyses));
         telekom = f.label("ORGANIZATION", "Telekom");
         telekom = f.labelService.replaceAliases(f.actor, telekom.id(), List.of("Telekom Deutschland GmbH"),
                 telekom.version());
@@ -134,7 +138,7 @@ class DocumentAnalysisServiceTest {
         Document document = f.document("Scan im Papierkorb");
         analyses.save(DocumentAnalysis.awaitingArchive(document.id(), f.lisa, CatalogFixture.NOW));
         DocumentCommandService commands = new DocumentCommandService(f.documents, f.scheduler, f.presenter, service,
-                f.persons, f.access, dev.aegis.shared.Trash.RecoveryWindow.DEFAULT, f.clock);
+                f.persons, f.access, dev.aegis.shared.Trash.RecoveryWindow.DEFAULT, f.clock, f.recorder);
         commands.moveToTrash(f.actor, document.id(), document.version());
         document.markArchived(PAPERLESS_IDS.incrementAndGet(), CatalogFixture.NOW);
         f.documents.save(document);
@@ -423,6 +427,43 @@ class DocumentAnalysisServiceTest {
         assertThatThrownBy(() -> service.apply(f.actor, late, "ai-run:first", "m"))
                 .isInstanceOf(StaleVersionException.class);
         assertThat(view(document).analysis().state()).isEqualTo(AnalysisView.PENDING);
+    }
+
+    @Test
+    void anAutomaticAnalysisIsRecordedAsItsRunAndCorrectedThroughItsReviewNotThroughUndo() {
+        Document document = archived("Scan 0016", TELEKOM_TEXT);
+        assessAndApply(document, telekomProposal(request(document), 0, List.of()));
+
+        List<DocumentChange> recorded = f.history.of(document.id());
+        assertThat(recorded).singleElement().satisfies(change -> {
+            assertThat(change.action()).isEqualTo(DocumentAction.ANALYZED);
+            assertThat(change.actor()).isEqualTo(ChangeActor.aiRun("ai-run:test", f.lisa));
+            assertThat(change.changes()).extracting(FieldChange::field).contains("labels");
+            assertThat(change.undoable()).isFalse();
+        });
+
+        DocumentSummary applied = view(document);
+        f.classificationService.rejectSuggestion(f.actor, document.id(), internet.id(),
+                applied.classification().version());
+        assertThat(f.history.of(document.id()).getFirst().action()).isEqualTo(DocumentAction.LABELS_CHANGED);
+        assertThat(f.history.of(document.id()).getFirst().actor()).isEqualTo(ChangeActor.member(f.lisa));
+    }
+
+    @Test
+    void aFilenameChangeIsUndoneToTheGeneratedName() {
+        Document document = archived("Scan 0017", TELEKOM_TEXT);
+        assessAndApply(document, telekomProposal(request(document), 0, List.of()));
+        service.setFilename(f.actor, document.id(), "Internet-Vertrag", view(document).analysis().version());
+        DocumentChange rename = f.history.of(document.id()).getFirst();
+        assertThat(rename.changes()).containsExactly(new FieldChange("filename", null, "Internet-Vertrag"));
+        DocumentHistoryService history = new DocumentHistoryService(f.documents, f.classifications, analyses,
+                f.categories, f.labels, f.placements, f.history, f.recorder(analyses), f.lock, presenter(), f.access,
+                f.clock);
+
+        history.undo(f.actor, document.id(), rename.id());
+
+        assertThat(view(document).filename().source()).isEqualTo(FilenameView.GENERATED);
+        assertThat(f.history.of(document.id()).getFirst().undoOf()).isEqualTo(rename.id());
     }
 
     @Test

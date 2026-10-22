@@ -46,9 +46,12 @@ import dev.aegis.documents.domain.catalog.LabelVocabulary;
 import dev.aegis.documents.domain.classification.ClassificationRepository;
 import dev.aegis.documents.domain.classification.DocumentClassification;
 import dev.aegis.documents.domain.classification.LabelRef;
+import dev.aegis.documents.domain.history.DocumentAction;
+import dev.aegis.documents.domain.history.DocumentSnapshot;
 import dev.aegis.documents.domain.naming.FriendlyFilename;
 import dev.aegis.documents.domain.placement.PlacementTarget;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ChangeActor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
@@ -104,13 +107,14 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
     private final HouseholdAccess access;
     private final AnalysisSettings settings;
     private final Clock clock;
+    private final DocumentHistoryRecorder history;
 
     public DocumentAnalysisService(DocumentRepository documents, DocumentAnalysisRepository analyses,
             ClassificationRepository classifications, LabelRepository labels, CategoryRepository categories,
             DocumentCatalog catalog, ProposeClassification proposals, LabelCommands labelCommands, CatalogLock lock,
             PaperlessArchive archive, AnalysisRuns runs, ClassificationViews classificationViews,
             DocumentPresenter presenter, HouseholdPersons persons, HouseholdAccess access, AnalysisSettings settings,
-            Clock clock) {
+            Clock clock, DocumentHistoryRecorder history) {
         this.documents = documents;
         this.analyses = analyses;
         this.classifications = classifications;
@@ -128,6 +132,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         this.access = access;
         this.settings = settings;
         this.clock = clock;
+        this.history = history;
     }
 
     /**
@@ -276,6 +281,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         access.requireMember(actor);
         Document document = loadActive(id);
         DocumentAnalysis analysis = loadVersion(id, expectedVersion);
+        DocumentSnapshot recorded = history.snapshot(id);
         Decision before = analysis.titleDecision().orElse(null);
         String generated = analysis.title().orElse(null);
         String result = analysis.decideTitle(accept, actor.memberId());
@@ -288,6 +294,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
             documents.save(document);
         }
         analyses.save(analysis);
+        history.record(recorded, id, ChangeActor.of(actor), DocumentAction.RENAMED);
         return presenter.summarize(load(id));
     }
 
@@ -325,6 +332,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
             labelId = new LabelId(labelCommands.create(actor, UUID.randomUUID(), candidate.facet().name(),
                     candidate.name()).id());
         }
+        DocumentSnapshot before = history.snapshot(id);
         DocumentClassification classification = classifications.findById(id)
                 .orElseGet(() -> DocumentClassification.unsorted(id));
         if (classification.keep(new LabelRef(labelId, candidate.facet()), actor.memberId(), now)) {
@@ -332,6 +340,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         }
         analysis.decideCandidate(key, true, labelId, actor.memberId(), now);
         analyses.save(analysis);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.LABELS_CHANGED);
         return presenter.summarize(load(id));
     }
 
@@ -361,9 +370,11 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
         access.requireMember(actor);
         loadActive(id);
         DocumentAnalysis analysis = loadVersion(id, expectedVersion);
+        DocumentSnapshot before = history.snapshot(id);
         String normalized = stem == null || stem.isBlank() ? null : FriendlyFilename.overrideStem(id, stem);
         analysis.overrideFilename(normalized, actor.memberId(), clock.instant());
         analyses.save(analysis);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.FILENAME_CHANGED);
         return presenter.summarize(load(id));
     }
 
@@ -544,6 +555,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
             throw new StaleVersionException("documentAnalysis", id.toString(), assessment.generation(),
                     analysis.generation());
         }
+        DocumentSnapshot recorded = history.snapshot(id);
         List<ProposeClassification.LabelProposal> labelProposals = assessment.labels().stream()
                 .map(decision -> new ProposeClassification.LabelProposal(decision.labelId(), decision.confidence(),
                         decision.apply()))
@@ -587,6 +599,7 @@ public class DocumentAnalysisService implements DocumentAnalysisCommands, Automa
                 assessment.correspondentLabelId() == null ? null : new LabelId(assessment.correspondentLabelId()),
                 flags, candidates, subjects, labelOutcome.applied(), labelOutcome.suggested()));
         analyses.save(analysis);
+        history.record(recorded, id, ChangeActor.aiRun(runRef, actor.memberId()), DocumentAction.ANALYZED);
         ProposeClassification.PlacementResult placement = labelOutcome.placement();
         boolean moved = placement != null && placement.applied();
         int pending = labelOutcome.suggested() + (titleDecision == Decision.SUGGESTED ? 1 : 0) + candidates.size()

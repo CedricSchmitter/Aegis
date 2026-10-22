@@ -13,10 +13,13 @@ import dev.aegis.documents.domain.catalog.LabelRepository;
 import dev.aegis.documents.domain.catalog.LabelVocabulary;
 import dev.aegis.documents.domain.classification.ClassificationRepository;
 import dev.aegis.documents.domain.classification.DocumentClassification;
+import dev.aegis.documents.domain.history.DocumentAction;
+import dev.aegis.documents.domain.history.DocumentSnapshot;
 import dev.aegis.documents.domain.placement.PlacementSuggestion;
 import dev.aegis.documents.domain.placement.PlacementSuggestionRepository;
 import dev.aegis.documents.domain.placement.PlacementTarget;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ChangeActor;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
@@ -45,10 +48,11 @@ public class PlacementService implements PlacementCommands {
     private final DocumentPresenter presenter;
     private final HouseholdAccess access;
     private final Clock clock;
+    private final DocumentHistoryRecorder history;
 
     public PlacementService(ClassificationRepository classifications, PlacementSuggestionRepository placements,
             CategoryRepository categories, LabelRepository labels, DocumentRepository documents, CatalogLock lock,
-            DocumentPresenter presenter, HouseholdAccess access, Clock clock) {
+            DocumentPresenter presenter, HouseholdAccess access, Clock clock, DocumentHistoryRecorder history) {
         this.classifications = classifications;
         this.placements = placements;
         this.categories = categories;
@@ -58,6 +62,7 @@ public class PlacementService implements PlacementCommands {
         this.presenter = presenter;
         this.access = access;
         this.clock = clock;
+        this.history = history;
     }
 
     @Override
@@ -120,8 +125,10 @@ public class PlacementService implements PlacementCommands {
         DocumentClassification classification = loadVersion(id, expectedVersion);
         CategoryId reverted = classification.categoryId().orElse(null);
         Instant now = clock.instant();
+        DocumentSnapshot before = history.snapshot(id);
         classification.revertPlacement(actor.memberId(), now);
         classifications.save(classification);
+        history.record(before, id, ChangeActor.of(actor), DocumentAction.MOVED);
         if (reverted != null) {
             // The member does not want this folder for this document; later runs must not propose it again.
             placements.reject(id, PlacementTarget.existing(reverted).key(), actor.memberId(), now);
@@ -150,8 +157,10 @@ public class PlacementService implements PlacementCommands {
     }
 
     private int move(DocumentClassification classification, CategoryId target, Actor actor, Instant now) {
+        DocumentSnapshot before = history.snapshot(classification.documentId());
         boolean changed = classification.placeIn(target, actor.memberId(), now);
         classifications.save(classification);
+        history.record(before, classification.documentId(), ChangeActor.of(actor), DocumentAction.MOVED);
         placements.delete(classification.documentId());
         return changed ? 1 : 0;
     }

@@ -20,6 +20,7 @@ import dev.aegis.documents.adapters.jobs.ReconciliationTask;
 import dev.aegis.documents.application.ArchivalService;
 import dev.aegis.documents.application.api.ImportDocumentAnalysis;
 import dev.aegis.documents.domain.analysis.DocumentAnalysisRepository;
+import dev.aegis.documents.domain.history.DocumentHistoryRepository;
 import dev.aegis.documents.application.ArchivalSettings;
 import dev.aegis.documents.application.ArchivalUseCases;
 import dev.aegis.documents.application.ArchiveTextService;
@@ -31,6 +32,8 @@ import dev.aegis.documents.application.CatalogQueryService;
 import dev.aegis.documents.application.SimilarDocumentService;
 import dev.aegis.documents.application.CategoryService;
 import dev.aegis.documents.application.ClassificationService;
+import dev.aegis.documents.application.DocumentHistoryRecorder;
+import dev.aegis.documents.application.DocumentHistoryService;
 import dev.aegis.documents.application.PlacementService;
 import dev.aegis.documents.application.ClassificationViews;
 import dev.aegis.documents.application.DocumentQueryService;
@@ -66,6 +69,7 @@ import dev.aegis.documents.application.api.CategoryCommands;
 import dev.aegis.documents.application.api.ClassificationCommands;
 import dev.aegis.documents.application.api.PlacementCommands;
 import dev.aegis.documents.application.api.DocumentCommands;
+import dev.aegis.documents.application.api.DocumentHistory;
 import dev.aegis.documents.application.api.DocumentExportQuery;
 import dev.aegis.documents.application.api.DocumentQueries;
 import dev.aegis.documents.application.api.DocumentReferenceQuery;
@@ -346,9 +350,28 @@ public class UseCaseConfiguration {
     ClassificationServices classificationServices(ClassificationRepository classifications,
             DocumentRepository documents, CategoryRepository categories, LabelRepository labels,
             PlacementSuggestionRepository placements, CatalogLock lock, DocumentPresenter presenter,
-            HouseholdAccess access, Clock clock) {
+            HouseholdAccess access, Clock clock, DocumentHistoryRecorder history) {
         return new ClassificationServices(new ClassificationService(classifications, documents, categories, labels,
-                placements, lock, presenter, access, clock));
+                placements, lock, presenter, access, clock, history));
+    }
+
+    /** Records document changes inside the transaction of each change (ADR-0029). */
+    @Bean
+    DocumentHistoryRecorder documentHistoryRecorder(DocumentRepository documents,
+            ClassificationRepository classifications, DocumentAnalysisRepository analyses,
+            DocumentHistoryRepository history, Clock clock) {
+        return new DocumentHistoryRecorder(documents, classifications, analyses, history, clock);
+    }
+
+    /** The history query reads only the database; undo is a command and runs in one transaction. */
+    @Bean
+    DocumentHistory documentHistory(DocumentRepository documents, ClassificationRepository classifications,
+            DocumentAnalysisRepository analyses, CategoryRepository categories, LabelRepository labels,
+            PlacementSuggestionRepository placements, DocumentHistoryRepository history,
+            DocumentHistoryRecorder recorder, CatalogLock lock, DocumentPresenter presenter, HouseholdAccess access,
+            Clock clock, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(DocumentHistory.class, new DocumentHistoryService(documents, classifications,
+                analyses, categories, labels, placements, history, recorder, lock, presenter, access, clock), tm);
     }
 
     /** Member decisions about proposed folder placements; accepting creates folders and moves. */
@@ -356,9 +379,9 @@ public class UseCaseConfiguration {
     PlacementCommands placementCommands(ClassificationRepository classifications,
             PlacementSuggestionRepository placements, CategoryRepository categories, LabelRepository labels,
             DocumentRepository documents, CatalogLock lock, DocumentPresenter presenter, HouseholdAccess access,
-            Clock clock, PlatformTransactionManager tm) {
+            Clock clock, DocumentHistoryRecorder history, PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(PlacementCommands.class, new PlacementService(classifications, placements,
-                categories, labels, documents, lock, presenter, access, clock), tm);
+                categories, labels, documents, lock, presenter, access, clock, history), tm);
     }
 
     @Bean
@@ -422,9 +445,10 @@ public class UseCaseConfiguration {
     @Bean
     DocumentCommands documentCommands(DocumentRepository documents, ProcessingScheduler scheduler,
             DocumentPresenter presenter, AnalysisTrigger analysis, HouseholdPersons persons, HouseholdAccess access,
-            Trash.RecoveryWindow recoveryWindow, Clock clock, PlatformTransactionManager tm) {
+            Trash.RecoveryWindow recoveryWindow, Clock clock, DocumentHistoryRecorder history,
+            PlatformTransactionManager tm) {
         return TransactionalProxy.wrap(DocumentCommands.class, new DocumentCommandService(documents, scheduler,
-                presenter, analysis, persons, access, recoveryWindow, clock), tm);
+                presenter, analysis, persons, access, recoveryWindow, clock, history), tm);
     }
 
     @Bean

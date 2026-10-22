@@ -20,6 +20,7 @@ import dev.aegis.documents.application.BulkAnalysisService;
 import dev.aegis.documents.application.BulkAnalysisSettings;
 import dev.aegis.documents.application.ClassificationViews;
 import dev.aegis.documents.application.DocumentAnalysisService;
+import dev.aegis.documents.application.DocumentHistoryRecorder;
 import dev.aegis.documents.application.DocumentPresenter;
 import dev.aegis.documents.application.api.AutomaticClassification;
 import dev.aegis.documents.application.api.BulkAnalysisCommands;
@@ -138,10 +139,10 @@ public class DocumentAnalysisConfiguration {
             DocumentCatalog catalog, UseCaseConfiguration.ClassificationServices classification,
             LabelCommands labelCommands, CatalogLock lock, PaperlessArchive archive, AnalysisRuns runs,
             ClassificationViews classificationViews, DocumentPresenter presenter, HouseholdPersons persons,
-            HouseholdAccess access, AnalysisSettings settings, Clock clock) {
+            HouseholdAccess access, AnalysisSettings settings, Clock clock, DocumentHistoryRecorder history) {
         return new AnalysisServices(new DocumentAnalysisService(documents, analyses, classifications, labels,
                 categories, catalog, classification.classification(), labelCommands, lock, archive, runs,
-                classificationViews, presenter, persons, access, settings, clock));
+                classificationViews, presenter, persons, access, settings, clock, history));
     }
 
     @Bean

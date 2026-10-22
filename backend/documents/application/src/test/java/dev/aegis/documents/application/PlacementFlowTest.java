@@ -66,7 +66,7 @@ class PlacementFlowTest {
                 settings), new InMemoryArchiveTextCheckRepository());
         service = new DocumentAnalysisService(f.documents, analyses, f.classifications, f.labels, f.categories,
                 f.catalog, f.classificationService, f.labelService, f.lock, archive, runs, f.views, presenter,
-                f.persons, f.access, settings, f.clock);
+                f.persons, f.access, settings, f.clock, f.recorder(analyses));
         insurance = f.label("TOPIC", "Versicherung");
         policy = f.label("DOCUMENT_TYPE", "Versicherungspolice");
         haus = f.folder("Haus", null);
@@ -450,6 +450,6 @@ class PlacementFlowTest {
                 f.catalog, f.classificationService, f.labelService, f.lock, archive, runs, f.views,
                 new DocumentPresenter(f.scheduler, f.views, new AnalysisViews(analyses, runs, settings),
                         new InMemoryArchiveTextCheckRepository()), f.persons, f.access,
-                settings, f.clock);
+                settings, f.clock, f.recorder(analyses));
     }
 }

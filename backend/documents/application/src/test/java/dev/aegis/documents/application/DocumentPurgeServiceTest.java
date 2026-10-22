@@ -34,7 +34,7 @@ class DocumentPurgeServiceTest {
         f = new CatalogFixture();
         List<Document> analysisTriggers = new ArrayList<>();
         commands = new DocumentCommandService(f.documents, f.scheduler, f.presenter, analysisTriggers::add,
-                f.persons, f.access, Trash.RecoveryWindow.DEFAULT, f.clock);
+                f.persons, f.access, Trash.RecoveryWindow.DEFAULT, f.clock, f.recorder);
         purges = new DocumentPurgeService(f.documents, events, ArchivalSettings.defaults(), f.clock);
     }
 

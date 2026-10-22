@@ -2,6 +2,7 @@ package dev.aegis.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 import dev.aegis.bootstrap.support.ApiClient;
 import dev.aegis.bootstrap.support.PostgresIT;
@@ -10,6 +11,9 @@ import dev.aegis.planning.application.api.TaskCommands;
 import dev.aegis.planning.application.api.TaskCommands.CreateTaskCommand;
 import dev.aegis.planning.application.api.TaskSummary;
 import dev.aegis.shared.Actor;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,6 +137,54 @@ class ChangeHistoryIT extends PostgresIT {
         taskCommands.purge(anna(), task.id(), trashed.version());
 
         assertThat(count(task.id().value())).isZero();
+    }
+
+    @Test
+    void aDocumentRenameIsUndoneOverHttpAndItsHistoryLeavesWithThePermanentDeletion() {
+        ApiClient anna = new ApiClient(port);
+        assertThat(anna.login(ANNA, PASSWORD)).isTrue();
+        ApiClient ben = new ApiClient(port);
+        assertThat(ben.login(BEN, PASSWORD)).isTrue();
+        var uploaded = anna.upload("/api/documents", "Scan 4711.pdf", uniquePdf("history-document"), List.of());
+        assertThat(uploaded.status()).as(uploaded.body()).isEqualTo(201);
+        String documentId = anna.json(uploaded).path("document").path("id").asText();
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(anna.json(anna.get("/api/documents/"
+                + documentId)).path("processing").path("state").asText()).isEqualTo("ARCHIVED"));
+        long version = anna.json(anna.get("/api/documents/" + documentId)).path("version").asLong();
+
+        var renamed = ben.putJson("/api/documents/" + documentId + "/title", "{\"title\":\"Wasservertrag\","
+                + "\"expectedVersion\":" + version + "}");
+        assertThat(renamed.status()).as(renamed.body()).isEqualTo(200);
+        JsonNode history = anna.json(anna.get("/api/documents/" + documentId + "/history"));
+        JsonNode rename = history.path("changes").get(0);
+        assertThat(rename.path("action").asText()).isEqualTo("RENAMED");
+        assertThat(rename.path("changes").get(0).path("before").asText()).isEqualTo("Scan 4711");
+        assertThat(rename.path("undoable").asBoolean()).isTrue();
+
+        var undone = anna.request("POST", "/api/documents/" + documentId + "/history/" + rename.path("id").asText()
+                + "/undo", "application/json", "{}");
+        assertThat(undone.status()).as(undone.body()).isEqualTo(200);
+        assertThat(anna.json(undone).path("title").asText()).isEqualTo("Scan 4711");
+        var again = ben.request("POST", "/api/documents/" + documentId + "/history/" + rename.path("id").asText()
+                + "/undo", "application/json", "{}");
+        assertThat(again.status()).isEqualTo(409);
+        assertThat(ben.json(again).path("code").asText()).isEqualTo("history.undo.alreadyUndone");
+
+        long current = anna.json(undone).path("version").asLong();
+        var trashed = anna.postJson("/api/documents/" + documentId + "/trash", version(current));
+        assertThat(trashed.status()).isEqualTo(200);
+        UUID id = UUID.fromString(documentId);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM document_changes WHERE document_id = ?", Integer.class,
+                id)).isEqualTo(3);
+        var purge = anna.postJson("/api/documents/" + documentId + "/purge",
+                version(anna.json(trashed).path("version").asLong()));
+        assertThat(purge.status()).as(purge.body()).isEqualTo(202);
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM document_changes WHERE document_id = ?", Integer.class, id)).isZero());
+    }
+
+    private static byte[] uniquePdf(String marker) {
+        return ("%PDF-1.4\n% " + marker + " " + UUID.randomUUID() + "\n").getBytes(StandardCharsets.US_ASCII);
     }
 
     private int count(UUID taskId) {

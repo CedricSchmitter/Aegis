@@ -74,7 +74,7 @@ class BulkAnalysisServiceTest {
                 new InMemoryArchiveTextCheckRepository());
         analysis = new DocumentAnalysisService(f.documents, analyses, f.classifications, f.labels, f.categories,
                 f.catalog, f.classificationService, f.labelService, f.lock, archive, runs, f.views, presenter,
-                f.persons, f.access, settings, f.clock);
+                f.persons, f.access, settings, f.clock, f.recorder(analyses));
         bulks = new InMemoryBulkAnalysisRepository();
         service = service(f.access);
         telekom = f.label("ORGANIZATION", "Telekom");
