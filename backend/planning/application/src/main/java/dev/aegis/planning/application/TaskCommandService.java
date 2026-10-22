@@ -13,7 +13,14 @@ import dev.aegis.planning.domain.CancellationReview;
 import dev.aegis.planning.domain.TaskRepository;
 import dev.aegis.planning.domain.TaskSource;
 import dev.aegis.planning.domain.TaskStatus;
+import dev.aegis.planning.domain.history.TaskAction;
+import dev.aegis.planning.domain.history.TaskChange;
+import dev.aegis.planning.domain.history.TaskField;
+import dev.aegis.planning.domain.history.TaskHistoryRepository;
+import dev.aegis.planning.domain.history.TaskSnapshot;
 import dev.aegis.shared.Actor;
+import dev.aegis.shared.ChangeActor;
+import dev.aegis.shared.FieldChange;
 import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.HouseholdAccess;
 import dev.aegis.shared.InvalidInputException;
@@ -24,13 +31,19 @@ import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.TaskId;
 import dev.aegis.shared.Trash;
 import dev.aegis.shared.TrashedException;
+import dev.aegis.shared.UndoConflictException;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /** Task mutations; wrapped in a transaction by the composition root so events and state commit together. */
 public class TaskCommandService implements TaskCommands, ImportTask {
     private final TaskRepository tasks;
+    private final TaskHistoryRepository history;
+    private final TaskHistoryRecorder recorder;
     private final DocumentReferenceQuery documents;
     private final PlanningEvents events;
     private final TaskPresenter presenter;
@@ -39,10 +52,12 @@ public class TaskCommandService implements TaskCommands, ImportTask {
     private final Trash.RecoveryWindow recoveryWindow;
     private final Clock clock;
 
-    public TaskCommandService(TaskRepository tasks, DocumentReferenceQuery documents, PlanningEvents events,
-            TaskPresenter presenter, HouseholdAccess access, CancellationDeadlineReconciliation cancellations,
-            Trash.RecoveryWindow recoveryWindow, Clock clock) {
+    public TaskCommandService(TaskRepository tasks, TaskHistoryRepository history, DocumentReferenceQuery documents,
+            PlanningEvents events, TaskPresenter presenter, HouseholdAccess access,
+            CancellationDeadlineReconciliation cancellations, Trash.RecoveryWindow recoveryWindow, Clock clock) {
         this.tasks = tasks;
+        this.history = history;
+        this.recorder = new TaskHistoryRecorder(tasks, history, clock);
         this.documents = documents;
         this.events = events;
         this.presenter = presenter;
@@ -70,16 +85,18 @@ public class TaskCommandService implements TaskCommands, ImportTask {
                 command.plannedDate(), source, actor.memberId(), clock.instant());
         tasks.save(task);
         notifyAssignment(task, actor);
-        return presenter.summarize(reload(task.id()));
+        return presenter.summarize(recorder.record(TaskSnapshot.NONE, task.id(), ChangeActor.of(actor),
+                TaskAction.CREATED));
     }
 
     @Override
     public TaskSummary edit(Actor actor, TaskId id, String title, String note, long expectedVersion) {
         access.requireMember(actor);
         Task task = loadVersion(id, expectedVersion);
+        TaskSnapshot before = TaskSnapshot.of(task);
         task.edit(title, note, clock.instant());
         tasks.save(task);
-        return presenter.summarize(reload(task.id()));
+        return presenter.summarize(recorder.record(before, id, ChangeActor.of(actor), TaskAction.EDITED));
     }
 
     @Override
@@ -87,51 +104,56 @@ public class TaskCommandService implements TaskCommands, ImportTask {
         access.requireMember(actor);
         requireOwner(ownerId);
         Task task = loadVersion(id, expectedVersion);
+        TaskSnapshot before = TaskSnapshot.of(task);
         boolean changed = !Objects.equals(task.owner().orElse(null), ownerId);
         task.assign(ownerId, clock.instant());
         tasks.save(task);
         if (changed) {
             notifyAssignment(task, actor);
         }
-        return presenter.summarize(reload(task.id()));
+        return presenter.summarize(recorder.record(before, id, ChangeActor.of(actor), TaskAction.ASSIGNED));
     }
 
     @Override
     public TaskSummary planWork(Actor actor, TaskId id, LocalDate plannedDate, long expectedVersion) {
         access.requireMember(actor);
         Task task = loadVersion(id, expectedVersion);
+        TaskSnapshot before = TaskSnapshot.of(task);
         task.planWork(plannedDate, clock.instant());
         tasks.save(task);
-        return presenter.summarize(reload(task.id()));
+        return presenter.summarize(recorder.record(before, id, ChangeActor.of(actor), TaskAction.PLANNED));
     }
 
     @Override
     public TaskSummary changeDueDate(Actor actor, TaskId id, LocalDate dueDate, long expectedVersion) {
         access.requireMember(actor);
         Task task = loadVersion(id, expectedVersion);
+        TaskSnapshot before = TaskSnapshot.of(task);
         task.changeDueDate(dueDate, clock.instant());
         tasks.save(task);
-        return presenter.summarize(reload(task.id()));
+        return presenter.summarize(recorder.record(before, id, ChangeActor.of(actor),
+                TaskAction.DUE_DATE_CHANGED));
     }
 
     @Override
     public TaskSummary complete(Actor actor, TaskId id, long expectedVersion) {
         access.requireMember(actor);
         Task task = loadVersion(id, expectedVersion);
+        TaskSnapshot before = TaskSnapshot.of(task);
         task.complete(actor.memberId(), clock.instant());
         tasks.save(task);
-        task.owner().filter(owner -> !owner.equals(actor.memberId()))
-                .ifPresent(owner -> events.taskCompleted(task.id(), task.title(), owner, actor.memberId()));
-        return presenter.summarize(reload(task.id()));
+        notifyCompletion(task, actor);
+        return presenter.summarize(recorder.record(before, id, ChangeActor.of(actor), TaskAction.COMPLETED));
     }
 
     @Override
     public TaskSummary reopen(Actor actor, TaskId id, long expectedVersion) {
         access.requireMember(actor);
         Task task = loadVersion(id, expectedVersion);
+        TaskSnapshot before = TaskSnapshot.of(task);
         task.reopen(clock.instant());
         tasks.save(task);
-        return presenter.summarize(reload(task.id()));
+        return presenter.summarize(recorder.record(before, id, ChangeActor.of(actor), TaskAction.REOPENED));
     }
 
     @Override
@@ -142,9 +164,10 @@ public class TaskCommandService implements TaskCommands, ImportTask {
             return presenter.summarize(task);
         }
         requireVersion(task, expectedVersion);
+        TaskSnapshot before = TaskSnapshot.of(task);
         task.moveToTrash(actor.memberId(), clock.instant(), recoveryWindow);
         tasks.save(task);
-        return presenter.summarize(reload(id));
+        return presenter.summarize(recorder.record(before, id, ChangeActor.of(actor), TaskAction.TRASHED));
     }
 
     @Override
@@ -155,8 +178,10 @@ public class TaskCommandService implements TaskCommands, ImportTask {
             return presenter.summarize(task);
         }
         requireVersion(task, expectedVersion);
+        TaskSnapshot before = TaskSnapshot.of(task);
         task.restoreFromTrash(task.owner().map(this::isActiveMember).orElse(true), clock.instant());
         tasks.save(task);
+        recorder.record(before, id, ChangeActor.of(actor), TaskAction.RESTORED);
         // A restored cancellation review is checked against its contract at once: it gets its reminder back, or is
         // superseded when the contract was resolved or trashed in the meantime.
         task.cancellationReview().ifPresent(review -> cancellations.reconcile(actor, review.contractId()));
@@ -203,7 +228,85 @@ public class TaskCommandService implements TaskCommands, ImportTask {
                 record.createdAt() == null ? clock.instant() : record.createdAt(), record.updatedAt(),
                 record.completedAt(), record.completedBy(), record.trash(), 0);
         tasks.save(task);
+        // The exported task's earlier history is not part of the export; the history starts with this restore.
+        recorder.record(TaskSnapshot.NONE, task.id(), ChangeActor.of(actor), TaskAction.IMPORTED);
         return ImportOutcome.IMPORTED;
+    }
+
+    @Override
+    public TaskSummary undo(Actor actor, TaskId id, UUID changeId, long expectedVersion) {
+        access.requireMember(actor);
+        TaskChange change = history.find(changeId).filter(c -> c.taskId().equals(id))
+                .orElseThrow(() -> new NotFoundException("taskChange", changeId.toString()));
+        if (!change.undoable()) {
+            throw UndoConflictException.notSupported(changeId.toString());
+        }
+        if (history.undoneBy(changeId).isPresent()) {
+            throw UndoConflictException.alreadyUndone(changeId.toString());
+        }
+        Task task = loadVersion(id, expectedVersion);
+        task.requireNotTrashed();
+        TaskSnapshot before = TaskSnapshot.of(task);
+        List<String> overwritten = change.overwrittenIn(before);
+        if (!overwritten.isEmpty()) {
+            throw UndoConflictException.changedSince(changeId.toString(), String.join(",", overwritten));
+        }
+        revert(task, change, actor);
+        tasks.save(task);
+        if (!Objects.equals(before.owner(), task.owner().orElse(null))) {
+            notifyAssignment(task, actor);
+        }
+        if (task.status() == TaskStatus.DONE && before.status() != TaskStatus.DONE) {
+            notifyCompletion(task, actor);
+        }
+        return presenter.summarize(recorder.recordUndo(change, before, ChangeActor.of(actor)));
+    }
+
+    /** Sets each changed field back to its earlier value through the task's own operations and their rules. */
+    private void revert(Task task, TaskChange undone, Actor actor) {
+        String title = task.title();
+        String note = task.note();
+        boolean text = false;
+        for (FieldChange change : undone.changes()) {
+            String value = change.before();
+            switch (TaskField.ofCode(change.field())) {
+                case TITLE -> {
+                    title = value;
+                    text = true;
+                }
+                case NOTE -> {
+                    note = value;
+                    text = true;
+                }
+                case OWNER -> {
+                    MemberId owner = value == null ? null : MemberId.of(value);
+                    if (owner != null && !isActiveMember(owner)) {
+                        throw new UndoConflictException("ownerInactive", undone.id().toString(),
+                                "the earlier owner is no longer an active member", Map.of());
+                    }
+                    task.assign(owner, clock.instant());
+                }
+                case DUE_DATE -> task.changeDueDate(value == null ? null : LocalDate.parse(value), clock.instant());
+                case PLANNED_DATE -> task.planWork(value == null ? null : LocalDate.parse(value), clock.instant());
+                case STATUS -> {
+                    if (TaskStatus.OPEN.name().equals(value)) {
+                        task.reopen(clock.instant());
+                    } else if (TaskStatus.DONE.name().equals(value)) {
+                        task.complete(actor.memberId(), clock.instant());
+                    } else {
+                        throw new IllegalStateException("status " + value + " is never the target of an undo");
+                    }
+                }
+            }
+        }
+        if (text) {
+            task.edit(title, note, clock.instant());
+        }
+    }
+
+    private void notifyCompletion(Task task, Actor actor) {
+        task.owner().filter(owner -> !owner.equals(actor.memberId()))
+                .ifPresent(owner -> events.taskCompleted(task.id(), task.title(), owner, actor.memberId()));
     }
 
     private void notifyAssignment(Task task, Actor actor) {

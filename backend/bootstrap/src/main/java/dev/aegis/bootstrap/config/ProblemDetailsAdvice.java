@@ -8,6 +8,7 @@ import dev.aegis.shared.NotFoundException;
 import dev.aegis.shared.PurgeConflictException;
 import dev.aegis.shared.StaleVersionException;
 import dev.aegis.shared.TrashedException;
+import dev.aegis.shared.UndoConflictException;
 import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -64,6 +65,14 @@ public class ProblemDetailsAdvice {
     /** Permanent deletion conflicts with the record's state (ADR-0021): not in the trash, archiving or purging. */
     @ExceptionHandler(PurgeConflictException.class)
     ProblemDetail purgeConflict(PurgeConflictException e) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, e.code(), e.getMessage());
+        e.details().forEach(problem::setProperty);
+        return problem;
+    }
+
+    /** An undo conflicts with the record's history (ADR-0029): not undoable, already undone or changed since. */
+    @ExceptionHandler(UndoConflictException.class)
+    ProblemDetail undoConflict(UndoConflictException e) {
         ProblemDetail problem = problem(HttpStatus.CONFLICT, e.code(), e.getMessage());
         e.details().forEach(problem::setProperty);
         return problem;

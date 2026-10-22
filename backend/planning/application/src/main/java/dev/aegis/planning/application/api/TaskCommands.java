@@ -5,6 +5,7 @@ import dev.aegis.shared.DocumentId;
 import dev.aegis.shared.MemberId;
 import dev.aegis.shared.TaskId;
 import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * Task changes. Every mutation of an existing task carries the version the caller last saw; a mismatch raises
@@ -49,4 +50,11 @@ public interface TaskCommands {
      * again for the same deadline. Repeating it for a task that is already gone changes nothing.
      */
     void purge(Actor actor, TaskId id, long expectedVersion);
+
+    /**
+     * Reverses one recorded member edit (ADR-0029) with the task's ordinary operations and records the undo as a new
+     * change. Refused with {@link dev.aegis.shared.UndoConflictException} when the change cannot be undone, was undone
+     * already, or a later change replaced one of its fields; a later change to another field does not matter.
+     */
+    TaskSummary undo(Actor actor, TaskId id, UUID changeId, long expectedVersion);
 }

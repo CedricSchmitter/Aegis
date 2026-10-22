@@ -151,16 +151,19 @@ import dev.aegis.planning.application.TaskCommandService;
 import dev.aegis.planning.application.CancellationDeadlineService;
 import dev.aegis.planning.application.TaskPresenter;
 import dev.aegis.planning.application.TaskQueryService;
+import dev.aegis.planning.application.TaskHistoryService;
 import dev.aegis.planning.application.api.ImportTask;
 import dev.aegis.planning.application.api.CancellationDeadlineReconciliation;
 import dev.aegis.planning.application.api.CancellationReminderPublication;
 import dev.aegis.planning.application.api.TaskCommands;
 import dev.aegis.planning.application.api.TaskExportQuery;
 import dev.aegis.planning.application.api.TaskQueries;
+import dev.aegis.planning.application.api.TaskHistoryQueries;
 import dev.aegis.planning.application.ports.CalendarPort;
 import dev.aegis.planning.application.ports.CancellationReminderScheduler;
 import dev.aegis.planning.application.ports.PlanningEvents;
 import dev.aegis.planning.domain.TaskRepository;
+import dev.aegis.planning.domain.history.TaskHistoryRepository;
 import dev.aegis.portability.application.ExportService;
 import dev.aegis.portability.application.RestoreService;
 import dev.aegis.portability.application.api.CreateExport;
@@ -570,13 +573,21 @@ public class UseCaseConfiguration {
     }
 
     @Bean
-    PlanningServices planningServices(TaskRepository tasks, DocumentReferenceQuery documents,
-            PlanningEvents events, TaskPresenter presenter, HouseholdAccess access, Clock clock,
-            CalendarPort calendar, CancellationDeadlineReconciliation cancellations,
+    PlanningServices planningServices(TaskRepository tasks, TaskHistoryRepository taskHistory,
+            DocumentReferenceQuery documents, PlanningEvents events, TaskPresenter presenter, HouseholdAccess access,
+            Clock clock, CalendarPort calendar, CancellationDeadlineReconciliation cancellations,
             Trash.RecoveryWindow recoveryWindow) {
-        return new PlanningServices(new TaskCommandService(tasks, documents, events, presenter, access,
+        return new PlanningServices(new TaskCommandService(tasks, taskHistory, documents, events, presenter, access,
                 cancellations, recoveryWindow, clock), new TaskQueryService(tasks, calendar, presenter, access,
                 clock));
+    }
+
+    /** Reads only the database; exposed without a transaction like the other task queries. */
+    @Bean
+    TaskHistoryQueries taskHistoryQueries(TaskRepository tasks, TaskHistoryRepository taskHistory,
+            HouseholdAccess access) {
+        return TransactionalProxy.expose(TaskHistoryQueries.class,
+                new TaskHistoryService(tasks, taskHistory, access));
     }
 
     @Bean
@@ -604,10 +615,10 @@ public class UseCaseConfiguration {
 
     @Bean
     CancellationServices cancellationServices(ContractDeadlineQuery contracts, TaskRepository tasks,
-            CancellationReminderScheduler reminders, MemberDirectory members, PublishNotice notices,
+            TaskHistoryRepository taskHistory, CancellationReminderScheduler reminders, MemberDirectory members, PublishNotice notices,
             PlanningEvents events, HouseholdAccess access, Clock clock) {
-        return new CancellationServices(new CancellationDeadlineService(contracts, tasks, reminders, members,
-                notices, events, access, clock));
+        return new CancellationServices(new CancellationDeadlineService(contracts, tasks, taskHistory, reminders,
+                members, notices, events, access, clock));
     }
 
     @Bean
