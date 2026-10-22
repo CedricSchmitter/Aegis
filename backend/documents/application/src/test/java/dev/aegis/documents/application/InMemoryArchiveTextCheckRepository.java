@@ -5,6 +5,7 @@ import dev.aegis.documents.domain.DocumentRepository;
 import dev.aegis.documents.domain.ProcessingState;
 import dev.aegis.documents.domain.text.ArchiveTextCheck;
 import dev.aegis.documents.domain.text.ArchiveTextCheckRepository;
+import dev.aegis.documents.domain.text.TextFingerprint;
 import dev.aegis.shared.DocumentId;
 import java.time.Instant;
 import java.util.Collection;
@@ -55,12 +56,35 @@ final class InMemoryArchiveTextCheckRepository implements ArchiveTextCheckReposi
         return documents.findAll().stream()
                 .filter(d -> d.state() == ProcessingState.ARCHIVED && d.paperlessDocumentId().isPresent())
                 .filter(d -> isDue(checks.get(d.id()), d.paperlessDocumentId().get(), now))
-                .sorted(Comparator.comparing((Document d) -> d.archivedAt().orElse(Instant.MIN)).reversed())
+                .sorted(Comparator.comparing((Document d) -> backfill(checks.get(d.id()), d))
+                        .thenComparing(d -> backfill(checks.get(d.id()), d) ? checks.get(d.id()).checkedAt()
+                                : Instant.MIN)
+                        .thenComparing(Comparator.comparing((Document d) -> d.archivedAt().orElse(Instant.MIN))
+                                .reversed()))
                 .limit(limit).map(Document::id).toList();
+    }
+
+    @Override
+    public Map<DocumentId, TextFingerprint> findFingerprints() {
+        Map<DocumentId, TextFingerprint> found = new LinkedHashMap<>();
+        for (Document d : documents.findAll()) {
+            ArchiveTextCheck check = checks.get(d.id());
+            if (d.state() == ProcessingState.ARCHIVED && !d.isTrashed() && check != null
+                    && check.fingerprint() != null && d.paperlessDocumentId().filter(check::appliesTo).isPresent()) {
+                found.put(d.id(), check.fingerprint());
+            }
+        }
+        return found;
+    }
+
+    /** A measured check of the current archive document that only lacks its fingerprint. */
+    private static boolean backfill(ArchiveTextCheck check, Document d) {
+        return check != null && check.isMeasured() && d.paperlessDocumentId().filter(check::appliesTo).isPresent();
     }
 
     private static boolean isDue(ArchiveTextCheck check, int paperlessId, Instant now) {
         return check == null || !check.appliesTo(paperlessId)
-                || (!check.isMeasured() && !check.nextAttemptAt().isAfter(now));
+                || (!check.isMeasured() && !check.nextAttemptAt().isAfter(now))
+                || (check.isMeasured() && !check.isComplete());
     }
 }

@@ -61,6 +61,10 @@ After archival Aegis records, without AI, whether the archive recognized text in
 angle or taken in poor light that the archive could not read is marked "Kein Text erkannt" in the list, explained
 with capture advice on its page and reported in the review inbox. Documents archived earlier are caught up by a
 bounded background check ([ADR-0012](architecture/adr/ADR-0012-recognized-text.md)).
+The same check keeps a fingerprint of the text: a document page lists other documents that are probably the same
+letter scanned or photographed again, and the review inbox shows one card per pair. Monthly records of one provider
+stay apart because their numbers differ; nothing is merged or deleted, the members decide
+([ADR-0028](architecture/adr/ADR-0028-near-duplicate-hints.md)).
 A new installation starts with an empty tree; `ops/deploy/folder-tree.json`
 and `ops/deploy/seed-folder-tree.py` create the agreed starting tree on request
 ([ADR-0006](architecture/adr/ADR-0006-starting-folder-tree.md)).
@@ -82,14 +86,14 @@ does not use AI, a calendar or phone push.
 
 The shared review inbox persists versioned workflow cards without copying source facts. It currently reconciles
 failed archival, documents without recognized text, failed or unavailable document analysis, classification
-suggestions, finished bulk classifications (one card per run instead of one per document), proposed contract facts
-and fact conflicts. Opening the inbox reconciles it at once, and a daily
+suggestions, finished bulk classifications (one card per run instead of one per document), proposed contract facts,
+fact conflicts and near-duplicate document pairs. Opening the inbox reconciles it at once, and a daily
 background job makes a new card notify both members even if nobody opens the inbox; it runs as a read-only household process that can
 neither decide cards nor change records. A card's notice names its reason and source, such as the document title. Retries use document application commands; confirmations and corrections stay on their source
 screens. Dismissal, source resolution and notification read state remain separate, and both members share
 optimistic-concurrency conflict handling. Review history is included in portable export schema 7 and restore
 ([ADR-0009](architecture/adr/ADR-0009-central-review-inbox.md)). Mail exceptions, task candidates and
-duplicate/relationship suggestions are not connected because those producers do not yet exist.
+relationship suggestions are not connected because those producers do not yet exist.
 
 The web app has one inbox (`/inbox`, "Eingang") with two sections: "Zu prüfen" lists the review cards, "Mitteilungen"
 the member's notices that no card represents (task assigned or completed, cancellation reminder, stale job, backup

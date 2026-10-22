@@ -8,6 +8,7 @@ import dev.aegis.documents.application.api.ContentSearchState;
 import dev.aegis.documents.application.api.CountAccuracy;
 import dev.aegis.documents.application.api.DocumentCommands;
 import dev.aegis.documents.application.api.DocumentQueries;
+import dev.aegis.documents.application.api.SimilarDocumentQueries;
 import dev.aegis.documents.application.api.DocumentSearchRequest;
 import dev.aegis.documents.application.api.DocumentSearchResult;
 import dev.aegis.documents.application.api.DocumentThumbnail;
@@ -67,13 +68,15 @@ public class DocumentsController {
     private final DocumentQueries queries;
     private final DocumentCommands commands;
     private final ClassificationCommands classification;
+    private final SimilarDocumentQueries similar;
 
     public DocumentsController(UploadDocument upload, DocumentQueries queries, DocumentCommands commands,
-            ClassificationCommands classification) {
+            ClassificationCommands classification, SimilarDocumentQueries similar) {
         this.upload = upload;
         this.queries = queries;
         this.commands = commands;
         this.classification = classification;
+        this.similar = similar;
     }
 
     /**
@@ -203,6 +206,15 @@ public class DocumentsController {
     @GetMapping("/{id}")
     public DocumentDto get(Actor actor, @PathVariable("id") String id) {
         return DocumentDto.from(queries.get(actor, DocumentId.of(id)));
+    }
+
+    @Operation(operationId = "listSimilarDocuments",
+            summary = "Documents that are probably the same as this one, most similar first (ADR-0028)",
+            description = "A hint from the archive texts: nothing is merged or deleted. Empty until the text is "
+                    + "checked, for texts too short to compare and for a document in the trash.")
+    @GetMapping("/{id}/similar")
+    public List<DocumentDto> similar(Actor actor, @PathVariable("id") String id) {
+        return similar.similarTo(actor, DocumentId.of(id)).stream().map(DocumentDto::from).toList();
     }
 
     @Operation(operationId = "downloadOriginal",

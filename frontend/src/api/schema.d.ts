@@ -1103,6 +1103,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/{id}/similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Documents that are probably the same as this one, most similar first (ADR-0028)
+         * @description A hint from the archive texts: nothing is merged or deleted. Empty until the text is checked, for texts too short to compare and for a document in the trash.
+         */
+        get: operations["listSimilarDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{id}/subjects": {
         parameters: {
             query?: never;
@@ -5022,6 +5042,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["DocumentDto"];
+                };
+            };
+        };
+    };
+    listSimilarDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DocumentDto"][];
                 };
             };
         };

@@ -6052,6 +6052,37 @@
         "tags" : [ "documents" ]
       }
     },
+    "/api/documents/{id}/similar" : {
+      "get" : {
+        "description" : "A hint from the archive texts: nothing is merged or deleted. Empty until the text is checked, for texts too short to compare and for a document in the trash.",
+        "operationId" : "listSimilarDocuments",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DocumentDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Documents that are probably the same as this one, most similar first (ADR-0028)",
+        "tags" : [ "documents" ]
+      }
+    },
     "/api/documents/{id}/subjects" : {
       "put" : {
         "operationId" : "changeSubjects",

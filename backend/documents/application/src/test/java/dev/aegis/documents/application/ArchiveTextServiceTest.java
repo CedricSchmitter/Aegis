@@ -217,4 +217,32 @@ class ArchiveTextServiceTest {
         return presenter.summarizeAll(List.of(documents.findById(document.id()).orElseThrow()), java.util.Map.of())
                 .getFirst();
     }
+
+    @Test
+    void measurementsWithoutAFingerprintAreReadAgainAfterTheOtherDueDocumentsWithoutHoldingThemUp() {
+        Document before = archived("Vorher", 61, NOW.minus(Duration.ofDays(2)));
+        Document stuck = archived("Hakt", 62, NOW.minus(Duration.ofDays(3)));
+        Document fresh = archived("Neu", 63, NOW.minus(Duration.ofDays(9)));
+        archive.texts.put(61, LETTER);
+        archive.texts.put(63, LETTER);
+        // As stored before fingerprints existed: measured, nothing missing but the fingerprint.
+        checks.save(new ArchiveTextCheck(before.id(), 61, 60, false, NOW.minusSeconds(60), 0, null));
+        checks.save(new ArchiveTextCheck(stuck.id(), 62, 60, false, NOW.minusSeconds(120), 0, null));
+        service = new ArchiveTextService(documents, checks, archive, 1, clock);
+
+        assertThat(service.sweep()).as("a document without any check first").isEqualTo(new SweepReport(1, 0));
+        assertThat(checks.checks.get(fresh.id()).isComplete()).isTrue();
+
+        archive.available = false;
+        assertThat(service.sweep()).isEqualTo(new SweepReport(0, 1));
+        assertThat(summary(stuck).textRecognition().state()).as("the measurement stays")
+                .isEqualTo(TextRecognitionView.RECOGNIZED);
+        archive.available = true;
+        clock.advance(Duration.ofSeconds(1));
+        assertThat(service.sweep()).as("the other one is not held up").isEqualTo(new SweepReport(1, 0));
+        assertThat(checks.checks.get(before.id()).fingerprint()).isNotNull();
+        assertThat(service.sweep()).isEqualTo(new SweepReport(1, 0));
+        assertThat(checks.checks.get(stuck.id()).isComplete()).isTrue();
+        assertThat(service.sweep()).isEqualTo(new SweepReport(0, 0));
+    }
 }

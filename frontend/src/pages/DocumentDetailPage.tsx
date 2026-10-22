@@ -14,6 +14,7 @@ import type {
 import { useSession } from "../auth/SessionContext";
 import { AnalysisPanel } from "../components/AnalysisPanel";
 import { DocumentHead, DocumentPreview, DocumentViewer } from "../components/documents/DocumentHead";
+import { SimilarDocuments } from "../components/documents/SimilarDocuments";
 import { FolderSelect } from "../components/FolderSelect";
 import { LabelChips } from "../components/LabelChips";
 import { LabelEditor } from "../components/LabelEditor";
@@ -525,6 +526,8 @@ export function DocumentDetailPage() {
               </div>
             )}
           </Block>
+
+          <SimilarDocuments documentId={document.id} refreshKey={`${document.version}:${document.textRecognition.state}:${trashed}`} />
 
           {contracts.length > 0 && (
             <Block id="linked-contracts" title={t("documents.linkedContracts")}>

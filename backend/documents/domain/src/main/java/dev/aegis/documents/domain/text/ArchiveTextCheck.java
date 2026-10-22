@@ -9,8 +9,8 @@ import java.util.Optional;
 /**
  * Whether the archive recognized text in an archived document (ADR-0012) and whether it keeps a separate
  * searchable archive version of it (ADR-0016). Both are read from one archive document in one request. The check keeps
- * only the number of letters and digits in the OCR text, never the text itself, so it can always be measured again
- * from the archive. A check that could not read the archive document names when the next automatic attempt is due; a
+ * only the number of letters and digits in the OCR text and its {@link TextFingerprint} for finding near duplicates
+ * (ADR-0028), never the text itself, so it can always be measured again from the archive. A check that could not read the archive document names when the next automatic attempt is due; a
  * failed attempt never replaces a measurement of the same archive document.
  *
  * @param recognizedCharacters letters and digits in the archive text; null while no attempt succeeded. A check waiting
@@ -19,9 +19,12 @@ import java.util.Optional;
  * @param checkedAt            the latest attempt, successful or not
  * @param failedAttempts       failed attempts since the last successful one for this archive document
  * @param nextAttemptAt        when an incomplete check is tried again; null once measured
+ * @param fingerprint          the fingerprint of the archive text; null until measured with the current
+ *                             {@link TextFingerprint#VERSION}, so measurements from before are made again
  */
 public record ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, Integer recognizedCharacters,
-        Boolean archiveVersion, Instant checkedAt, int failedAttempts, Instant nextAttemptAt) {
+        Boolean archiveVersion, Instant checkedAt, int failedAttempts, Instant nextAttemptAt,
+        TextFingerprint fingerprint) {
 
     /**
      * Fewer letters and digits than this count as almost no text. A one-page letter has several hundred; the rotated
@@ -55,6 +58,16 @@ public record ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, I
         if ((archiveVersion == null) == (nextAttemptAt == null)) {
             throw new IllegalArgumentException("a check is either measured or waiting for its next attempt");
         }
+        if (fingerprint != null && archiveVersion == null) {
+            throw new IllegalArgumentException("the fingerprint is made from a measured text");
+        }
+    }
+
+    /** A check without a fingerprint, as stored before fingerprints existed or while it waits for an attempt. */
+    public ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, Integer recognizedCharacters,
+            Boolean archiveVersion, Instant checkedAt, int failedAttempts, Instant nextAttemptAt) {
+        this(documentId, paperlessDocumentId, recognizedCharacters, archiveVersion, checkedAt, failedAttempts,
+                nextAttemptAt, null);
     }
 
     /**
@@ -64,20 +77,27 @@ public record ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, I
     public static ArchiveTextCheck measured(DocumentId documentId, int paperlessDocumentId, String archiveText,
             boolean archiveVersion, Instant now) {
         return new ArchiveTextCheck(documentId, paperlessDocumentId, countRecognized(archiveText), archiveVersion,
-                now, 0, null);
+                now, 0, null, TextFingerprint.of(archiveText));
     }
 
     /**
      * Records that the archive document could not be read. Each further failure for the same archive document waits
      * twice as long before the next attempt, at most a day, so an archive that keeps refusing one document is asked
      * rarely. A measurement of this archive document stays as it is, and a count read before the archive version was
-     * recorded is kept.
+     * recorded is kept. A measurement that still lacks its fingerprint keeps its values and records the attempt time.
      */
     public static ArchiveTextCheck failed(DocumentId documentId, int paperlessDocumentId,
             Optional<ArchiveTextCheck> previous, Instant now) {
         Optional<ArchiveTextCheck> same = previous.filter(check -> check.appliesTo(paperlessDocumentId));
-        if (same.filter(ArchiveTextCheck::isMeasured).isPresent()) {
+        if (same.filter(ArchiveTextCheck::isComplete).isPresent()) {
             return same.get();
+        }
+        if (same.filter(ArchiveTextCheck::isMeasured).isPresent()) {
+            // Only the fingerprint was missing: the measurement stays, and the later attempt time lets the sweep
+            // read the other documents first (see ArchiveTextCheckRepository#findDue).
+            ArchiveTextCheck measured = same.get();
+            return new ArchiveTextCheck(documentId, paperlessDocumentId, measured.recognizedCharacters,
+                    measured.archiveVersion, now, 0, null, null);
         }
         int attempts = same.map(ArchiveTextCheck::failedAttempts).orElse(0) + 1;
         Integer count = same.map(ArchiveTextCheck::recognizedCharacters).orElse(null);
@@ -93,6 +113,11 @@ public record ArchiveTextCheck(DocumentId documentId, int paperlessDocumentId, I
     /** Whether the archive document was read completely: its text counted and its archive version recorded. */
     public boolean isMeasured() {
         return archiveVersion != null;
+    }
+
+    /** Whether the check is measured and carries a fingerprint of the current version; nothing is left to read. */
+    public boolean isComplete() {
+        return isMeasured() && fingerprint != null;
     }
 
     /** Whether the archive is known to keep a searchable archive version of the document. */

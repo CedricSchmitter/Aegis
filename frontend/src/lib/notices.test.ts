@@ -31,6 +31,9 @@ describe("noticeText", () => {
     const params = { title: "Brief der Stadtwerke" };
     expect(reviewTitle(german, "review.noText", params)).toBe("Das Archiv hat in „Brief der Stadtwerke“ keinen oder kaum Text erkannt.");
     expect(reviewTitle(english, "review.noText", params)).toBe("The archive recognized no or almost no text in “Brief der Stadtwerke”.");
+    const pair = { title: "Kündigung Strom", otherTitle: "Foto 2026-10-20" };
+    expect(reviewTitle(german, "review.similarDocument", pair)).toBe("„Kündigung Strom“ und „Foto 2026-10-20“ sind wahrscheinlich dasselbe Dokument.");
+    expect(reviewTitle(english, "review.similarDocument", pair)).toBe("“Kündigung Strom” and “Foto 2026-10-20” are probably the same document.");
   });
 
   it("shows a failure code as a short localized reason, never the code itself", () => {
