@@ -28,6 +28,7 @@ import dev.aegis.documents.application.DocumentCommandService;
 import dev.aegis.documents.application.DocumentPresenter;
 import dev.aegis.documents.application.CatalogImportService;
 import dev.aegis.documents.application.CatalogQueryService;
+import dev.aegis.documents.application.SimilarDocumentService;
 import dev.aegis.documents.application.CategoryService;
 import dev.aegis.documents.application.ClassificationService;
 import dev.aegis.documents.application.PlacementService;
@@ -60,6 +61,7 @@ import dev.aegis.documents.application.DocumentPurgeService;
 import dev.aegis.documents.application.ReconciliationService;
 import dev.aegis.documents.application.RegisterReceivedDocument;
 import dev.aegis.documents.application.api.CatalogQueries;
+import dev.aegis.documents.application.api.SimilarDocumentQueries;
 import dev.aegis.documents.application.api.CategoryCommands;
 import dev.aegis.documents.application.api.ClassificationCommands;
 import dev.aegis.documents.application.api.PlacementCommands;
@@ -301,6 +303,13 @@ public class UseCaseConfiguration {
                         analysisSettings, clock),
                 new DocumentQueryService(documents, archive, store, presenter, catalog, categories, labels,
                         classifications, views, placements, analyses, analysisSettings, access, clock));
+    }
+
+    @Bean
+    SimilarDocumentQueries similarDocumentQueries(DocumentRepository documents, ArchiveTextCheckRepository checks,
+            DocumentPresenter presenter, HouseholdAccess access, PlatformTransactionManager tm) {
+        return TransactionalProxy.wrap(SimilarDocumentQueries.class,
+                new SimilarDocumentService(documents, checks, presenter, access), tm);
     }
 
     @Bean

@@ -94,3 +94,30 @@ describe("document detail trash", () => {
     expect(api.GET.mock.calls.filter(([path]) => path === "/api/documents/{id}")).toHaveLength(2);
   });
 });
+
+describe("document detail near duplicates", () => {
+  it("lists documents that are probably the same and says that nothing is deleted", async () => {
+    answer(never);
+    const base = api.GET.getMockImplementation()!;
+    api.GET.mockImplementation((path: string, options: unknown) =>
+      path === "/api/documents/{id}/similar"
+        ? Promise.resolve(ok([{ ...document, id: "d2", title: "Foto 2026-09-21", uploadedAt: "2026-09-21T08:00:00Z" }]))
+        : base(path, options),
+    );
+    renderPage();
+
+    const section = await screen.findByTestId("similar-documents");
+    expect(section.textContent).toContain("Möglicherweise doppelt");
+    expect(section.textContent).toContain("Aegis löscht nichts");
+    const link = screen.getByRole("link", { name: "Foto 2026-09-21" });
+    expect(link.getAttribute("href")).toBe("/documents/d2");
+    expect(api.GET).toHaveBeenCalledWith("/api/documents/{id}/similar", { params: { path: { id: "d1" } } });
+  });
+
+  it("shows nothing while there is no similar document", async () => {
+    answer(never);
+    renderPage();
+    await screen.findByTestId("trash-document");
+    expect(screen.queryByTestId("similar-documents")).toBeNull();
+  });
+});

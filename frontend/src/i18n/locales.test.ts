@@ -107,6 +107,10 @@ describe("locale catalogs", () => {
       // Keys the document review producer publishes for documents without recognized text (ADR-0012).
       "review.noText",
       "review.reason.NO_TEXT_RECOGNIZED",
+      // Near-duplicate hints: the review card of a pair and its category (ADR-0028).
+      "review.similarDocument",
+      "review.reason.SIMILAR_DOCUMENT",
+      "review.category.DUPLICATE",
       // Bulk classification: its single review card, run states, cost bases, scopes and skip reasons.
       "review.bulkAnalysis",
       "review.reason.BULK_CLASSIFICATION",

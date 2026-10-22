@@ -24,7 +24,10 @@ public class ArchiveTextService {
     /** What one check did. */
     public enum Outcome {
         MEASURED,
-        /** A measurement of the current archive document already existed; the archive was not asked again. */
+        /**
+         * A measurement of the current archive document with a current fingerprint already existed; the archive was
+         * not asked again.
+         */
         ALREADY_MEASURED,
         FAILED,
         /** The document is missing or not archived; there is no archive text to check. */
@@ -61,7 +64,7 @@ public class ArchiveTextService {
         }
         int paperlessId = found.get().paperlessDocumentId().get();
         Optional<ArchiveTextCheck> previous = checks.find(id);
-        if (previous.filter(check -> check.appliesTo(paperlessId) && check.isMeasured()).isPresent()) {
+        if (previous.filter(check -> check.appliesTo(paperlessId) && check.isComplete()).isPresent()) {
             return Outcome.ALREADY_MEASURED;
         }
         PaperlessArchive.ArchivedText archived;

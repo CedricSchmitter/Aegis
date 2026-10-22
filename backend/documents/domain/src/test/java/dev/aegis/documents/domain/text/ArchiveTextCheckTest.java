@@ -67,6 +67,24 @@ class ArchiveTextCheckTest {
     }
 
     @Test
+    void aMeasurementCarriesTheFingerprintOfTheTextAndAnOlderOneWithoutItIsReadAgain() {
+        ArchiveTextCheck measured = ArchiveTextCheck.measured(ID, 7, "Rechnung vom Mai", false, NOW);
+        assertThat(measured.fingerprint()).isEqualTo(TextFingerprint.of("Rechnung vom Mai"));
+        assertThat(measured.isComplete()).isTrue();
+
+        ArchiveTextCheck before = new ArchiveTextCheck(ID, 7, 480, true, NOW, 0, null);
+        assertThat(before.isMeasured()).isTrue();
+        assertThat(before.isComplete()).as("stored before fingerprints existed").isFalse();
+        ArchiveTextCheck failed = ArchiveTextCheck.failed(ID, 7, Optional.of(before), NOW.plusSeconds(60));
+        assertThat(failed.recognizedCharacters()).isEqualTo(480);
+        assertThat(failed.keepsArchiveVersion()).isTrue();
+        assertThat(failed.isMeasured()).isTrue();
+        assertThat(failed.checkedAt()).isEqualTo(NOW.plusSeconds(60));
+        assertThatThrownBy(() -> new ArchiveTextCheck(ID, 7, null, null, NOW, 1, NOW, measured.fingerprint()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void aCheckOfAnotherArchiveDocumentSaysNothingAboutThisOne() {
         ArchiveTextCheck old = ArchiveTextCheck.failed(ID, 7, Optional.empty(), NOW);
         assertThat(old.appliesTo(7)).isTrue();

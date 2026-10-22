@@ -21,8 +21,15 @@ public interface ArchiveTextCheckRepository {
 
     /**
      * Archived documents that still need a check, most recently archived first: those without one, those whose check
-     * belongs to another archive document, and incomplete checks (failed, or stored before the archive version was
-     * recorded) whose next attempt is due at {@code now}.
+     * belongs to another archive document, incomplete checks (failed, or stored before the archive version was
+     * recorded) whose next attempt is due at {@code now}, and measurements without a fingerprint of the current
+     * {@link TextFingerprint#VERSION}.
      */
     List<DocumentId> findDue(Instant now, int limit);
+
+    /**
+     * The fingerprints of every archived document outside the trash whose check belongs to its current archive
+     * document, for comparing them with each other.
+     */
+    Map<DocumentId, TextFingerprint> findFingerprints();
 }

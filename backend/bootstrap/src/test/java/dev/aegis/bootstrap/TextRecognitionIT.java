@@ -153,9 +153,10 @@ class TextRecognitionIT extends PostgresIT {
         awaitTextState(anna, id, "RECOGNIZED");
         assertThat(anna.json(anna.get("/api/documents/" + id)).path("archivePdfAvailable").asBoolean()).isTrue();
 
-        // The state V2_7 leaves a check measured before the archive version existed in: count kept, due at once.
-        jdbc.sql("UPDATE document_text_checks SET archive_version = NULL, next_attempt_at = checked_at"
-                + " WHERE document_id = ?").param(UUID.fromString(id)).update();
+        // The state V2_7 leaves a check measured before the archive version existed in: count kept, due at once,
+        // and no fingerprint, which came later (V2_11).
+        jdbc.sql("UPDATE document_text_checks SET archive_version = NULL, next_attempt_at = checked_at,"
+                + " text_fingerprint = NULL WHERE document_id = ?").param(UUID.fromString(id)).update();
         JsonNode before = anna.json(anna.get("/api/documents/" + id));
         assertThat(before.path("textRecognition").path("state").asText()).isEqualTo("RECOGNIZED");
         assertThat(before.path("archivePdfAvailable").asBoolean()).isFalse();
