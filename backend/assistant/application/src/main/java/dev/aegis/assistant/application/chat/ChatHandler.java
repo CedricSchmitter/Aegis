@@ -95,7 +95,7 @@ public class ChatHandler implements WorkloadHandler {
             start with "- " for lists.
             - Support every statement about the household's records with a citation. Number the citations in the \
             order of the citations array and refer to them in the text as [1], [2] and so on.
-            - A document citation quotes the words exactly as read_document returned them: a short passage of at \
+            - A document citation quotes the words exactly as read_document or find_in_document returned them: a short passage of at \
             most 300 characters; mark left-out words with "...". A contract or task citation may name the fact you \
             used in its quote, or leave the quote empty. Cite only ids that a tool returned in this conversation.
             - evidence is COMPLETE when the records answer the question, PARTIAL when they answer part of it or \
@@ -112,13 +112,17 @@ public class ChatHandler implements WorkloadHandler {
             can be missing or wrong: when a filtered search finds nothing useful, search again with words only or a \
             broader filter, and say in a caveat when documents may have been missed.
             - search_documents finds documents by words in their title and archived text and by folder and labels. \
-            It returns metadata only. Read a document with read_document before you rely on it; long documents come \
-            in parts, so read further parts when the answer may be there.""";
+            It returns metadata only. Read a document with read_document before you rely on it.""";
 
     private static final String RESEARCH_BY_TEXT = """
             - search_document_text finds documents by words in their title and archived text. It returns metadata \
-            only. Read a document with read_document before you rely on it; long documents come in parts, so read \
-            further parts when the answer may be there.""";
+            only. Read a document with read_document before you rely on it.""";
+
+    private static final String LONG_DOCUMENTS = """
+            - Long documents come in parts. To find a clause, amount, date or number in a document, call \
+            find_in_document with its id and a few words the document is likely to use, including synonyms; then \
+            quote the passage, or read on with read_document from the passage's offset. Read further parts when \
+            the answer may be elsewhere, and do not take a missing passage as proof that the document lacks it.""";
 
     private static final Map<String, Object> OUTPUT_SCHEMA = Map.of(
             "type", "object",
@@ -179,7 +183,8 @@ public class ChatHandler implements WorkloadHandler {
     String system(ProductLocale locale) {
         LocalDate today = LocalDate.now(clock.withZone(zone));
         return SYSTEM.formatted(today, today.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH), zone,
-                retrieval == ChatRetrieval.TEXT_ONLY ? RESEARCH_BY_TEXT : RESEARCH_WITH_LABELS, locale == ProductLocale.EN ? "English" : "German");
+                (retrieval == ChatRetrieval.TEXT_ONLY ? RESEARCH_BY_TEXT : RESEARCH_WITH_LABELS) + "\n"
+                        + LONG_DOCUMENTS, locale == ProductLocale.EN ? "English" : "German");
     }
 
     /**

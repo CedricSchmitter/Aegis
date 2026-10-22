@@ -174,8 +174,9 @@ class ChatIT extends PostgresIT {
         assertThat(citations.path(0).path("title").asText()).isEqualTo("Stromliefervertrag Muster");
         assertThat(citations.path(1).path("check").asText()).isEqualTo("NOT_IN_SOURCE");
         assertThat(answered.path("answer").path("evidence").asText()).isEqualTo("COMPLETE");
-        assertThat(model.requests.getFirst().tools()).extracting(ToolSpec::name).containsExactly("household_catalog",
-                "list_contracts", "list_tasks", "read_contract", "read_document", "search_documents");
+        assertThat(model.requests.getFirst().tools()).extracting(ToolSpec::name).containsExactly("find_in_document",
+                "household_catalog", "list_contracts", "list_tasks", "read_contract", "read_document",
+                "search_documents");
 
         String runId = answered.path("runId").asText();
         JsonNode run = ben.json(ben.get("/api/ai/runs/" + runId));

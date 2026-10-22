@@ -68,12 +68,14 @@ describe("progress steps", () => {
         { kind: "TOOL", tool: "search_documents", at: "t" },
         { kind: "TOOL", tool: "search_document_text", at: "t" },
         { kind: "MODEL", tool: null, at: "t" },
+        { kind: "TOOL", tool: "find_in_document", at: "t" },
         { kind: "TOOL", tool: "read_document", at: "t" },
         { kind: "TOOL", tool: "something_new", at: "t" },
       ]),
     ).toEqual([
       { key: "chat.progress.started", count: 1 },
       { key: "chat.progress.searchDocuments", count: 2 },
+      { key: "chat.progress.findInDocument", count: 1 },
       { key: "chat.progress.readDocument", count: 1 },
       { key: "chat.progress.otherTool", count: 1 },
     ]);

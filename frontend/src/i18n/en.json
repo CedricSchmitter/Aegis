@@ -1779,6 +1779,7 @@
       "catalog": "Reading folders and labels",
       "searchDocuments": "Searching documents",
       "readDocument": "Reading a document",
+      "findInDocument": "Searching within a document",
       "listContracts": "Looking through the contracts",
       "readContract": "Reading a contract",
       "listTasks": "Looking through the tasks",

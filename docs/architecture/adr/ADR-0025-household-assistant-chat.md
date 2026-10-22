@@ -40,7 +40,7 @@ can answer it.
 
 ### Research tools
 
-The `chat` workload is granted six read-only tools, each calling public application contracts with the run's actor:
+The `chat` workload is granted seven read-only tools, each calling public application contracts with the run's actor:
 
 - `household_catalog`: folders with paths and active labels by group, so searches can use ids.
 - `search_documents`: the documents context's structured search (`DocumentSearchRequest`) with words, folder scope,
@@ -49,6 +49,8 @@ The `chat` workload is granted six read-only tools, each calling public applicat
 - `read_document`: the document's text through the `DocumentTextQuery` contract (see "Text per page"), in parts of
   about 12,000 characters framed as untrusted content, with a marker such as `--- page 2 ---` before every page when
   the pages are known, plus title, folder, labels, document date and the contracts that cite the document.
+- `find_in_document`: the passages of one document that contain the most of up to eight words, through the same
+  `DocumentTextQuery` call as `read_document` (see "Passages in long documents").
 - `list_contracts`, `read_contract`: contracts with every fact, its review state, validity period, source document,
   page and quote, contradictions and the cancellation deadline with its rule.
 - `list_tasks`: tasks with due date and planned day kept apart, the source document and cancellation reviews.
@@ -64,7 +66,7 @@ answered with where the member can do it; the chat has no writing tool.
 `AEGIS_AI_CHAT_RETRIEVAL` (`aegis.ai.chat-retrieval`) selects the retrieval. `LABELS_AND_TEXT`, the default, is the
 behavior above. `TEXT_ONLY` exists to compare retrieval with the reference questions: it withholds
 `household_catalog` and grants `search_document_text` instead of `search_documents`, the same structured search
-without folder and label filters. Results still show a document's folder and labels.
+without folder and label filters. Both retrievals grant `read_document` and `find_in_document`. Results still show a document's folder and labels.
 
 ### Search coverage
 
@@ -120,6 +122,37 @@ Paperless' `modified` time (verified for Paperless-ngx 3.1.3, whose reprocess ta
 each entry also expires 5 minutes after it was read from the archive, the chat workload's default `max-duration`. They
 are derived data: never stored, exported or logged, and read again after a restart. An unreachable archive is reported
 and not remembered.
+
+### Passages in long documents
+
+Reading a long document part by part from the start costs one tool call per part, and every call resends the parts
+read so far. `find_in_document(id, query)` searches the text of one document instead (issue #165). The matching in
+`PassageSearch` (assistant application) is plain, deterministic Java without a persistent index, a scheduler job or
+model calls:
+
+- Words are compared without case, accents and umlaut dots, with `ß` as `ss`, and with words hyphenated across lines
+  joined. A word of four or more letters also matches inside longer words, as German compounds need; a shorter word
+  matches whole words only. A word with digits or inner separators is an identifier and matches with any or no
+  separators, so `K-2026/004` finds `K2026004` and `K 2026 004`.
+- A passage holds the matches within 500 characters plus about 250 characters of context on either side, cut at
+  blanks. Passages rank by the number of distinct words they contain, then by matches, then by position, and never
+  share text.
+- Each passage carries its offset (from which `read_document` continues), its end, the page of its first match when
+  the pages are known, its words and its text framed as untrusted content with page markers. The result names words
+  that occur nowhere and counts omitted passages; whole passages are left out to keep valid JSON below 18,000
+  characters. No passage is reported as the words not occurring, never as proof that the document does not say it.
+
+Authorization, the trash and the text cache are those of `DocumentTextQuery`, as for `read_document`. Quotes from a
+passage are checked against the whole text like any other. The prompt tells the model to use the tool to find a
+clause, amount, date or number in a document, with synonyms, and then to quote the passage or read on from its
+offset.
+
+`LongDocumentRegressionTest` compares both ways with the real tools, executor and citation check and a scripted
+model: a 15-page contract of about 60,000 characters whose table of contents names the cancellation section and whose
+clause stands on page 14. Reading part by part took 5 tool calls, 6 model calls and 226,238 characters of model
+input in total; `find_in_document` took 1 tool call, 2 model calls and 14,677 characters. Both answers cite the clause,
+verified, on page 14. How often a real model chooses the tool and which words it searches for is measured with the
+reference questions (#158, step 4).
 
 ### Tool loop on the subscription
 

@@ -33,7 +33,8 @@ public class ReadDocumentTool implements AiTool {
             "Reads the text the archive recognized in one document, in parts of about " + PART + " characters, "
                     + "with title, folder, labels, document date and the contracts that cite it. Page markers such "
                     + "as '--- page 2 ---' separate pages when they are known; they are not part of the text. Read "
-                    + "the next part with offset = nextOffset.",
+                    + "the next part with offset = nextOffset. To find a passage in a long document, use "
+                    + ChatTools.FIND_IN_DOCUMENT + " first.",
             Map.of("type", "object",
                     "properties", Map.of(
                             "id", Map.of("type", "string", "description", "Document id from search_documents"),

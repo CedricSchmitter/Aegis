@@ -133,8 +133,9 @@ class ChatHandlerTest {
         assertThat(prepared.messages()).singleElement().satisfies(message ->
                 assertThat(message.parts()).containsExactly(new ContentPart.Text("Wann endet der Stromvertrag?")));
         assertThat(handler.grantedTools()).containsExactlyInAnyOrder("household_catalog", "search_documents",
-                "read_document", "list_contracts", "read_contract", "list_tasks");
+                "read_document", "find_in_document", "list_contracts", "read_contract", "list_tasks");
         assertThat(prepared.system()).contains("household_catalog lists the folders and labels")
+                .contains("call find_in_document with its id")
                 .doesNotContain("search_document_text");
     }
 
@@ -148,8 +149,9 @@ class ChatHandlerTest {
         PreparedRun prepared = textOnly.prepare(run(conversation));
 
         assertThat(textOnly.grantedTools()).containsExactlyInAnyOrder("search_document_text", "read_document",
-                "list_contracts", "read_contract", "list_tasks");
+                "find_in_document", "list_contracts", "read_contract", "list_tasks");
         assertThat(prepared.system()).contains("search_document_text finds documents by words")
+                .contains("call find_in_document with its id")
                 .doesNotContain("household_catalog").doesNotContain("search_documents ");
     }
 

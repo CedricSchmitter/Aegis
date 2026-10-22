@@ -9,6 +9,7 @@ public final class ChatTools {
     public static final String SEARCH_DOCUMENTS = "search_documents";
     public static final String SEARCH_DOCUMENT_TEXT = "search_document_text";
     public static final String READ_DOCUMENT = "read_document";
+    public static final String FIND_IN_DOCUMENT = "find_in_document";
     public static final String LIST_CONTRACTS = "list_contracts";
     public static final String READ_CONTRACT = "read_contract";
     public static final String LIST_TASKS = "list_tasks";
