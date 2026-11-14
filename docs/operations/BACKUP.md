@@ -27,9 +27,13 @@ shows the newest generation, the last confirmation and a failed or stale run.
   data/documents.json             versioned records (stable Aegis ids, checksums, subjects, Paperless ids, page origins)
   data/tasks.json                 tasks with owner, due date, planned date and source document id
   data/members.json               members (ids, usernames, display names, locale, person or assistant); no credentials
+  data/catalog.json               the shared folder tree and label vocabulary with stable ids
+  data/contracts.json             contracts with every observed fact, its provenance, validity period and review state
   data/reviews.json               review references, source versions, lifecycle and decision audit
   readable/documents.csv          readable table
   readable/tasks.csv              readable table with source titles
+  readable/labels.csv             readable table of the labels and folders
+  readable/contracts.csv          readable table with one row per contract fact
   documents/originals/<date>_<title>_<id>.pdf   unchanged originals (a photo keeps its type: .jpg, .png, .webp, .heic)
 ```
 
@@ -78,8 +82,9 @@ sh /srv/aegis/source/current/ops/backup/restore-drill.sh <generation>
 The script starts a disposable Compose project `aegis-drill` with its own data directory
 (`/srv/aegis/restore-drill`), its own PostgreSQL, Valkey and Paperless, bound to `127.0.0.1:18080` only, and
 starts Aegis with `AEGIS_IMPORT_PATH` pointing at a copy of the generation. The application imports members
-(matched by username), documents (stable ids, originals re-archived into the isolated Paperless, which assigns
-new external ids, and page origins of page-editor documents) and tasks (stable ids, source links intact).
+(matched by username), the catalog, documents (stable ids, originals re-archived into the isolated Paperless, which
+assigns new external ids, and page origins of page-editor documents), tasks (stable ids, source links intact),
+contracts with their facts and the review references.
 `verify-drill.sh` then checks every document is archived, every original matches its exported checksum and media
 type (a photo comes back as the photo it was), every page-editor document kept its page ranges and every task kept
 its source link and state. The stack
@@ -126,7 +131,9 @@ verified by unmounting and remounting. The marker is at the mount root. Only the
 `/mnt/aegis-backup/aegis-backup/restic` directory holds the Restic repository. No existing
 disk entry was removed or moved. `/srv/aegis/deploy/backup.env` and the VM password file are root-only.
 The recovery password also exists outside the VM in a file on the owner's Windows PC with an ACL for the Windows
-owner only. Never print or commit it. A second independent key copy is tracked in [issue #40](https://github.com/CedricSchmitter/Aegis/issues/40).
+owner only. Never print or commit it. The owner keeps further copies at owner-controlled places outside the VM and
+the developer PC (reported on 2026-10-03, [issue #40](https://github.com/CedricSchmitter/Aegis/issues/40)); their
+locations are intentionally not recorded.
 
 ### Backup and restore evidence (2026-09-17)
 

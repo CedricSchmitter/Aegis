@@ -76,13 +76,14 @@ it effective, and an amendment takes over from its own start date while the orig
 calculated from confirmed rules only - a stated deadline, or the contract end minus the confirmed notice period -
 and are published for other contexts through the contracts application contract. The contracts screen shows each
 observation with its provenance, the superseded history of a corrected value, reported conflicts and either the
-deadline with the rule it rests on or what is missing to calculate one; automatic extraction (#23/#24) remains a
-separate issue. Each confirmed cancellation deadline creates one source-linked review task with the contractual
+deadline with the rule it rests on or what is missing to calculate one. Facts are entered or confirmed by a member;
+nothing extracts them from documents automatically yet (the scheduled review of #24 is not connected). Each confirmed cancellation deadline creates one source-linked review task with the contractual
 deadline as its due date. It enters Today seven days beforehand and publishes one durable, deduplicated in-app
 reminder to each active household member, including after downtime or late entry. Corrections create a distinct
 occurrence while preserving member edits and completion; resolved contracts supersede only open automatic work
 ([ADR-0008](architecture/adr/ADR-0008-contract-cancellation-tasks-and-reminders.md)). This deterministic flow
-does not use AI, a calendar or phone push.
+uses neither AI nor a calendar; the reminder reaches a phone like any other notice once the member switched Web Push
+on ([ADR-0026](architecture/adr/ADR-0026-web-push-notifications.md)).
 
 The shared review inbox persists versioned workflow cards without copying source facts. It currently reconciles
 failed archival, documents without recognized text, failed or unavailable document analysis, classification
@@ -103,6 +104,15 @@ backup, low disk space and a stopped job are red. Notices that announce a card, 
 listed a second time; opening the inbox marks them read. A successful archival publishes no notice. The navigation
 badge counts open cards plus unread messages, and the old addresses `/review` and `/notices` lead to the inbox
 ([ADR-0009](architecture/adr/ADR-0009-central-review-inbox.md#combined-inbox-issue-83)).
+
+Unread notices also reach the members' phones through Web Push
+([ADR-0026](architecture/adr/ADR-0026-web-push-notifications.md)). A member switches pushes on per device in Settings,
+can send a test push and sees and removes the other devices. Each member chooses the categories (tasks, deadlines,
+review, system), optional quiet hours (default 22:00 to 07:00) and whether the lock screen may show details such as a
+task title. A notice is pushed to a device at most once and only while it is unread; several notices due at once, for
+example after quiet hours or downtime, become one summary that opens the inbox. A push counts as sent when the push
+service accepted it, and a device whose pushes keep failing or whose subscription expired is shown as such. The in-app
+inbox stays the record. Pushes need the trusted HTTPS address and outbound HTTPS from the server.
 
 Documents, tasks and contracts can be moved to a recoverable trash from their pages and restored from the trash
 page by either member ([ADR-0010](architecture/adr/ADR-0010-recoverable-trash.md)). Moving to the trash asks
@@ -146,28 +156,34 @@ once a day's limit is used up, the remaining runs wait until midnight (household
 own. Their documents read "Wartet auf KI-Budget" with the time they continue, without a failure card, and the
 status page lists such runs as waiting rather than failed. A wait does not use up one of the run's attempts; a run
 whose own cost budget is used up, or a daily limit too small for a single call, still fails visibly.
+These limits are defaults: on the status page the household can set a daily limit and a session limit (the budget of
+one question, classification or review) for each workload, which then replace the configured ones for that workload
+([ADR-0027](architecture/adr/ADR-0027-household-cost-limits-per-workload.md)).
 Both members can use the shared server-side API connection; the subscription fallback serves only the members listed
 in `AEGIS_AI_SUBSCRIPTION_MEMBERS`. Without either, AI is not configured. See
 [API setup](operations/DEPLOYMENT.md#claude-api) and
 [subscription fallback](operations/DEPLOYMENT.md#subscription-fallback-through-claude--p).
 Members can ask the household assistant questions on the "Fragen" page (`/chat`, also in the header): it researches
 with read-only tools over the documents (catalog, faceted and full-text search, archived text in parts with page
-markers), the contracts with their facts and the tasks, and answers with numbered sources. Every document quote is
+markers, the passages of one long document that match given words), the contracts with their facts and the tasks, and answers with numbered sources. Every document quote is
 checked against the archived text before the answer is stored, and a quote that is not there is marked. A question
 runs as a `CHAT` run with visible progress, cancellation and retry; the conversation belongs to the member who asked
 and the run keeps no content. Earlier conversations sit in a side panel ("Verlauf") that searches all of the member's
 conversations by words in titles, questions and answers. The subscription provider runs the tool loop through its structured answer
-([ADR-0025](architecture/adr/ADR-0025-household-assistant-chat.md)). The chat only reads; writing actions,
-streaming and the reference-question evaluation of #25 are open. Scheduled review (#24) is not connected.
-The status page first answers "is everything OK?" for the database, the archive, the backup, the disk space and AI,
+([ADR-0025](architecture/adr/ADR-0025-household-assistant-chat.md)). The chat only reads; writing actions and
+streaming (#25) are open. Its reference questions run as an opt-in live evaluation outside CI
+([Development](DEVELOPMENT.md)). Scheduled review (#24) is not connected.
+The status page first answers "is everything OK?" for the database, the archive, the backup, the daily export, the
+disk space and AI,
 in German or English words from stable codes; a broken area is red with its reason, and "Was jetzt?" says what to
 check or do. Integrations that are not set up
-(AI without credentials; calendar, mail, push and Telegram have no adapter yet) are not listed. After a start, provider
+(AI without credentials; calendar, mail and messenger delivery have no adapter yet) are not listed. After a start, provider
 fallback or API-key rotation a configured AI reads "Noch nicht geprüft" until its next run or a manual connection check
 ([ADR-0018](architecture/adr/ADR-0018-status-overview.md)). Everything else sits in the collapsed "Technische
 Details": document processing counts, the backup and disk details, the recurring background jobs, the AI workloads,
 budget and runs, the exports and the running version.
-The recurring background jobs (review reconciliation, recognized-text check, document reconciliation) show their last
+The recurring background jobs (review reconciliation, recognized-text check, document reconciliation, push dispatch,
+daily export) show their last
 success, next run and last failure, and a job is stale when it has not succeeded for two intervals plus 10 minutes
 ([ADR-0013](architecture/adr/ADR-0013-recurring-job-health.md)); the overview names a job that does not run as
 planned. A watch job
@@ -178,10 +194,15 @@ stale backup and a disk with less than 10 % or 5 GB free each notify every membe
 ([ADR-0015](architecture/adr/ADR-0015-backup-and-storage-health.md)).
 
 The household uses trusted LAN HTTPS at `https://<aegis-host>`. An encrypted external Restic backup
-passed isolated recovery and runs daily at 03:30; scheduled-run evidence is recorded in #39.
+passed isolated recovery and runs daily at 03:30; scheduled-run evidence is recorded in #39. The portable export
+refreshes itself at 02:30 when the data changed and keeps the newest 14 scheduled generations
+([ADR-0029](architecture/adr/ADR-0029-daily-export.md), [backup](operations/BACKUP.md)). The backup still lives on one
+disk attached to the same server; an offsite copy is open in #40.
 Aegis can be installed from Chrome on Android and receives PDFs and photos from Android's Share menu into the normal
-durable upload flow ([details](operations/DEPLOYMENT.md#installable-app-and-android-share-target)); real-device
-verification is tracked in #33. Mail, calendar, MCP, messenger delivery and Web Push are not connected.
+durable upload flow ([details](operations/DEPLOYMENT.md#installable-app-and-android-share-target)); both household
+phones were checked on 2026-09-29 (#33). Web Push was received on one phone; the second phone, power saving and
+expired subscriptions are still to be checked on real devices (#28). Mail, calendar, MCP and messenger delivery are
+not connected.
 For dated verification, use the relevant issues, pull requests and CI runs.
 
 Source is maintained in this repository; the Aegis VM is the deployment environment. Private keys,
